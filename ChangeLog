@@ -1,3 +1,13 @@
+15 April 2004 Peter B Clements
+
+	* par2cmdline.sln, par2cmdline.vcproj: Updated.
+
+	* commandline.cpp, commandline.h, par1repairer.cpp, par1repairer.h,
+	  par2cmdline.cpp, par2cmdline.h, par2creator.cpp, par2creator.h,
+	  par2creatorsourcefile.cpp, par2creatorsourcefile.h, par2repairer.cpp,
+	  par2repairer.h, reedsolomon.h, par2cmdline.h: Handle -v and -q
+	  options from the command line to change the amount of messages displayed.
+
 14 April 2004 Peter B Clements
 
 	* commandline.h, commandline.cpp: Add -c<n> option to allow the
