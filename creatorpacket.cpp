@@ -27,8 +27,6 @@ static char THIS_FILE[]=__FILE__;
 #endif
 #endif
 
-string creator = "Created by " + version + ".";
-
 // Construct the creator packet. 
 
 // The only external information required to complete construction is 
@@ -37,13 +35,15 @@ string creator = "Created by " + version + ".";
 
 bool CreatorPacket::Create(const MD5Hash &setid)
 {
+  string creator = "Created by " PACKAGE " version " VERSION ".";
+
   // Allocate a packet just large enough for creator name
   CREATORPACKET *packet = (CREATORPACKET *)AllocatePacket(sizeof(*packet) + (~3 & (3+(u32)creator.size())));
 
   // Fill in the details the we know
   packet->header.magic = packet_magic;
   packet->header.length = packetlength;
-  packet->header.hash;  // Compute shortly
+  //packet->header.hash;  // Compute shortly
   packet->header.setid = setid;
   packet->header.type = creatorpacket_type;
 
