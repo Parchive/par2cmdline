@@ -1,3 +1,8 @@
+3 January 2005 Peter B Clements
+
+	* par2creatorsourcefile.cpp: "offset" must be updated when computing
+	  file and block hashes even if progress is not being displayed.
+
 23 June 2004 Peter B Clements
 
 	* diskfile.cpp: Changed DiskFile::GetFileSize for WIN32
