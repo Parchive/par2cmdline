@@ -130,7 +130,7 @@ protected:
   MainPacket               *mainpacket;              // One copy of the main packet.
   CreatorPacket            *creatorpacket;           // One copy of the creator packet.
 
-  DiskFileMap               diskfilemap;             // Map from filename to DiskFile
+  DiskFileMap               diskFileMap;
 
   map<MD5Hash,Par2RepairerSourceFile*> sourcefilemap;// Map from FileId to SourceFile
   vector<Par2RepairerSourceFile*>      sourcefiles;  // The source files
@@ -162,7 +162,7 @@ protected:
   vector<DataBlock*>        copyblocks;              // Which DataBlocks will copied back to disk
   vector<DataBlock*>        outputblocks;            // Which DataBlocks have to calculated using RS
 
-  ReedSolomon               rs;                      // The Reed Solomon matrix.
+  ReedSolomon<Galois16>     rs;                      // The Reed Solomon matrix.
 
   void                     *inputbuffer;             // Buffer for reading DataBlocks (chunksize)
   void                     *outputbuffer;            // Buffer for writing DataBlocks (chunksize * missingblockcount)
