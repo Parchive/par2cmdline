@@ -1,0 +1,162 @@
+16 July 2003 Peter B Clements
+
+	* Release: Version 0.3.
+
+15 July 2003 Peter B Clements
+
+	* Added config.guess, config.sub: Autoconf files.
+
+	* Updated configure, Makefile.in: Updated by Autoconf.
+
+	* Updated configure.ac: Changed par2cmdline version number. Added
+	  call to AC_CANONICAL_HOST.
+
+	* Updated par2cmdline.vcproj: Updated version number.
+
+3 July 2003 Peter B Clements
+
+	* Updated aclocal.m4, depcomp, INSTALL, install-sh,
+	  mkinstalldirs: Upgrade Autoconf to version 1.75 from 1.6.3.
+
+	* Updated Makefile.am: Changed CXXFLAGS to AM_CXXFLAGS.
+
+24 June 2003 Peter B Clements
+
+	* Updated commandline.cpp, commandline.h: Added "redundancyseet"
+	  member to record whether or not the value of "redundancy" has been
+	  specified so that 0% reduncancy is permissible.
+
+	* Updated par2creator.cpp: Detect situation where no recovery
+	  blocks are being created and skip related code sections.
+
+14 June 2003 Peter B Clements
+
+	* Updated galois.h: Corrected bug in the initialisation of log[0] in
+	  GaloisTable.
+
+11 June 2003 Peter B Clements
+
+	* Updated par1repair.cpp, par1repairer.h: Detect buggy version
+	  of smartpar which creates PAR1 files with invalid 16k hash
+	  values, Change alignement of temporary buffer used for
+	  PAR1FILEENTRYs to 8 bytes.
+
+7 June 2003 Peter B Clements
+
+	* Update par2cmdline.h: Added <cassert> header include.
+
+3 June 2003 Peter B Clements
+
+	* Updated verificationhashtable.h: Fixed bug where blocks of data
+	  that have the same crc and hash would not be correctly
+	  recognised.
+
+26 May 2003 Peter B Clements
+
+	* Release: Version 0.2.
+
+	* Added config.h.in, configure, configure.ac, depcomp, missing,
+	  mkinstalldirs, stamp-h.in: Autoconf configuration files. 
+	* Added NEWS
+
+	* Added par1fileformat.h, par1fileformat.cpp: Specifies the
+	  layout of PAR 1.0 files.
+
+	* Added par1repairer.h, par1repairer.cpp: Encapsulates the details
+	  of repairing using PAR 1.0 files.
+
+	* Added par1repairersourcefile.h, par1repairersourcefile.cpp: 
+	  Stores details of a source file.
+
+	* Added test1, test2, test3, test4, test5, test6, testdata.tar.gz:
+	  Test files for "make check".
+
+	* Changed commandline.cpp, commandline.h: Add "version" member 
+          and set it according to whether the recovery file is a .PAR file
+	  or a .PAR2 file. Rename "par2filename" member to "parfilename".
+
+	* Changed creatorpacket.cpp: Made "string creator" a local variable
+	  in CreatorPacket::Create instead of a global. Commented out code
+	  that does nothing.
+
+	* Changed criticalpacket.h: Corrected bug in 
+          CriticalPacketEntry::operator= which failed to return *this.
+
+	* Changed descriptionpacket.cpp: Commented out code which does
+	  nothing.
+
+	* Changed diskfile.cpp: Updated wildcard matching code to permit
+	  multiple "?" in wildcard. Adjusted the list of characters that
+	  are accepted in filenames to include all with bit 7 set and
+	  also spaces. Removed restrictions on many other permitted
+	  characters.
+
+	* Changed diskfile.h: Removed cygwin and linux ifdefs which are
+	  now handled by autoconf.
+
+	* Changed galois.cpp: Move the constructors for GaloisTable and
+	  GaloisLongMultiplyTable to galois.h.
+
+	* Changed galois.h: Changed GaloisTable, Galois, and 
+	  GaloisLongMultipleTable into templates. Corrected bug in
+	  Galois::pow and Galois::operator^ which incorrectly returned 0
+	  for x^0 when it should always return 1. Added Galois8 and
+	  Galois16 typedefs for PAR1 and PAR2.
+
+	* Changed letype.h: Added leu16 type for use in PAR1 processing.
+
+	* Changed mainpacket.cpp: Commented out code which does nothing.
+
+	* Changed md5.cpp: Adjusted ROL macro to include masking to correct
+	  for bug on Alpha CPUs. Added operator<<() and print() to MD5Hash.
+
+	* Changed md5.h: Added copy and assignment operators for MD5Hash.
+
+	* Changed par2cmdline.cpp: Made "string version" a local variable
+	  instead of global. Use Par1Repairer or Par2Repaire as appropriate
+	  when verifying or repairing PAR1 and PAR2 files.
+
+	* Changed par2cmdline.h: Adjusted to conditionally include headers
+	  and to define various types based on the autoconf configuration.
+
+	* Changed par2cmdline.sln, par2cmdline.vcproj: Updated.
+
+	* Changed par2creator.cpp: Called Commandline::GetParFilename instead
+	  of CommandLine::GetPar2Filename.
+
+	* Changed par2creator.h: Redifine rs as ReedSolomon<Galois16>.
+
+	* Changed par2creatorsourcefile.cpp: Comment out code which does
+	  nothing. Added typecasts between 32bit and 64bit values.
+
+	* Changed par2fileformat.cpp: Adjusted initialisation code.
+
+	* Changed par2fileformat.h: Use packed attribute for gnu compilers.
+
+	* Changed par2repairer.cpp: Get filename using
+	  CommandLine::GetParFilename.
+
+	* Changed par2repairer.h: Redefine rs as ReedSolomon<Galois16>.
+
+	* Changed par2repairersourcefile: Add typecast from 32bit to 64bit.
+
+	* Changed README: Update details of how to compile the source code
+	  using the configure script.
+
+	* Changed recoverypacket.cpp: Commented out code which does nothing.
+
+	* Changed ReedSolomon.cpp: Move ReedSolomon constructor to
+	  ReedSolomon.h. Created template specialisations for Galois8 and
+	  Galois16 for SetInput, SetOutput, and Process.
+
+	* Changed ReedSolomon.h: Converted ReedSolomon to a template.
+
+	* Changed verificationhashtable.cpp: Removed unused code.
+
+	* Changed verificationpacket.cpp: Commented out code that does 
+	  nothing.
+
+7 May 2003 Peter B Clements
+
+	* Version 0.1: Initial release.
+
