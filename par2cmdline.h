@@ -35,6 +35,7 @@
 
 #include <ctype.h>
 #include <iostream>
+#include <iomanip>
 
 #include <cassert>
 
@@ -105,7 +106,7 @@ typedef unsigned int     size_t;
 #  endif
 #endif
 
-#if STDC_HEADERS
+#if STC_HEADERS
 #  include <string.h>
 #else
 #  if !HAVE_STRCHR
