@@ -20,28 +20,13 @@
 #ifndef __PARCMDLINE_H__
 #define __PARCMDLINE_H__
 
-// Windows includes
+
 #ifdef WIN32
+// Windows includes
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
-#endif
-
-// STL includes
-#include <string>
-#include <list>
-#include <vector>
-#include <map>
-#include <algorithm>
-
-#include <ctype.h>
-#include <iostream>
-#include <iomanip>
-
-#include <cassert>
 
 // System includes
-#ifdef WIN32
-
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -211,13 +196,6 @@ typedef   unsigned long long   u64;
 #endif
 #endif
 
-using namespace std;
-
-#ifdef offsetof
-#undef offsetof
-#endif
-#define offsetof(TYPE, MEMBER) ((size_t) ((char*)(&((TYPE *)1)->MEMBER) - (char*)1))
-
 #ifdef WIN32
 #define PATHSEP "\\"
 #define ALTPATHSEP "/"
@@ -258,8 +236,28 @@ typedef enum Result
 
 #define LONGMULTIPLY
 
-// par2cmdline includes
+// STL includes
+#include <string>
+#include <list>
+#include <vector>
+#include <map>
+#include <algorithm>
+
+#include <ctype.h>
+#include <iostream>
+#include <iomanip>
+
+#include <cassert>
+
+using namespace std;
+
+#ifdef offsetof
+#undef offsetof
+#endif
+#define offsetof(TYPE, MEMBER) ((size_t) ((char*)(&((TYPE *)1)->MEMBER) - (char*)1))
+
 #include "letype.h"
+// par2cmdline includes
 
 #include "galois.h"
 #include "reedsolomon.h"
