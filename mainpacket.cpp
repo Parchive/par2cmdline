@@ -40,8 +40,8 @@ bool MainPacket::Create(vector<Par2CreatorSourceFile*> &sourcefiles, u64 _blocks
   // Record the details we already know in the packet
   packet->header.magic         = packet_magic;
   packet->header.length        = packetlength;
-  packet->header.hash;         // Compute shortly
-  packet->header.setid;        // Compute shortly
+  //packet->header.hash;         // Compute shortly
+  //packet->header.setid;        // Compute shortly
   packet->header.type          = mainpacket_type;
 
   packet->blocksize            = _blocksize;
