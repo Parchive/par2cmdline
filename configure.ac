@@ -20,7 +20,7 @@ dnl                                               -*- Autoconf -*-
 dnl Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.57)
-AC_INIT([par2cmdline], [0.3], [peterbclements@users.sourceforge.net])
+AC_INIT([par2cmdline], [0.4], [peterbclements@users.sourceforge.net])
 AC_CONFIG_SRCDIR([par2cmdline.cpp])
 
 AC_CANONICAL_HOST
@@ -46,8 +46,8 @@ AC_TYPE_SIZE_T
 AC_C_BIGENDIAN
 AC_C_CONST
 AC_C_INLINE
-dnl AC_SYS_LARGEFILE
-
+AC_SYS_LARGEFILE
+AC_FUNC_FSEEKO
 
 dnl Checks for library functions.
 AC_FUNC_MEMCMP
