@@ -1,3 +1,16 @@
+14 April 2004 Peter B Clements
+
+	* commandline.h, commandline.cpp: Add -c<n> option to allow the
+	  number of recovery blocks to be directly specified rather than
+	  indirectly via the -r<n> option. Add -l option to allow the
+	  recovery file size to be limited so that the largest will have
+	  just enough recovery data to reconstruct the larget source file.
+
+	* par2creator.h, par2creator.cpp: Use the recovery block count 
+	  specified via the command line instead of the redundancy % if
+	  given. Allocate the sizes of recovery files so the are limited
+	  if requested.
+
 12 April 2004 Peter B Clements
 
 	* config.h.in, configure, configure.ac: Detect what defines are
