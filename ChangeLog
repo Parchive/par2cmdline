@@ -1,3 +1,45 @@
+13 August 2003 Peter B Clements
+
+	* Updated par2cmdline.h: Recorrected spelling of STDC_HEADERS!
+
+	* Updated par1repairersourcefile.cpp, par2repairersourcefile.cpp:
+	  Don't treat ':' as a path separator on non Windows platforms.
+
+2 August 2003 Peter B Clements
+
+	* Updated par1fileformat.h, par2fileformat.h: Use memcmp when
+	  comparing MAGIC strings and PACKETTYPE strings.
+
+	* Updated par2repairer.cpp: When a good packet is found after bad
+	  data, use memcpy to copy the packet header. Don't attempt to get
+	  the block count directly from the verification packet (which
+	  might be missing). 
+
+	* Updated par2repairersourcefile.cpp: Add function to set the block
+	  count when the verification packet is missing.
+ 
+1 August 2003 Peter B Clements
+
+	* Updated par2cmdline.h: Included <iomanip>.
+
+31 July 2003 Peter B Clements
+
+	* Updated reedsolomon.h: Added debugging code.
+
+29 July 2003 Peter B Clements
+
+	* Updated galois.h: Use typename when refering to a typedef 
+	  in another class.
+
+	* Updated par1repairer.cpp: Cast size of fileentry in memcpy.
+
+	* Updated par2repairersourcefile.h: Add function to set the block
+	  count for a file when the verification packet is missing.
+
+25 July 2003 Peter B Clements
+
+	* Updated par2cmdline.h: Correct spelling of STDC_HEADERS.
+
 16 July 2003 Peter B Clements
 
 	* Release: Version 0.3.
