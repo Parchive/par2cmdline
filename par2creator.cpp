@@ -74,7 +74,7 @@ Result Par2Creator::Process(const CommandLine &commandline)
   recoveryfilecount = commandline.GetRecoveryFileCount();
   firstrecoveryblock = commandline.GetFirstRecoveryBlock();
   bool uniformfiles = commandline.GetUniformFiles();
-  string par2filename = commandline.GetPar2Filename();
+  string par2filename = commandline.GetParFilename();
   size_t memorylimit = commandline.GetMemoryLimit();
 
   // Compute block size from block count or vice versa depending on which was
