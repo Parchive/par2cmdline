@@ -1,3 +1,17 @@
+23 June 2004 Peter B Clements
+
+	* diskfile.cpp: Changed DiskFile::GetFileSize for WIN32
+	  so that it uses _stati64() to get the size of a file.
+
+	* par2creatorsourcefile.cpp: In UpdateHashes() the test
+	  that adjusts the length of the last block of a file when
+	  before updating the file hash was incorrect.
+
+17 June 2004 Peter B Clements
+
+	* par1repairer.cpp, par2repairer.cpp: Report empty files when
+	  scanning for data.
+
 22 April 2004 Peter B Clements
 
 	* README: Updated to include new commandline options.
