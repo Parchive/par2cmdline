@@ -60,7 +60,7 @@ CommandLine::CommandLine(void)
 , blockcount(0)
 , blocksize(0)
 , firstblock(0)
-, uniformfiles(false)
+, recoveryfilescheme(scUnknown)
 , recoveryfilecount(0)
 , recoveryblockcount(0)
 , recoveryblockcountset(false)
@@ -84,21 +84,19 @@ void CommandLine::usage(void)
     "  par2 v(erify) [options] <par2 file> [files] : Verify files using PAR2 file\n"
     "  par2 r(epair) [options] <par2 file> [files] : Repair files using PAR2 files\n"
     "\n"
-    "Also:\n"
-    "\n"
-    "  par2create [options] <par2 file> [files]\n"
-    "  par2verify [options] <par2 file> [files]\n"
-    "  par2repair [options] <par2 file> [files]\n"
+    "You may also leave out the \"c\", \"v\", and \"r\" commands by using \"parcreate\",\n"
+    "\"par2verify\", or \"par2repair\" instead.\n"
     "\n"
     "Options:\n"
     "\n"
     "  -b<n>  : Set the Block-Count\n"
-    "  -s<n>  : Set the Block-Size\n" // Don't use both -b and -s
+    "  -s<n>  : Set the Block-Size (Don't use both -b and -s)\n"
     "  -r<n>  : Level of Redundancy (%%)\n"
-    "  -c<n>  : Recovery block count\n" // Don't use both -r and -c
+    "  -c<n>  : Recovery block count (Don't use both -r and -c)\n"
     "  -f<n>  : First Recovery-Block-Number\n"
     "  -u     : Uniform recovery file sizes\n"
-    "  -n<n>  : Number of recovery files\n"
+    "  -l     : Limit size of recovery files (Don't use both -u and -l)\n"
+    "  -n<n>  : Number of recovery files (Don't use both -n and -l)\n"
     "  -m<n>  : Memory (in MB) to use\n"
     "  --     : Treat all remaining CommandLine as filenames\n"
     "\n"
@@ -369,8 +367,40 @@ bool CommandLine::Parse(int argc, char *argv[])
               cerr << "Invalid option: " << argv[0] << endl;
               return false;
             }
+            if (recoveryfilescheme != scUnknown)
+            {
+              cerr << "Cannot specify two recovery file size schemes." << endl;
+              return false;
+            }
 
-            uniformfiles = true;
+            recoveryfilescheme = scUniform;
+          }
+          break;
+
+        case 'l':  // Limit the size of the recovery files
+          {
+            if (operation != opCreate)
+            {
+              cerr << "Cannot specify limit files unless creating." << endl;
+              return false;
+            }
+            if (argv[0][2])
+            {
+              cerr << "Invalid option: " << argv[0] << endl;
+              return false;
+            }
+            if (recoveryfilescheme != scUnknown)
+            {
+              cerr << "Cannot specify two recovery file size schemes." << endl;
+              return false;
+            }
+            if (recoveryfilecount > 0)
+            {
+              cerr << "Cannot specify limited size and number of files at the same time." << endl;
+              return false;
+            }
+
+            recoveryfilescheme = scLimited;
           }
           break;
 
@@ -394,6 +424,11 @@ bool CommandLine::Parse(int argc, char *argv[])
             if (recoveryblockcountset && recoveryblockcount == 0)
             {
               cerr << "Cannot set file count when recovery block count is set to 0." << endl;
+              return false;
+            }
+            if (recoveryfilescheme == scLimited)
+            {
+              cerr << "Cannot specify limited size and number of files at the same time." << endl;
               return false;
             }
 
@@ -601,6 +636,12 @@ bool CommandLine::Parse(int argc, char *argv[])
   // If we a creating, check the other parameters
   if (operation == opCreate)
   {
+    // If no recovery file size scheme is specified then use Variable
+    if (recoveryfilescheme == scUnknown)
+    {
+      recoveryfilescheme = scVariable;
+    }
+
     // If neither block count not block size is specified
     if (blockcount == 0 && blocksize == 0)
     {

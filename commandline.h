@@ -51,6 +51,14 @@ public:
     verPar2          // Processing PAR 2.0 files
   } Version;
 
+  typedef enum
+  {
+    scUnknown = 0,
+    scVariable,      // Each PAR2 file will have 2x as many blocks as previous
+    scLimited,       // Limit PAR2 file size
+    scUniform        // All PAR2 files the same size
+  } Scheme;
+
   // Any extra files listed on the command line
   class ExtraFile
   {
@@ -80,7 +88,7 @@ public:
   u32                    GetFirstRecoveryBlock(void) const {return firstblock;}
   u32                    GetRecoveryFileCount(void) const  {return recoveryfilecount;}
   u32                    GetRecoveryBlockCount(void) const {return recoveryblockcount;}
-  bool                   GetUniformFiles(void) const       {return uniformfiles;}
+  CommandLine::Scheme    GetRecoveryFileScheme(void) const {return recoveryfilescheme;}
   size_t                 GetMemoryLimit(void) const        {return memorylimit;}
   u64                    GetLargestSourceSize(void) const  {return largestsourcesize;}
   u64                    GetTotalSourceSize(void) const    {return totalsourcesize;}
@@ -100,9 +108,8 @@ protected:
   u32 firstblock;              // What the exponent value for the first
                                // recovery block will be.
 
-  bool uniformfiles;           // Whether or not the recovery files should
-                               // have an even distribution of recovery
-                               // blocks, or an exponential one.
+  Scheme recoveryfilescheme;   // How the the size of the recovery files should
+                               // be calculated.
 
   u32 recoveryfilecount;       // How many recovery files should be created.
 
