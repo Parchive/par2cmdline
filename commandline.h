@@ -44,6 +44,13 @@ public:
     opRepair         // Verify and if possible repair damaged data files
   } Operation;
 
+  typedef enum
+  {
+    verUnknown = 0,
+    verPar1,         // Processing PAR 1.0 files
+    verPar2          // Processing PAR 2.0 files
+  } Version;
+
   // Any extra files listed on the command line
   class ExtraFile
   {
@@ -66,6 +73,7 @@ public:
   // Accessor functions for the command line parameters
 
   CommandLine::Operation GetOperation(void) const          {return operation;}
+  CommandLine::Version   GetVersion(void) const            {return version;}
   u64                    GetBlockSize(void) const          {return blocksize;}
   u32                    GetBlockCount(void) const         {return blockcount;}
   u32                    GetRedundancy(void) const         {return redundancy;}
@@ -74,11 +82,12 @@ public:
   bool                   GetUniformFiles(void) const       {return uniformfiles;}
   size_t                 GetMemoryLimit(void) const        {return memorylimit;}
 
-  string                              GetPar2Filename(void) const {return par2filename;}
-  const list<CommandLine::ExtraFile>& GetExtraFiles(void) const   {return extrafiles;}
+  string                              GetParFilename(void) const {return parfilename;}
+  const list<CommandLine::ExtraFile>& GetExtraFiles(void) const  {return extrafiles;}
 
 protected:
   Operation operation;         // The operation to be carried out.
+  Version version;             // What version files will be processed.
 
   u32 blockcount;              // How many blocks the source files should 
                                // be virtually split into.
@@ -97,7 +106,7 @@ protected:
   u32 redundancy;              // What percentage of recovery data should
                                // be created.
 
-  string par2filename;         // The name of the PAR2 file to create, or
+  string parfilename;          // The name of the PAR2 file to create, or
                                // the name of the first PAR2 file to read
                                // when verifying or repairing.
 

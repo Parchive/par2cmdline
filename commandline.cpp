@@ -56,13 +56,14 @@ CommandLine::ExtraFile::ExtraFile(const string &name, u64 size)
 
 CommandLine::CommandLine(void)
 : operation(opNone)
+, version(verUnknown)
 , blockcount(0)
 , blocksize(0)
 , firstblock(0)
 , uniformfiles(false)
 , recoveryfilecount(0)
 , redundancy(0)
-, par2filename()
+, parfilename()
 , extrafiles()
 , totalsourcesize(0)
 , largestsourcesize(0)
@@ -105,7 +106,6 @@ bool CommandLine::Parse(int argc, char *argv[])
 {
   if (argc<1)
   {
-    cerr << "Not enough command line arguments." << endl;
     return false;
   }
 
@@ -413,33 +413,82 @@ bool CommandLine::Parse(int argc, char *argv[])
 
           // If this is the first file on the command line, then it
           // is the main PAR2 file.
-          if (par2filename.length() == 0)
+          if (parfilename.length() == 0)
           {
             // If we are verifying or repairing, the PAR2 file must
             // already exist
             if (operation != opCreate)
             {
-              if (DiskFile::FileExists(filename + ".par2"))
+              // Find the last '.' in the filename
+              string::size_type where = filename.find_last_of('.');
+              if (where != string::npos)
               {
-                par2filename = filename + ".par2";
+                // Get what follows the last '.'
+                string tail = filename.substr(where+1);
+
+                if (0 == stricmp(tail.c_str(), "par2"))
+                {
+                  parfilename = filename;
+                  version = verPar2;
+                }
+                else if (0 == stricmp(tail.c_str(), "par") ||
+                         (tail.size() == 3 &&
+                         tolower(tail[0]) == 'p' &&
+                         isdigit(tail[1]) &&
+                         isdigit(tail[2])))
+                {
+                  parfilename = filename;
+                  version = verPar1;
+                }
               }
-              else if (DiskFile::FileExists(filename + ".PAR2"))
+
+              // If we haven't figured out which version of PAR file we
+              // are using from the file extension, then presumable the
+              // files filename was actually the name of a data file.
+              if (version == verUnknown)
               {
-                par2filename = filename + ".PAR2";
-              }
-              else if (DiskFile::FileExists(filename))
-              {
-                par2filename = filename;
+                // Check for the existence of a PAR2 of PAR file.
+                if (DiskFile::FileExists(filename + ".par2"))
+                {
+                  version = verPar2;
+                  parfilename = filename + ".par2";
+                }
+                else if (DiskFile::FileExists(filename + ".PAR2"))
+                {
+                  version = verPar2;
+                  parfilename = filename + ".PAR2";
+                }
+                else if (DiskFile::FileExists(filename + ".par"))
+                {
+                  version = verPar1;
+                  parfilename = filename + ".par";
+                }
+                else if (DiskFile::FileExists(filename + ".PAR"))
+                {
+                  version = verPar1;
+                  parfilename = filename + ".PAR";
+                }
               }
               else
               {
-                cerr << "The PAR2 file does not exist: " << filename << endl;
+                // Does the specified PAR or PAR2 file exist
+                if (!DiskFile::FileExists(filename))
+                {
+                  version = verUnknown;
+                }
+              }
+
+              if (version == verUnknown)
+              {
+                cerr << "The recovery file does not exist: " << filename << endl;
                 return false;
               }
             }
             else
             {
-              par2filename = filename;
+              // We are creating a new file
+              version = verPar2;
+              parfilename = filename;
             }
           }
           else
@@ -480,9 +529,9 @@ bool CommandLine::Parse(int argc, char *argv[])
     argv++;
   }
 
-  if (par2filename.length() == 0)
+  if (parfilename.length() == 0)
   {
-    cerr << "You must specify a PAR2 file." << endl;
+    cerr << "You must specify a Recovery file." << endl;
     return false;
   }
 
@@ -500,7 +549,7 @@ bool CommandLine::Parse(int argc, char *argv[])
     if (extrafiles.size() == 0)
     {
       // Does the par filename include the ".par2" on the end?
-      if (par2filename.length() > 5 && 0 == stricmp(par2filename.substr(par2filename.length()-5, 5).c_str(), ".par2"))
+      if (parfilename.length() > 5 && 0 == stricmp(parfilename.substr(parfilename.length()-5, 5).c_str(), ".par2"))
       {
         // Yes it does.
         cerr << "You must specify a list of files when creating." << endl;
@@ -513,11 +562,11 @@ bool CommandLine::Parse(int argc, char *argv[])
         // In that case check to see if the file exists, and if it does
         // assume that you wish to create par2 files for it.
 
-        u64 filesize;
-        if (DiskFile::FileExists(par2filename) &&
-            (filesize = DiskFile::GetFileSize(par2filename)) > 0)
+        u64 filesize = 0;
+	if (DiskFile::FileExists(parfilename) &&
+            (filesize = DiskFile::GetFileSize(parfilename)) > 0)
         {
-          extrafiles.push_back(ExtraFile(par2filename, filesize));
+          extrafiles.push_back(ExtraFile(parfilename, filesize));
 
           // track the total size of the source files and how
           // big the largest one is.
@@ -536,9 +585,9 @@ bool CommandLine::Parse(int argc, char *argv[])
     }
 
     // Strip the ".par2" from the end of the filename of the main PAR2 file.
-    if (par2filename.length() > 5 && 0 == stricmp(par2filename.substr(par2filename.length()-5, 5).c_str(), ".par2"))
+    if (parfilename.length() > 5 && 0 == stricmp(parfilename.substr(parfilename.length()-5, 5).c_str(), ".par2"))
     {
-      par2filename = par2filename.substr(0, par2filename.length()-5);
+      parfilename = parfilename.substr(0, parfilename.length()-5);
     }
 
     // Assume a redundancy of 5% if not specified.
