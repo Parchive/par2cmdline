@@ -20,6 +20,11 @@
 #ifndef __GALOIS_H__
 #define __GALOIS_H__
 
+template <const unsigned int bits, const unsigned int generator, typename valuetype> class GaloisTable;
+template <const unsigned int bits, const unsigned int generator, typename valuetype> class Galois;
+
+template <class g> class GaloisLongMultiplyTable;
+
 // This source file defines the Galois object for carrying out
 // arithmetic in GF(2^16) using the generator 0x1100B.
 
@@ -28,29 +33,31 @@
 // the GaloisLongMultiplyTable object (which contains tables for
 // carrying out multiplation of 16-bit galois numbers 8 bits at a time).
 
+template <const unsigned int bits, const unsigned int generator, typename valuetype>
 class GaloisTable
 {
 public:
-  typedef u16 ValueType;
+  typedef valuetype ValueType;
 
   GaloisTable(void);
 
   enum
   {
-    bits = 16,
-    count = 1<<bits,
-    limit = count-1,
-    generator = 0x1100B,
+    Bits = bits,
+    Count = 1<<Bits,
+    Limit = Count-1,
+    Generator = generator,
   };
 
-  ValueType log[count];
-  ValueType antilog[count];
+  ValueType log[Count];
+  ValueType antilog[Count];
 };
 
+template <const unsigned int bits, const unsigned int generator, typename valuetype>
 class Galois
 {
 public:
-  typedef u16 ValueType;
+  typedef valuetype ValueType;
 
   // Basic constructors
   Galois(void) {};
@@ -91,46 +98,77 @@ public:
 
   enum 
   {
-    bits  = GaloisTable::bits,
-    count = GaloisTable::count,
-    limit = GaloisTable::limit,
+    Bits  = GaloisTable<bits,generator,valuetype>::Bits,
+    Count = GaloisTable<bits,generator,valuetype>::Count,
+    Limit = GaloisTable<bits,generator,valuetype>::Limit,
   };
 
 protected:
   ValueType value;
 
-  static GaloisTable table;
+  static GaloisTable<bits,generator,valuetype> table;
 };
 
 #ifdef LONGMULTIPLY
+template <class g> 
 class GaloisLongMultiplyTable
 {
 public:
   GaloisLongMultiplyTable(void);
-  ~GaloisLongMultiplyTable(void);
+
+  typedef g G;
 
   enum
   {
-    bytes = ((Galois::bits + 7) >> 3),
-    count = ((bytes * (bytes+1)) / 2),
+    Bytes = ((G::Bits + 7) >> 3),
+    Count = ((Bytes * (Bytes+1)) / 2),
   };
 
-  Galois tables[count * 256 * 256];
+  G tables[Count * 256 * 256];
 };
 #endif
 
-inline Galois::Galois(Galois::ValueType v)
+// Construct the log and antilog tables from the generator
+
+template <const unsigned int bits, const unsigned int generator, typename valuetype>
+inline GaloisTable<bits,generator,valuetype>::GaloisTable(void)
+{
+  u32 b = 1;
+
+  for (u32 l=0; l<Limit; l++)
+  {
+    log[b]     = (ValueType)l;
+    antilog[l] = (ValueType)b;
+
+    b <<= 1;
+    if (b & Count) b ^= Generator;
+  }
+
+  log[0] = (ValueType)Count;
+  antilog[Count] = 0;
+}
+
+
+// The one and only galois log/antilog table object
+
+template <const unsigned int bits, const unsigned int generator, typename valuetype>
+GaloisTable<bits,generator,valuetype> Galois<bits,generator,valuetype>::table;
+
+
+template <const unsigned int bits, const unsigned int generator, typename valuetype>
+inline Galois<bits,generator,valuetype>::Galois(Galois<bits,generator,valuetype>::ValueType v)
 {
   value = v;
 }
 
-inline Galois Galois::operator * (const Galois &right) const
+template <const unsigned int bits, const unsigned int generator, typename valuetype>
+inline Galois<bits,generator,valuetype> Galois<bits,generator,valuetype>::operator * (const Galois<bits,generator,valuetype> &right) const
 { 
   if (value == 0 || right.value == 0) return 0;
   unsigned int sum = table.log[value] + table.log[right.value];
-  if (sum >= limit) 
+  if (sum >= Limit) 
   {
-    return table.antilog[sum-limit];
+    return table.antilog[sum-Limit];
   }
   else
   {
@@ -138,7 +176,8 @@ inline Galois Galois::operator * (const Galois &right) const
   }
 }
 
-inline Galois& Galois::operator *= (const Galois &right)
+template <const unsigned int bits, const unsigned int generator, typename valuetype>
+inline Galois<bits,generator,valuetype>& Galois<bits,generator,valuetype>::operator *= (const Galois<bits,generator,valuetype> &right)
 { 
   if (value == 0 || right.value == 0) 
   {
@@ -147,9 +186,9 @@ inline Galois& Galois::operator *= (const Galois &right)
   else
   {
     unsigned int sum = table.log[value] + table.log[right.value];
-    if (sum >= limit) 
+    if (sum >= Limit) 
     {
-      value = table.antilog[sum-limit];
+      value = table.antilog[sum-Limit];
     }
     else
     {
@@ -160,7 +199,8 @@ inline Galois& Galois::operator *= (const Galois &right)
   return *this;
 }
 
-inline Galois Galois::operator / (const Galois &right) const
+template <const unsigned int bits, const unsigned int generator, typename valuetype>
+inline Galois<bits,generator,valuetype> Galois<bits,generator,valuetype>::operator / (const Galois<bits,generator,valuetype> &right) const
 { 
   if (value == 0) return 0;
 
@@ -170,7 +210,7 @@ inline Galois Galois::operator / (const Galois &right) const
   int sum = table.log[value] - table.log[right.value];
   if (sum < 0) 
   {
-    return table.antilog[sum+limit];
+    return table.antilog[sum+Limit];
   }
   else
   {
@@ -178,7 +218,8 @@ inline Galois Galois::operator / (const Galois &right) const
   }
 }
 
-inline Galois& Galois::operator /= (const Galois &right)
+template <const unsigned int bits, const unsigned int generator, typename valuetype>
+inline Galois<bits,generator,valuetype>& Galois<bits,generator,valuetype>::operator /= (const Galois<bits,generator,valuetype> &right)
 { 
   if (value == 0) return *this;
 
@@ -188,7 +229,7 @@ inline Galois& Galois::operator /= (const Galois &right)
   int sum = table.log[value] - table.log[right.value];
   if (sum < 0) 
   {
-    value = table.antilog[sum+limit];
+    value = table.antilog[sum+Limit];
   }
   else
   {
@@ -198,16 +239,18 @@ inline Galois& Galois::operator /= (const Galois &right)
   return *this;
 }
 
-inline Galois Galois::pow(unsigned int right) const
+template <const unsigned int bits, const unsigned int generator, typename valuetype>
+inline Galois<bits,generator,valuetype> Galois<bits,generator,valuetype>::pow(unsigned int right) const
 {
+  if (right == 0) return 1;
   if (value == 0) return 0;
 
   unsigned int sum = table.log[value] * right;
 
-  sum = (sum >> bits) + (sum & limit);
-  if (sum >= limit) 
+  sum = (sum >> Bits) + (sum & Limit);
+  if (sum >= Limit) 
   {
-    return table.antilog[sum-limit];
+    return table.antilog[sum-Limit];
   }
   else
   {
@@ -215,16 +258,18 @@ inline Galois Galois::pow(unsigned int right) const
   }  
 }
 
-inline Galois Galois::operator ^ (unsigned int right) const
+template <const unsigned int bits, const unsigned int generator, typename valuetype>
+inline Galois<bits,generator,valuetype> Galois<bits,generator,valuetype>::operator ^ (unsigned int right) const
 {
+  if (right == 0) return 1;
   if (value == 0) return 0;
 
   unsigned int sum = table.log[value] * right;
 
-  sum = (sum >> bits) + (sum & limit);
-  if (sum >= limit) 
+  sum = (sum >> Bits) + (sum & Limit);
+  if (sum >= Limit) 
   {
-    return table.antilog[sum-limit];
+    return table.antilog[sum-Limit];
   }
   else
   {
@@ -232,16 +277,18 @@ inline Galois Galois::operator ^ (unsigned int right) const
   }  
 }
 
-inline Galois& Galois::operator ^= (unsigned int right)
+template <const unsigned int bits, const unsigned int generator, typename valuetype>
+inline Galois<bits,generator,valuetype>& Galois<bits,generator,valuetype>::operator ^= (unsigned int right)
 {
+  if (right == 1) {value = 1; return *this;}
   if (value == 0) return *this;
 
   unsigned int sum = table.log[value] * right;
 
-  sum = (sum >> bits) + (sum & limit);
-  if (sum >= limit) 
+  sum = (sum >> Bits) + (sum & Limit);
+  if (sum >= Limit) 
   {
-    value = table.antilog[sum-limit];
+    value = table.antilog[sum-Limit];
   }
   else
   {
@@ -251,14 +298,41 @@ inline Galois& Galois::operator ^= (unsigned int right)
   return *this;
 }
 
-inline Galois::ValueType Galois::Log(void) const
+template <const unsigned int bits, const unsigned int generator, typename valuetype>
+inline valuetype Galois<bits,generator,valuetype>::Log(void) const
 {
   return table.log[value];
 }
 
-inline Galois::ValueType Galois::ALog(void) const
+template <const unsigned int bits, const unsigned int generator, typename valuetype>
+inline valuetype Galois<bits,generator,valuetype>::ALog(void) const
 {
   return table.antilog[value];
 }
+
+#ifdef LONGMULTIPLY
+template <class g> 
+inline GaloisLongMultiplyTable<g>::GaloisLongMultiplyTable(void)
+{
+  G *table = tables;
+
+  for (unsigned int i=0; i<Bytes; i++)
+  {
+    for (unsigned int j=i; j<Bytes; j++)
+    {
+      for (unsigned int ii=0; ii<256; ii++)
+      {
+        for (unsigned int jj=0; jj<256; jj++)
+        {
+          *table++ = G(ii << (8*i)) * G(jj << (8*j));
+        }
+      }
+    }
+  }
+}
+#endif
+
+typedef Galois<8,0x11D,u8> Galois8;
+typedef Galois<16,0x1100B,u16> Galois16;
 
 #endif // __GALOIS_H__
