@@ -110,6 +110,7 @@ public:
     diskfile = other.diskfile;
     offset = other.offset;
     packet = other.packet;
+    return *this;
   }
 
 public:
