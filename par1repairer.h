@@ -112,6 +112,7 @@ protected:
   size_t                    outputbufferalignment;
   size_t                    outputbuffersize;
   u8                       *outputbuffer;            // Buffer for writing DataBlocks (chunksize * missingblockcount)
+  bool                      ignore16kfilehash;       // The 16k file hash values may be invalid
 };
 
 #endif // __PAR1REPAIRER_H__

@@ -27,6 +27,8 @@ static char THIS_FILE[]=__FILE__;
 #endif
 #endif
 
+static u32 smartpar11 = 0x03000101;
+
 Par1Repairer::Par1Repairer(void)
 {
   filelist = 0;
@@ -262,6 +264,8 @@ bool Par1Repairer::LoadRecoveryFile(string filename)
       // Is the version number correct?
       if (fileheader.fileversion != 0x00010000)
         break;
+
+      ignore16kfilehash = (fileheader.programversion == smartpar11);
 
       // Prepare to carry out MD5 Hash check of the Control Hash
       MD5Context context;
@@ -719,12 +723,15 @@ bool Par1Repairer::VerifyDataFile(DiskFile *diskfile, Par1RepairerSourceFile *so
     MD5Hash hash16k;
     context16k.Final(hash16k);
 
-    // Search for the first file that has the correct 16k hash
-    while (sourceiterator != sourcefiles.end() &&
-          (filesize != (*sourceiterator)->FileSize() ||
-            hash16k != (*sourceiterator)->Hash16k()))
+    if (!ignore16kfilehash)
     {
-      ++sourceiterator;
+      // Search for the first file that has the correct 16k hash
+      while (sourceiterator != sourcefiles.end() &&
+            (filesize != (*sourceiterator)->FileSize() ||
+              hash16k != (*sourceiterator)->Hash16k()))
+      {
+        ++sourceiterator;
+      }
     }
 
     // Are there any files with the correct 16k hash?
@@ -765,7 +772,7 @@ bool Par1Repairer::VerifyDataFile(DiskFile *diskfile, Par1RepairerSourceFile *so
       // Search for the first file that has the correct full hash
       while (sourceiterator != sourcefiles.end() &&
             (filesize != (*sourceiterator)->FileSize() ||
-              hash16k != (*sourceiterator)->Hash16k() ||
+              (!ignore16kfilehash && hash16k != (*sourceiterator)->Hash16k()) ||
               hashfull != (*sourceiterator)->HashFull()))
       {
         ++sourceiterator;
@@ -777,7 +784,7 @@ bool Par1Repairer::VerifyDataFile(DiskFile *diskfile, Par1RepairerSourceFile *so
         // If a source file was originally specified, check to see if it is a match
         if (sourcefile != 0 &&
             sourcefile->FileSize() == filesize &&
-            sourcefile->Hash16k() == hash16k &&
+            (ignore16kfilehash || sourcefile->Hash16k() == hash16k) &&
             sourcefile->HashFull() == hashfull)
         {
           match = sourcefile;
@@ -787,7 +794,7 @@ bool Par1Repairer::VerifyDataFile(DiskFile *diskfile, Par1RepairerSourceFile *so
           // Search for a file which matches and has not already been matched
           while (sourceiterator != sourcefiles.end() &&
                 (filesize != (*sourceiterator)->FileSize() ||
-                  hash16k != (*sourceiterator)->Hash16k() ||
+                  (!ignore16kfilehash && hash16k != (*sourceiterator)->Hash16k()) ||
                   hashfull != (*sourceiterator)->HashFull() ||
                   (*sourceiterator)->GetCompleteFile() != 0))
           {
