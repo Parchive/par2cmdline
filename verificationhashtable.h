@@ -416,7 +416,7 @@ inline const VerificationHashEntry* VerificationHashTable::FindMatch(const Verif
         nextentry = currententry;
       }
 
-      currententry = currententry->Next();
+      currententry = currententry->Same();
     }
 
     // If we found an unused entry for the source file we want, return it
@@ -430,7 +430,7 @@ inline const VerificationHashEntry* VerificationHashTable::FindMatch(const Verif
                       )
         )
   {
-    nextentry = nextentry->Next();
+    nextentry = nextentry->Same();
   }
 
   // Return what we have found
