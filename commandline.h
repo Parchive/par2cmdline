@@ -105,6 +105,7 @@ protected:
 
   u32 redundancy;              // What percentage of recovery data should
                                // be created.
+  bool redundancyset;          // Set if the redunancy has be specified
 
   string parfilename;          // The name of the PAR2 file to create, or
                                // the name of the first PAR2 file to read

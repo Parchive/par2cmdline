@@ -125,45 +125,50 @@ Result Par2Creator::Process(const CommandLine &commandline)
   if (!InitialiseOutputFiles(uniformfiles, par2filename))
     return eFileIOError;
 
-  // Allocate memory buffers for reading and writing data to disk.
-  if (!AllocateBuffers())
-    return eMemoryError;
-
-  // Compute the Reed Solomon matrix
-  if (!ComputeRSMatrix())
-    return eLogicError;
-
-  // Set the total amount of data to be processed.
-  progress = 0;
-  totaldata = blocksize * sourceblockcount * recoveryblockcount;
-
-  // Start at an offset of 0 within a block.
-  u64 blockoffset = 0;
-  while (blockoffset < blocksize) // Continue until the end of the block.
+  if (recoveryblockcount > 0)
   {
-    // Work out how much data to process this time.
-    size_t blocklength = (size_t)min((u64)chunksize, blocksize-blockoffset);
+    // Allocate memory buffers for reading and writing data to disk.
+    if (!AllocateBuffers())
+      return eMemoryError;
 
-    // Read source data, process it through the RS matrix and write it to disk.
-    if (!ProcessData(blockoffset, blocklength))
+    // Compute the Reed Solomon matrix
+    if (!ComputeRSMatrix())
+      return eLogicError;
+
+    // Set the total amount of data to be processed.
+    progress = 0;
+    totaldata = blocksize * sourceblockcount * recoveryblockcount;
+
+    // Start at an offset of 0 within a block.
+    u64 blockoffset = 0;
+    while (blockoffset < blocksize) // Continue until the end of the block.
+    {
+      // Work out how much data to process this time.
+      size_t blocklength = (size_t)min((u64)chunksize, blocksize-blockoffset);
+
+      // Read source data, process it through the RS matrix and write it to disk.
+      if (!ProcessData(blockoffset, blocklength))
+        return eFileIOError;
+
+      blockoffset += blocklength;
+    }
+
+    cout << "Writing recovery packets" << endl;
+
+    // Finish computation of the recovery packets and write the headers to disk.
+    if (!WriteRecoveryPacketHeaders())
       return eFileIOError;
 
-    blockoffset += blocklength;
+    // Finish computing the full file hash values of the source files
+    if (!FinishFileHashComputation())
+      return eLogicError;
   }
-
-  cout << "Writing packets" << endl;
-
-  // Finish computation of the recovery packets and write the headers to disk.
-  if (!WriteRecoveryPacketHeaders())
-    return eFileIOError;
-
-  // Finish computing the full file hash values of the source files
-  if (!FinishFileHashComputation())
-    return eLogicError;
 
   // Fill in all remaining details in the critical packets.
   if (!FinishCriticalPackets())
     return eLogicError;
+
+  cout << "Writing verification packets" << endl;
 
   // Write all other critical packets to disk.
   if (!WriteCriticalPackets())
@@ -347,7 +352,7 @@ bool Par2Creator::ComputeRecoveryBlockCount(u32 redundancy)
   recoveryblockcount = (sourceblockcount * redundancy + 50) / 100;
 
   // Force valid values if necessary
-  if (recoveryblockcount == 0)
+  if (recoveryblockcount == 0 && redundancy > 0)
     recoveryblockcount = 1;
 
   if (recoveryblockcount > 65536)
@@ -369,19 +374,27 @@ bool Par2Creator::ComputeRecoveryBlockCount(u32 redundancy)
 // Determine how much recovery data can be computed on one pass
 bool Par2Creator::CalculateProcessBlockSize(size_t memorylimit)
 {
-  // Would single pass processing use too much memory
-  if (blocksize * recoveryblockcount > memorylimit)
+  // Are we computing any recovery blocks
+  if (recoveryblockcount == 0)
   {
-    // Pick a size that is small enough
-    chunksize = ~3 & (memorylimit / recoveryblockcount);
-
     deferhashcomputation = false;
   }
   else
   {
-    chunksize = (size_t)blocksize;
+    // Would single pass processing use too much memory
+    if (blocksize * recoveryblockcount > memorylimit)
+    {
+      // Pick a size that is small enough
+      chunksize = ~3 & (memorylimit / recoveryblockcount);
 
-    deferhashcomputation = true;
+      deferhashcomputation = false;
+    }
+    else
+    {
+      chunksize = (size_t)blocksize;
+
+      deferhashcomputation = true;
+    }
   }
 
   return true;
@@ -390,6 +403,13 @@ bool Par2Creator::CalculateProcessBlockSize(size_t memorylimit)
 // Determine how many recovery files to create.
 bool Par2Creator::ComputeRecoveryFileCount(void)
 {
+  // Are we computing any recovery blocks
+  if (recoveryblockcount == 0)
+  {
+    recoveryfilecount = 0;
+    return true;
+  }
+ 
   // Determine recoveryfilecount if not specified
   if (recoveryfilecount == 0)
   {
@@ -519,8 +539,9 @@ bool Par2Creator::InitialiseOutputFiles(bool uniformfiles, string par2filename)
   fileallocations.resize(recoveryfilecount+1); // One extra file with no recovery blocks
   {
     // Decide how many recovery blocks to place in each file
+    u32 exponent = firstrecoveryblock;
+    if (recoveryfilecount > 0)
     {
-      u32 exponent = firstrecoveryblock;
       if (uniformfiles)
       {
         // Files will have roughly the same number of recovery blocks each.
@@ -560,11 +581,11 @@ bool Par2Creator::InitialiseOutputFiles(bool uniformfiles, string par2filename)
           lowblockcount <<= 1;
         }
       }
-
-      // There will be an extra file with no recovery blocks.
-      fileallocations[recoveryfilecount].exponent = exponent;
-      fileallocations[recoveryfilecount].count = 0;
     }
+     
+     // There will be an extra file with no recovery blocks.
+    fileallocations[recoveryfilecount].exponent = exponent;
+    fileallocations[recoveryfilecount].count = 0;
 
     // Determine the format to use for filenames of recovery files
     char filenameformat[300];

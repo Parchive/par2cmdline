@@ -63,6 +63,7 @@ CommandLine::CommandLine(void)
 , uniformfiles(false)
 , recoveryfilecount(0)
 , redundancy(0)
+, redundancyset(false)
 , parfilename()
 , extrafiles()
 , totalsourcesize(0)
@@ -257,7 +258,7 @@ bool CommandLine::Parse(int argc, char *argv[])
               cerr << "Cannot specify redundancy unless creating." << endl;
               return false;
             }
-            if (redundancy > 0)
+            if (redundancyset)
             {
               cerr << "Cannot specify redundancy twice." << endl;
               return false;
@@ -269,11 +270,17 @@ bool CommandLine::Parse(int argc, char *argv[])
               redundancy = redundancy * 10 + (*p - '0');
               p++;
             }
-            if (redundancy == 0 || redundancy > 100 || *p)
+            if (redundancy > 100 || *p)
             {
               cerr << "Invalid redundancy option: " << argv[0] << endl;
               return false;
             }
+            if (redundancy == 0 && recoveryfilecount > 0)
+            {
+              cerr << "Cannot set redundancy to 0 and file count > 0" << endl;
+              return false;
+            }
+            redundancyset = true;
           }
           break;
 
@@ -331,6 +338,11 @@ bool CommandLine::Parse(int argc, char *argv[])
             if (recoveryfilecount > 0)
             {
               cerr << "Cannot specify recovery file count twice." << endl;
+              return false;
+            }
+            if (redundancyset && redundancy == 0)
+            {
+              cerr << "Cannot set file count when redundancy is set to 0." << endl;
               return false;
             }
 
@@ -591,7 +603,7 @@ bool CommandLine::Parse(int argc, char *argv[])
     }
 
     // Assume a redundancy of 5% if not specified.
-    if (redundancy == 0)
+    if (!redundancyset)
     {
       redundancy = 5;
     }
