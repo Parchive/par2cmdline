@@ -835,7 +835,7 @@ bool Par2Creator::ProcessData(u64 blockoffset, size_t blocklength)
       return false;
   }
 
-  cout << "Wrote " << recoveryblockcount * chunksize << " bytes to disk" << endl;
+  cout << "Wrote " << recoveryblockcount * blocklength << " bytes to disk" << endl;
 
   return true;
 }
