@@ -55,6 +55,9 @@ public:
                  vector<DataBlock>::iterator _targetblocks,
                  u64 blocksize);
 
+  // Determine the block count from the file size and block size.
+  void SetBlockCount(u64 blocksize);
+
   // Set/Get which DiskFile will contain the final repaired version of the file
   void SetTargetFile(DiskFile *diskfile);
   DiskFile* GetTargetFile(void) const;

@@ -141,3 +141,16 @@ void Par2RepairerSourceFile::SetBlocks(u32 _blocknumber,
     }
   }
 }
+
+// Determine the block count from the file size and block size.
+void Par2RepairerSourceFile::SetBlockCount(u64 blocksize)
+{
+  if (descriptionpacket)
+  {
+    blockcount = (u32)((descriptionpacket->FileSize() + blocksize-1) / blocksize);
+  }
+  else
+  {
+    blockcount = 0;
+  }
+}
