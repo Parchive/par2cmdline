@@ -71,6 +71,7 @@ Result Par2Creator::Process(const CommandLine &commandline)
   const list<CommandLine::ExtraFile> extrafiles = commandline.GetExtraFiles();
   sourcefilecount = (u32)extrafiles.size();
   u32 redundancy = commandline.GetRedundancy();
+  recoveryblockcount = commandline.GetRecoveryBlockCount();
   recoveryfilecount = commandline.GetRecoveryFileCount();
   firstrecoveryblock = commandline.GetFirstRecoveryBlock();
   bool uniformfiles = commandline.GetUniformFiles();
@@ -84,7 +85,7 @@ Result Par2Creator::Process(const CommandLine &commandline)
 
   // Determine how many recovery blocks to create based on the source block
   // count and the requested level of redundancy.
-  if (!ComputeRecoveryBlockCount(redundancy))
+  if (redundancy > 0 && !ComputeRecoveryBlockCount(redundancy))
     return eInvalidCommandLineArguments;
 
   // Determine how much recovery data can be computed on one pass
@@ -99,7 +100,8 @@ Result Par2Creator::Process(const CommandLine &commandline)
   cout << "Block size: " << blocksize << endl;
   cout << "Source file count: " << sourcefilecount << endl;
   cout << "Source block count: " << sourceblockcount << endl;
-  cout << "Redundancy: " << redundancy << '%' << endl;
+  if (redundancy>0 || recoveryblockcount==0)
+    cout << "Redundancy: " << redundancy << '%' << endl;
   cout << "Recovery block count: " << recoveryblockcount << endl;
   cout << "Recovery file count: " << recoveryfilecount << endl;
   cout << endl;
