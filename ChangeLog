@@ -1,3 +1,37 @@
+12 April 2004 Peter B Clements
+
+	* config.h.in, configure, configure.ac: Detect what defines are
+	  required to enable 64 bit file system support and whether or
+	  not fseeko() is available.
+
+	* diskfile.cpp: Use fseeko and 64 bit file operations if they
+	  are available.
+
+	* par2cmdline.h: Change order of include files.
+
+	* par2repairer.cpp: When verifying files with long filenames,
+	  display a shorter version of the filename.
+
+	* datablock.h: Change DataBlock::GetDiskFile so that in returns
+	  a non const DiskFile.
+
+	* par2repairer.cpp, par2creator.cpp: Only keep source files open
+	  when they are actually needed. This should allow par2 creation
+	  and repair to work with large file sets on OS's with a limit
+	  on the number of files that can be open simultaneously.
+
+	* Makefile.in, aclocal.m4, config.guess, config.sub, configure, 
+	  depcomp, install-sh, missing, mkinstalldirs: Updated Automake to 
+	  version 1.8.3 and Autoconf to version 2.59.
+
+	* configure.ac, config.h.in, configure: Check for getopt() and 
+	  getopt_long().
+
+19 August 2003 Peter B Clements
+
+	* Updated par2creator.cpp: When creating par2 files the wrong
+	  number of bytes would be reported as written to disk.
+
 13 August 2003 Peter B Clements
 
 	* Updated par2cmdline.h: Recorrected spelling of STDC_HEADERS!
