@@ -326,9 +326,7 @@ inline bool ReedSolomon<g>::Compute(void)
     // Perform Gaussian Elimination and then delete the right matrix (which 
     // will no longer be required).
     bool success = GaussElim(outcount, incount, leftmatrix, rightmatrix, datamissing);
-cout << "GaussElim done" << endl;  
     delete [] rightmatrix;
-cout << "Exiting RS::Compute" << endl;    
     return success;
   }
 
@@ -339,6 +337,29 @@ cout << "Exiting RS::Compute" << endl;
 template<class g>
 inline bool ReedSolomon<g>::GaussElim(unsigned int rows, unsigned int leftcols, G *leftmatrix, G *rightmatrix, unsigned int datamissing)
 {
+#ifdef DUMPRSMATRIX
+  for (unsigned int row=0; row<rows; row++)
+  {
+    cout << ((row==0) ? "/"    : (row==rows-1) ? "\\"    : "|");
+    for (unsigned int col=0; col<leftcols; col++)
+    {
+      cout << " "
+           << hex << setw(G::Bits>8?4:2) << setfill('0')
+           << (unsigned int)leftmatrix[row*leftcols+col];
+    }
+    cout << ((row==0) ? " \\ /" : (row==rows-1) ? " / \\" : " | |");
+    for (unsigned int col=0; col<rows; col++)
+    {
+      cout << " "
+           << hex << setw(G::Bits>8?4:2) << setfill('0')
+           << (unsigned int)rightmatrix[row*rows+col];
+    }
+    cout << ((row==0) ? " \\"   : (row==rows-1) ? " /"    : " | |");
+    cout << endl;
+
+    cout << dec << setw(0) << setfill(' ');
+  }
+#endif
   // Because the matrices being operated on are Vandermonde matrices
   // they are guaranteed not to be singular.
 
@@ -442,7 +463,29 @@ inline bool ReedSolomon<g>::GaussElim(unsigned int rows, unsigned int leftcols, 
     }
   }
   cout << "Solving: done." << endl;
+#ifdef DUMPRSMATRIX
+  for (unsigned int row=0; row<rows; row++)
+  {
+    cout << ((row==0) ? "/"    : (row==rows-1) ? "\\"    : "|");
+    for (unsigned int col=0; col<leftcols; col++)
+    {
+      cout << " "
+           << hex << setw(G::Bits>8?4:2) << setfill('0')
+           << (unsigned int)leftmatrix[row*leftcols+col];
+    }
+    cout << ((row==0) ? " \\ /" : (row==rows-1) ? " / \\" : " | |");
+    for (unsigned int col=0; col<rows; col++)
+    {
+      cout << " "
+           << hex << setw(G::Bits>8?4:2) << setfill('0')
+           << (unsigned int)rightmatrix[row*rows+col];
+    }
+    cout << ((row==0) ? " \\"   : (row==rows-1) ? " /"    : " | |");
+    cout << endl;
 
+    cout << dec << setw(0) << setfill(' ');
+  }
+#endif
   return true;
 }
 
