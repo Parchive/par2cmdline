@@ -106,7 +106,7 @@ typedef unsigned int     size_t;
 #  endif
 #endif
 
-#if STC_HEADERS
+#if STDC_HEADERS
 #  include <string.h>
 #else
 #  if !HAVE_STRCHR
