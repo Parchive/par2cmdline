@@ -19,7 +19,7 @@ dnl  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 dnl                                               -*- Autoconf -*-
 dnl Process this file with autoconf to produce a configure script.
 
-AC_PREREQ(2.57)
+AC_PREREQ(2.58a)
 AC_INIT([par2cmdline], [0.4], [peterbclements@users.sourceforge.net])
 AC_CONFIG_SRCDIR([par2cmdline.cpp])
 
@@ -40,6 +40,7 @@ AC_HEADER_DIRENT
 AC_HEADER_STDBOOL
 AC_HEADER_STDC
 AC_CHECK_HEADERS([stdio.h] [endian.h])
+AC_CHECK_HEADERS([getopt.h])
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 AC_TYPE_SIZE_T
@@ -51,8 +52,10 @@ AC_FUNC_FSEEKO
 
 dnl Checks for library functions.
 AC_FUNC_MEMCMP
-AC_CHECK_FUNCS(stricmp strcasecmp)
-AC_CHECK_FUNCS(strchr memcpy)
+AC_CHECK_FUNCS([stricmp] [strcasecmp])
+AC_CHECK_FUNCS([strchr] [memcpy])
+
+AC_CHECK_FUNCS([getopt] [getopt_long])
 
 AC_CONFIG_FILES([stamp-h], [echo timestamp > stamp-h])
 AC_CONFIG_FILES([Makefile])
