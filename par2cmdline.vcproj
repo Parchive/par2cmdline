@@ -1,13 +1,9 @@
-<?xml version="1.0" encoding = "Windows-1252"?>
+<?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="7.00"
+	Version="7.10"
 	Name="par2cmdline"
 	ProjectGUID="{D0A94F83-495E-4FB2-AC33-9A3EC2CC263B}"
-	SccProjectName="&quot;$/par2cmdline&quot;, CYIAAAAA"
-	SccAuxPath=""
-	SccLocalPath="."
-	SccProvider="MSSCCI:Microsoft Visual SourceSafe"
 	Keyword="Win32Proj">
 	<Platforms>
 		<Platform
@@ -55,7 +51,13 @@
 			<Tool
 				Name="VCWebServiceProxyGeneratorTool"/>
 			<Tool
+				Name="VCXMLDataGeneratorTool"/>
+			<Tool
 				Name="VCWebDeploymentTool"/>
+			<Tool
+				Name="VCManagedWrapperGeneratorTool"/>
+			<Tool
+				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
@@ -103,9 +105,17 @@
 			<Tool
 				Name="VCWebServiceProxyGeneratorTool"/>
 			<Tool
+				Name="VCXMLDataGeneratorTool"/>
+			<Tool
 				Name="VCWebDeploymentTool"/>
+			<Tool
+				Name="VCManagedWrapperGeneratorTool"/>
+			<Tool
+				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
 		</Configuration>
 	</Configurations>
+	<References>
+	</References>
 	<Files>
 		<Filter
 			Name="Source Files"
@@ -267,16 +277,40 @@
 			Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe">
 		</Filter>
 		<File
-			RelativePath="AUTHORS">
+			RelativePath="aclocal.m4">
 		</File>
 		<File
-			RelativePath="COPYING">
+			RelativePath="AUTHORS">
 		</File>
 		<File
 			RelativePath="ChangeLog">
 		</File>
 		<File
+			RelativePath=".\config.guess">
+		</File>
+		<File
+			RelativePath="config.h.in">
+		</File>
+		<File
+			RelativePath=".\config.sub">
+		</File>
+		<File
+			RelativePath="configure">
+		</File>
+		<File
+			RelativePath="configure.ac">
+		</File>
+		<File
+			RelativePath="COPYING">
+		</File>
+		<File
+			RelativePath="depcomp">
+		</File>
+		<File
 			RelativePath="INSTALL">
+		</File>
+		<File
+			RelativePath="install-sh">
 		</File>
 		<File
 			RelativePath="Makefile">
@@ -288,10 +322,22 @@
 			RelativePath="Makefile.in">
 		</File>
 		<File
+			RelativePath="missing">
+		</File>
+		<File
+			RelativePath="mkinstalldirs">
+		</File>
+		<File
 			RelativePath="NEWS">
 		</File>
 		<File
 			RelativePath="PORTING">
+		</File>
+		<File
+			RelativePath="posttest">
+		</File>
+		<File
+			RelativePath="pretest">
 		</File>
 		<File
 			RelativePath="README">
@@ -300,34 +346,7 @@
 			RelativePath="ROADMAP">
 		</File>
 		<File
-			RelativePath="aclocal.m4">
-		</File>
-		<File
-			RelativePath="config.h.in">
-		</File>
-		<File
-			RelativePath="configure">
-		</File>
-		<File
-			RelativePath="configure.ac">
-		</File>
-		<File
-			RelativePath="depcomp">
-		</File>
-		<File
-			RelativePath="install-sh">
-		</File>
-		<File
-			RelativePath="missing">
-		</File>
-		<File
-			RelativePath="mkinstalldirs">
-		</File>
-		<File
-			RelativePath="posttest">
-		</File>
-		<File
-			RelativePath="pretest">
+			RelativePath=".\stamp-h.in">
 		</File>
 		<File
 			RelativePath="test1">

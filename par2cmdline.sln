@@ -1,23 +1,12 @@
-Microsoft Visual Studio Solution File, Format Version 7.00
+Microsoft Visual Studio Solution File, Format Version 8.00
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "par2cmdline", "par2cmdline.vcproj", "{D0A94F83-495E-4FB2-AC33-9A3EC2CC263B}"
+	ProjectSection(ProjectDependencies) = postProject
+	EndProjectSection
 EndProject
 Global
-	GlobalSection(SourceCodeControl) = preSolution
-		SccNumberOfProjects = 2
-		SccProjectName0 = \u0022$/par2cmdline\u0022,\u0020CYIAAAAA
-		SccLocalPath0 = .
-		SccProvider0 = MSSCCI:Microsoft\u0020Visual\u0020SourceSafe
-		CanCheckoutShared = true
-		SolutionUniqueID = {63EF77C3-D0BA-4001-9480-89E948330635}
-		SccProjectUniqueName1 = par2cmdline.vcproj
-		SccLocalPath1 = .
-		CanCheckoutShared = true
-	EndGlobalSection
 	GlobalSection(SolutionConfiguration) = preSolution
-		ConfigName.0 = Debug
-		ConfigName.1 = Release
-	EndGlobalSection
-	GlobalSection(ProjectDependencies) = postSolution
+		Debug = Debug
+		Release = Release
 	EndGlobalSection
 	GlobalSection(ProjectConfiguration) = postSolution
 		{D0A94F83-495E-4FB2-AC33-9A3EC2CC263B}.Debug.ActiveCfg = Debug|Win32
