@@ -347,8 +347,20 @@ list<string>* DiskFile::FindFiles(string path, string wildcard)
 #else // !WIN32
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#define OffsetType long
-#define MaxOffset 0x7fffffffL
+#ifdef HAVE_FSEEKO
+# define OffsetType off_t
+# define MaxOffset ((off_t)0x7fffffffffffffffULL)
+# define fseek fseeko
+#else
+# if _FILE_OFFSET_BITS == 64
+#  define OffsetType unsigned long long
+#  define MaxOffset 0x7fffffffffffffffULL
+# else
+#  define OffsetType long
+#  define MaxOffset 0x7fffffffUL
+# endif
+#endif
+
 #define LengthType unsigned int
 #define MaxLength 0xffffffffUL
 
@@ -386,7 +398,7 @@ bool DiskFile::Create(string _filename, u64 _filesize)
     return false;
   }
 
-  if (_filesize > MaxOffset)
+  if (_filesize > (u64)MaxOffset)
   {
     cerr << "Requested file size for " << _filename << " is too large." << endl;
     return false;
@@ -429,7 +441,7 @@ bool DiskFile::Write(u64 _offset, const void *buffer, size_t length)
 
   if (offset != _offset)
   {
-    if (_offset > MaxOffset)
+    if (_offset > (u64)MaxOffset)
     {
       cerr << "Could not write " << (u64)length << " bytes to " << filename << " at offset " << _offset << endl;
       return false;
@@ -475,7 +487,7 @@ bool DiskFile::Open(string _filename, u64 _filesize)
   filename = _filename;
   filesize = _filesize;
 
-  if (_filesize > MaxOffset)
+  if (_filesize > (u64)MaxOffset)
   {
     cerr << "File size for " << _filename << " is too large." << endl;
     return false;
@@ -501,7 +513,7 @@ bool DiskFile::Read(u64 _offset, void *buffer, size_t length)
 
   if (offset != _offset)
   {
-    if (_offset > MaxOffset)
+    if (_offset > (u64)MaxOffset)
     {
       cerr << "Could not read " << (u64)length << " bytes from " << filename << " at offset " << _offset << endl;
       return false;
