@@ -144,8 +144,8 @@ inline GaloisTable<bits,generator,valuetype>::GaloisTable(void)
     if (b & Count) b ^= Generator;
   }
 
-  log[0] = (ValueType)Count;
-  antilog[Count] = 0;
+  log[0] = (ValueType)Limit;
+  antilog[Limit] = 0;
 }
 
 
