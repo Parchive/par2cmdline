@@ -57,6 +57,7 @@ CommandLine::ExtraFile::ExtraFile(const string &name, u64 size)
 CommandLine::CommandLine(void)
 : operation(opNone)
 , version(verUnknown)
+, noiselevel(nlUnknown)
 , blockcount(0)
 , blocksize(0)
 , firstblock(0)
@@ -98,6 +99,8 @@ void CommandLine::usage(void)
     "  -l     : Limit size of recovery files (Don't use both -u and -l)\n"
     "  -n<n>  : Number of recovery files (Don't use both -n and -l)\n"
     "  -m<n>  : Memory (in MB) to use\n"
+    "  -v [-v]: Be more verbose\n"
+    "  -q [-q]: Be more quiet (-q -q gives silence)\n"
     "  --     : Treat all remaining CommandLine as filenames\n"
     "\n"
     "If you wish to create par2 files for a single source file, you may leave\n"
@@ -468,6 +471,54 @@ bool CommandLine::Parse(int argc, char *argv[])
           }
           break;
 
+        case 'v':
+          {
+            switch (noiselevel)
+            {
+            case nlUnknown:
+              {
+                if (argv[0][2] == 'v')
+                  noiselevel = nlDebug;
+                else
+                  noiselevel = nlNoisy;
+              }
+              break;
+            case nlNoisy:
+            case nlDebug:
+              noiselevel = nlDebug;
+              break;
+            default:
+              cerr << "Cannot use both -v and -q." << endl;
+              return false;
+              break;
+            }
+          }
+          break;
+
+        case 'q':
+          {
+            switch (noiselevel)
+            {
+            case nlUnknown:
+              {
+                if (argv[0][2] == 'q')
+                  noiselevel = nlSilent;
+                else
+                  noiselevel = nlQuiet;
+              }
+              break;
+            case nlQuiet:
+            case nlSilent:
+              noiselevel = nlSilent;
+              break;
+            default:
+              cerr << "Cannot use both -v and -q." << endl;
+              return false;
+              break;
+            }
+          }
+          break;
+
         case '-':
           {
             argc--;
@@ -631,6 +682,12 @@ bool CommandLine::Parse(int argc, char *argv[])
   {
     cerr << "You must specify a Recovery file." << endl;
     return false;
+  }
+
+  // Default noise level
+  if (noiselevel == nlUnknown)
+  {
+    noiselevel = nlNormal;
   }
 
   // If we a creating, check the other parameters

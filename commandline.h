@@ -59,6 +59,16 @@ public:
     scUniform        // All PAR2 files the same size
   } Scheme;
 
+  typedef enum
+  {
+    nlUnknown = 0,
+    nlSilent,       // Absolutely no output (other than errors)
+    nlQuiet,        // Bare minimum of output
+    nlNormal,       // Normal level of output
+    nlNoisy,        // Lots of output
+    nlDebug         // Extra debugging information
+  } NoiseLevel;
+
   // Any extra files listed on the command line
   class ExtraFile
   {
@@ -92,6 +102,7 @@ public:
   size_t                 GetMemoryLimit(void) const        {return memorylimit;}
   u64                    GetLargestSourceSize(void) const  {return largestsourcesize;}
   u64                    GetTotalSourceSize(void) const    {return totalsourcesize;}
+  CommandLine::NoiseLevel GetNoiseLevel(void) const        {return noiselevel;}
 
   string                              GetParFilename(void) const {return parfilename;}
   const list<CommandLine::ExtraFile>& GetExtraFiles(void) const  {return extrafiles;}
@@ -99,6 +110,8 @@ public:
 protected:
   Operation operation;         // The operation to be carried out.
   Version version;             // What version files will be processed.
+
+  NoiseLevel noiselevel;       // How much display output should there be.
 
   u32 blockcount;              // How many blocks the source files should 
                                // be virtually split into.
