@@ -77,8 +77,7 @@ enum FILEENTRYSTATUS
 
 inline bool operator == (const PAR1MAGIC &left, const PAR1MAGIC &right)
 {
-  return ((u32*)&left)[0] == ((u32*)&right)[0] &&
-         ((u32*)&left)[1] == ((u32*)&right)[1];
+  return (0==memcmp(&left, &right, sizeof(left)));
 }
 
 inline bool operator != (const PAR1MAGIC &left, const PAR1MAGIC &right)
