@@ -38,9 +38,12 @@ public:
   u16 exponent;
 };
 
+template<class g>
 class ReedSolomon
 {
 public:
+  typedef g G;
+
   ReedSolomon(void);
   ~ReedSolomon(void);
 
@@ -66,8 +69,8 @@ protected:
   // Perform Gaussian Elimination
   bool GaussElim(unsigned int rows, 
                  unsigned int leftcols, 
-                 Galois *leftmatrix, 
-                 Galois *rightmatrix, 
+                 G *leftmatrix, 
+                 G *rightmatrix, 
                  unsigned int datamissing);
 
 protected:
@@ -78,7 +81,7 @@ protected:
   u32 *datapresentindex; // The index numbers of the data blocks that are present
   u32 *datamissingindex; // The index numbers of the data blocks that are missing
 
-  u16 *database;         // The "base" value to use for each input block
+  typename G::ValueType *database;// The "base" value to use for each input block
 
   u32 outputcount;       // Total number of output blocks
 
@@ -89,16 +92,359 @@ protected:
 
   vector<RSOutputRow> outputrows; // Details of the output blocks
 
-  Galois *leftmatrix;    // The main matrix
+  G *leftmatrix;    // The main matrix
 
   // When the matrices are initialised: values of the form base ^ exponent are
   // stored (where the base values are obtained from database[] and the exponent
   // values are obtained from outputrows[]).
 
 #ifdef LONGMULTIPLY
-  GaloisLongMultiplyTable *glmt;  // A multiplication table used by Process()
+  GaloisLongMultiplyTable<g> *glmt;  // A multiplication table used by Process()
 #endif
 };
+
+template<class g>
+inline ReedSolomon<g>::ReedSolomon(void)
+{
+  inputcount = 0;
+
+  datapresent = 0;
+  datamissing = 0;
+  datapresentindex = 0;
+  datamissingindex = 0;
+  database = 0;
+
+  outputrows.empty();
+
+  outputcount = 0;
+
+  parpresent = 0;
+  parmissing = 0;
+  parpresentindex = 0;
+  parmissingindex = 0;
+
+  leftmatrix = 0;
+
+#ifdef LONGMULTIPLY
+  glmt = new GaloisLongMultiplyTable<g>;
+#endif
+}
+
+template<class g>
+inline ReedSolomon<g>::~ReedSolomon(void)
+{
+  delete [] datapresentindex;
+  delete [] datamissingindex;
+  delete [] database;
+  delete [] parpresentindex;
+  delete [] parmissingindex;
+  delete [] leftmatrix;
+
+#ifdef LONGMULTIPLY
+  delete glmt;
+#endif
+}
+
+u32 gcd(u32 a, u32 b);
+
+// Record whether the recovery block with the specified
+// exponent values is present or missing.
+template<class g>
+inline bool ReedSolomon<g>::SetOutput(bool present, u16 exponent)
+{
+  // Store the exponent and whether or not the recovery block is present or missing
+  outputrows.push_back(RSOutputRow(present, exponent));
+
+  outputcount++;
+
+  // Update the counts.
+  if (present)
+  {
+    parpresent++;
+  }
+  else
+  {
+    parmissing++;
+  }
+
+  return true;
+}
+
+// Record whether the recovery blocks with the specified
+// range of exponent values are present or missing.
+template<class g>
+inline bool ReedSolomon<g>::SetOutput(bool present, u16 lowexponent, u16 highexponent)
+{
+  for (unsigned int exponent=lowexponent; exponent<=highexponent; exponent++)
+  {
+    if (!SetOutput(present, exponent))
+      return false;
+  }
+
+  return true;
+}
+
+// Construct the Vandermonde matrix and solve it if necessary
+template<class g>
+inline bool ReedSolomon<g>::Compute(void)
+{
+  u32 outcount = datamissing + parmissing;
+  u32 incount = datapresent + datamissing;
+
+  if (datamissing > parpresent)
+  {
+    cerr << "Not enough recovery blocks." << endl;
+    return false;
+  }
+  else if (outcount == 0)
+  {
+    cerr << "No output blocks." << endl;
+    return false;
+  }
+
+  cout << "Computing Reed Solomon matrix." << endl;
+
+  /*  Layout of RS Matrix:
+
+                                       parpresent
+                     datapresent       datamissing         datamissing       parmissing
+               /                     |             \ /                     |           \
+   parpresent  |           (ppi[row])|             | |           (ppi[row])|           |
+   datamissing |          ^          |      I      | |          ^          |     0     |
+               |(dpi[col])           |             | |(dmi[col])           |           |
+               +---------------------+-------------+ +---------------------+-----------+
+               |           (pmi[row])|             | |           (pmi[row])|           |
+   parmissing  |          ^          |      0      | |          ^          |     I     |
+               |(dpi[col])           |             | |(dmi[col])           |           |
+               \                     |             / \                     |           /
+  */
+
+  // Allocate the left hand matrix
+
+  leftmatrix = new G[outcount * incount];
+  memset(leftmatrix, 0, outcount * incount * sizeof(G));
+
+  // Allocate the right hand matrix only if we are recovering
+
+  G *rightmatrix = 0;
+  if (datamissing > 0)
+  {
+    rightmatrix = new G[outcount * outcount];
+    memset(rightmatrix, 0, outcount *outcount * sizeof(G));
+  }
+
+  // Fill in the two matrices:
+
+  vector<RSOutputRow>::const_iterator outputrow = outputrows.begin();
+
+  // One row for each present recovery block that will be used for a missing data block
+  for (unsigned int row=0; row<datamissing; row++)
+  {
+    int progress = row * 1000 / (datamissing+parmissing);
+    cout << "Constructing: " << progress/10 << '.' << progress%10 << "%\r" << flush;
+
+    // Get the exponent of the next present recovery block
+    while (!outputrow->present)
+    {
+      outputrow++;
+    }
+    u16 exponent = outputrow->exponent;
+
+    // One column for each present data block
+    for (unsigned int col=0; col<datapresent; col++)
+    {
+      leftmatrix[row * incount + col] = G(database[datapresentindex[col]]).pow(exponent);
+    }
+    // One column for each each present recovery block that will be used for a missing data block
+    for (unsigned int col=0; col<datamissing; col++)
+    {
+      leftmatrix[row * incount + col + datapresent] = (row == col) ? 1 : 0;
+    }
+
+    if (datamissing > 0)
+    {
+      // One column for each missing data block
+      for (unsigned int col=0; col<datamissing; col++)
+      {
+        rightmatrix[row * outcount + col] = G(database[datamissingindex[col]]).pow(exponent);
+      }
+      // One column for each missing recovery block
+      for (unsigned int col=0; col<parmissing; col++)
+      {
+        rightmatrix[row * outcount + col + datamissing] = 0;
+      }
+    }
+
+    outputrow++;
+  }
+  // One row for each recovery block being computed
+  outputrow = outputrows.begin();
+  for (unsigned int row=0; row<parmissing; row++)
+  {
+    int progress = (row+datamissing) * 1000 / (datamissing+parmissing);
+    cout << "Constructing: " << progress/10 << '.' << progress%10 << "%\r" << flush;
+
+    // Get the exponent of the next missing recovery block
+    while (outputrow->present)
+    {
+      outputrow++;
+    }
+    u16 exponent = outputrow->exponent;
+
+    // One column for each present data block
+    for (unsigned int col=0; col<datapresent; col++)
+    {
+      leftmatrix[(row+datamissing) * incount + col] = G(database[datapresentindex[col]]).pow(exponent);
+    }
+    // One column for each each present recovery block that will be used for a missing data block
+    for (unsigned int col=0; col<datamissing; col++)
+    {
+      leftmatrix[(row+datamissing) * incount + col + datapresent] = 0;
+    }
+
+    if (datamissing > 0)
+    {
+      // One column for each missing data block
+      for (unsigned int col=0; col<datamissing; col++)
+      {
+        rightmatrix[(row+datamissing) * outcount + col] = G(database[datamissingindex[col]]).pow(exponent);
+      }
+      // One column for each missing recovery block
+      for (unsigned int col=0; col<parmissing; col++)
+      {
+        rightmatrix[(row+datamissing) * outcount + col + datamissing] = (row == col) ? 1 : 0;
+      }
+    }
+
+    outputrow++;
+  }
+  cout << "Constructing: done." << endl;
+
+  // Solve the matrices only if recovering data
+  if (datamissing > 0)
+  {
+    // Perform Gaussian Elimination and then delete the right matrix (which 
+    // will no longer be required).
+    bool success = GaussElim(outcount, incount, leftmatrix, rightmatrix, datamissing);
+cout << "GaussElim done" << endl;  
+    delete [] rightmatrix;
+cout << "Exiting RS::Compute" << endl;    
+    return success;
+  }
+
+  return true;
+}
+
+// Use Gaussian Elimination to solve the matrices
+template<class g>
+inline bool ReedSolomon<g>::GaussElim(unsigned int rows, unsigned int leftcols, G *leftmatrix, G *rightmatrix, unsigned int datamissing)
+{
+  // Because the matrices being operated on are Vandermonde matrices
+  // they are guaranteed not to be singular.
+
+  // Additionally, because Galois arithmetic is being used, all calulations
+  // involve exact values with no loss of precision. It is therefore
+  // not necessary to carry out any row or column swapping.
+
+  // Solve one row at a time
+
+  int progress = 0;
+
+  // For each row in the matrix
+  for (unsigned int row=0; row<datamissing; row++)
+  {
+    // NB Row and column swapping to find a non zero pivot value or to find the largest value
+    // is not necessary due to the nature of the arithmetic and construction of the RS matrix.
+
+    // Get the pivot value.
+    G pivotvalue = rightmatrix[row * rows + row];
+    assert(pivotvalue != 0);
+    if (pivotvalue == 0)
+    {
+      cerr << "RS computation error." << endl;
+      return false;
+    }
+
+    // If the pivot value is not 1, then the whole row has to be scaled
+    if (pivotvalue != 1)
+    {
+      for (unsigned int col=0; col<leftcols; col++)
+      {
+        if (leftmatrix[row * leftcols + col] != 0)
+        {
+          leftmatrix[row * leftcols + col] /= pivotvalue;
+        }
+      }
+      rightmatrix[row * rows + row] = 1;
+      for (unsigned int col=row+1; col<rows; col++)
+      {
+        if (rightmatrix[row * rows + col] != 0)
+        {
+          rightmatrix[row * rows + col] /= pivotvalue;
+        }
+      }
+    }
+
+    // For every other row in the matrix
+    for (unsigned int row2=0; row2<rows; row2++)
+    {
+      int newprogress = (row*rows+row2) * 1000 / (datamissing*rows);
+      if (progress != newprogress)
+      {
+        progress = newprogress;
+        cout << "Solving: " << progress/10 << '.' << progress%10 << "%\r" << flush;
+      }
+
+      if (row != row2)
+      {
+        // Get the scaling factor for this row.
+        G scalevalue = rightmatrix[row2 * rows + row];
+
+        if (scalevalue == 1)
+        {
+          // If the scaling factor happens to be 1, just subtract rows
+          for (unsigned int col=0; col<leftcols; col++)
+          {
+            if (leftmatrix[row * leftcols + col] != 0)
+            {
+              leftmatrix[row2 * leftcols + col] -= leftmatrix[row * leftcols + col];
+            }
+          }
+
+          for (unsigned int col=row; col<rows; col++)
+          {
+            if (rightmatrix[row * rows + col] != 0)
+            {
+              rightmatrix[row2 * rows + col] -= rightmatrix[row * rows + col];
+            }
+          }
+        }
+        else if (scalevalue != 0)
+        {
+          // If the scaling factor is not 0, then compute accordingly.
+          for (unsigned int col=0; col<leftcols; col++)
+          {
+            if (leftmatrix[row * leftcols + col] != 0)
+            {
+              leftmatrix[row2 * leftcols + col] -= leftmatrix[row * leftcols + col] * scalevalue;
+            }
+          }
+
+          for (unsigned int col=row; col<rows; col++)
+          {
+            if (rightmatrix[row * rows + col] != 0)
+            {
+              rightmatrix[row2 * rows + col] -= rightmatrix[row * rows + col] * scalevalue;
+            }
+          }
+        }
+      }
+    }
+  }
+  cout << "Solving: done." << endl;
+
+  return true;
+}
 
 
 #endif // __REEDSOLOMON_H__
