@@ -44,11 +44,7 @@ public:
 #ifdef WIN32
   bool IsOpen(void) const {return hFile != INVALID_HANDLE_VALUE;}
 #else
-#if defined(__CYGWIN__) || defined(linux)
   bool IsOpen(void) const {return file != 0;}
-#else
-  bool IsOpen(void) const {return handle != -1;}
-#endif
 #endif
 
   // Read some data from the file
@@ -94,15 +90,7 @@ protected:
 #ifdef WIN32
   HANDLE hFile;
 #else
-#ifdef __CYGWIN__
   FILE *file;
-#else
-#ifdef linux
-  FILE *file;
-#else
-  int    handle;
-#endif
-#endif
 #endif
 
   // Current offset within the file
