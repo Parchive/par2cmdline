@@ -156,7 +156,7 @@ GaloisTable<bits,generator,valuetype> Galois<bits,generator,valuetype>::table;
 
 
 template <const unsigned int bits, const unsigned int generator, typename valuetype>
-inline Galois<bits,generator,valuetype>::Galois(Galois<bits,generator,valuetype>::ValueType v)
+inline Galois<bits,generator,valuetype>::Galois(typename Galois<bits,generator,valuetype>::ValueType v)
 {
   value = v;
 }
