@@ -79,7 +79,7 @@ Par2Repairer::~Par2Repairer(void)
 Result Par2Repairer::Process(const CommandLine &commandline, bool dorepair)
 {
   // Get filesnames from the command line
-  string par2filename = commandline.GetPar2Filename();
+  string par2filename = commandline.GetParFilename();
   const list<CommandLine::ExtraFile> &extrafiles = commandline.GetExtraFiles();
 
   // Determine the searchpath from the location of the main PAR2 file
@@ -246,7 +246,7 @@ Result Par2Repairer::Process(const CommandLine &commandline, bool dorepair)
 bool Par2Repairer::LoadPacketsFromFile(string filename)
 {
   // Skip the file if it has already been processed
-  if (diskfilemap.Find(filename) != 0)
+  if (diskFileMap.Find(filename) != 0)
   {
     return true;
   }
@@ -466,7 +466,7 @@ bool Par2Repairer::LoadPacketsFromFile(string filename)
     cout << endl;
 
     // Remember that the file was processed
-    bool success = diskfilemap.Insert(diskfile);
+    bool success = diskFileMap.Insert(diskfile);
     assert(success);
   }
   else
@@ -1096,7 +1096,7 @@ bool Par2Repairer::VerifySourceFiles(void)
     string filename = sourcefile->TargetFileName();
 
     // Check to see if we have already used this file
-    if (diskfilemap.Find(filename) != 0)
+    if (diskFileMap.Find(filename) != 0)
     {
       // The file has already been used!
 
@@ -1117,9 +1117,8 @@ bool Par2Repairer::VerifySourceFiles(void)
       sourcefile->SetTargetFile(diskfile);
 
       // Remember that we have processed this file
-      bool success = diskfilemap.Insert(diskfile);
+      bool success = diskFileMap.Insert(diskfile);
       assert(success);
-
       // Do the actual verification
       if (!VerifyDataFile(diskfile, sourcefile))
         finalresult = false;
@@ -1164,7 +1163,7 @@ bool Par2Repairer::VerifyExtraFiles(const list<CommandLine::ExtraFile> &extrafil
       filename = DiskFile::GetCanonicalPathname(filename);
 
       // Has this file already been dealt with
-      if (diskfilemap.Find(filename) == 0)
+      if (diskFileMap.Find(filename) == 0)
       {
         DiskFile *diskfile = new DiskFile;
 
@@ -1176,7 +1175,7 @@ bool Par2Repairer::VerifyExtraFiles(const list<CommandLine::ExtraFile> &extrafil
         }
 
         // Remember that we have processed this file
-        bool success = diskfilemap.Insert(diskfile);
+        bool success = diskFileMap.Insert(diskfile);
         assert(success);
 
         // Do the actual verification
@@ -1799,10 +1798,12 @@ bool Par2Repairer::RenameTargetFiles(void)
       DiskFile *targetfile = sourcefile->GetTargetFile();
 
       // Rename it
-      diskfilemap.Remove(targetfile);
+      diskFileMap.Remove(targetfile);
+
       if (!targetfile->Rename())
         return false;
-      bool success = diskfilemap.Insert(targetfile);
+
+      bool success = diskFileMap.Insert(targetfile);
       assert(success);
 
       // We no longer have a target file
@@ -1829,10 +1830,12 @@ bool Par2Repairer::RenameTargetFiles(void)
       DiskFile *targetfile = sourcefile->GetCompleteFile();
 
       // Rename it
-      diskfilemap.Remove(targetfile);
+      diskFileMap.Remove(targetfile);
+
       if (!targetfile->Rename(sourcefile->TargetFileName()))
         return false;
-      bool success = diskfilemap.Insert(targetfile);
+
+      bool success = diskFileMap.Insert(targetfile);
       assert(success);
 
       // This file is now the target file
@@ -1881,7 +1884,7 @@ bool Par2Repairer::CreateTargetFiles(void)
       sourcefile->SetTargetFile(targetfile);
 
       // Remember this file
-      bool success = diskfilemap.Insert(targetfile);
+      bool success = diskFileMap.Insert(targetfile);
       assert(success);
 
       u64 offset = 0;
@@ -2002,7 +2005,12 @@ bool Par2Repairer::ComputeRSmatrix(void)
   }
 
   // If we need to, compute and solve the RS matrix
-  return (missingblockcount > 0) ? rs.Compute() : true;
+  if (missingblockcount == 0)
+    return true;
+  
+  bool success = rs.Compute();
+
+  return success;  
 }
 
 // Allocate memory buffers for reading and writing data to disk.
@@ -2224,8 +2232,7 @@ bool Par2Repairer::DeleteIncompleteTargetFiles(void)
       targetfile->Delete();
 
       // Forget the file
-      diskfilemap.Remove(targetfile);
-
+      diskFileMap.Remove(targetfile);
       delete targetfile;
 
       // There is no target file
