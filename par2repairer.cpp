@@ -1415,16 +1415,27 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
 
   matchtype = eNoMatch;
 
+  string path;
+  string name;
+  DiskFile::SplitFilename(diskfile->FileName(), path, name);
+
   // Is the file empty
   if (diskfile->FileSize() == 0)
   {
     // If the file is empty, then just return
+    if (noiselevel > CommandLine::nlSilent)
+    {
+      if (originalsourcefile != 0)
+      {
+        cout << "Target: \"" << name << "\" - empty." << endl;
+      }
+      else
+      {
+        cout << "File: \"" << name << "\" - empty." << endl;
+      }
+    }
     return true;
   }
-
-  string path;
-  string name;
-  DiskFile::SplitFilename(diskfile->FileName(), path, name);
 
   string shortname;
   if (name.size() > 56)

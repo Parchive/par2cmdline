@@ -710,7 +710,13 @@ bool Par1Repairer::VerifyDataFile(DiskFile *diskfile, Par1RepairerSourceFile *so
   u64 filesize = diskfile->FileSize();
 
   if (filesize == 0)
+  {
+    if (noiselevel > CommandLine::nlSilent)
+    {
+      cout << "Target: \"" << name << "\" - empty." << endl;
+    }
     return true;
+  }
 
   // Search for the first file that is the correct size
   vector<Par1RepairerSourceFile*>::iterator sourceiterator = sourcefiles.begin();
