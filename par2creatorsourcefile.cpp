@@ -33,8 +33,8 @@ Par2CreatorSourceFile::Par2CreatorSourceFile(void)
   verificationpacket = 0;
   diskfile = 0;
   blockcount = 0;
-  diskfilename;
-  parfilename;
+  //diskfilename;
+  //parfilename;
   contextfull = 0;
 }
 
@@ -297,7 +297,7 @@ void Par2CreatorSourceFile::InitialiseSourceBlocks(vector<DataBlock>::iterator &
     // Configure each source block to an appropriate offset and length within the source file.
     sourceblock->SetLocation(diskfile,                                       // file
                              blocknum * blocksize);                          // offset
-    sourceblock->SetLength(min(blocksize, filesize - blocknum * blocksize)); // length
+    sourceblock->SetLength(min(blocksize, filesize - (u64)blocknum * blocksize)); // length
     sourceblock++;
   }
 }
