@@ -1,0 +1,17 @@
+#!/bin/sh
+
+cd testdir || { echo "ERROR: Could not change to test directory" ; exit 1; } >&2
+
+banner="Creating 100% PAR 2.0 recovery data"
+dashes=`echo "$banner" | sed s/./-/g`
+
+echo $dashes
+echo $banner
+echo $dashes
+
+../par2 c -r100 -b190 newtest test-*.data > ../test5.log || { echo "ERROR: Creating PAR 2.0 data failed" ; exit 1; } >&2
+
+rm -f ../test5.log
+
+exit 0;
+

@@ -1,0 +1,17 @@
+#!/bin/sh
+
+cd testdir || { echo "ERROR: Could not change to test directory" ; exit 1; } >&2
+
+banner="Verifying using PAR 1.0 data"
+dashes=`echo "$banner" | sed s/./-/g`
+
+echo $dashes
+echo $banner
+echo $dashes
+
+../par2 v testdata.par > ../test1.log || { echo "ERROR: Initial PAR 1.0 verification failed" ; exit 1; } >&2
+
+rm -f ../test1.log
+
+exit 0;
+

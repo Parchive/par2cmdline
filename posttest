@@ -1,0 +1,6 @@
+#!/bin/sh
+
+rm -rf testdir
+
+exit 77;
+

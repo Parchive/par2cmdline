@@ -1,0 +1,20 @@
+#!/bin/sh
+
+rm -f test*.log
+rm -rf testdir
+mkdir testdir && cd testdir || { echo "ERROR: Could not change to test directory" ; exit 1; } >&2
+
+gunzip -c ../$srcdir/testdata.tar.gz | tar xf - || { echo "ERROR: Could not extra test files" ; exit 1; } >&2
+
+cp test-0.data test-0.data.orig
+cp test-1.data test-1.data.orig
+cp test-2.data test-2.data.orig
+cp test-3.data test-3.data.orig
+cp test-4.data test-4.data.orig
+cp test-5.data test-5.data.orig
+cp test-6.data test-6.data.orig
+cp test-7.data test-7.data.orig
+cp test-8.data test-8.data.orig
+cp test-9.data test-9.data.orig
+
+exit 77;

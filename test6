@@ -1,0 +1,21 @@
+#!/bin/sh
+
+cd testdir || { echo "ERROR: Could not change to test directory" ; exit 1; } >&2
+
+banner="Repairing 100% loss using PAR 2.0 data"
+dashes=`echo "$banner" | sed s/./-/g`
+
+echo $dashes
+echo $banner
+echo $dashes
+
+rm -f test-*.data
+
+../par2 r newtest > ../test6.log || { echo "ERROR: Full Repair using PAR 2.0 failed" ; exit 1; } >&2
+
+cmp -s test-0.data test-0.data.orig && cmp -s test-1.data test-1.data.orig && cmp -s test-2.data test-2.data.orig && cmp -s test-3.data test-3.data.orig && cmp -s test-4.data test-4.data.orig && cmp -s test-5.data test-5.data.orig && cmp -s test-6.data test-6.data.orig && cmp -s test-7.data test-7.data.orig && cmp -s test-8.data test-8.data.orig && cmp -s test-9.data test-9.data.orig || { echo "ERROR: Repaired files do not match originals" ; exit 1 ; } >&2
+
+rm -f ../test6.log
+
+exit 0;
+
