@@ -36,6 +36,8 @@ Par2Creator::Par2Creator(void)
 , sourcefilecount(0)
 , sourceblockcount(0)
 
+, largestfilesize(0)
+, recoveryfilescheme(CommandLine::scUnknown)
 , recoveryfilecount(0)
 , recoveryblockcount(0)
 , firstrecoveryblock(0)
@@ -74,9 +76,10 @@ Result Par2Creator::Process(const CommandLine &commandline)
   recoveryblockcount = commandline.GetRecoveryBlockCount();
   recoveryfilecount = commandline.GetRecoveryFileCount();
   firstrecoveryblock = commandline.GetFirstRecoveryBlock();
-  bool uniformfiles = commandline.GetUniformFiles();
+  recoveryfilescheme = commandline.GetRecoveryFileScheme();
   string par2filename = commandline.GetParFilename();
   size_t memorylimit = commandline.GetMemoryLimit();
+  largestfilesize = commandline.GetLargestSourceSize();
 
   // Compute block size from block count or vice versa depending on which was
   // specified on the command line
@@ -124,7 +127,7 @@ Result Par2Creator::Process(const CommandLine &commandline)
     return eLogicError;
 
   // Create all of the output files and allocate all packets to appropriate file offets.
-  if (!InitialiseOutputFiles(uniformfiles, par2filename))
+  if (!InitialiseOutputFiles(par2filename))
     return eFileIOError;
 
   if (recoveryblockcount > 0)
@@ -412,25 +415,59 @@ bool Par2Creator::ComputeRecoveryFileCount(void)
     return true;
   }
  
-  // Determine recoveryfilecount if not specified
-  if (recoveryfilecount == 0)
+  switch (recoveryfilescheme)
   {
-    // If none specified then then filecount is roughly log2(blockcount)
-    // This prevents you getting excessively large numbers of files
-    // when the block count is high and also allows the files to have
-    // sizes which vary exponentially.
-
-    for (u32 blocks=recoveryblockcount; blocks>0; blocks>>=1)
+  case CommandLine::scUnknown:
     {
-      recoveryfilecount++;
+      assert(false);
+      return false;
     }
-  }
-  if (recoveryfilecount > recoveryblockcount)
-  {
-    // You cannot have move recovery files that there are recovery blocks
-    // to put in them.
-    cerr << "Too many recovery files specified." << endl;
-    return false;
+    break;
+  case CommandLine::scVariable:
+  case CommandLine::scUniform:
+    {
+      if (recoveryfilecount == 0)
+      {
+        // If none specified then then filecount is roughly log2(blockcount)
+        // This prevents you getting excessively large numbers of files
+        // when the block count is high and also allows the files to have
+        // sizes which vary exponentially.
+
+        for (u32 blocks=recoveryblockcount; blocks>0; blocks>>=1)
+        {
+          recoveryfilecount++;
+        }
+      }
+  
+      if (recoveryfilecount > recoveryblockcount)
+      {
+        // You cannot have move recovery files that there are recovery blocks
+        // to put in them.
+        cerr << "Too many recovery files specified." << endl;
+        return false;
+      }
+    }
+    break;
+
+  case CommandLine::scLimited:
+    {
+      // No recovery file will contain more recovery blocks than would
+      // be required to reconstruct the largest source file if it
+      // were missing. Other recovery files will have recovery blocks
+      // distributed in an exponential scheme.
+
+      u32 largest = (u32)((largestfilesize + blocksize-1) / blocksize);
+      u32 whole = recoveryblockcount / largest;
+      whole = (whole >= 1) ? whole-1 : 0;
+
+      u32 extra = recoveryblockcount - whole * largest;
+      recoveryfilecount = whole;
+      for (u32 blocks=extra; blocks>0; blocks>>=1)
+      {
+        recoveryfilecount++;
+      }
+    }
+    break;
   }
 
   return true;
@@ -534,7 +571,7 @@ public:
 };
 
 // Create all of the output files and allocate all packets to appropriate file offets.
-bool Par2Creator::InitialiseOutputFiles(bool uniformfiles, string par2filename)
+bool Par2Creator::InitialiseOutputFiles(string par2filename)
 {
   // Allocate the recovery packets
   recoverypackets.resize(recoveryblockcount);
@@ -547,44 +584,97 @@ bool Par2Creator::InitialiseOutputFiles(bool uniformfiles, string par2filename)
     u32 exponent = firstrecoveryblock;
     if (recoveryfilecount > 0)
     {
-      if (uniformfiles)
+      switch (recoveryfilescheme)
       {
-        // Files will have roughly the same number of recovery blocks each.
-
-        u32 base      = recoveryblockcount / recoveryfilecount;
-        u32 remainder = recoveryblockcount % recoveryfilecount;
-
-        for (u32 filenumber=0; filenumber<recoveryfilecount; filenumber++)
+      case CommandLine::scUnknown:
         {
-          fileallocations[filenumber].exponent = exponent;
-          fileallocations[filenumber].count = (filenumber<remainder) ? base+1 : base;
-          exponent += fileallocations[filenumber].count;
+          assert(false);
+          return false;
         }
-      }
-      else
-      {
-        // Files will have recovery blocks allocated in an exponential fashion.
-
-        // Work out how many blocks to place in the smallest file
-        u32 lowblockcount = 1;
-        u32 maxrecoveryblocks = (1 << recoveryfilecount) - 1;
-        while (maxrecoveryblocks < recoveryblockcount)
+        break;
+      case CommandLine::scUniform:
         {
-          lowblockcount <<= 1;
-          maxrecoveryblocks <<= 1;
-        }
+          // Files will have roughly the same number of recovery blocks each.
 
-        // Allocate the blocks.
-        u32 blocks = recoveryblockcount;
-        for (u32 filenumber=0; filenumber<recoveryfilecount; filenumber++)
-        {
-          u32 number = min(lowblockcount, blocks);
-          fileallocations[filenumber].exponent = exponent;
-          fileallocations[filenumber].count = number;
-          exponent += number;
-          blocks -= number;
-          lowblockcount <<= 1;
+          u32 base      = recoveryblockcount / recoveryfilecount;
+          u32 remainder = recoveryblockcount % recoveryfilecount;
+
+          for (u32 filenumber=0; filenumber<recoveryfilecount; filenumber++)
+          {
+            fileallocations[filenumber].exponent = exponent;
+            fileallocations[filenumber].count = (filenumber<remainder) ? base+1 : base;
+            exponent += fileallocations[filenumber].count;
+          }
         }
+        break;
+
+      case CommandLine::scVariable:
+        {
+          // Files will have recovery blocks allocated in an exponential fashion.
+
+          // Work out how many blocks to place in the smallest file
+          u32 lowblockcount = 1;
+          u32 maxrecoveryblocks = (1 << recoveryfilecount) - 1;
+          while (maxrecoveryblocks < recoveryblockcount)
+          {
+            lowblockcount <<= 1;
+            maxrecoveryblocks <<= 1;
+          }
+
+          // Allocate the blocks.
+          u32 blocks = recoveryblockcount;
+          for (u32 filenumber=0; filenumber<recoveryfilecount; filenumber++)
+          {
+            u32 number = min(lowblockcount, blocks);
+            fileallocations[filenumber].exponent = exponent;
+            fileallocations[filenumber].count = number;
+            exponent += number;
+            blocks -= number;
+            lowblockcount <<= 1;
+          }
+        }
+        break;
+
+      case CommandLine::scLimited:
+        {
+          // Files will be allocated in an exponential fashion but the
+          // Maximum file size will be limited.
+
+          u32 largest = (u32)((largestfilesize + blocksize-1) / blocksize);
+          u32 filenumber = recoveryfilecount;
+          u32 blocks = recoveryblockcount;
+         
+          exponent = firstrecoveryblock + recoveryblockcount;
+
+          // Allocate uniformly at the top
+          while (blocks >= 2*largest && filenumber > 0)
+          {
+            filenumber--;
+            exponent -= largest;
+            blocks -= largest;
+
+            fileallocations[filenumber].exponent = exponent;
+            fileallocations[filenumber].count = largest;
+          }
+          assert(blocks > 0 && filenumber > 0);
+
+          exponent = firstrecoveryblock;
+          u32 count = 1;
+          u32 files = filenumber;
+
+          // Allocate exponentially at the bottom
+          for (filenumber=0; filenumber<files; filenumber++)
+          {
+            u32 number = min(count, blocks);
+            fileallocations[filenumber].exponent = exponent;
+            fileallocations[filenumber].count = number;
+
+            exponent += number;
+            blocks -= number;
+            count <<= 1;
+          }
+        }
+        break;
       }
     }
      

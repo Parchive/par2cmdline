@@ -64,7 +64,7 @@ protected:
   bool CreateSourceBlocks(void);
 
   // Create all of the output files and allocate all packets to appropriate file offets.
-  bool InitialiseOutputFiles(bool uniformfiles, string par2filename);
+  bool InitialiseOutputFiles(string par2filename);
 
   // Allocate memory buffers for reading and writing data to disk.
   bool AllocateBuffers(void);
@@ -101,6 +101,11 @@ protected:
   u32 sourcefilecount;   // Number of source files for which recovery data will be computed.
   u32 sourceblockcount;  // Total number of data blocks that the source files will be
                          // virtualy sliced into.
+
+  u64 largestfilesize;   // The size of the largest source file
+
+  CommandLine::Scheme recoveryfilescheme;  // What scheme will be used to select the
+                                           // sizes for the recovery files.
   
   u32 recoveryfilecount;  // The number of recovery files that will be created
   u32 recoveryblockcount; // The number of recovery blocks that will be placed
