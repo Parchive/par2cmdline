@@ -925,7 +925,7 @@ bool Par1Repairer::CheckVerificationResults(void)
 
       if (recoveryblocks.size() > damagedfilecount+missingfilecount)
         cout << "You have an excess of " 
-             << (u32)recoveryblocks.size() - damagedfilecount+missingfilecount
+             << (u32)recoveryblocks.size() - (damagedfilecount+missingfilecount)
              << " recovery files." << endl;
 
       if (damagedfilecount+missingfilecount > 0)
