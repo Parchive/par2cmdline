@@ -27,10 +27,10 @@ static char THIS_FILE[]=__FILE__;
 #endif
 #endif
 
-string version = "par2cmdline version 0.1";
-
 int main(int argc, char *argv[])
 {
+  string version = PACKAGE " version " VERSION;
+
 #ifdef _MSC_VER
   // Memory leak checking
   _CrtSetDbgFlag(_CrtSetDbgFlag(_CRTDBG_REPORT_FLAG) | _CRTDBG_ALLOC_MEM_DF | /*_CRTDBG_CHECK_CRT_DF | */_CRTDBG_DELAY_FREE_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
@@ -49,13 +49,11 @@ int main(int argc, char *argv[])
   // Parse the command line
   CommandLine *commandline = new CommandLine;
 
-  Result result;
+  Result result = eInvalidCommandLineArguments;
   
   if (!commandline->Parse(argc, argv))
   {
     CommandLine::usage();
-
-    result = eInvalidCommandLineArguments;
   }
   else
   {
@@ -73,19 +71,53 @@ int main(int argc, char *argv[])
       break;
     case CommandLine::opVerify:
       {
-        // Repair damaged files
-        Par2Repairer *repairer = new Par2Repairer;
-        result = repairer->Process(*commandline, false);
-        delete repairer;
+        // Verify damaged files
+        switch (commandline->GetVersion())
+        {
+        case CommandLine::verPar1:
+          {
+            Par1Repairer *repairer = new Par1Repairer;
+            result = repairer->Process(*commandline, false);
+            delete repairer;
+          }
+          break;
+        case CommandLine::verPar2:
+          {
+            Par2Repairer *repairer = new Par2Repairer;
+            result = repairer->Process(*commandline, false);
+            delete repairer;
+          }
+          break;
+        case CommandLine::opNone:
+          break;
+        }
       }
       break;
     case CommandLine::opRepair:
       {
         // Repair damaged files
-        Par2Repairer *repairer = new Par2Repairer;
-        result = repairer->Process(*commandline, true);
-        delete repairer;
+        switch (commandline->GetVersion())
+        {
+        case CommandLine::verPar1:
+          {
+            Par1Repairer *repairer = new Par1Repairer;
+            result = repairer->Process(*commandline, true);
+            delete repairer;
+          }
+          break;
+        case CommandLine::verPar2:
+          {
+            Par2Repairer *repairer = new Par2Repairer;
+            result = repairer->Process(*commandline, true);
+            delete repairer;
+          }
+          break;
+        case CommandLine::opNone:
+          break;
+        }
       }
+      break;
+    case CommandLine::opNone:
       break;
     }
   }

@@ -35,9 +35,6 @@
 
 #include <ctype.h>
 #include <iostream>
-//#include <fstream>
-//#include <sstream>
-//#include <iomanip>
 
 
 // System includes
@@ -56,9 +53,136 @@
 #define snprintf _snprintf
 #define stat _stat
 
-#else
+#define __LITTLE_ENDIAN 1234
+#define __BIG_ENDIAN    4321
+#define __PDP_ENDIAN    3412
 
-#ifdef linux
+#define __BYTE_ORDER __LITTLE_ENDIAN
+
+typedef unsigned char    u8;
+typedef unsigned short   u16;
+typedef unsigned long    u32;
+typedef unsigned __int64 u64;
+
+#ifndef _SIZE_T_DEFINED
+#  ifdef _WIN64
+typedef unsigned __int64 size_t;
+#  else
+typedef unsigned int     size_t;
+#  endif
+#  define _SIZE_T_DEFINED
+#endif
+
+
+#else // WIN32
+#ifdef HAVE_CONFIG_H
+
+#include <config.h>
+
+#ifdef HAVE_STDLIB_H
+#  include <stdlib.h>
+#endif
+
+#ifdef HAVE_STDIO_H
+#  include <stdio.h>
+#endif
+
+#if HAVE_DIRENT_H
+#  include <dirent.h>
+#  define NAMELEN(dirent) strlen((dirent)->d_name)
+#else
+#  define dirent direct
+#  define NAMELEN(dirent) (dirent)->d_namelen
+#  if HAVE_SYS_NDIR_H
+#    include <sys/ndir.h>
+#  endif
+#  if HAVE_SYS_DIR_H
+#    include <sys/dir.h>
+#  endif
+#  if HAVE_NDIR_H
+#    include <ndir.h>
+#  endif
+#endif
+
+#if STC_HEADERS
+#  include <string.h>
+#else
+#  if !HAVE_STRCHR
+#    define strchr index
+#    define strrchr rindex
+#  endif
+char *strchr(), *strrchr();
+#  if !HAVE_MEMCPY
+#    define memcpy(d, s, n) bcopy((s), (d), (n))
+#    define memove(d, s, n) bcopy((s), (d), (n))
+#  endif
+#endif
+
+#if HAVE_MEMORY_H
+#  include <memory.h>
+#endif
+
+#if !HAVE_STRICMP
+#  if HAVE_STRCASECMP
+#    define stricmp strcasecmp
+#  endif
+#endif
+
+#if HAVE_INTTYPES_H
+#  include <inttypes.h>
+#endif
+
+#if HAVE_STDINT_H
+#  include <stdint.h>
+typedef uint8_t            u8;
+typedef uint16_t           u16;
+typedef uint32_t           u32;
+typedef uint64_t           u64;
+#else
+typedef unsigned char      u8;
+typedef unsigned short     u16;
+typedef unsigned int       u32;
+typedef unsigned long long u64;
+#endif
+
+#if HAVE_SYS_STAT_H
+#  include <sys/stat.h>
+#endif
+
+#if HAVE_SYS_TYPES_H
+#  include <sys/types.h>
+#endif
+
+#if HAVE_UNISTD_H
+#  include <unistd.h>
+#endif
+
+#define _MAX_PATH 255
+
+#if HAVE_ENDIAN_H
+#  include <endian.h>
+#  ifndef __LITTLE_ENDIAN
+#    ifdef _LITTLE_ENDIAN
+#      define __LITTLE_ENDIAN _LITTLE_ENDIAN
+#      define __LITTLE_ENDIAN _LITTLE_ENDIAN
+#      define __BIG_ENDIAN _BIG_ENDIAN
+#      define __PDP_ENDIAN _PDP_ENDIAN
+#    else
+#      error <endian.h> does not define __LITTLE_ENDIAN etc.
+#    endif
+#  endif
+#else
+#  define __LITTLE_ENDIAN 1234
+#  define __BIG_ENDIAN    4321
+#  define __PDP_ENDIAN    3412
+#  if WORDS_BIGENDIAN
+#    define __BYTE_ORDER __BIG_ENDIAN
+#  else
+#    define __BYTE_ORDER __LITTLE_ENDIAN
+#  endif
+#endif
+
+#else // HAVE_CONFIG_H
 
 #include <fcntl.h>
 #include <stdio.h>
@@ -77,92 +201,15 @@
 #define stricmp strcasecmp
 #define _stat stat
 
-#else
-
-#include <io.h>
-#include <fcntl.h>
-#include <stdio.h>
-#include <unistd.h>
-#include <string.h>
-#include <stdlib.h>
-#include <ctype.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <dirent.h>
-#include <assert.h>
-
-#include <errno.h>
-
-#define _MAX_PATH 255
-
-#endif
-#endif
-
-#ifdef WIN32
-
-#define __LITTLE_ENDIAN 1234
-#define __BIG_ENDIAN    4321
-#define __PDP_ENDIAN    3412
-
-#define __BYTE_ORDER __LITTLE_ENDIAN
-
-#else
-#ifdef linux
-
-#include <endian.h>
-
-#else
-
-#define __LITTLE_ENDIAN 1234
-#define __BIG_ENDIAN    4321
-#define __PDP_ENDIAN    3412
-
-#define __BYTE_ORDER __LITTLE_ENDIAN
-
-#endif
-#endif
-
-
-using namespace std;
-
-// numeric and other simple types
-
-// 8-bit, 16-bit, and 32-bit unsigned values
-// Used in the definition of certain fields
-// in the PAR2 file format.
 typedef   unsigned char        u8;
 typedef   unsigned short       u16;
-typedef   unsigned long        u32;
-
-// 64-bit unsigned value.
-// Used for all file size and offset values.
-#ifdef _MSC_VER
-typedef   unsigned __int64     u64;
-#else
+typedef   unsigned int         u32;
 typedef   unsigned long long   u64;
+
+#endif
 #endif
 
-// An architecture dependent type used to
-// represent the size of an in memory object.
-// It is the return type of the "sizeof()" operator
-// and a parameter of the "new" operator and 
-// "malloc()" function.
-#ifdef _MSC_VER
-#ifndef _SIZE_T_DEFINED
-#ifdef  _WIN64
-typedef unsigned __int64    size_t;
-#else
-typedef unsigned int        size_t;
-#endif
-#define _SIZE_T_DEFINED
-#endif
-#else
-typedef unsigned int        size_t;
-#endif
-
-//#ifndef offsetof
-//#define offsetof(TYPE, MEMBER) ((size_t) &((TYPE *)0)->MEMBER)
-//#endif
+using namespace std;
 
 #ifdef offsetof
 #undef offsetof
@@ -239,6 +286,10 @@ typedef enum Result
 #include "par2creator.h"
 #include "par2repairer.h"
 
+#include "par1fileformat.h"
+#include "par1repairersourcefile.h"
+#include "par1repairer.h"
+
 // Heap checking 
 #ifdef _MSC_VER
 #define _CRTDBG_MAP_ALLOC
@@ -246,6 +297,5 @@ typedef enum Result
 #define DEBUG_NEW new(_NORMAL_BLOCK, THIS_FILE, __LINE__)
 #endif
 
-extern string version;
-
 #endif // __PARCMDLINE_H__
+
