@@ -28,7 +28,8 @@ static char THIS_FILE[]=__FILE__;
 #endif
 
 Par2Creator::Par2Creator(void)
-: blocksize(0)
+: noiselevel(CommandLine::nlUnknown)
+, blocksize(0)
 , chunksize(0)
 , inputbuffer(0)
 , outputbuffer(0)
@@ -68,6 +69,7 @@ Par2Creator::~Par2Creator(void)
 Result Par2Creator::Process(const CommandLine &commandline)
 {
   // Get information from commandline
+  noiselevel = commandline.GetNoiseLevel();
   blocksize = commandline.GetBlockSize();
   sourceblockcount = commandline.GetBlockCount();
   const list<CommandLine::ExtraFile> extrafiles = commandline.GetExtraFiles();
@@ -99,15 +101,18 @@ Result Par2Creator::Process(const CommandLine &commandline)
   if (!ComputeRecoveryFileCount())
     return eInvalidCommandLineArguments;
 
-  // Display information.
-  cout << "Block size: " << blocksize << endl;
-  cout << "Source file count: " << sourcefilecount << endl;
-  cout << "Source block count: " << sourceblockcount << endl;
-  if (redundancy>0 || recoveryblockcount==0)
-    cout << "Redundancy: " << redundancy << '%' << endl;
-  cout << "Recovery block count: " << recoveryblockcount << endl;
-  cout << "Recovery file count: " << recoveryfilecount << endl;
-  cout << endl;
+  if (noiselevel > CommandLine::nlQuiet)
+  {
+    // Display information.
+    cout << "Block size: " << blocksize << endl;
+    cout << "Source file count: " << sourcefilecount << endl;
+    cout << "Source block count: " << sourceblockcount << endl;
+    if (redundancy>0 || recoveryblockcount==0)
+      cout << "Redundancy: " << redundancy << '%' << endl;
+    cout << "Recovery block count: " << recoveryblockcount << endl;
+    cout << "Recovery file count: " << recoveryfilecount << endl;
+    cout << endl;
+  }
 
   // Open all of the source files, compute the Hashes and CRC values, and store
   // the results in the file verification and file description packets.
@@ -158,7 +163,8 @@ Result Par2Creator::Process(const CommandLine &commandline)
       blockoffset += blocklength;
     }
 
-    cout << "Writing recovery packets" << endl;
+    if (noiselevel > CommandLine::nlQuiet)
+      cout << "Writing recovery packets" << endl;
 
     // Finish computation of the recovery packets and write the headers to disk.
     if (!WriteRecoveryPacketHeaders())
@@ -173,7 +179,8 @@ Result Par2Creator::Process(const CommandLine &commandline)
   if (!FinishCriticalPackets())
     return eLogicError;
 
-  cout << "Writing verification packets" << endl;
+  if (noiselevel > CommandLine::nlQuiet)
+    cout << "Writing verification packets" << endl;
 
   // Write all other critical packets to disk.
   if (!WriteCriticalPackets())
@@ -183,7 +190,8 @@ Result Par2Creator::Process(const CommandLine &commandline)
   if (!CloseFiles())
     return eFileIOError;
 
-  cout << "Done" << endl;
+  if (noiselevel > CommandLine::nlSilent)
+    cout << "Done" << endl;
 
   return eSuccess;
 }
@@ -486,10 +494,11 @@ bool Par2Creator::OpenSourceFiles(const list<CommandLine::ExtraFile> &extrafiles
     string name;
     DiskFile::SplitFilename(extrafile->FileName(), path, name);
 
-    cout << "Opening: " << name << endl;
+    if (noiselevel > CommandLine::nlSilent)
+      cout << "Opening: " << name << endl;
 
     // Open the source file and compute its Hashes and CRCs.
-    if (!sourcefile->Open(*extrafile, blocksize, deferhashcomputation))
+    if (!sourcefile->Open(noiselevel, *extrafile, blocksize, deferhashcomputation))
     {
       delete sourcefile;
       return false;
@@ -851,7 +860,7 @@ bool Par2Creator::ComputeRSMatrix(void)
     return false;
 
   // Compute the RS matrix
-  if (!rs.Compute())
+  if (!rs.Compute(noiselevel))
     return false;
 
   return true;
@@ -917,14 +926,17 @@ bool Par2Creator::ProcessData(u64 blockoffset, size_t blocklength)
       // Process the data through the RS matrix
       rs.Process(blocklength, inputblock, inputbuffer, outputblock, outbuf);
 
-      // Update a progress indicator
-      u32 oldfraction = (u32)(1000 * progress / totaldata);
-      progress += blocklength;
-      u32 newfraction = (u32)(1000 * progress / totaldata);
-
-      if (oldfraction != newfraction)
+      if (noiselevel > CommandLine::nlQuiet)
       {
-        cout << "Processing: " << newfraction/10 << '.' << newfraction%10 << "%\r" << flush;
+        // Update a progress indicator
+        u32 oldfraction = (u32)(1000 * progress / totaldata);
+        progress += blocklength;
+        u32 newfraction = (u32)(1000 * progress / totaldata);
+
+        if (oldfraction != newfraction)
+        {
+          cout << "Processing: " << newfraction/10 << '.' << newfraction%10 << "%\r" << flush;
+        }
       }
     }
 
@@ -942,7 +954,8 @@ bool Par2Creator::ProcessData(u64 blockoffset, size_t blocklength)
     lastopenfile->Close();
   }
 
-  cout << "Writing recovery packets\r";
+  if (noiselevel > CommandLine::nlQuiet)
+    cout << "Writing recovery packets\r";
 
   // For each output block
   for (u32 outputblock=0; outputblock<recoveryblockcount;outputblock++)
@@ -955,7 +968,8 @@ bool Par2Creator::ProcessData(u64 blockoffset, size_t blocklength)
       return false;
   }
 
-  cout << "Wrote " << recoveryblockcount * blocklength << " bytes to disk" << endl;
+  if (noiselevel > CommandLine::nlQuiet)
+    cout << "Wrote " << recoveryblockcount * blocklength << " bytes to disk" << endl;
 
   return true;
 }

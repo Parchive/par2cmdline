@@ -91,6 +91,8 @@ protected:
   bool CloseFiles(void);
 
 protected:
+  CommandLine::NoiseLevel noiselevel; // How noisy we should be
+
   u64 blocksize;      // The size of each block.
   size_t chunksize;   // How much of each block will be processed at a 
                       // time (due to memory constraints).

@@ -78,6 +78,7 @@ protected:
   bool DeleteIncompleteTargetFiles(void);
 
 protected:
+  CommandLine::NoiseLevel   noiselevel;              // How noisy we should be
   string                    searchpath;              // Where to find files on disk
   DiskFileMap               diskfilemap;             // Map from filename to DiskFile
 

@@ -27,14 +27,9 @@ static char THIS_FILE[]=__FILE__;
 #endif
 #endif
 
-int main(int argc, char *argv[])
+void banner(void)
 {
   string version = PACKAGE " version " VERSION;
-
-#ifdef _MSC_VER
-  // Memory leak checking
-  _CrtSetDbgFlag(_CrtSetDbgFlag(_CRTDBG_REPORT_FLAG) | _CRTDBG_ALLOC_MEM_DF | /*_CRTDBG_CHECK_CRT_DF | */_CRTDBG_DELAY_FREE_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
-#endif
 
   cout << version << ", Copyright (C) 2003 Peter Brian Clements." << endl
        << endl
@@ -45,6 +40,14 @@ int main(int argc, char *argv[])
        << "Free Software Foundation; either version 2 of the License, or (at your" << endl
        << "option) any later version. See COPYING for details." << endl
        << endl;
+}
+
+int main(int argc, char *argv[])
+{
+#ifdef _MSC_VER
+  // Memory leak checking
+  _CrtSetDbgFlag(_CrtSetDbgFlag(_CRTDBG_REPORT_FLAG) | _CRTDBG_ALLOC_MEM_DF | /*_CRTDBG_CHECK_CRT_DF | */_CRTDBG_DELAY_FREE_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+#endif
 
   // Parse the command line
   CommandLine *commandline = new CommandLine;
@@ -53,10 +56,14 @@ int main(int argc, char *argv[])
   
   if (!commandline->Parse(argc, argv))
   {
+    banner();
     CommandLine::usage();
   }
   else
   {
+    if (commandline->GetNoiseLevel() > CommandLine::nlSilent)
+      banner();
+
     // Which operation was selected
     switch (commandline->GetOperation())
     {

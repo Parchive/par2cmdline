@@ -56,7 +56,7 @@ public:
   bool SetOutput(bool present, u16 lowexponent, u16 highexponent);
 
   // Compute the RS Matrix
-  bool Compute(void);
+  bool Compute(CommandLine::NoiseLevel noiselevel);
 
   // Process a block of data
   bool Process(size_t size,             // The size of the block of data
@@ -67,7 +67,8 @@ public:
 
 protected:
   // Perform Gaussian Elimination
-  bool GaussElim(unsigned int rows, 
+  bool GaussElim(CommandLine::NoiseLevel noiselevel,
+                 unsigned int rows, 
                  unsigned int leftcols, 
                  G *leftmatrix, 
                  G *rightmatrix, 
@@ -186,7 +187,7 @@ inline bool ReedSolomon<g>::SetOutput(bool present, u16 lowexponent, u16 highexp
 
 // Construct the Vandermonde matrix and solve it if necessary
 template<class g>
-inline bool ReedSolomon<g>::Compute(void)
+inline bool ReedSolomon<g>::Compute(CommandLine::NoiseLevel noiselevel)
 {
   u32 outcount = datamissing + parmissing;
   u32 incount = datapresent + datamissing;
@@ -202,7 +203,8 @@ inline bool ReedSolomon<g>::Compute(void)
     return false;
   }
 
-  cout << "Computing Reed Solomon matrix." << endl;
+  if (noiselevel > CommandLine::nlQuiet)
+    cout << "Computing Reed Solomon matrix." << endl;
 
   /*  Layout of RS Matrix:
 
@@ -240,8 +242,11 @@ inline bool ReedSolomon<g>::Compute(void)
   // One row for each present recovery block that will be used for a missing data block
   for (unsigned int row=0; row<datamissing; row++)
   {
-    int progress = row * 1000 / (datamissing+parmissing);
-    cout << "Constructing: " << progress/10 << '.' << progress%10 << "%\r" << flush;
+    if (noiselevel > CommandLine::nlQuiet)
+    {
+      int progress = row * 1000 / (datamissing+parmissing);
+      cout << "Constructing: " << progress/10 << '.' << progress%10 << "%\r" << flush;
+    }
 
     // Get the exponent of the next present recovery block
     while (!outputrow->present)
@@ -281,8 +286,11 @@ inline bool ReedSolomon<g>::Compute(void)
   outputrow = outputrows.begin();
   for (unsigned int row=0; row<parmissing; row++)
   {
-    int progress = (row+datamissing) * 1000 / (datamissing+parmissing);
-    cout << "Constructing: " << progress/10 << '.' << progress%10 << "%\r" << flush;
+    if (noiselevel > CommandLine::nlQuiet)
+    {
+      int progress = (row+datamissing) * 1000 / (datamissing+parmissing);
+      cout << "Constructing: " << progress/10 << '.' << progress%10 << "%\r" << flush;
+    }
 
     // Get the exponent of the next missing recovery block
     while (outputrow->present)
@@ -318,14 +326,15 @@ inline bool ReedSolomon<g>::Compute(void)
 
     outputrow++;
   }
-  cout << "Constructing: done." << endl;
+  if (noiselevel > CommandLine::nlQuiet)
+    cout << "Constructing: done." << endl;
 
   // Solve the matrices only if recovering data
   if (datamissing > 0)
   {
     // Perform Gaussian Elimination and then delete the right matrix (which 
     // will no longer be required).
-    bool success = GaussElim(outcount, incount, leftmatrix, rightmatrix, datamissing);
+    bool success = GaussElim(noiselevel, outcount, incount, leftmatrix, rightmatrix, datamissing);
     delete [] rightmatrix;
     return success;
   }
@@ -335,31 +344,33 @@ inline bool ReedSolomon<g>::Compute(void)
 
 // Use Gaussian Elimination to solve the matrices
 template<class g>
-inline bool ReedSolomon<g>::GaussElim(unsigned int rows, unsigned int leftcols, G *leftmatrix, G *rightmatrix, unsigned int datamissing)
+inline bool ReedSolomon<g>::GaussElim(CommandLine::NoiseLevel noiselevel, unsigned int rows, unsigned int leftcols, G *leftmatrix, G *rightmatrix, unsigned int datamissing)
 {
-#ifdef DUMPRSMATRIX
-  for (unsigned int row=0; row<rows; row++)
+  if (noiselevel == CommandLine::nlDebug)
   {
-    cout << ((row==0) ? "/"    : (row==rows-1) ? "\\"    : "|");
-    for (unsigned int col=0; col<leftcols; col++)
+    for (unsigned int row=0; row<rows; row++)
     {
-      cout << " "
-           << hex << setw(G::Bits>8?4:2) << setfill('0')
-           << (unsigned int)leftmatrix[row*leftcols+col];
-    }
-    cout << ((row==0) ? " \\ /" : (row==rows-1) ? " / \\" : " | |");
-    for (unsigned int col=0; col<rows; col++)
-    {
-      cout << " "
-           << hex << setw(G::Bits>8?4:2) << setfill('0')
-           << (unsigned int)rightmatrix[row*rows+col];
-    }
-    cout << ((row==0) ? " \\"   : (row==rows-1) ? " /"    : " | |");
-    cout << endl;
+      cout << ((row==0) ? "/"    : (row==rows-1) ? "\\"    : "|");
+      for (unsigned int col=0; col<leftcols; col++)
+      {
+        cout << " "
+             << hex << setw(G::Bits>8?4:2) << setfill('0')
+             << (unsigned int)leftmatrix[row*leftcols+col];
+      }
+      cout << ((row==0) ? " \\ /" : (row==rows-1) ? " / \\" : " | |");
+      for (unsigned int col=0; col<rows; col++)
+      {
+        cout << " "
+             << hex << setw(G::Bits>8?4:2) << setfill('0')
+             << (unsigned int)rightmatrix[row*rows+col];
+      }
+      cout << ((row==0) ? " \\"   : (row==rows-1) ? " /"    : " | |");
+      cout << endl;
 
-    cout << dec << setw(0) << setfill(' ');
+      cout << dec << setw(0) << setfill(' ');
+    }
   }
-#endif
+
   // Because the matrices being operated on are Vandermonde matrices
   // they are guaranteed not to be singular.
 
@@ -409,11 +420,14 @@ inline bool ReedSolomon<g>::GaussElim(unsigned int rows, unsigned int leftcols, 
     // For every other row in the matrix
     for (unsigned int row2=0; row2<rows; row2++)
     {
-      int newprogress = (row*rows+row2) * 1000 / (datamissing*rows);
-      if (progress != newprogress)
+      if (noiselevel > CommandLine::nlQuiet)
       {
-        progress = newprogress;
-        cout << "Solving: " << progress/10 << '.' << progress%10 << "%\r" << flush;
+        int newprogress = (row*rows+row2) * 1000 / (datamissing*rows);
+        if (progress != newprogress)
+        {
+          progress = newprogress;
+          cout << "Solving: " << progress/10 << '.' << progress%10 << "%\r" << flush;
+        }
       }
 
       if (row != row2)
@@ -462,30 +476,33 @@ inline bool ReedSolomon<g>::GaussElim(unsigned int rows, unsigned int leftcols, 
       }
     }
   }
-  cout << "Solving: done." << endl;
-#ifdef DUMPRSMATRIX
-  for (unsigned int row=0; row<rows; row++)
+  if (noiselevel > CommandLine::nlQuiet)
+    cout << "Solving: done." << endl;
+  if (noiselevel == CommandLine::nlDebug)
   {
-    cout << ((row==0) ? "/"    : (row==rows-1) ? "\\"    : "|");
-    for (unsigned int col=0; col<leftcols; col++)
+    for (unsigned int row=0; row<rows; row++)
     {
-      cout << " "
-           << hex << setw(G::Bits>8?4:2) << setfill('0')
-           << (unsigned int)leftmatrix[row*leftcols+col];
-    }
-    cout << ((row==0) ? " \\ /" : (row==rows-1) ? " / \\" : " | |");
-    for (unsigned int col=0; col<rows; col++)
-    {
-      cout << " "
-           << hex << setw(G::Bits>8?4:2) << setfill('0')
-           << (unsigned int)rightmatrix[row*rows+col];
-    }
-    cout << ((row==0) ? " \\"   : (row==rows-1) ? " /"    : " | |");
-    cout << endl;
+      cout << ((row==0) ? "/"    : (row==rows-1) ? "\\"    : "|");
+      for (unsigned int col=0; col<leftcols; col++)
+      {
+        cout << " "
+             << hex << setw(G::Bits>8?4:2) << setfill('0')
+             << (unsigned int)leftmatrix[row*leftcols+col];
+      }
+      cout << ((row==0) ? " \\ /" : (row==rows-1) ? " / \\" : " | |");
+      for (unsigned int col=0; col<rows; col++)
+      {
+        cout << " "
+             << hex << setw(G::Bits>8?4:2) << setfill('0')
+             << (unsigned int)rightmatrix[row*rows+col];
+      }
+      cout << ((row==0) ? " \\"   : (row==rows-1) ? " /"    : " | |");
+      cout << endl;
 
-    cout << dec << setw(0) << setfill(' ');
+      cout << dec << setw(0) << setfill(' ');
+    }
   }
-#endif
+
   return true;
 }
 

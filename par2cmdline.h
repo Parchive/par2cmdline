@@ -260,11 +260,11 @@ using namespace std;
 // par2cmdline includes
 
 #include "galois.h"
-#include "reedsolomon.h"
 #include "crc.h"
 #include "md5.h"
 #include "par2fileformat.h"
 #include "commandline.h"
+#include "reedsolomon.h"
 
 #include "diskfile.h"
 #include "datablock.h"

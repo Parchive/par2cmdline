@@ -50,7 +50,7 @@ Par2CreatorSourceFile::~Par2CreatorSourceFile(void)
 // 16k of the file, and then compute the FileId and store the results
 // in a file description packet and a file verification packet.
 
-bool Par2CreatorSourceFile::Open(const CommandLine::ExtraFile &extrafile, u64 blocksize, bool deferhashcomputation)
+bool Par2CreatorSourceFile::Open(CommandLine::NoiseLevel noiselevel, const CommandLine::ExtraFile &extrafile, u64 blocksize, bool deferhashcomputation)
 {
   // Get the filename and filesize
   diskfilename = extrafile.FileName();
@@ -213,13 +213,16 @@ bool Par2CreatorSourceFile::Open(const CommandLine::ExtraFile &extrafile, u64 bl
         }
       }
 
-      // Display progress
-      u32 oldfraction = (u32)(1000 * offset / filesize);
-      offset += want;
-      u32 newfraction = (u32)(1000 * offset / filesize);
-      if (oldfraction != newfraction)
+      if (noiselevel > CommandLine::nlQuiet)
       {
-        cout << newfraction/10 << '.' << newfraction%10 << "%\r" << flush;
+        // Display progress
+        u32 oldfraction = (u32)(1000 * offset / filesize);
+        offset += want;
+        u32 newfraction = (u32)(1000 * offset / filesize);
+        if (oldfraction != newfraction)
+        {
+          cout << newfraction/10 << '.' << newfraction%10 << "%\r" << flush;
+        }
       }
     }
 

@@ -43,6 +43,8 @@ Par1Repairer::Par1Repairer(void)
 
   inputbuffer = 0;
   outputbuffer = 0;
+
+  noiselevel = CommandLine::nlNormal;
 }
 
 Par1Repairer::~Par1Repairer(void)
@@ -77,6 +79,9 @@ Par1Repairer::~Par1Repairer(void)
 
 Result Par1Repairer::Process(const CommandLine &commandline, bool dorepair)
 {
+  // How noisy should we be
+  noiselevel = commandline.GetNoiseLevel();
+
   // Get filesnames from the command line
   string par1filename = commandline.GetParFilename();
   const list<CommandLine::ExtraFile> &extrafiles = commandline.GetExtraFiles();
@@ -97,7 +102,8 @@ Result Par1Repairer::Process(const CommandLine &commandline, bool dorepair)
   if (!LoadExtraRecoveryFiles(extrafiles))
     return eLogicError;
 
-  cout << endl << "Verifying source files:" << endl << endl;
+  if (noiselevel > CommandLine::nlQuiet)
+    cout << endl << "Verifying source files:" << endl << endl;
 
   // Check for the existence of and verify each of the source files
   if (!VerifySourceFiles())
@@ -105,7 +111,8 @@ Result Par1Repairer::Process(const CommandLine &commandline, bool dorepair)
 
   if (completefilecount<sourcefiles.size())
   {
-    cout << endl << "Scanning extra files:" << endl << endl;
+    if (noiselevel > CommandLine::nlQuiet)
+      cout << endl << "Scanning extra files:" << endl << endl;
 
     // Check any other files specified on the command line to see if they are
     // actually copies of the source files that have the wrong filename
@@ -116,7 +123,8 @@ Result Par1Repairer::Process(const CommandLine &commandline, bool dorepair)
   // Find out how much data we have found
   UpdateVerificationResults();
 
-  cout << endl;
+  if (noiselevel > CommandLine::nlSilent)
+    cout << endl;
 
   // Check the verification results and report the details
   if (!CheckVerificationResults())
@@ -128,7 +136,8 @@ Result Par1Repairer::Process(const CommandLine &commandline, bool dorepair)
     // Do we want to carry out a repair
     if (dorepair)
     {
-      cout << endl;
+      if (noiselevel > CommandLine::nlSilent)
+        cout << endl;
 
       // Rename any damaged or missnamed target files.
       if (!RenameTargetFiles())
@@ -158,7 +167,8 @@ Result Par1Repairer::Process(const CommandLine &commandline, bool dorepair)
           DeleteIncompleteTargetFiles();
           return eMemoryError;
         }
-        cout << endl;
+        if (noiselevel > CommandLine::nlSilent)
+          cout << endl;
 
         // Set the total amount of data to be processed.
         progress = 0;
@@ -183,7 +193,8 @@ Result Par1Repairer::Process(const CommandLine &commandline, bool dorepair)
           blockoffset += blocklength;
         }
 
-        cout << endl << "Verifying repaired files:" << endl << endl;
+        if (noiselevel > CommandLine::nlSilent)
+          cout << endl << "Verifying repaired files:" << endl << endl;
 
         // Verify that all of the reconstructed target files are now correct
         if (!VerifyTargetFiles())
@@ -197,12 +208,13 @@ Result Par1Repairer::Process(const CommandLine &commandline, bool dorepair)
       // Are all of the target files now complete?
       if (completefilecount<sourcefiles.size())
       {
-        cout << "Repair Failed." << endl;
+        cerr << "Repair Failed." << endl;
         return eRepairFailed;
       }
       else
       {
-        cout << endl << "Repair complete." << endl;
+        if (noiselevel > CommandLine::nlSilent)
+          cout << endl << "Repair complete." << endl;
       }
     }
     else
@@ -233,6 +245,7 @@ bool Par1Repairer::LoadRecoveryFile(string filename)
     return true;
   }
 
+  if (noiselevel > CommandLine::nlSilent)
   {
     string path;
     string name;
@@ -454,13 +467,16 @@ bool Par1Repairer::LoadRecoveryFile(string filename)
   // We have finished with the file for now
   diskfile->Close();
 
-  if (havevolume)
+  if (noiselevel > CommandLine::nlQuiet)
   {
-    cout << "Loaded recovery volume " << volumenumber << endl;
-  }
-  else
-  {
-    cout << "No new recovery volumes found" << endl;
+    if (havevolume)
+    {
+      cout << "Loaded recovery volume " << volumenumber << endl;
+    }
+    else
+    {
+      cout << "No new recovery volumes found" << endl;
+    }
   }
 
   // Remember that the file was processed
@@ -599,11 +615,14 @@ bool Par1Repairer::VerifySourceFiles(void)
       // The file does not exist.
       delete diskfile;
 
-      string path;
-      string name;
-      DiskFile::SplitFilename(filename, path, name);
+      if (noiselevel > CommandLine::nlSilent)
+      {
+        string path;
+        string name;
+        DiskFile::SplitFilename(filename, path, name);
 
-      cout << "Target: \"" << name << "\" - missing." << endl;
+        cout << "Target: \"" << name << "\" - missing." << endl;
+      }
     }
 
     ++sourceiterator;
@@ -744,12 +763,15 @@ bool Par1Repairer::VerifyDataFile(DiskFile *diskfile, Par1RepairerSourceFile *so
         u64 offset = 16384;
         while (offset < filesize)
         {
-          // Update a progress indicator
-          u32 oldfraction = (u32)(1000 * (progress) / filesize);
-          u32 newfraction = (u32)(1000 * (progress=offset) / filesize);
-          if (oldfraction != newfraction)
+          if (noiselevel > CommandLine::nlQuiet)
           {
-            cout << "Scanning: \"" << name << "\": " << newfraction/10 << '.' << newfraction%10 << "%\r" << flush;
+            // Update a progress indicator
+            u32 oldfraction = (u32)(1000 * (progress) / filesize);
+            u32 newfraction = (u32)(1000 * (progress=offset) / filesize);
+            if (oldfraction != newfraction)
+            {
+              cout << "Scanning: \"" << name << "\": " << newfraction/10 << '.' << newfraction%10 << "%\r" << flush;
+            }
           }
 
           want = (size_t)min((u64)buffersize, filesize-offset);
@@ -818,43 +840,50 @@ bool Par1Repairer::VerifyDataFile(DiskFile *diskfile, Par1RepairerSourceFile *so
   {
     match->SetCompleteFile(diskfile);
 
-    // Was the match the file we were originally looking for
-    if (match == sourcefile)
+    if (noiselevel > CommandLine::nlSilent)
     {
-      cout << "Target: \"" << name << "\" - found." << endl;
-    }
-    // Were we looking for a specific file
-    else if (sourcefile != 0)
-    {
-      string targetname;
-      DiskFile::SplitFilename(sourcefile->FileName(), path, targetname);
+      // Was the match the file we were originally looking for
+      if (match == sourcefile)
+      {
+        cout << "Target: \"" << name << "\" - found." << endl;
+      }
+      // Were we looking for a specific file
+      else if (sourcefile != 0)
+      {
+        string targetname;
+        DiskFile::SplitFilename(sourcefile->FileName(), path, targetname);
 
-      cout << "Target: \"" 
-            << name 
-            << "\" - is a match for \"" 
-            << targetname 
-            << "\"." 
-            << endl;
+        cout << "Target: \"" 
+              << name 
+              << "\" - is a match for \"" 
+              << targetname 
+              << "\"." 
+              << endl;
+      }
     }
     else
     {
-      string targetname;
-      DiskFile::SplitFilename(match->FileName(), path, targetname);
+      if (noiselevel > CommandLine::nlSilent)
+      {
+        string targetname;
+        DiskFile::SplitFilename(match->FileName(), path, targetname);
 
-      cout << "File: \"" 
-            << name 
-            << "\" - is a match for \"" 
-            << targetname 
-            << "\"." 
-            << endl;
+        cout << "File: \"" 
+              << name 
+              << "\" - is a match for \"" 
+              << targetname 
+              << "\"." 
+              << endl;
+      }
     }
   }
   else
   {
-    cout << "File: \"" 
-          << name 
-          << "\" - no data found." 
-          << endl;
+    if (noiselevel > CommandLine:: nlSilent)
+      cout << "File: \"" 
+            << name 
+            << "\" - no data found." 
+            << endl;
   }
 
   return true;
@@ -912,42 +941,54 @@ bool Par1Repairer::CheckVerificationResults(void)
       damagedfilecount > 0 ||
       missingfilecount > 0)
   {
-    cout << "Repair is required." << endl;
-    if (renamedfilecount > 0) cout << renamedfilecount << " file(s) have the wrong name." << endl;
-    if (missingfilecount > 0) cout << missingfilecount << " file(s) are missing." << endl;
-    if (damagedfilecount > 0) cout << damagedfilecount << " file(s) exist but are damaged." << endl;
-    if (completefilecount > 0) cout << completefilecount << " file(s) are ok." << endl;
+    if (noiselevel > CommandLine::nlSilent)
+      cout << "Repair is required." << endl;
+    if (noiselevel > CommandLine::nlQuiet)
+    {
+      if (renamedfilecount > 0) cout << renamedfilecount << " file(s) have the wrong name." << endl;
+      if (missingfilecount > 0) cout << missingfilecount << " file(s) are missing." << endl;
+      if (damagedfilecount > 0) cout << damagedfilecount << " file(s) exist but are damaged." << endl;
+      if (completefilecount > 0) cout << completefilecount << " file(s) are ok." << endl;
+    }
 
     // Is repair possible
     if (recoveryblocks.size() >= damagedfilecount+missingfilecount)
     {
-      cout << "Repair is possible." << endl;
+      if (noiselevel > CommandLine::nlSilent)
+        cout << "Repair is possible." << endl;
 
-      if (recoveryblocks.size() > damagedfilecount+missingfilecount)
-        cout << "You have an excess of " 
-             << (u32)recoveryblocks.size() - (damagedfilecount+missingfilecount)
-             << " recovery files." << endl;
+      if (noiselevel > CommandLine::nlQuiet)
+      {
+        if (recoveryblocks.size() > damagedfilecount+missingfilecount)
+          cout << "You have an excess of " 
+               << (u32)recoveryblocks.size() - (damagedfilecount+missingfilecount)
+               << " recovery files." << endl;
 
-      if (damagedfilecount+missingfilecount > 0)
-        cout << damagedfilecount+missingfilecount
-             << " recovery files will be used to repair." << endl;
-      else if (recoveryblocks.size())
-        cout << "None of the recovery files will be used for the repair." << endl;
+        if (damagedfilecount+missingfilecount > 0)
+          cout << damagedfilecount+missingfilecount
+               << " recovery files will be used to repair." << endl;
+        else if (recoveryblocks.size())
+          cout << "None of the recovery files will be used for the repair." << endl;
+      }
 
       return true;
     }
     else
     {
-      cout << "Repair is not possible." << endl;
-      cout << "You need " << damagedfilecount+missingfilecount - recoveryblocks.size()
-           << " more recovery files to be able to repair." << endl;
+      if (noiselevel > CommandLine::nlSilent)
+      {
+        cout << "Repair is not possible." << endl;
+        cout << "You need " << damagedfilecount+missingfilecount - recoveryblocks.size()
+             << " more recovery files to be able to repair." << endl;
+      }
 
       return false;
     }
   }
   else
   {
-    cout << "All files are correct, repair is not required." << endl;
+    if (noiselevel > CommandLine::nlSilent)
+      cout << "All files are correct, repair is not required." << endl;
 
     return true;
   }
@@ -1161,7 +1202,7 @@ bool Par1Repairer::ComputeRSmatrix(void)
     return true;
   }
 
-  bool success = rs.Compute();
+  bool success = rs.Compute(noiselevel);
   return success;
 }
 
@@ -1224,14 +1265,17 @@ bool Par1Repairer::ProcessData(u64 blockoffset, size_t blocklength)
         // Process the data
         rs.Process(blocklength, inputindex, inputbuffer, outputindex, outbuf);
 
-        // Update a progress indicator
-        u32 oldfraction = (u32)(1000 * progress / totaldata);
-        progress += blocklength;
-        u32 newfraction = (u32)(1000 * progress / totaldata);
-
-        if (oldfraction != newfraction)
+        if (noiselevel > CommandLine::nlQuiet)
         {
-          cout << "Repairing: " << newfraction/10 << '.' << newfraction%10 << "%\r" << flush;
+          // Update a progress indicator
+          u32 oldfraction = (u32)(1000 * progress / totaldata);
+          progress += blocklength;
+          u32 newfraction = (u32)(1000 * progress / totaldata);
+
+          if (oldfraction != newfraction)
+          {
+            cout << "Repairing: " << newfraction/10 << '.' << newfraction%10 << "%\r" << flush;
+          }
         }
       }
 
@@ -1240,7 +1284,8 @@ bool Par1Repairer::ProcessData(u64 blockoffset, size_t blocklength)
     }
   }
 
-  cout << "Writing recovered data\r";
+  if (noiselevel > CommandLine::nlQuiet)
+    cout << "Writing recovered data\r";
 
   // For each output block that has been recomputed
   vector<DataBlock*>::iterator outputblock = outputblocks.begin();
@@ -1258,7 +1303,8 @@ bool Par1Repairer::ProcessData(u64 blockoffset, size_t blocklength)
     ++outputblock;
   }
 
-  cout << "Wrote " << totalwritten << " bytes to disk" << endl;
+  if (noiselevel > CommandLine::nlQuiet)
+    cout << "Wrote " << totalwritten << " bytes to disk" << endl;
 
   return true;
 }

@@ -121,6 +121,8 @@ protected:
   bool DeleteIncompleteTargetFiles(void);
 
 protected:
+  CommandLine::NoiseLevel   noiselevel;              // OnScreen display
+
   string                    searchpath;              // Where to find files on disk
 
   bool                      firstpacket;             // Whether or not a valid packet has been found.
