@@ -39,13 +39,13 @@ bool DescriptionPacket::Create(string filename, u64 filesize)
 
   packet->header.magic  = packet_magic;
   packet->header.length = packetlength;
-  packet->header.hash;  // Not known yet
-  packet->header.setid; // Not known yet
+  //packet->header.hash;  // Not known yet
+  //packet->header.setid; // Not known yet
   packet->header.type   = filedescriptionpacket_type;
 
-  packet->fileid;       // Not known yet
-  packet->hashfull;     // Not known yet
-  packet->hash16k;      // Not known yet
+  //packet->fileid;       // Not known yet
+  //packet->hashfull;     // Not known yet
+  //packet->hash16k;      // Not known yet
   packet->length        = filesize;
 
   memcpy(packet->name, filename.c_str(), filename.size());
