@@ -57,7 +57,7 @@ void RecoveryPacket::Create(DiskFile      *_diskfile,
   // Record everything we know in the packet.
   packet.header.magic  = packet_magic;
   packet.header.length = sizeof(packet) + _blocksize;
-  packet.header.hash;  // Not known yet.
+  //packet.header.hash;  // Not known yet.
   packet.header.setid  = _setid;
   packet.header.type   = recoveryblockpacket_type;
   packet.exponent      = _exponent;
