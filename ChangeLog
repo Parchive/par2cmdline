@@ -1,3 +1,12 @@
+22 April 2004 Peter B Clements
+
+	* README: Updated to include new commandline options.
+
+	* par2cmdline.vcproj: Update VS .NET project file with new
+	  version number.
+
+	* Released: Version 0.4.
+
 15 April 2004 Peter B Clements
 
 	* par2cmdline.sln, par2cmdline.vcproj: Updated.
