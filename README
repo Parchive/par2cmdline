@@ -56,12 +56,22 @@ You should have received par2cmdline in the form of source code which
 you can compile on your computer. You may optionally have received a 
 pre-compiled version of the program for your operating system.
 
+If you have only downloaded a precompiled executable, then the source
+code should be available from the same location that you downloaded the
+executable from.
+
 If you have MS Visual Studio .NET, then just open the par2cmdline.sln
 file and compile. You should then copy par2cmdline.exe to an appropriate
 location that is on your path.
 
-If you wish to compile for CygWin or Linux, then just use "make" with
-the supplied Makefile to compile and install par2cmdline.
+To compile on Linux and other unix variants use the following commands:
+
+  ./configure
+  make
+  make check
+  make install
+
+See INSTALL for full details of how to use the "configure" script.
 
 USING PAR2CMDLINE
 
