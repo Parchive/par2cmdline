@@ -372,7 +372,7 @@ bool Par1Repairer::LoadRecoveryFile(string filename)
             blocksize = fileentry->filesize;
 
           // Copy whole of file entry
-          memcpy((void*)fileentry, (void*)current, fileentry->entrysize);
+          memcpy((void*)fileentry, (void*)current, (size_t)(u64)fileentry->entrysize);
 
           // Create source file and add it to the appropriate list
           Par1RepairerSourceFile *sourcefile = new Par1RepairerSourceFile(fileentry, searchpath);
