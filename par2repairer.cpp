@@ -1964,9 +1964,9 @@ bool Par2Repairer::ComputeRSmatrix(void)
     // Was this block found
     if (sourceblock->IsSet())
     {
-      // Open the file the block was found in.
-      if (!sourceblock->Open())
-        return false;
+//      // Open the file the block was found in.
+//      if (!sourceblock->Open())
+//        return false;
 
       // Record that the block was found
       *pres = true;
@@ -2011,9 +2011,9 @@ bool Par2Repairer::ComputeRSmatrix(void)
     // Get the DataBlock from the recovery packet
     DataBlock *recoveryblock = recoverypacket->GetDataBlock();
 
-    // Make sure the file is open
-    if (!recoveryblock->Open())
-      return false;
+//    // Make sure the file is open
+//    if (!recoveryblock->Open())
+//      return false;
 
     // Add the recovery block to the list of blocks that will be read
     *inputblock = recoveryblock;
@@ -2075,12 +2075,31 @@ bool Par2Repairer::ProcessData(u64 blockoffset, size_t blocklength)
   vector<DataBlock*>::iterator copyblock  = copyblocks.begin();
   u32                          inputindex = 0;
 
+  DiskFile *lastopenfile = NULL;
+
   // Are there any blocks which need to be reconstructed
   if (missingblockcount > 0)
   {
     // For each input block
     while (inputblock != inputblocks.end())       
     {
+      // Are we reading from a new file?
+      if (lastopenfile != (*inputblock)->GetDiskFile())
+      {
+        // Close the last file
+        if (lastopenfile != NULL)
+        {
+          lastopenfile->Close();
+        }
+
+        // Open the new file
+        lastopenfile = (*inputblock)->GetDiskFile();
+        if (!lastopenfile->Open())
+        {
+          return false;
+        }
+      }
+
       // Read data from the current input block
       if (!(*inputblock)->ReadData(blockoffset, blocklength, inputbuffer))
         return false;
@@ -2136,6 +2155,23 @@ bool Par2Repairer::ProcessData(u64 blockoffset, size_t blocklength)
       // Does this block need to be copied
       if ((*copyblock)->IsSet())
       {
+        // Are we reading from a new file?
+        if (lastopenfile != (*inputblock)->GetDiskFile())
+        {
+          // Close the last file
+          if (lastopenfile != NULL)
+          {
+            lastopenfile->Close();
+          }
+
+          // Open the new file
+          lastopenfile = (*inputblock)->GetDiskFile();
+          if (!lastopenfile->Open())
+          {
+            return false;
+          }
+        }
+
         // Read data from the current input block
         if (!(*inputblock)->ReadData(blockoffset, blocklength, inputbuffer))
           return false;
@@ -2159,6 +2195,12 @@ bool Par2Repairer::ProcessData(u64 blockoffset, size_t blocklength)
       ++copyblock;
       ++inputblock;
     }
+  }
+
+  // Close the last file
+  if (lastopenfile != NULL)
+  {
+    lastopenfile->Close();
   }
 
   cout << "Writing recovered data\r";

@@ -463,6 +463,9 @@ bool Par2Creator::OpenSourceFiles(const list<CommandLine::ExtraFile> &extrafiles
     // Add the source file to the sourcefiles array.
     sourcefiles.push_back(sourcefile);
 
+    // Close the source file until its needed
+    sourcefile->Close();
+
     ++extrafile;
   }
 
@@ -777,11 +780,30 @@ bool Par2Creator::ProcessData(u64 blockoffset, size_t blocklength)
   vector<DataBlock>::iterator sourceblock;
   u32 inputblock;
 
+  DiskFile *lastopenfile = NULL;
+
   // For each input block
   for ((sourceblock=sourceblocks.begin()),(inputblock=0);
        sourceblock != sourceblocks.end();
        ++sourceblock, ++inputblock)
   {
+    // Are we reading from a new file?
+    if (lastopenfile != (*sourceblock).GetDiskFile())
+    {
+      // Close the last file
+      if (lastopenfile != NULL)
+      {
+        lastopenfile->Close();
+      }
+
+      // Open the new file
+      lastopenfile = (*sourceblock).GetDiskFile();
+      if (!lastopenfile->Open())
+      {
+        return false;
+      }
+    }
+
     // Read data from the current input block
     if (!sourceblock->ReadData(blockoffset, blocklength, inputbuffer))
       return false;
@@ -820,6 +842,12 @@ bool Par2Creator::ProcessData(u64 blockoffset, size_t blocklength)
       sourceindex = 0;
       ++sourcefile;
     }
+  }
+
+  // Close the last file
+  if (lastopenfile != NULL)
+  {
+    lastopenfile->Close();
   }
 
   cout << "Writing recovery packets\r";
@@ -915,13 +943,13 @@ bool Par2Creator::WriteCriticalPackets(void)
 // Close all files.
 bool Par2Creator::CloseFiles(void)
 {
-  // Close each source file.
-  for (vector<Par2CreatorSourceFile*>::iterator sourcefile = sourcefiles.begin();
-       sourcefile != sourcefiles.end();
-       ++sourcefile)
-  {
-    (*sourcefile)->Close();
-  }
+//  // Close each source file.
+//  for (vector<Par2CreatorSourceFile*>::iterator sourcefile = sourcefiles.begin();
+//       sourcefile != sourcefiles.end();
+//       ++sourcefile)
+//  {
+//    (*sourcefile)->Close();
+//  }
 
   // Close each recovery file.
   for (vector<DiskFile>::iterator recoveryfile = recoveryfiles.begin();
