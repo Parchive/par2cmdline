@@ -62,6 +62,8 @@ CommandLine::CommandLine(void)
 , firstblock(0)
 , uniformfiles(false)
 , recoveryfilecount(0)
+, recoveryblockcount(0)
+, recoveryblockcountset(false)
 , redundancy(0)
 , redundancyset(false)
 , parfilename()
@@ -91,8 +93,9 @@ void CommandLine::usage(void)
     "Options:\n"
     "\n"
     "  -b<n>  : Set the Block-Count\n"
-    "  -s<n>  : Set the Block-Size\n"  // Overides Block-Count if both specified
+    "  -s<n>  : Set the Block-Size\n" // Don't use both -b and -s
     "  -r<n>  : Level of Redundancy (%%)\n"
+    "  -c<n>  : Recovery block count\n" // Don't use both -r and -c
     "  -f<n>  : First Recovery-Block-Number\n"
     "  -u     : Uniform recovery file sizes\n"
     "  -n<n>  : Number of recovery files\n"
@@ -263,6 +266,11 @@ bool CommandLine::Parse(int argc, char *argv[])
               cerr << "Cannot specify redundancy twice." << endl;
               return false;
             }
+            else if (recoveryblockcountset)
+            {
+              cerr << "Cannot specify both redundancy and recovery block count." << endl;
+              return false;
+            }
 
             char *p = &argv[0][2];
             while (redundancy <= 10 && *p && isdigit(*p))
@@ -281,6 +289,44 @@ bool CommandLine::Parse(int argc, char *argv[])
               return false;
             }
             redundancyset = true;
+          }
+          break;
+
+        case 'c': // Set the number of recovery blocks to create
+          {
+            if (operation != opCreate)
+            {
+              cerr << "Cannot specify recovery block count unless creating." << endl;
+              return false;
+            }
+            if (recoveryblockcountset)
+            {
+              cerr << "Cannot specify recovery block count twice." << endl;
+              return false;
+            }
+            else if (redundancyset)
+            {
+              cerr << "Cannot specify both recovery block count and redundancy." << endl;
+              return false;
+            }
+
+            char *p = &argv[0][2];
+            while (recoveryblockcount <= 32768 && *p && isdigit(*p))
+            {
+              recoveryblockcount = recoveryblockcount * 10 + (*p - '0');
+              p++;
+            }
+            if (recoveryblockcount > 32768 || *p)
+            {
+              cerr << "Invalid recoveryblockcount option: " << argv[0] << endl;
+              return false;
+            }
+            if (recoveryblockcount == 0 && recoveryfilecount > 0)
+            {
+              cerr << "Cannot set recoveryblockcount to 0 and file count > 0" << endl;
+              return false;
+            }
+            recoveryblockcountset = true;
           }
           break;
 
@@ -343,6 +389,11 @@ bool CommandLine::Parse(int argc, char *argv[])
             if (redundancyset && redundancy == 0)
             {
               cerr << "Cannot set file count when redundancy is set to 0." << endl;
+              return false;
+            }
+            if (recoveryblockcountset && recoveryblockcount == 0)
+            {
+              cerr << "Cannot set file count when recovery block count is set to 0." << endl;
               return false;
             }
 
@@ -602,8 +653,8 @@ bool CommandLine::Parse(int argc, char *argv[])
       parfilename = parfilename.substr(0, parfilename.length()-5);
     }
 
-    // Assume a redundancy of 5% if not specified.
-    if (!redundancyset)
+    // Assume a redundancy of 5% if neither redundancy or recoveryblockcount were set.
+    if (!redundancyset && !recoveryblockcountset)
     {
       redundancy = 5;
     }
