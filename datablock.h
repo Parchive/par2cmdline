@@ -48,7 +48,7 @@ public:
   bool IsSet(void) const;
 
   // Which disk file is this data block in
-  const DiskFile* GetDiskFile(void) const;
+  DiskFile* GetDiskFile(void) const;
 
   // What offset is the block located at
   u64 GetOffset(void) const;
@@ -113,7 +113,7 @@ inline bool DataBlock::IsSet(void) const
 }
 
 // Which disk file is this data block in
-inline const DiskFile* DataBlock::GetDiskFile(void) const
+inline DiskFile* DataBlock::GetDiskFile(void) const
 {
   return diskfile;
 }
