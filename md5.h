@@ -54,6 +54,10 @@ public:
   friend ostream& operator<<(ostream &s, const MD5Hash &hash);
   string print(void) const;
 
+  // Copy and assignment
+  MD5Hash(const MD5Hash &other);
+  MD5Hash& operator=(const MD5Hash &other);
+
 public:
   u8 hash[16]; // 16 byte MD5 Hash value
 };
@@ -94,6 +98,9 @@ public:
   // Get the Hash value and the total number of bytes processed.
   MD5Hash Hash(void) const;
   u64 Bytes(void) const {return bytes;}
+
+  friend ostream& operator<<(ostream &s, const MD5Context &context);
+  string print(void) const;
 
 protected:
   enum {buffersize = 64};
@@ -156,5 +163,16 @@ inline bool MD5Hash::operator<=(const MD5Hash &other) const
   return !other.operator<(*this);
 }
 
+inline MD5Hash::MD5Hash(const MD5Hash &other)
+{
+  memcpy(&hash, &other.hash, sizeof(hash));
+}
+
+inline MD5Hash& MD5Hash::operator=(const MD5Hash &other)
+{
+  memcpy(&hash, &other.hash, sizeof(hash));
+
+  return *this;
+}
 
 #endif // __MD5_H__
