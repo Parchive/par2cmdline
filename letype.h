@@ -22,10 +22,64 @@
 
 #if __BYTE_ORDER == __LITTLE_ENDIAN
 
+typedef u16 leu16;
 typedef u32 leu32;
 typedef u64 leu64;
 
 #else
+
+class leu16
+{
+public:
+  leu16(void);
+
+  leu16(const leu16 &other);
+  leu16& operator=(const leu16 &other);
+
+  leu16(const u16 &other);
+  leu16& operator=(const u16 &other);
+
+  operator u16(void) const;
+
+protected:
+  u16 value;
+};
+
+inline leu16::leu16(void)
+{
+}
+
+inline leu16::leu16(const leu16 &other)
+: value(other.value)
+{
+}
+
+inline leu16& leu16::operator =(const leu16 &other)
+{
+  value = other.value;
+  return *this;
+}
+
+inline leu16::leu16(const u16 &other)
+{
+  ((unsigned char*)&value)[0] = (unsigned char)((other >> 0) & 0xff);
+  ((unsigned char*)&value)[1] = (unsigned char)((other >> 8) & 0xff);
+}
+
+inline leu16& leu16::operator=(const u16 &other)
+{
+  ((unsigned char*)&value)[0] = (unsigned char)((other >> 0) & 0xff);
+  ((unsigned char*)&value)[1] = (unsigned char)((other >> 8) & 0xff);
+
+  return *this;
+}
+
+inline leu16::operator u16(void) const
+{
+  return ((unsigned char*)&value)[0] << 0 |
+         ((unsigned char*)&value)[1] << 8;
+}
+
 
 class leu32
 {
