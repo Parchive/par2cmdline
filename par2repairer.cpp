@@ -1395,6 +1395,16 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
   string name;
   DiskFile::SplitFilename(diskfile->FileName(), path, name);
 
+  string shortname;
+  if (name.size() > 56)
+  {
+    shortname = name.substr(0, 28) + "..." + name.substr(name.size()-28);
+  }
+  else
+  {
+    shortname = name;
+  }
+
   // Create the checksummer for the file and start reading from it
   FileCheckSummer filechecksummer(diskfile, blocksize, windowtable, windowmask);
   if (!filechecksummer.Start())
@@ -1425,7 +1435,7 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
     u32 newfraction = (u32)(1000 * (progress = filechecksummer.Offset()) / diskfile->FileSize());
     if (oldfraction != newfraction)
     {
-      cout << "Scanning: \"" << name << "\": " << newfraction/10 << '.' << newfraction%10 << "%\r" << flush;
+      cout << "Scanning: \"" << shortname << "\": " << newfraction/10 << '.' << newfraction%10 << "%\r" << flush;
     }
 
     // If we fail to find a match, it might be because it was a duplicate of a block
