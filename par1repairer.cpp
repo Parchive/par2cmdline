@@ -346,7 +346,7 @@ bool Par1Repairer::LoadRecoveryFile(string filename)
 
         // Allocate a buffer to copy each file entry into so that
         // all fields will be correctly aligned in memory.
-        PAR1FILEENTRY *fileentry = new PAR1FILEENTRY[(remaining + sizeof(PAR1FILEENTRY)-1)/sizeof(PAR1FILEENTRY)];
+        PAR1FILEENTRY *fileentry = (PAR1FILEENTRY*)new u64[(remaining + sizeof(u64)-1)/sizeof(u64)];
 
         // Process until we run out of files or data
         while (remaining > 0 && fileindex < fileheader.numberoffiles)
@@ -387,7 +387,7 @@ bool Par1Repairer::LoadRecoveryFile(string filename)
           fileindex++;
         }
 
-        delete [] fileentry;
+        delete [] (u64*)fileentry;
 
         // Did we find the correct number of files
         if (fileindex < fileheader.numberoffiles)
