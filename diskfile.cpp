@@ -354,7 +354,7 @@ list<string>* DiskFile::FindFiles(string path, string wildcard)
 
 DiskFile::DiskFile(void)
 {
-  filename;
+  //filename;
   filesize = 0;
   offset = 0;
 
@@ -627,13 +627,39 @@ list<string>* DiskFile::FindFiles(string path, string wildcard)
       {
         string name = d->d_name;
 
-        if (name != "." && name != ".." &&
-            (multiple ? name.size() >= wildcard.size() : name.size() == wildcard.size()) &&
-            name.substr(0, where) == front &&
-            name.substr(name.size()-back.size()) == back)
+        if (name == "." || name == "..")
+          continue;
+
+        if (multiple)
         {
-          matches->push_back(path + name);
+          if (name.size() >= wildcard.size() &&
+              name.substr(0, where) == front &&
+              name.substr(name.size()-back.size()) == back)
+          {
+            matches->push_back(path + name);
+          }
         }
+        else
+        {
+          if (name.size() == wildcard.size())
+          {
+            string::const_iterator pw = wildcard.begin();
+            string::const_iterator pn = name.begin();
+            while (pw != wildcard.end())
+            {
+              if (*pw != '?' && *pw != *pn)
+                break;
+              ++pw;
+              ++pn;
+            }
+
+            if (pw == wildcard.end())
+            {
+              matches->push_back(path + name);
+            }
+          }
+        }
+
       }
       closedir(dirp);
     }
@@ -788,11 +814,11 @@ string DiskFile::TranslateFilename(string filename)
   string::iterator p = filename.begin();
   while (p != filename.end())
   {
-    char ch = *p;
+    unsigned char ch = *p;
 
     bool ok = true;
 #ifdef WIN32
-    if (ch < 32 || ch >= 127)
+    if (ch < 32)
     {
       ok = false;
     }
@@ -800,23 +826,20 @@ string DiskFile::TranslateFilename(string filename)
     {
       switch (ch)
       {
+      case '"':
+      case '*':
+      case '/':
+      case ':':
       case '<':
       case '>':
-      case ':':
-      case '"':
-      case '\'':
-      case '`':
       case '?':
-      case '*':
-      case '&':
+      case '\\':
       case '|':
-      case '[':
-      case ']':
         ok = false;
       }
     }
 #else
-    if (ch <= 32 || ch >= 127)
+    if (ch < 32)
     {
       ok = false;
     }
@@ -824,18 +847,7 @@ string DiskFile::TranslateFilename(string filename)
     {
       switch (ch)
       {
-      case '<':
-      case '>':
-      case ':':
-      case '"':
-      case '\'':
-      case '`':
-      case '?':
-      case '*':
-      case '&':
-      case '|':
-      case '[':
-      case ']':
+      case '/':
         ok = false;
       }
     }
@@ -875,7 +887,7 @@ bool DiskFile::Rename(void)
       return false;
     }
     newname[length] = 0;
-  } while (_stat(newname, &st) == 0);
+  } while (stat(newname, &st) == 0);
 
   return Rename(newname);
 }
