@@ -124,7 +124,7 @@ protected:
   list<CriticalPacketEntry>  criticalpacketentries; // A list of which critical packet will
                                                     // be written to which recovery file.
 
-  ReedSolomon rs;   // The Reed Solomon matrix.
+  ReedSolomon<Galois16> rs;   // The Reed Solomon matrix.
 
   u64 progress;     // How much data has been processed.
   u64 totaldata;    // Total amount of data to be processed.
