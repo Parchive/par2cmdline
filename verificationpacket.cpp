@@ -39,12 +39,12 @@ bool VerificationPacket::Create(u32 _blockcount)
   // Record everything we know in the packet.
   packet->header.magic  = packet_magic;
   packet->header.length = packetlength;
-  packet->header.hash;  // Not known yet
-  packet->header.setid; // Not known yet
+  //packet->header.hash;  // Not known yet
+  //packet->header.setid; // Not known yet
   packet->header.type   = fileverificationpacket_type;
 
-  packet->fileid;       // Not known yet
-  packet->entries;      // Not known yet
+  //packet->fileid;       // Not known yet
+  //packet->entries;      // Not known yet
 
   return true;
 }
