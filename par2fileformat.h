@@ -169,8 +169,7 @@ struct RECOVERYBLOCKPACKET
 
 inline bool operator == (const MAGIC &left, const MAGIC &right)
 {
-  return ((u32*)&left)[0] == ((u32*)&right)[0] &&
-         ((u32*)&left)[1] == ((u32*)&right)[1];
+  return (0==memcmp(&left, &right, sizeof(left)));
 }
 
 inline bool operator != (const MAGIC &left, const MAGIC &right)
@@ -180,10 +179,7 @@ inline bool operator != (const MAGIC &left, const MAGIC &right)
 
 inline bool operator == (const PACKETTYPE &left, const PACKETTYPE &right)
 {
-  return ((u32*)&left)[0] == ((u32*)&right)[0] &&
-         ((u32*)&left)[1] == ((u32*)&right)[1] &&
-         ((u32*)&left)[2] == ((u32*)&right)[2] &&
-         ((u32*)&left)[3] == ((u32*)&right)[3];
+  return (0==memcmp(&left, &right, sizeof(left)));
 }
 
 inline bool operator != (const PACKETTYPE &left, const PACKETTYPE &right)
