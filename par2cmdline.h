@@ -36,6 +36,7 @@
 #include <ctype.h>
 #include <iostream>
 
+#include <cassert>
 
 // System includes
 #ifdef WIN32
