@@ -71,7 +71,6 @@ void VerificationHashTable::Load(Par2RepairerSourceFile *sourcefile, u64 blocksi
 
   // Get information from the sourcefile
   VerificationPacket *verificationpacket = sourcefile->GetVerificationPacket();
-  u32 firstblocknumber                   = sourcefile->FirstBlockNumber();
   u32 blockcount                         = verificationpacket->BlockCount();
 
   // Iterate throught the data blocks for the source file and the verification
