@@ -1,0 +1,21 @@
+Microsoft Visual Studio Solution File, Format Version 7.00
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "par2cmdline", "par2cmdline.vcproj", "{D0A94F83-495E-4FB2-AC33-9A3EC2CC263B}"
+EndProject
+Global
+	GlobalSection(SolutionConfiguration) = preSolution
+		ConfigName.0 = Debug
+		ConfigName.1 = Release
+	EndGlobalSection
+	GlobalSection(ProjectDependencies) = postSolution
+	EndGlobalSection
+	GlobalSection(ProjectConfiguration) = postSolution
+		{D0A94F83-495E-4FB2-AC33-9A3EC2CC263B}.Debug.ActiveCfg = Debug|Win32
+		{D0A94F83-495E-4FB2-AC33-9A3EC2CC263B}.Debug.Build.0 = Debug|Win32
+		{D0A94F83-495E-4FB2-AC33-9A3EC2CC263B}.Release.ActiveCfg = Release|Win32
+		{D0A94F83-495E-4FB2-AC33-9A3EC2CC263B}.Release.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+	EndGlobalSection
+	GlobalSection(ExtensibilityAddIns) = postSolution
+	EndGlobalSection
+EndGlobal

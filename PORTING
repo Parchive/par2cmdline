@@ -1,0 +1,17 @@
+This version of par2cmdline has been compiled and tested on the following 
+compilers and operating systems:
+
+  MS Visual Studio.NET  on  Windows XP
+  gcc 3.2               on  CygWin 1.3.22
+  gcc 3.2.2             on  Red Hat Linux 9.0
+
+If you wish to compile par2cmdline under a different environent, then you 
+should start by trying to compile with the supplied Makefile.
+
+If you get compile errors, then the most likely place you will need to make
+changes will be in par2cmdline.h, diskfile.h, and diskfile.cpp.
+
+See the file ROADMAP for details of what each of the source files is used for.
+
+If you succesfully port par2cmdline, it would be appreciated if you could post
+the details on the parchive web site at http://sourceforge.net/parchive.

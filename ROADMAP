@@ -1,0 +1,202 @@
+commandline.h / commandline.cpp
+
+	class CommandLine;
+	
+	This class is used to process the command line arguments passed to
+	par2cmdline. Basic verification is done to ensure that invalid
+	combinations of options are not used and that files exist.
+	
+crc.h / crc.cpp
+
+	u32 CRCUpdateChar(u32 crc, u8 ch);
+	u32 CRCUpdateBlock(u32 crc, size_t length, const void *buffer);
+	u32 CRCUpdateBlock(u32 crc, size_t length);
+	
+	void GenerateWindowTable(u64 window, u32 (&windowtable)[256]);
+	u32 ComputeWindowMask(u64 window);
+	u32 CRCSlideChar(u32 crc, u8 chNew, u8 chOld, 
+	                 const u32 (&windowtable)[256]);
+	
+	These functions are used to calculate and verify the CCITT CRC32 values
+	for blocks of data in data files.
+	
+	The latter three functions allow the rapid computation of the crc for
+	data in a sliding window.
+	
+creatorpacket.h / creatorpacket.cpp
+
+	class CreatorPacket;
+	
+	This class is used to read and write "Creator Packets" to a recovery file.
+	
+criticalpacket.h / criticalpacket.cpp
+
+	class CriticalPacket;
+	class CriticalPacketEntry;
+	
+	CriticalPacket is the base class for DesriptionPacket, VerificationPacket,
+	MainPacket, and CreatorPacket. CriticalPacket encapsulates memory
+	allocation for the packet, computation of the packet hash and writing the
+	packet to disk.
+	
+	CriticalPacketEntry is used to record that a copy of a specific critical
+	packet will be written to a particular file at a specific offset.
+	
+datablock.h / datablock.cpp
+
+	class DataBlock;
+
+	Objects of this type are used to track blocks of data that belong to
+	different files. When data is read from or written to a datablock, it
+	calculates the correct file offset and length to use.
+	
+descriptionpacket.h / descriptionpacket.cpp
+
+	class DescriptionPacket;
+	
+	This class is used to read and write "File Description Packets" to a
+	recovery file. The class can compute the file id for the file when
+	creating recovery files and will verify that the packet is ok when
+	it is loaded from a recovery file.
+	
+diskfile.h / diskfile.cpp
+
+	class DiskFile;
+	class DiskFileMap;
+	
+	The DiskFile class encapsulates all file access. Each object of this type
+	represents on file that par2cmdline is using, and references to it
+	are used in any other object that needs to refer to a file.
+	
+	The DiskFileMap class is used to track which files have been processed.
+	
+filechecksummer.h / filechecksummer.cpp
+
+	class FileCheckSummer;
+	
+	The FileCheckSummer is used to compute the CRC and HASH of a sliding 
+	window onto a data file. The CRC is updated continuously as the window
+	is slid allong the file, and the HASH is only calculated when it
+	is needed.
+	
+galois.h / galois.cpp
+
+	class Galois;
+	
+	class GaloisTable;
+	class GaloisLongMultiplyTable;
+	
+	The Galois object is used for galois arithmetic.
+	
+	GaloisTable encapsulates the log and antilog tables used for fast
+	multiplation and division, and GaloisLongMultiplyTable is used by the
+	ReedSolomon object to allow rapid multiplication of a block of data
+	by the same value.
+	
+mainpacket.h / mainpacket.cpp
+
+	class MainPacket;
+	
+	The MainPacket is used to read and write a "Main Packet" to and from
+	a recovery file.
+	
+md5.h / md5.cpp
+
+	class MD5Hash;
+	class MD5Context;
+	
+	MD5Context objects are used to calculate the hash of a block of data.
+	The resulting hash value is then stored in an MD5Hash object.
+	
+par2cmdline.h / par2cmdline.cpp
+
+	int main(int argc, char *argv[]);
+	
+	par2cmdline.cpp defines the main() function which is responsible for
+	creating a CommandLine object to parse the command line parameters, and
+	then to create either a Par2Creator or a Par2Repairer to either
+	create recovery files or use them to verify and repair data files.
+	
+	par2cmdline.h contains #include lines for all required header files,
+	as well as a number of type definitions.
+	
+par2creator.h / par2creator.cpp
+
+	class Par2Creator;
+	
+	This class encapsulates all of the procedures required to create recovery
+	files from a set of data files.
+	
+par2creatorsourcefile.h / par2creatorsourcefile.cpp
+
+	class Par2CreatorSourceFile;
+	
+	Each object of this type represent one of the data files for which 
+	recovery files are to be created. It handles creation of a
+	DescriptionPacket and a VerificationPacket, computation of the full
+	file hash and 16k hash values and the calculation and recording
+	of the crc and hash values for each data block withint the file.
+	
+par2fileformat.h / par2fileformat.cpp
+
+	struct PACKET_HEADER;
+	struct FILEVERIFICATIONPACKET;
+	struct FILEDESCRIPTIONPACKET;
+	struct MAINPACKET;
+	struct CREATORPACKET;
+	struct RECOVERYBLOCKPACKET;
+	
+	These structures define the exact format used to store the various
+	packets in a recovery file.
+	
+par2repairer.h / par2repairer.cpp
+
+	class Par2Repairer;
+	
+	This class encapsulates all of the procedures required to use a set
+	of recovery files to verify and repair the data files for which they
+	were created.
+	
+par2repairersourcefile.h / par2repairersourcefile.cpp
+
+	class Par2RepairerSourceFile;
+	
+	Each object of this class represents one of the data files that is
+	being verified and repaired. It has a copy of the description packet
+	and verification packet from the recovery files, and keeps track of
+	exactly which disk files contain data blocks that belong to it.
+
+recoverypacket.h / recoverypacket.cpp
+
+	class RecoveryPacket;
+
+	This class is used to read and write the header of a Recovery Packet.
+
+	If contains a DataBlock object which is used to read and write data
+	to or from the rest of the recovery packet.
+
+verificationhashtable.h / verificationhashtable.cpp
+
+	class VerificationHashTable;
+	class VerificationHashEntry;
+
+	The VerificationHashTable is to store details obtained from all of
+	the verification packets. It is used to check whether or not the
+	crc and hash values calculated by the FileCheckSummer match any of
+	the data blocks from the data files.
+
+verificationpacket.h / verificationpacket.cpp
+
+	class VerificationPacket;
+
+	This class is used to read a write Verification Packets to and from
+	recovery files.
+
+letype.h
+
+	class leu32;
+	class leu64;
+
+	These two types are used by fileformat.h and are used to handle the
+	type conversion between little endian and big endian numerical
+	formats. 
