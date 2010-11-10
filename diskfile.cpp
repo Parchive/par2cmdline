@@ -27,6 +27,11 @@ static char THIS_FILE[]=__FILE__;
 #endif
 #endif
 
+#if defined(__FreeBSD_kernel__)
+#include <sys/disk.h>
+#define BLKGETSIZE64 DIOCGMEDIASIZE
+#endif
+
 
 #ifdef WIN32
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
