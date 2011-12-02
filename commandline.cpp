@@ -550,6 +550,19 @@ bool CommandLine::Parse(int argc, char *argv[])
         }
         else
         {
+          // The shell will also expand * to directories so filter for files.
+          if ((parfilename.length() != 0) && (operation == opCreate))
+          {
+            struct stat st;
+            if (!(stat(argv[0], &st) == 0 && S_ISREG(st.st_mode)))
+            {
+              cerr << "Skipping non-regular file: " << argv[0] << endl;
+              argc--;
+              argv++;
+              options = false;
+              continue;
+            }
+          }
           filenames = new list<string>;
           filenames->push_back(argv[0]);
         }
