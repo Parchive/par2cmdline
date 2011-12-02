@@ -573,7 +573,7 @@ string DiskFile::GetCanonicalPathname(string filename)
     return filename;
 
   // Get the current directory
-  char curdir[1000];
+  char curdir[PATH_MAX];
   if (0 == getcwd(curdir, sizeof(curdir)))
   {
     return filename;
