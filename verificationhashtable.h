@@ -66,11 +66,11 @@ public:
   // Comparison operators for searching
   bool operator <(const VerificationHashEntry &r) const 
   {
-    return crc < r.crc || crc == r.crc && hash < r.hash;
+    return crc < r.crc || (crc == r.crc && hash < r.hash);
   }
   bool operator >(const VerificationHashEntry &r) const 
   {
-    return crc > r.crc || crc == r.crc && hash > r.hash;
+    return crc > r.crc || (crc == r.crc && hash > r.hash);
   }
   bool operator ==(const VerificationHashEntry &r) const 
   {
@@ -183,11 +183,11 @@ inline const VerificationHashEntry* VerificationHashEntry::Search(const Verifica
 
   while (entry)
   {
-    if (entry->crc < crc || entry->crc == crc && entry->hash < hash)
+    if (entry->crc < crc || (entry->crc == crc && entry->hash < hash))
     {
       entry = entry->right;
     }
-    else if (entry->crc > crc || entry->crc == crc && entry->hash > hash)
+    else if (entry->crc > crc || (entry->crc == crc && entry->hash > hash))
     {
       entry = entry->left;
     }
@@ -402,14 +402,14 @@ inline const VerificationHashEntry* VerificationHashTable::FindMatch(const Verif
     // have already been matched, or ones that are the wrong length
     while (currententry && (currententry->SourceFile() != sourcefile || 
                             currententry->IsSet() ||
-                            checksummer.ShortBlock() && checksummer.BlockLength() != currententry->GetDataBlock()->GetLength()
+                            (checksummer.ShortBlock() && checksummer.BlockLength() != currententry->GetDataBlock()->GetLength())
                            )
           )
     {
       // If we found an unused entry (which was presumably for the wrong 
       // source file) remember it (providing it is the correct length).
       if (0 == nextentry && !(currententry->IsSet() || 
-                              checksummer.ShortBlock() && checksummer.BlockLength() != currententry->GetDataBlock()->GetLength()
+                              (checksummer.ShortBlock() && checksummer.BlockLength() != currententry->GetDataBlock()->GetLength())
                              )
          )
       {
@@ -426,7 +426,7 @@ inline const VerificationHashEntry* VerificationHashTable::FindMatch(const Verif
 
   // Check for an unused entry which is the correct length
   while (nextentry && (nextentry->IsSet() ||
-                       checksummer.ShortBlock() && checksummer.BlockLength() != nextentry->GetDataBlock()->GetLength()
+                       (checksummer.ShortBlock() && checksummer.BlockLength() != nextentry->GetDataBlock()->GetLength())
                       )
         )
   {
