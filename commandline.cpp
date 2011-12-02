@@ -661,28 +661,28 @@ bool CommandLine::Parse(int argc, char *argv[])
             // So the new rule is: when a specified file doesn't exist, it is silently skipped.
             if (!DiskFile::FileExists(filename))
             {
-				cout << "Ignoring non-existent source file: " << filename << endl;
+              cout << "Ignoring non-existent source file: " << filename << endl;
             }
-			else
-			{
-				u64 filesize = DiskFile::GetFileSize(filename);
+            else
+            {
+              u64 filesize = DiskFile::GetFileSize(filename);
 
-				// Ignore all 0 byte files
-				if (filesize > 0)
-				{
-				  extrafiles.push_back(ExtraFile(filename, filesize));
+              // Ignore all 0 byte files
+              if (filesize > 0)
+              {
+                extrafiles.push_back(ExtraFile(filename, filesize));
 
-				  // track the total size of the source files and how
-				  // big the largest one is.
-				  totalsourcesize += filesize;
-				  if (largestsourcesize < filesize)
-					largestsourcesize = filesize;
-				}
-				else
-				{
-				  cout << "Skipping 0 byte file: " << filename << endl;
-				}
-			} //end file exists
+                // track the total size of the source files and how
+                // big the largest one is.
+                totalsourcesize += filesize;
+                if (largestsourcesize < filesize)
+                largestsourcesize = filesize;
+              }
+              else
+              {
+                cout << "Skipping 0 byte file: " << filename << endl;
+              }
+            } //end file exists
           }
 
           ++fn;
@@ -741,7 +741,7 @@ bool CommandLine::Parse(int argc, char *argv[])
         // assume that you wish to create par2 files for it.
 
         u64 filesize = 0;
-	if (DiskFile::FileExists(parfilename) &&
+        if (DiskFile::FileExists(parfilename) &&
             (filesize = DiskFile::GetFileSize(parfilename)) > 0)
         {
           extrafiles.push_back(ExtraFile(parfilename, filesize));
