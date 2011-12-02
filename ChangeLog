@@ -1,3 +1,8 @@
+12 December 2011 Marcel Partap
+	* Reanimate par2cmdline development on new github repository
+	* Merge available distro patches since 2004 0.4 release back upstream
+	* Release: Version 0.5 ;)
+
 3 January 2005 Peter B Clements
 
 	* par2creatorsourcefile.cpp: "offset" must be updated when computing
