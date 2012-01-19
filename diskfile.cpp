@@ -909,6 +909,11 @@ bool DiskFile::Rename(void)
       cerr << filename << " cannot be renamed." << endl;
       return false;
     }
+    else if (length > _MAX_PATH)
+    {
+      cerr << filename << " pathlength is more than " << _MAX_PATH << "." << endl;
+      return false;
+    }
     newname[length] = 0;
   } while (stat(newname, &st) == 0);
 

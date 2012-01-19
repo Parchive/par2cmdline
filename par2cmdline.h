@@ -144,7 +144,7 @@ typedef unsigned long long u64;
 #  include <unistd.h>
 #endif
 
-#define _MAX_PATH 255
+#define _MAX_PATH 4095
 
 #if HAVE_ENDIAN_H
 #  include <endian.h>
@@ -184,7 +184,7 @@ typedef unsigned long long u64;
 
 #include <errno.h>
 
-#define _MAX_PATH 255
+#define _MAX_PATH 4095
 #define stricmp strcasecmp
 #define _stat stat
 

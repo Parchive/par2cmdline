@@ -1,3 +1,22 @@
+19 January 2012 Ike Devolder
+	* fix wrongly created par2 files in quiet mode
+	  this was related to the -q -qq fix
+	* release: 0.5.3
+
+17 January 2012 Ike Devolder
+	* fix deadlock condition when repairing and filepath is longer
+		than _MAX_PATH
+	* increase _MAX_PATH, 255 is no longer of these days
+	* release: 0.5.2
+
+16 January 2012 Ike Devolder
+	* fixup 0.5 version display
+	* "par2 create" dumps core with -q or -qq, but non-quiet mode works fine
+		FIXED
+	* removed automake files
+	* updated copyrights
+	* release: 0.5.1
+
 12 December 2011 Marcel Partap
 	* Reanimate par2cmdline development on new github repository
 	* Merge available distro patches since 2004 0.4 release back upstream
