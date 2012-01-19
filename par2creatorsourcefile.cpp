@@ -225,10 +225,10 @@ bool Par2CreatorSourceFile::Open(CommandLine::NoiseLevel noiselevel, const Comma
           cout << newfraction/10 << '.' << newfraction%10 << "%\r" << flush;
         }
       }
-      else
-      {
-        offset += want;
-      }
+      //else
+      //{
+        //offset += want;
+      //}
     }
 
     // Did we finish the last block
