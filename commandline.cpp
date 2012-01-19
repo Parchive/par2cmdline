@@ -85,7 +85,7 @@ void CommandLine::usage(void)
     "  par2 v(erify) [options] <par2 file> [files] : Verify files using PAR2 file\n"
     "  par2 r(epair) [options] <par2 file> [files] : Repair files using PAR2 files\n"
     "\n"
-    "You may also leave out the \"c\", \"v\", and \"r\" commands by using \"parcreate\",\n"
+    "You may also leave out the \"c\", \"v\", and \"r\" commands by using \"par2create\",\n"
     "\"par2verify\", or \"par2repair\" instead.\n"
     "\n"
     "Options:\n"
