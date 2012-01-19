@@ -1,3 +1,8 @@
+19 January 2012 Ike Devolder
+	* fix wrongly created par2 files in quiet mode
+	  this was related to the -q -qq fix
+	* release: 0.5.3
+
 17 January 2012 Ike Devolder
 	* fix deadlock condition when repairing and filepath is longer
 		than _MAX_PATH
