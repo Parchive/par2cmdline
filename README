@@ -66,6 +66,9 @@ location that is on your path.
 
 To compile on Linux and other unix variants use the following commands:
 
+  aclocal
+  automake --add-missing
+  autoconf
   ./configure
   make
   make check

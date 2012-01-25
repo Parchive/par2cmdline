@@ -31,7 +31,10 @@ void banner(void)
 {
   string version = PACKAGE " version " VERSION;
 
-  cout << version << ", Copyright (C) 2003 Peter Brian Clements." << endl
+  cout << version << endl
+	   << "Copyright (C) 2003 Peter Brian Clements." << endl
+	   << "Copyright (C) 2011-2012 eMPee584." << endl
+	   << "Copyright (C) 2012 Ike Devolder." << endl
        << endl
        << "par2cmdline comes with ABSOLUTELY NO WARRANTY." << endl
        << endl

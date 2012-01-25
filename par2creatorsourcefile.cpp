@@ -213,20 +213,17 @@ bool Par2CreatorSourceFile::Open(CommandLine::NoiseLevel noiselevel, const Comma
         }
       }
 
+      offset += want;
+
       if (noiselevel > CommandLine::nlQuiet)
       {
         // Display progress
         u32 oldfraction = (u32)(1000 * offset / filesize);
-        offset += want;
         u32 newfraction = (u32)(1000 * offset / filesize);
         if (oldfraction != newfraction)
         {
           cout << newfraction/10 << '.' << newfraction%10 << "%\r" << flush;
         }
-      }
-      else
-      {
-        offset += want;
       }
     }
 
