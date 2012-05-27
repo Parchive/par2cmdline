@@ -101,15 +101,8 @@ template <> bool ReedSolomon<Galois8>::SetInput(u32 count)
   return true;
 }
 
-template <> bool ReedSolomon<Galois8>::Process(size_t size, u32 inputindex, const void *inputbuffer, u32 outputindex, void *outputbuffer)
+template <> bool ReedSolomon<Galois8>::InternalProcess(const Galois8 &factor, size_t size, const void *inputbuffer, void *outputbuffer)
 {
-  // Look up the appropriate element in the RS matrix
-  Galois8 factor = leftmatrix[outputindex * (datapresent + datamissing) + inputindex];
-
-  // Do nothing if the factor happens to be 0
-  if (factor == 0)
-    return eSuccess;
-
 #ifdef LONGMULTIPLY
   // The 8-bit long multiplication tables
   Galois8 *table = glmt->tables;
@@ -267,15 +260,8 @@ template <> bool ReedSolomon<Galois16>::SetInput(u32 count)
   return true;
 }
 
-template <> bool ReedSolomon<Galois16>::Process(size_t size, u32 inputindex, const void *inputbuffer, u32 outputindex, void *outputbuffer)
+template<> bool ReedSolomon<Galois16>::InternalProcess(const Galois16 &factor, size_t size, const void *inputbuffer, void *outputbuffer)
 {
-  // Look up the appropriate element in the RS matrix
-
-  Galois16 factor = leftmatrix[outputindex * (datapresent + datamissing) + inputindex];
-  // Do nothing if the factor happens to be 0
-  if (factor == 0)
-    return eSuccess;
-
 #ifdef LONGMULTIPLY
   // The 8-bit long multiplication tables
   Galois16 *table = glmt->tables;
