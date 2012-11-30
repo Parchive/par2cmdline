@@ -253,6 +253,7 @@ Result Par2Repairer::Process(const CommandLine &commandline, bool dorepair)
           if (noiselevel > CommandLine::nlSilent)
             cout << "Purge backup and par files." << endl;
           RemoveBackupFiles();
+          RemoveParFiles();
         }
       }
     }
@@ -284,6 +285,8 @@ bool Par2Repairer::LoadPacketsFromFile(string filename)
     delete diskfile;
     return true;
   }
+
+  par2list.push_back(diskfile);
 
   if (noiselevel > CommandLine::nlSilent)
   {
@@ -2413,6 +2416,26 @@ bool Par2Repairer::RemoveBackupFiles(void)
     delete (*bf);
 
     ++bf;
+  }
+
+  return true;
+}
+
+bool Par2Repairer::RemoveParFiles(void)
+{
+  vector<DiskFile*>::iterator pf = par2list.begin();
+
+  // Iterate through each file in the par2list 
+  while (pf != par2list.end())
+  {
+    if (noiselevel > CommandLine::nlSilent)
+      cout << "remove file: " << (*pf)->FileName() << endl;
+
+    if ((*pf)->IsOpen())
+      (*pf)->Close();
+    (*pf)->Delete();
+
+    ++pf;
   }
 
   return true;

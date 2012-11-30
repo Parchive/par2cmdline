@@ -122,6 +122,7 @@ protected:
 
   // list the files needing verification
   bool RemoveBackupFiles(void);
+  bool RemoveParFiles(void);
 
 protected:
   CommandLine::NoiseLevel   noiselevel;              // OnScreen display
@@ -141,6 +142,7 @@ protected:
   vector<Par2RepairerSourceFile*>      sourcefiles;  // The source files
   vector<Par2RepairerSourceFile*>      verifylist;   // Those source files that are being repaired
   vector<DiskFile*>                    backuplist;   // Those source files backups
+  vector<DiskFile*>                    par2list;     // list of par2 files
 
   u64                       blocksize;               // The block size.
   u64                       chunksize;               // How much of a block can be processed.
