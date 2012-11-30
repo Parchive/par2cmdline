@@ -1,3 +1,9 @@
+30 November 2012 Ike Devolder
+  * add purge option
+    remove backup files (mostly .1) and par files on request
+    **USE AT YOUR OWN RISK
+  * purge option available in par1 and par2 repair
+
 30 January 2012 Ike Devolder
 	* add inlining performance improvement of Gerard Putter
 	* release: 0.5.4
