@@ -250,7 +250,8 @@ Result Par2Repairer::Process(const CommandLine &commandline, bool dorepair)
 
         if (purgefiles == true)
         {
-          cout << "Purge backup and par files." << endl;
+          if (noiselevel > CommandLine::nlSilent)
+            cout << "Purge backup and par files." << endl;
           RemoveBackupFiles();
         }
       }
@@ -2403,7 +2404,8 @@ bool Par2Repairer::RemoveBackupFiles(void)
   // Iterate through each file in the backuplist
   while (bf != backuplist.end())
   {
-    cout << "file: " << (*bf)->FileName() << endl;
+    if (noiselevel > CommandLine::nlSilent)
+      cout << "remove file: " << (*bf)->FileName() << endl;
 
     if ((*bf)->IsOpen())
       (*bf)->Close();
