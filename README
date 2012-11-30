@@ -1,13 +1,13 @@
 par2cmdline is a PAR 2.0 compatible file verification and repair tool.
 
-See http://parchive.sourceforge.net for details of PAR 2.0 specification 
+See http://parchive.sourceforge.net for details of PAR 2.0 specification
 and discussion of all things PAR.
 
 WHAT EXACTLY IS PAR2CMDLINE?
 
-par2cmdline is a program for creating and using PAR2 files to detect 
-damage in data files and repair them if necessary. It can be used with 
-any kind of file. 
+par2cmdline is a program for creating and using PAR2 files to detect
+damage in data files and repair them if necessary. It can be used with
+any kind of file.
 
 WHY IS PAR 2.0 better than PAR 1.0?
 
@@ -25,9 +25,9 @@ WHY IS PAR 2.0 better than PAR 1.0?
    obtain exactly the amount of recovery data required to carry out
    a repair.
 
- * Because damaged data files are still useable during the recovery 
+ * Because damaged data files are still useable during the recovery
    process, less recovery data is required to achieve a successfull
-   repair. It is not therefore necessary to create as much recovery 
+   repair. It is not therefore necessary to create as much recovery
    data in the first place to achieve the same level of protection.
 
  * You can protect up to 32768 files rather than the 256 that PAR 1.0
@@ -35,7 +35,7 @@ WHY IS PAR 2.0 better than PAR 1.0?
 
  * Damaged or incomplete recovery files can also be used during the
    recovery process in the same way that damaged data files can.
-   
+
  * You require less recovery data to provide the same level of protection
    from damage compared with PAR 1.0.
 
@@ -52,8 +52,8 @@ same level of protection against loss and damage.
 
 COMPILING PAR2CMDLINE
 
-You should have received par2cmdline in the form of source code which 
-you can compile on your computer. You may optionally have received a 
+You should have received par2cmdline in the form of source code which
+you can compile on your computer. You may optionally have received a
 pre-compiled version of the program for your operating system.
 
 If you have only downloaded a precompiled executable, then the source
@@ -89,7 +89,7 @@ The command line parameters for par2cmdline are as follow:
     par2create [options] <par2 file> [files]
     par2verify [options] <par2 file> [files]
     par2repair [options] <par2 file> [files]
-    
+
   Options:
 
     -b<n>  : Set the Block-Count
@@ -104,7 +104,7 @@ The command line parameters for par2cmdline are as follow:
     -v [-v]: Be more verbose
     -q [-q]: Be more quiet (-qq gives silence)
     --     : Treat all remaining CommandLine as filenames
-    
+
 If you wish to create par2 files for a single source file, you may leave
 out the name of the par2 file from the command line. par2cmdline will then
 assume that you wish to base the filenames for the par2 files on the name
@@ -116,16 +116,16 @@ CREATING PAR2 FILES
 
 With PAR 2.0 you can create PAR2 recovery files for as few as 1 or as many as
 32768 files. If you wanted to create PAR1 recovery files for a single file
-you are forced to split the file into muliple parts and RAR is frequently 
+you are forced to split the file into muliple parts and RAR is frequently
 used for this purpose. You do NOT need to split files with PAR 2.0.
 
-To create PAR 2 recovery files for a single data file (e.g. one called 
+To create PAR 2 recovery files for a single data file (e.g. one called
 test.mpg), you can use the following command:
 
   par2 create test.mpg
 
 If test.mpg is an 800 MB file, then this will create a total of 8 PAR2 files
-with the following filenames (taking roughly 6 minutes on a PC with a 
+with the following filenames (taking roughly 6 minutes on a PC with a
 1500MHz CPU):
 
   test.mpg.par2          - This is an index file for verification only
@@ -140,18 +140,18 @@ with the following filenames (taking roughly 6 minutes on a PC with a
 The test.mpg.par2 file is 39 KB in size and the other files vary in size from
 443 KB to 15 MB.
 
-These par2 files will enable the recovery of up to 100 errors totalling 40 MB 
+These par2 files will enable the recovery of up to 100 errors totalling 40 MB
 of lost or damaged data from the original test.mpg file when it and the par2
 files are posted on UseNet.
 
 When posting on UseNet it is recommended that you use the "-s" option to set
 a blocksize that is equal to the Article size that you will use to post the
-data file. If you wanted to post the test.mpg file using an article size 
+data file. If you wanted to post the test.mpg file using an article size
 of 300 KB then the command you would type is:
 
   par2 create -s307200 test.mpg
-  
-This will create 9 PAR2 files instead of 8, and they will be capable of 
+
+This will create 9 PAR2 files instead of 8, and they will be capable of
 correcting up to 134 errors totalling 40 MB. It will take roughly 8 minutes
 to create the recovery files this time.
 
@@ -163,16 +163,16 @@ To create 10% recovery data instead of the default of 5% and also to use a
 block size of 300 KB, you would use the following command:
 
   par2 create -s307200 -r10 test.mpg
-  
+
 This would also create 9 PAR2 files, but they would be able to correct up to
 269 errors totalling 80 MB. Since twice as much recovery data is created, it
 will take about 16 minutes to do so with a 1500MHz CPU.
 
-The "-u" and "-n" options can be used to control exactly how many recovery 
+The "-u" and "-n" options can be used to control exactly how many recovery
 files are created and how the recovery blocks are distributed amoungst them.
 They do not affect the total quantity of recovery data created.
 
-The "-f" option is used when you create additional recovery data. 
+The "-f" option is used when you create additional recovery data.
 
 e.g. If you have already created 10% and want another 5% then you migh use
 the following command:
@@ -244,7 +244,7 @@ e.g.:
 
   par2 r test.mpg.par2 other.mpg
 
-This tells par2cmdline to scan the file called other.mpg to see if it 
+This tells par2cmdline to scan the file called other.mpg to see if it
 contains any data belonging to the original data files.
 
 If one of the extra files specified in this way is an exact match
@@ -286,7 +286,7 @@ Then the recovery files that are created would be called:
   test.mpg.vol07+08.par2
   test.mpg.vol15+16.par2
   test.mpg.vol31+19.par2
-  
+
 The first file in this list does not contain any recovery data, it only
 contains information sufficient to verify the data files.
 
