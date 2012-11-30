@@ -77,6 +77,10 @@ protected:
   // Delete all of the partly reconstructed files
   bool DeleteIncompleteTargetFiles(void);
 
+  // list the files needing verification
+  bool RemoveBackupFiles(void);
+  bool RemoveParFiles(void);
+
 protected:
   CommandLine::NoiseLevel   noiselevel;              // How noisy we should be
   string                    searchpath;              // Where to find files on disk
@@ -99,6 +103,8 @@ protected:
   u32                       missingfilecount;
 
   list<Par1RepairerSourceFile*> verifylist;
+  vector<DiskFile*>             backuplist;   // Those source files backups
+  vector<DiskFile*>             parlist;      // list of par files
 
   vector<DataBlock*>        inputblocks;             // Which DataBlocks will be read from disk
   vector<DataBlock*>        outputblocks;            // Which DataBlocks have to calculated using RS
