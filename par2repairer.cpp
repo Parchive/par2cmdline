@@ -83,6 +83,9 @@ Result Par2Repairer::Process(const CommandLine &commandline, bool dorepair)
   // What noiselevel are we using
   noiselevel = commandline.GetNoiseLevel();
 
+  // do we want to purge par files on success ?
+  bool purgefiles = commandline.GetPurgeFiles();
+
   // Get filesnames from the command line
   string par2filename = commandline.GetParFilename();
   const list<CommandLine::ExtraFile> &extrafiles = commandline.GetExtraFiles();
@@ -244,6 +247,12 @@ Result Par2Repairer::Process(const CommandLine &commandline, bool dorepair)
       {
         if (noiselevel > CommandLine::nlSilent)
           cout << endl << "Repair complete." << endl;
+
+        if (purgefiles == true)
+        {
+          cout << "Purge backup and par files." << endl;
+          RemoveBackupFiles();
+        }
       }
     }
     else
@@ -1892,6 +1901,8 @@ bool Par2Repairer::RenameTargetFiles(void)
       if (!targetfile->Rename())
         return false;
 
+      backuplist.push_back(targetfile);
+
       bool success = diskFileMap.Insert(targetfile);
       assert(success);
 
@@ -2380,6 +2391,26 @@ bool Par2Repairer::DeleteIncompleteTargetFiles(void)
     }
 
     ++sf;
+  }
+
+  return true;
+}
+
+bool Par2Repairer::RemoveBackupFiles(void)
+{
+  vector<DiskFile*>::iterator bf = backuplist.begin();
+
+  // Iterate through each file in the backuplist
+  while (bf != backuplist.end())
+  {
+    cout << "file: " << (*bf)->FileName() << endl;
+
+    if ((*bf)->IsOpen())
+      (*bf)->Close();
+    (*bf)->Delete();
+    delete (*bf);
+
+    ++bf;
   }
 
   return true;

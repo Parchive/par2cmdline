@@ -120,6 +120,9 @@ protected:
   // Delete all of the partly reconstructed files
   bool DeleteIncompleteTargetFiles(void);
 
+  // list the files needing verification
+  bool RemoveBackupFiles(void);
+
 protected:
   CommandLine::NoiseLevel   noiselevel;              // OnScreen display
 
@@ -137,6 +140,7 @@ protected:
   map<MD5Hash,Par2RepairerSourceFile*> sourcefilemap;// Map from FileId to SourceFile
   vector<Par2RepairerSourceFile*>      sourcefiles;  // The source files
   vector<Par2RepairerSourceFile*>      verifylist;   // Those source files that are being repaired
+  vector<DiskFile*>                    backuplist;   // Those source files backups
 
   u64                       blocksize;               // The block size.
   u64                       chunksize;               // How much of a block can be processed.
