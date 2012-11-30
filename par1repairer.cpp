@@ -49,6 +49,9 @@ Par1Repairer::Par1Repairer(void)
 
 Par1Repairer::~Par1Repairer(void)
 {
+  delete [] (u8*)inputbuffer;
+  delete [] (u8*)outputbuffer;
+
   map<u32,DataBlock*>::iterator i = recoveryblocks.begin();
   while (i != recoveryblocks.end())
   {
