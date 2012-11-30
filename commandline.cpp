@@ -72,6 +72,7 @@ CommandLine::CommandLine(void)
 , totalsourcesize(0)
 , largestsourcesize(0)
 , memorylimit(0)
+, purgefiles(false)
 {
 }
 
@@ -101,6 +102,7 @@ void CommandLine::usage(void)
     "  -m<n>  : Memory (in MB) to use\n"
     "  -v [-v]: Be more verbose\n"
     "  -q [-q]: Be more quiet (-q -q gives silence)\n"
+    "  -p     : purge backup files and par files on successful recovery\n"
     "  --     : Treat all remaining CommandLine as filenames\n"
     "\n"
     "If you wish to create par2 files for a single source file, you may leave\n"
@@ -516,6 +518,17 @@ bool CommandLine::Parse(int argc, char *argv[])
               return false;
               break;
             }
+          }
+          break;
+
+        case 'p':
+          {
+            if (operation != opRepair)
+            {
+              cerr << "Cannot specify purge unless repairing." << endl;
+              return false;
+            }
+            purgefiles = true;
           }
           break;
 

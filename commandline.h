@@ -106,6 +106,7 @@ public:
 
   string                              GetParFilename(void) const {return parfilename;}
   const list<CommandLine::ExtraFile>& GetExtraFiles(void) const  {return extrafiles;}
+  bool                                GetPurgeFiles(void) const  {return purgefiles;}
 
 protected:
   Operation operation;         // The operation to be carried out.
@@ -150,6 +151,9 @@ protected:
   size_t memorylimit;          // How much memory is permitted to be used
                                // for the output buffer when creating
                                // or repairing.
+
+  bool purgefiles;             // purge backup and par files on successfull
+                               // recovery
 };
 
 typedef list<CommandLine::ExtraFile>::const_iterator ExtraFileIterator;
