@@ -229,7 +229,7 @@ Result Par1Repairer::Process(const CommandLine &commandline, bool dorepair)
     }
   }
 
-  if (dorepair && purgefiles == true)
+  if (purgefiles == true)
   {
     if (noiselevel > CommandLine::nlSilent)
       cout << "Purge backup files." << endl;

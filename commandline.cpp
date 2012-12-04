@@ -523,9 +523,9 @@ bool CommandLine::Parse(int argc, char *argv[])
 
         case 'p':
           {
-            if (operation != opRepair)
+            if (operation != opRepair && operation != opVerify)
             {
-              cerr << "Cannot specify purge unless repairing." << endl;
+              cerr << "Cannot specify purge unless repairing or verifying." << endl;
               return false;
             }
             purgefiles = true;
