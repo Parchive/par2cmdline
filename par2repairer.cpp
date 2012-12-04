@@ -247,23 +247,23 @@ Result Par2Repairer::Process(const CommandLine &commandline, bool dorepair)
       {
         if (noiselevel > CommandLine::nlSilent)
           cout << endl << "Repair complete." << endl;
-
-        if (purgefiles == true)
-        {
-          if (noiselevel > CommandLine::nlSilent)
-            cout << "Purge backup files." << endl;
-          RemoveBackupFiles();
-
-          if (noiselevel > CommandLine::nlSilent)
-            cout << "Purge par files." << endl;
-          RemoveParFiles();
-        }
       }
     }
     else
     {
       return eRepairPossible;
     }
+  }
+
+  if (dorepair && purgefiles == true)
+  {
+    if (noiselevel > CommandLine::nlSilent)
+      cout << "Purge backup files." << endl;
+    RemoveBackupFiles();
+
+    if (noiselevel > CommandLine::nlSilent)
+      cout << "Purge par files." << endl;
+    RemoveParFiles();
   }
 
   return eSuccess;
