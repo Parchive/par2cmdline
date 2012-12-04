@@ -1,3 +1,9 @@
+4 December 2012 Ike Devolder
+  * fix purge option so it removes the par files when there is no
+    repair needed
+  * add purge option to verify so when there is no repair needed
+    the par2 files are removed when the purge option is given
+
 30 November 2012 Ike Devolder
   * add purge option
     remove backup files (mostly .1) and par files on request
