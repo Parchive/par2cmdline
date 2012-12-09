@@ -104,7 +104,7 @@ protected:
 
   list<Par1RepairerSourceFile*> verifylist;
   vector<DiskFile*>             backuplist;   // Those source files backups
-  vector<DiskFile*>             parlist;      // list of par files
+  list<string>                  parlist;      // list of par files
 
   vector<DataBlock*>        inputblocks;             // Which DataBlocks will be read from disk
   vector<DataBlock*>        outputblocks;            // Which DataBlocks have to calculated using RS

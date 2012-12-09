@@ -231,12 +231,7 @@ Result Par1Repairer::Process(const CommandLine &commandline, bool dorepair)
 
   if (purgefiles == true)
   {
-    if (noiselevel > CommandLine::nlSilent)
-      cout << "Purge backup files." << endl;
     RemoveBackupFiles();
-
-    if (noiselevel > CommandLine::nlSilent)
-      cout << "Purge par files." << endl;
     RemoveParFiles();
   }
 
@@ -262,8 +257,6 @@ bool Par1Repairer::LoadRecoveryFile(string filename)
     return true;
   }
 
-  parlist.push_back(diskfile);
-
   if (noiselevel > CommandLine::nlSilent)
   {
     string path;
@@ -271,6 +264,8 @@ bool Par1Repairer::LoadRecoveryFile(string filename)
     DiskFile::SplitFilename(filename, path, name);
     cout << "Loading \"" << name << "\"." << endl;
   }
+
+  parlist.push_back(filename);
 
   bool havevolume = false;
   u32 volumenumber = 0;
@@ -1420,11 +1415,22 @@ bool Par1Repairer::RemoveBackupFiles(void)
 {
   vector<DiskFile*>::iterator bf = backuplist.begin();
 
+  if (noiselevel > CommandLine::nlSilent
+      && bf != backuplist.end())
+  {
+    cout << endl << "Purge backup files." << endl;
+  }
+
   // Iterate through each file in the backuplist
   while (bf != backuplist.end())
   {
     if (noiselevel > CommandLine::nlSilent)
-      cout << "remove file: " << (*bf)->FileName() << endl;
+    {
+      string name;
+      string path;
+      DiskFile::SplitFilename((*bf)->FileName(), path, name);
+      cout << "Remove \"" << name << "\"." << endl;
+    }
 
     if ((*bf)->IsOpen())
       (*bf)->Close();
@@ -1438,19 +1444,32 @@ bool Par1Repairer::RemoveBackupFiles(void)
 
 bool Par1Repairer::RemoveParFiles(void)
 {
-  vector<DiskFile*>::iterator pf = parlist.begin();
-
-  // Iterate through each file in the parlist 
-  while (pf != parlist.end())
+  if (noiselevel > CommandLine::nlSilent
+      && parlist.size() > 0)
   {
-    if (noiselevel > CommandLine::nlSilent)
-      cout << "remove file: " << (*pf)->FileName() << endl;
+      cout << endl << "Purge par files." << endl;
+  }
 
-    if ((*pf)->IsOpen())
-      (*pf)->Close();
-    (*pf)->Delete();
+  for (list<string>::const_iterator s=parlist.begin(); s!=parlist.end(); ++s)
+  {
+    DiskFile *diskfile = new DiskFile;
 
-    ++pf;
+    if (diskfile->Open(*s))
+    {
+      if (noiselevel > CommandLine::nlSilent)
+      {
+        string name;
+        string path;
+        DiskFile::SplitFilename((*s), path, name);
+        cout << "Remove \"" << name << "\"." << endl;
+      }
+
+      if (diskfile->IsOpen())
+        diskfile->Close();
+      diskfile->Delete();
+    }
+
+    delete diskfile;
   }
 
   return true;
