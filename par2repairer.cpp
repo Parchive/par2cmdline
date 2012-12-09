@@ -94,6 +94,8 @@ Result Par2Repairer::Process(const CommandLine &commandline, bool dorepair)
   string name;
   DiskFile::SplitFilename(par2filename, searchpath, name);
 
+  par2list.push_back(par2filename);
+
   // Load packets from the main PAR2 file
   if (!LoadPacketsFromFile(searchpath + name))
     return eLogicError;
@@ -257,12 +259,7 @@ Result Par2Repairer::Process(const CommandLine &commandline, bool dorepair)
 
   if (purgefiles == true)
   {
-    if (noiselevel > CommandLine::nlSilent)
-      cout << "Purge backup files." << endl;
     RemoveBackupFiles();
-
-    if (noiselevel > CommandLine::nlSilent)
-      cout << "Purge par files." << endl;
     RemoveParFiles();
   }
 
@@ -288,8 +285,6 @@ bool Par2Repairer::LoadPacketsFromFile(string filename)
     delete diskfile;
     return true;
   }
-
-  par2list.push_back(diskfile);
 
   if (noiselevel > CommandLine::nlSilent)
   {
@@ -756,27 +751,19 @@ bool Par2Repairer::LoadPacketsFromOtherFiles(string filename)
   {
     string wildcard = name.empty() ? "*.par2" : name + ".*.par2";
     list<string> *files = DiskFile::FindFiles(path, wildcard);
+    par2list.merge(*files);
+    delete files;
+
+    string wildcardu = name.empty() ? "*.PAR2" : name + ".*.PAR2";
+    list<string> *filesu = DiskFile::FindFiles(path, wildcardu);
+    par2list.merge(*filesu);
+    delete filesu;
 
     // Load packets from each file that was found
-    for (list<string>::const_iterator s=files->begin(); s!=files->end(); ++s)
+    for (list<string>::const_iterator s=par2list.begin(); s!=par2list.end(); ++s)
     {
       LoadPacketsFromFile(*s);
     }
-
-    delete files;
-  }
-
-  {
-    string wildcard = name.empty() ? "*.PAR2" : name + ".*.PAR2";
-    list<string> *files = DiskFile::FindFiles(path, wildcard);
-
-    // Load packets from each file that was found
-    for (list<string>::const_iterator s=files->begin(); s!=files->end(); ++s)
-    {
-      LoadPacketsFromFile(*s);
-    }
-
-    delete files;
   }
 
   return true;
@@ -2406,12 +2393,23 @@ bool Par2Repairer::DeleteIncompleteTargetFiles(void)
 bool Par2Repairer::RemoveBackupFiles(void)
 {
   vector<DiskFile*>::iterator bf = backuplist.begin();
+  
+  if (noiselevel > CommandLine::nlSilent
+      && bf != backuplist.end())
+  {
+    cout << endl << "Purge backup files." << endl;
+  }
 
   // Iterate through each file in the backuplist
   while (bf != backuplist.end())
   {
     if (noiselevel > CommandLine::nlSilent)
-      cout << "remove file: " << (*bf)->FileName() << endl;
+    {
+      string name;
+      string path;
+      DiskFile::SplitFilename((*bf)->FileName(), path, name);
+      cout << "Remove \"" << name << "\"." << endl;
+    }
 
     if ((*bf)->IsOpen())
       (*bf)->Close();
@@ -2425,19 +2423,32 @@ bool Par2Repairer::RemoveBackupFiles(void)
 
 bool Par2Repairer::RemoveParFiles(void)
 {
-  vector<DiskFile*>::iterator pf = par2list.begin();
-
-  // Iterate through each file in the par2list 
-  while (pf != par2list.end())
+  if (noiselevel > CommandLine::nlSilent
+      && par2list.size() > 0)
   {
-    if (noiselevel > CommandLine::nlSilent)
-      cout << "remove file: " << (*pf)->FileName() << endl;
+      cout << endl << "Purge par files." << endl;
+  }
 
-    if ((*pf)->IsOpen())
-      (*pf)->Close();
-    (*pf)->Delete();
+  for (list<string>::const_iterator s=par2list.begin(); s!=par2list.end(); ++s)
+  {
+    DiskFile *diskfile = new DiskFile;
 
-    ++pf;
+    if (diskfile->Open(*s))
+    {
+      if (noiselevel > CommandLine::nlSilent)
+      {
+        string name;
+        string path;
+        DiskFile::SplitFilename((*s), path, name);
+        cout << "Remove \"" << name << "\"." << endl;
+      }
+
+      if (diskfile->IsOpen())
+        diskfile->Close();
+      diskfile->Delete();
+    }
+
+    delete diskfile;
   }
 
   return true;
