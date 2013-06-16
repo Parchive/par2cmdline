@@ -819,6 +819,12 @@ void DiskFile::SplitFilename(string filename, string &path, string &name)
   }
 }
 
+void DiskFile::SplitRelativeFilename(string filename, string basepath, string &name)
+{
+  name = filename;
+  name.erase(0, basepath.length());
+}
+
 bool DiskFile::FileExists(string filename)
 {
   struct stat st;
