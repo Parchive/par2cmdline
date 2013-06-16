@@ -666,6 +666,9 @@ bool CommandLine::Parse(int argc, char *argv[])
               version = verPar2;
               parfilename = filename;
             }
+
+            string dummy;
+            DiskFile::SplitFilename(parfilename, basepath, dummy);
           }
           else
           {

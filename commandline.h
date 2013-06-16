@@ -105,6 +105,7 @@ public:
   CommandLine::NoiseLevel GetNoiseLevel(void) const        {return noiselevel;}
 
   string                              GetParFilename(void) const {return parfilename;}
+  string                              GetBasePath(void) const {return basepath;}
   const list<CommandLine::ExtraFile>& GetExtraFiles(void) const  {return extrafiles;}
   bool                                GetPurgeFiles(void) const  {return purgefiles;}
 
@@ -137,6 +138,8 @@ protected:
   string parfilename;          // The name of the PAR2 file to create, or
                                // the name of the first PAR2 file to read
                                // when verifying or repairing.
+
+  string basepath;             // the path par2 is run from
 
   list<ExtraFile> extrafiles;  // The list of other files specified on the
                                // command line. When creating, this will be
