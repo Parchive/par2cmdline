@@ -1,3 +1,10 @@
+16 June 2013 Ike Devolder
+	* Implemented initial subdir handling
+	* added subdir tests
+
+13 June 2013 Ike Devolder
+	* Fixed failing testsuite
+
 9 December 2012 Ike Devolder
   * rework purging of par(2) files because of possible segfaults
     and other inconsistencies
