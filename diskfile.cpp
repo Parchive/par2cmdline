@@ -862,7 +862,6 @@ string DiskFile::TranslateFilename(string filename)
       case '<':
       case '>':
       case '?':
-      case '\\':
       case '|':
         ok = false;
       }
@@ -871,14 +870,6 @@ string DiskFile::TranslateFilename(string filename)
     if (ch < 32)
     {
       ok = false;
-    }
-    else
-    {
-      switch (ch)
-      {
-      case '/':
-        ok = false;
-      }
     }
 #endif
 
