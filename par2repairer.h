@@ -70,13 +70,13 @@ protected:
   bool ComputeWindowTable(void);
 
   // Attempt to verify all of the source files
-  bool VerifySourceFiles(void);
+  bool VerifySourceFiles(string basepath);
 
   // Scan any extra files specified on the command line
-  bool VerifyExtraFiles(const list<CommandLine::ExtraFile> &extrafiles);
+  bool VerifyExtraFiles(const list<CommandLine::ExtraFile> &extrafiles, string basepath);
 
   // Attempt to match the data in the DiskFile with the source file
-  bool VerifyDataFile(DiskFile *diskfile, Par2RepairerSourceFile *sourcefile);
+  bool VerifyDataFile(DiskFile *diskfile, Par2RepairerSourceFile *sourcefile, string basepath);
 
   // Perform a sliding window scan of the DiskFile looking for blocks of data that 
   // might belong to any of the source files (for which a verification packet was
@@ -84,6 +84,7 @@ protected:
   // the one specified by the "sourcefile" parameter. If the first data block
   // found is for a different source file then "sourcefile" is changed accordingly.
   bool ScanDataFile(DiskFile                *diskfile,   // [in]     The file being scanned
+                    string                  basepath,    // [in]
                     Par2RepairerSourceFile* &sourcefile, // [in/out] The source file matched
                     MatchType               &matchtype,  // [out]    The type of match
                     MD5Hash                 &hashfull,   // [out]    The full hash of the file
@@ -115,7 +116,7 @@ protected:
   bool ProcessData(u64 blockoffset, size_t blocklength);
 
   // Verify that all of the reconstructed target files are now correct
-  bool VerifyTargetFiles(void);
+  bool VerifyTargetFiles(string basepath);
 
   // Delete all of the partly reconstructed files
   bool DeleteIncompleteTargetFiles(void);
