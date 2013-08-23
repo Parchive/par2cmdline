@@ -567,8 +567,15 @@ bool CommandLine::Parse(int argc, char *argv[])
           // The shell will also expand * to directories so filter for files.
           if ((parfilename.length() != 0) && (operation == opCreate))
           {
+#ifdef WIN32
+			DWORD dwAttrib;
+			dwAttrib = GetFileAttributes(argv[0]);
+			if (dwAttrib == INVALID_FILE_ATTRIBUTES ||
+			    dwAttrib & FILE_ATTRIBUTE_DIRECTORY)
+#else
             struct stat st;
             if (!(stat(argv[0], &st) == 0 && S_ISREG(st.st_mode)))
+#endif
             {
               cerr << "Skipping non-regular file: " << argv[0] << endl;
               argc--;
