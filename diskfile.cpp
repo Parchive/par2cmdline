@@ -353,7 +353,6 @@ u64 DiskFile::GetFileSize(string filename)
   }
 }
 
-
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 #else // !WIN32
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -715,28 +714,6 @@ u64 DiskFile::GetFileSize(string filename)
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 #endif
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 bool DiskFile::Open(void)
 {
   string _filename = filename;
@@ -748,14 +725,6 @@ bool DiskFile::Open(string _filename)
 {
   return Open(_filename, GetFileSize(_filename));
 }
-
-
-
-
-
-
-
-
 
 // Delete the file
 
@@ -778,14 +747,6 @@ bool DiskFile::Delete(void)
     return false;
   }
 }
-
-
-
-
-
-
-
-
 
 //string DiskFile::GetPathFromFilename(string filename)
 //{
@@ -830,9 +791,6 @@ bool DiskFile::FileExists(string filename)
   struct stat st;
   return ((0 == stat(filename.c_str(), &st)) && (0 != (st.st_mode & S_IFREG)));
 }
-
-
-
 
 // Take a filename from a PAR2 file and replace any characters
 // which would be illegal for a file on disk
