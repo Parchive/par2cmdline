@@ -1,3 +1,8 @@
+14 October 2013 Ike Devolder
+  * Implemented recursion
+	* NOTE: only for unix like systems
+	* Windows can be done i guess but i have no access to windows machines
+
 16 June 2013 Ike Devolder
 	* Implemented initial subdir handling
 	* added subdir tests

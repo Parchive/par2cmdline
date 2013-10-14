@@ -81,7 +81,7 @@ public:
 
   // Search the specified path for files which match the specified wildcard
   // and return their names in a list.
-  static list<string>* FindFiles(string path, string wildcard);
+  static list<string>* FindFiles(string path, string wildcard, bool recursive);
 
 protected:
   string filename;

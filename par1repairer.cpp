@@ -517,7 +517,7 @@ bool Par1Repairer::LoadOtherRecoveryFiles(string filename)
 
   // Search for additional PAR files
   string wildcard = name + ".???";
-  list<string> *files = DiskFile::FindFiles(path, wildcard);
+  list<string> *files = DiskFile::FindFiles(path, wildcard, false);
 
   for (list<string>::const_iterator s=files->begin(); s!=files->end(); ++s)
   {

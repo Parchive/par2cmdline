@@ -318,7 +318,7 @@ string DiskFile::GetCanonicalPathname(string filename)
   return longname;
 }
 
-list<string>* DiskFile::FindFiles(string path, string wildcard)
+list<string>* DiskFile::FindFiles(string path, string wildcard, bool recursive)
 {
   list<string> *matches = new list<string>;
 
@@ -421,7 +421,7 @@ bool DiskFile::Create(string _filename, u64 _filesize)
       fclose(file);
       file = 0;
       ::remove(filename.c_str());
-      
+
       cerr << "Could not set end of file: " << _filename << endl;
       return false;
     }
@@ -431,7 +431,7 @@ bool DiskFile::Create(string _filename, u64 _filesize)
       fclose(file);
       file = 0;
       ::remove(filename.c_str());
-      
+
       cerr << "Could not set end of file: " << _filename << endl;
       return false;
     }
@@ -628,8 +628,20 @@ string DiskFile::GetCanonicalPathname(string filename)
   return result;
 }
 
-list<string>* DiskFile::FindFiles(string path, string wildcard)
+list<string>* DiskFile::FindFiles(string path, string wildcard, bool recursive)
 {
+  // check path, if not ending with path separator, add one
+  char pathend = *path.rbegin();
+  if (pathend != '/' &&
+      pathend != '\\')
+  {
+    // ifdef is useless, but leave it in for now
+#ifdef WIN32
+    path += '\\';
+#else
+    path += '/';
+#endif
+  }
   list<string> *matches = new list<string>;
 
   string::size_type where;
@@ -658,7 +670,30 @@ list<string>* DiskFile::FindFiles(string path, string wildcard)
               name.substr(0, where) == front &&
               name.substr(name.size()-back.size()) == back)
           {
-            matches->push_back(path + name);
+            struct stat st;
+            string fn = path + name;
+            if (stat(fn.c_str(), &st) == 0)
+            {
+              if (S_ISDIR(st.st_mode) &&
+                  recursive == true)
+              {
+
+                list<string> *dirmatches;
+                string nwwildcard="*";
+                dirmatches = DiskFile::FindFiles(fn, nwwildcard, true);
+
+                list<string>::iterator fn = dirmatches->begin();
+                while (fn != dirmatches->end())
+                {
+                  matches->push_back(*fn);
+                  ++fn;
+                }
+              }
+              else if (S_ISREG(st.st_mode))
+              {
+                matches->push_back(path + name);
+              }
+            }
           }
         }
         else
@@ -677,7 +712,30 @@ list<string>* DiskFile::FindFiles(string path, string wildcard)
 
             if (pw == wildcard.end())
             {
-              matches->push_back(path + name);
+              struct stat st;
+              string fn = path + name;
+              if (stat(fn.c_str(), &st) == 0)
+              {
+                if (S_ISDIR(st.st_mode) &&
+                    recursive == true)
+                {
+
+                  list<string> *dirmatches;
+                  string nwwildcard="*";
+                  dirmatches = DiskFile::FindFiles(fn, nwwildcard, true);
+
+                  list<string>::iterator fn = dirmatches->begin();
+                  while (fn != dirmatches->end())
+                  {
+                    matches->push_back(*fn);
+                    ++fn;
+                  }
+                }
+                else if (S_ISREG(st.st_mode))
+                {
+                  matches->push_back(path + name);
+                }
+              }
             }
           }
         }
@@ -692,10 +750,28 @@ list<string>* DiskFile::FindFiles(string path, string wildcard)
     string fn = path + wildcard;
     if (stat(fn.c_str(), &st) == 0)
     {
-      matches->push_back(path + wildcard);
+      if (S_ISDIR(st.st_mode) &&
+          recursive == true)
+      {
+
+        list<string> *dirmatches;
+        string nwwildcard="*";
+        dirmatches = DiskFile::FindFiles(fn, nwwildcard, true);
+
+        list<string>::iterator fn = dirmatches->begin();
+        while (fn != dirmatches->end())
+        {
+          matches->push_back(*fn);
+          ++fn;
+        }
+      }
+      else if (S_ISREG(st.st_mode))
+      {
+        matches->push_back(path + wildcard);
+      }
     }
   }
-
+  
   return matches;
 }
 

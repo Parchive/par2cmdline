@@ -751,12 +751,12 @@ bool Par2Repairer::LoadPacketsFromOtherFiles(string filename)
 
   {
     string wildcard = name.empty() ? "*.par2" : name + ".*.par2";
-    list<string> *files = DiskFile::FindFiles(path, wildcard);
+    list<string> *files = DiskFile::FindFiles(path, wildcard, false);
     par2list.merge(*files);
     delete files;
 
     string wildcardu = name.empty() ? "*.PAR2" : name + ".*.PAR2";
-    list<string> *filesu = DiskFile::FindFiles(path, wildcardu);
+    list<string> *filesu = DiskFile::FindFiles(path, wildcardu, false);
     par2list.merge(*filesu);
     delete filesu;
 

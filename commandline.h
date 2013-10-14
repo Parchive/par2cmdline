@@ -108,6 +108,7 @@ public:
   string                              GetBasePath(void) const {return basepath;}
   const list<CommandLine::ExtraFile>& GetExtraFiles(void) const  {return extrafiles;}
   bool                                GetPurgeFiles(void) const  {return purgefiles;}
+  bool                                GetRecursive(void) const  {return recursive;}
 
 protected:
   Operation operation;         // The operation to be carried out.
@@ -157,6 +158,7 @@ protected:
 
   bool purgefiles;             // purge backup and par files on successfull
                                // recovery
+  bool recursive;              // recurse into subdirectories
 };
 
 typedef list<CommandLine::ExtraFile>::const_iterator ExtraFileIterator;
