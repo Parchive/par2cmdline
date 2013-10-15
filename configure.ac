@@ -2,7 +2,7 @@ dnl  This file is part of par2cmdline (a PAR 2.0 compatible file verification an
 dnl  repair tool). See http://parchive.sourceforge.net for details of PAR 2.0.
 dnl
 dnl  Copyright (c) 2003 Peter Brian Clements
-dnl  Copyright (c) 2011-2012 eMPee584
+dnl  Copyright (c) 2011-2012 Marcel Partap
 dnl  Copyright (c) 2012-2013 Ike Devolder
 dnl
 dnl  par2cmdline is free software; you can redistribute it and/or modify
