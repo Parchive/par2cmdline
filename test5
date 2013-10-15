@@ -9,7 +9,7 @@ echo $dashes
 echo $banner
 echo $dashes
 
-../par2 c -r100 -b190 newtest test-*.data > ../test5.log || { echo "ERROR: Creating PAR 2.0 data failed" ; exit 1; } >&2
+../par2 c -r100 -b190 -a newtest test-*.data > ../test5.log || { echo "ERROR: Creating PAR 2.0 data failed" ; exit 1; } >&2
 
 exit 0;
 
