@@ -1,3 +1,36 @@
+14 October 2013 Ike Devolder
+  * Implemented recursion
+	* NOTE: only for unix like systems
+	* Windows can be done i guess but i have no access to windows machines
+
+16 June 2013 Ike Devolder
+	* Implemented initial subdir handling
+	* added subdir tests
+
+13 June 2013 Ike Devolder
+	* Fixed failing testsuite
+
+9 December 2012 Ike Devolder
+  * rework purging of par(2) files because of possible segfaults
+    and other inconsistencies
+
+4 December 2012 Ike Devolder
+  * fix purge option so it removes the par files when there is no
+    repair needed
+  * add purge option to verify so when there is no repair needed
+    the par2 files are removed when the purge option is given
+
+30 November 2012 Ike Devolder
+  * add purge option
+    remove backup files (mostly .1) and par files on request
+    **USE AT YOUR OWN RISK
+  * purge option available in par1 and par2 repair
+  * fix memory leak when using par1 repair
+
+30 January 2012 Ike Devolder
+	* add inlining performance improvement of Gerard Putter
+	* release: 0.5.4
+
 19 January 2012 Ike Devolder
 	* fix wrongly created par2 files in quiet mode
 	  this was related to the -q -qq fix

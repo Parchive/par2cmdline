@@ -11,7 +11,5 @@ echo $dashes
 
 ../par2 v testdata.par > ../test1.log || { echo "ERROR: Initial PAR 1.0 verification failed" ; exit 1; } >&2
 
-rm -f ../test1.log
-
 exit 0;
 

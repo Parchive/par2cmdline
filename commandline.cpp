@@ -72,6 +72,8 @@ CommandLine::CommandLine(void)
 , totalsourcesize(0)
 , largestsourcesize(0)
 , memorylimit(0)
+, purgefiles(false)
+, recursive(false)
 {
 }
 
@@ -81,7 +83,7 @@ void CommandLine::usage(void)
     "\n"
     "Usage:\n"
     "\n"
-    "  par2 c(reate) [options] <par2 file> [files] : Create PAR2 files\n"
+    "  par2 c(reate) [options] -a <par2 file> [files] : Create PAR2 files\n"
     "  par2 v(erify) [options] <par2 file> [files] : Verify files using PAR2 file\n"
     "  par2 r(epair) [options] <par2 file> [files] : Repair files using PAR2 files\n"
     "\n"
@@ -90,21 +92,24 @@ void CommandLine::usage(void)
     "\n"
     "Options:\n"
     "\n"
-    "  -b<n>  : Set the Block-Count\n"
-    "  -s<n>  : Set the Block-Size (Don't use both -b and -s)\n"
-    "  -r<n>  : Level of Redundancy (%%)\n"
-    "  -c<n>  : Recovery block count (Don't use both -r and -c)\n"
-    "  -f<n>  : First Recovery-Block-Number\n"
-    "  -u     : Uniform recovery file sizes\n"
-    "  -l     : Limit size of recovery files (Don't use both -u and -l)\n"
-    "  -n<n>  : Number of recovery files (Don't use both -n and -l)\n"
-    "  -m<n>  : Memory (in MB) to use\n"
-    "  -v [-v]: Be more verbose\n"
-    "  -q [-q]: Be more quiet (-q -q gives silence)\n"
-    "  --     : Treat all remaining CommandLine as filenames\n"
-    "\n"
-    "If you wish to create par2 files for a single source file, you may leave\n"
-    "out the name of the par2 file from the command line.\n";
+    "  -a<file> : set the main par2 archive name\n"
+    "             required on create, optional for verify and repair\n"
+    "  -b<n>    : Set the Block-Count\n"
+    "  -s<n>    : Set the Block-Size (Don't use both -b and -s)\n"
+    "  -r<n>    : Level of Redundancy (%%)\n"
+    "  -c<n>    : Recovery block count (Don't use both -r and -c)\n"
+    "  -f<n>    : First Recovery-Block-Number\n"
+    "  -u       : Uniform recovery file sizes\n"
+    "  -l       : Limit size of recovery files (Don't use both -u and -l)\n"
+    "  -n<n>    : Number of recovery files (Don't use both -n and -l)\n"
+    "  -m<n>    : Memory (in MB) to use\n"
+    "  -v [-v]  : Be more verbose\n"
+    "  -q [-q]  : Be more quiet (-q -q gives silence)\n"
+    "  -p       : purge backup files and par files on successful recovery or\n"
+    "             when no recovery is needed\n"
+    "  -R       : recurse into subdirectories (only usefull on create)\n"
+    "  --       : Treat all remaining CommandLine as filenames\n"
+    "\n";
 }
 
 bool CommandLine::Parse(int argc, char *argv[])
@@ -184,8 +189,30 @@ bool CommandLine::Parse(int argc, char *argv[])
 
       if (options)
       {
-        switch (tolower(argv[0][1]))
+        switch (argv[0][1])
         {
+        case 'a':
+          {
+            if (operation == opCreate)
+            {
+              string str = argv[0];
+              if (str == "-a")
+              {
+                parfilename = DiskFile::GetCanonicalPathname(argv[1]);
+                argc--;
+                argv++;
+              }
+              else
+              {
+                parfilename = DiskFile::GetCanonicalPathname(str.substr(2));
+              }
+              version = verPar2;
+
+              string dummy;
+              DiskFile::SplitFilename(parfilename, basepath, dummy);
+            }
+          }
+          break;
         case 'b':  // Set the block count
           {
             if (operation != opCreate)
@@ -519,6 +546,30 @@ bool CommandLine::Parse(int argc, char *argv[])
           }
           break;
 
+        case 'p':
+          {
+            if (operation != opRepair && operation != opVerify)
+            {
+              cerr << "Cannot specify purge unless repairing or verifying." << endl;
+              return false;
+            }
+            purgefiles = true;
+          }
+          break;
+
+        case 'R':
+          {
+            if (operation == opCreate)
+            {
+              recursive = true;
+            }
+            else
+            {
+              cerr << "Recursive has no impact except on creating." << endl;
+            }
+          }
+          break;
+
         case '-':
           {
             argc--;
@@ -538,34 +589,10 @@ bool CommandLine::Parse(int argc, char *argv[])
       {
         list<string> *filenames;
 
-        // If the argument includes wildcard characters, 
-        // search the disk for matching files
-        if (strchr(argv[0], '*') || strchr(argv[0], '?'))
-        {
-          string path;
-          string name;
-          DiskFile::SplitFilename(argv[0], path, name);
-
-          filenames = DiskFile::FindFiles(path, name);
-        }
-        else
-        {
-          // The shell will also expand * to directories so filter for files.
-          if ((parfilename.length() != 0) && (operation == opCreate))
-          {
-            struct stat st;
-            if (!(stat(argv[0], &st) == 0 && S_ISREG(st.st_mode)))
-            {
-              cerr << "Skipping non-regular file: " << argv[0] << endl;
-              argc--;
-              argv++;
-              options = false;
-              continue;
-            }
-          }
-          filenames = new list<string>;
-          filenames->push_back(argv[0]);
-        }
+        string path;
+        string name;
+        DiskFile::SplitFilename(argv[0], path, name);
+        filenames = DiskFile::FindFiles(path, name, recursive);
 
         list<string>::iterator fn = filenames->begin();
         while (fn != filenames->end())
@@ -646,12 +673,9 @@ bool CommandLine::Parse(int argc, char *argv[])
                 return false;
               }
             }
-            else
-            {
-              // We are creating a new file
-              version = verPar2;
-              parfilename = filename;
-            }
+
+            string dummy;
+            DiskFile::SplitFilename(parfilename, basepath, dummy);
           }
           else
           {

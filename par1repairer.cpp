@@ -49,6 +49,9 @@ Par1Repairer::Par1Repairer(void)
 
 Par1Repairer::~Par1Repairer(void)
 {
+  delete [] (u8*)inputbuffer;
+  delete [] (u8*)outputbuffer;
+
   map<u32,DataBlock*>::iterator i = recoveryblocks.begin();
   while (i != recoveryblocks.end())
   {
@@ -81,6 +84,9 @@ Result Par1Repairer::Process(const CommandLine &commandline, bool dorepair)
 {
   // How noisy should we be
   noiselevel = commandline.GetNoiseLevel();
+
+  // do we want to purge par files on success ?
+  bool purgefiles = commandline.GetPurgeFiles();
 
   // Get filesnames from the command line
   string par1filename = commandline.GetParFilename();
@@ -223,6 +229,12 @@ Result Par1Repairer::Process(const CommandLine &commandline, bool dorepair)
     }
   }
 
+  if (purgefiles == true)
+  {
+    RemoveBackupFiles();
+    RemoveParFiles();
+  }
+
   return eSuccess;
 }
 
@@ -252,6 +264,8 @@ bool Par1Repairer::LoadRecoveryFile(string filename)
     DiskFile::SplitFilename(filename, path, name);
     cout << "Loading \"" << name << "\"." << endl;
   }
+
+  parlist.push_back(filename);
 
   bool havevolume = false;
   u32 volumenumber = 0;
@@ -503,7 +517,7 @@ bool Par1Repairer::LoadOtherRecoveryFiles(string filename)
 
   // Search for additional PAR files
   string wildcard = name + ".???";
-  list<string> *files = DiskFile::FindFiles(path, wildcard);
+  list<string> *files = DiskFile::FindFiles(path, wildcard, false);
 
   for (list<string>::const_iterator s=files->begin(); s!=files->end(); ++s)
   {
@@ -1019,8 +1033,12 @@ bool Par1Repairer::RenameTargetFiles(void)
 
       // Rename it
       diskfilemap.Remove(targetfile);
+
       if (!targetfile->Rename())
         return false;
+
+      backuplist.push_back(targetfile);
+
       bool success = diskfilemap.Insert(targetfile);
       assert(success);
 
@@ -1388,6 +1406,70 @@ bool Par1Repairer::DeleteIncompleteTargetFiles(void)
     }
 
     ++sf;
+  }
+
+  return true;
+}
+
+bool Par1Repairer::RemoveBackupFiles(void)
+{
+  vector<DiskFile*>::iterator bf = backuplist.begin();
+
+  if (noiselevel > CommandLine::nlSilent
+      && bf != backuplist.end())
+  {
+    cout << endl << "Purge backup files." << endl;
+  }
+
+  // Iterate through each file in the backuplist
+  while (bf != backuplist.end())
+  {
+    if (noiselevel > CommandLine::nlSilent)
+    {
+      string name;
+      string path;
+      DiskFile::SplitFilename((*bf)->FileName(), path, name);
+      cout << "Remove \"" << name << "\"." << endl;
+    }
+
+    if ((*bf)->IsOpen())
+      (*bf)->Close();
+    (*bf)->Delete();
+
+    ++bf;
+  }
+
+  return true;
+}
+
+bool Par1Repairer::RemoveParFiles(void)
+{
+  if (noiselevel > CommandLine::nlSilent
+      && parlist.size() > 0)
+  {
+      cout << endl << "Purge par files." << endl;
+  }
+
+  for (list<string>::const_iterator s=parlist.begin(); s!=parlist.end(); ++s)
+  {
+    DiskFile *diskfile = new DiskFile;
+
+    if (diskfile->Open(*s))
+    {
+      if (noiselevel > CommandLine::nlSilent)
+      {
+        string name;
+        string path;
+        DiskFile::SplitFilename((*s), path, name);
+        cout << "Remove \"" << name << "\"." << endl;
+      }
+
+      if (diskfile->IsOpen())
+        diskfile->Close();
+      diskfile->Delete();
+    }
+
+    delete diskfile;
   }
 
   return true;

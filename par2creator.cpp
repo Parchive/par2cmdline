@@ -80,6 +80,7 @@ Result Par2Creator::Process(const CommandLine &commandline)
   firstrecoveryblock = commandline.GetFirstRecoveryBlock();
   recoveryfilescheme = commandline.GetRecoveryFileScheme();
   string par2filename = commandline.GetParFilename();
+  string basepath = commandline.GetBasePath();
   size_t memorylimit = commandline.GetMemoryLimit();
   largestfilesize = commandline.GetLargestSourceSize();
 
@@ -116,7 +117,7 @@ Result Par2Creator::Process(const CommandLine &commandline)
 
   // Open all of the source files, compute the Hashes and CRC values, and store
   // the results in the file verification and file description packets.
-  if (!OpenSourceFiles(extrafiles))
+  if (!OpenSourceFiles(extrafiles, basepath))
     return eFileIOError;
 
   // Create the main packet and determine the setid to use with all packets
@@ -483,22 +484,21 @@ bool Par2Creator::ComputeRecoveryFileCount(void)
 
 // Open all of the source files, compute the Hashes and CRC values, and store
 // the results in the file verification and file description packets.
-bool Par2Creator::OpenSourceFiles(const list<CommandLine::ExtraFile> &extrafiles)
+bool Par2Creator::OpenSourceFiles(const list<CommandLine::ExtraFile> &extrafiles, string basepath)
 {
   ExtraFileIterator extrafile = extrafiles.begin();
   while (extrafile != extrafiles.end())
   {
     Par2CreatorSourceFile *sourcefile = new Par2CreatorSourceFile;
 
-    string path;
     string name;
-    DiskFile::SplitFilename(extrafile->FileName(), path, name);
+    DiskFile::SplitRelativeFilename(extrafile->FileName(), basepath, name);
 
     if (noiselevel > CommandLine::nlSilent)
       cout << "Opening: " << name << endl;
 
     // Open the source file and compute its Hashes and CRCs.
-    if (!sourcefile->Open(noiselevel, *extrafile, blocksize, deferhashcomputation))
+    if (!sourcefile->Open(noiselevel, *extrafile, blocksize, deferhashcomputation, basepath))
     {
       delete sourcefile;
       return false;

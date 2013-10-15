@@ -52,7 +52,7 @@ protected:
 
   // Open all of the source files, compute the Hashes and CRC values, and store
   // the results in the file verification and file description packets.
-  bool OpenSourceFiles(const list<CommandLine::ExtraFile> &extrafiles);
+  bool OpenSourceFiles(const list<CommandLine::ExtraFile> &extrafiles, string basepath);
 
   // Create the main packet and determine the set_id_hash to use with all packets
   bool CreateMainPacket(void);
