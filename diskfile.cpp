@@ -320,6 +320,12 @@ string DiskFile::GetCanonicalPathname(string filename)
 
 list<string>* DiskFile::FindFiles(string path, string wildcard, bool recursive)
 {
+  // check path, if not ending with path separator, add one
+  char pathend = *path.rbegin();
+  if (pathend != '\\')
+  {
+    path += '\\';
+  }
   list<string> *matches = new list<string>;
 
   wildcard = path + wildcard;
@@ -332,6 +338,19 @@ list<string>* DiskFile::FindFiles(string path, string wildcard, bool recursive)
       if (0 == (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
       {
         matches->push_back(path + fd.cFileName);
+      }
+      else if (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+      {
+        list<string> *dirmatches;
+        string nwwildcard="*";
+        dirmatches = DiskFile::FindFiles(fn.cFileName, nwwildcard, true);
+
+        list<string>::iterator fn = dirmatches->begin();
+        while (fn != dirmatches->end())
+        {
+          matches->push_back(*fn);
+          ++fn;
+        }
       }
     } while (::FindNextFile(h, &fd));
     ::FindClose(h);
@@ -632,15 +651,9 @@ list<string>* DiskFile::FindFiles(string path, string wildcard, bool recursive)
 {
   // check path, if not ending with path separator, add one
   char pathend = *path.rbegin();
-  if (pathend != '/' &&
-      pathend != '\\')
+  if (pathend != '/')
   {
-    // ifdef is useless, but leave it in for now
-#ifdef WIN32
-    path += '\\';
-#else
     path += '/';
-#endif
   }
   list<string> *matches = new list<string>;
 
