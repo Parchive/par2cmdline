@@ -73,6 +73,7 @@ public:
   static string GetCanonicalPathname(string filename);
 
   static void SplitFilename(string filename, string &path, string &name);
+  static void SplitRelativeFilename(string filename, string basepath, string &name);
   static string TranslateFilename(string filename);
 
   static bool FileExists(string filename);
@@ -80,7 +81,7 @@ public:
 
   // Search the specified path for files which match the specified wildcard
   // and return their names in a list.
-  static list<string>* FindFiles(string path, string wildcard);
+  static list<string>* FindFiles(string path, string wildcard, bool recursive);
 
 protected:
   string filename;

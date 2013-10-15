@@ -105,7 +105,10 @@ public:
   CommandLine::NoiseLevel GetNoiseLevel(void) const        {return noiselevel;}
 
   string                              GetParFilename(void) const {return parfilename;}
+  string                              GetBasePath(void) const {return basepath;}
   const list<CommandLine::ExtraFile>& GetExtraFiles(void) const  {return extrafiles;}
+  bool                                GetPurgeFiles(void) const  {return purgefiles;}
+  bool                                GetRecursive(void) const  {return recursive;}
 
 protected:
   Operation operation;         // The operation to be carried out.
@@ -137,6 +140,8 @@ protected:
                                // the name of the first PAR2 file to read
                                // when verifying or repairing.
 
+  string basepath;             // the path par2 is run from
+
   list<ExtraFile> extrafiles;  // The list of other files specified on the
                                // command line. When creating, this will be
                                // the source files, and when verifying or
@@ -150,6 +155,10 @@ protected:
   size_t memorylimit;          // How much memory is permitted to be used
                                // for the output buffer when creating
                                // or repairing.
+
+  bool purgefiles;             // purge backup and par files on successfull
+                               // recovery
+  bool recursive;              // recurse into subdirectories
 };
 
 typedef list<CommandLine::ExtraFile>::const_iterator ExtraFileIterator;
