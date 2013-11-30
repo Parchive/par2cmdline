@@ -346,6 +346,10 @@ list<string>* DiskFile::FindFiles(string path, string wildcard, bool recursive)
       }
       else if (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
       {
+        if (fd.cFileName[0] == '.') {
+          continue;
+        }
+
         list<string> *dirmatches;
         string nwwildcard="*";
         dirmatches = DiskFile::FindFiles(fd.cFileName, nwwildcard, true);
