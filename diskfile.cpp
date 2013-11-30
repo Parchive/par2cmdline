@@ -348,7 +348,7 @@ list<string>* DiskFile::FindFiles(string path, string wildcard, bool recursive)
       {
         list<string> *dirmatches;
         string nwwildcard="*";
-        dirmatches = DiskFile::FindFiles(fn.cFileName, nwwildcard, true);
+        dirmatches = DiskFile::FindFiles(fd.cFileName, nwwildcard, true);
 
         list<string>::iterator fn = dirmatches->begin();
         while (fn != dirmatches->end())
