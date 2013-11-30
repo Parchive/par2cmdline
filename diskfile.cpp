@@ -909,7 +909,6 @@ string DiskFile::TranslateFilename(string filename)
       {
       case '"':
       case '*':
-      case '/':
       case ':':
       case '<':
       case '>':
@@ -922,6 +921,17 @@ string DiskFile::TranslateFilename(string filename)
     if (ch < 32)
     {
       ok = false;
+    }
+#endif
+
+    // replace unix / to windows \ or windows \ to unix /
+#ifdef WIN32
+    if (ch == '/') {
+      ch = '\\';
+    }
+#else
+    if (ch == '\\') {
+      ch = '/';
     }
 #endif
 
