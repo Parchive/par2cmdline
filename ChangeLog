@@ -1,3 +1,15 @@
+30 November 2013 Ike Devolder
+	* release: 0.6.0
+	* test8: windows generated recovery files with subdir
+	* windows recurses in . and .. which leads to deadlock
+	  so dont recurse in folders starting with . on windows
+	* when recursion happens make sure windows can recover with
+	  unix created par2 files
+	* fixed fc -> fd typo in windows part of diskfile
+	* FTBFS fix on GNU/kFreeBSD (by Cyril Brulebois)
+	* fixed non quiet output when creating par2
+	* Applied fix preventing a stack overflow (by Robert Schneider)
+
 14 October 2013 Ike Devolder
   * Implemented recursion
 	* NOTE: only for unix like systems
