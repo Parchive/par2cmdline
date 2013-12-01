@@ -92,20 +92,23 @@ The command line parameters for par2cmdline are as follow:
 
   Options:
 
-    -b<n>  : Set the Block-Count
-    -s<n>  : Set the Block-Size (Don't use both -b and -s)
-    -r<n>  : Level of Redundancy (%)
-    -c<n>  : Recovery block count (don't use both -r and -c)
-    -f<n>  : First Recovery-Block-Number
-    -u     : Uniform recovery file sizes
-    -l     : Limit size of recovery files (Don't use both -u and -l)
-    -n<n>  : Number of recovery files (Don't use both -n and -l)
-    -m<n>  : Memory (in MB) to use
-    -v [-v]: Be more verbose
-    -q [-q]: Be more quiet (-qq gives silence)
-    -p     : purge backup files and par files on successful recovery or
-             when no recovery is needed
-    --     : Treat all remaining CommandLine as filenames
+    -a<file> : set the main par2 archive name
+               required on create, optional for verify and repair
+    -b<n>    : Set the Block-Count
+    -s<n>    : Set the Block-Size (Don't use both -b and -s)
+    -r<n>    : Level of Redundancy (%)
+    -c<n>    : Recovery block count (don't use both -r and -c)
+    -f<n>    : First Recovery-Block-Number
+    -u       : Uniform recovery file sizes
+    -l       : Limit size of recovery files (Don't use both -u and -l)
+    -n<n>    : Number of recovery files (Don't use both -n and -l)
+    -m<n>    : Memory (in MB) to use
+    -v [-v]  : Be more verbose
+    -q [-q]  : Be more quiet (-qq gives silence)
+    -p       : purge backup files and par files on successful recovery or
+               when no recovery is needed
+    -R       : recurse into subdirectories (only usefull on create)
+    --       : Treat all remaining CommandLine as filenames
 
 If you wish to create par2 files for a single source file, you may leave
 out the name of the par2 file from the command line. par2cmdline will then
@@ -124,7 +127,7 @@ used for this purpose. You do NOT need to split files with PAR 2.0.
 To create PAR 2 recovery files for a single data file (e.g. one called
 test.mpg), you can use the following command:
 
-  par2 create test.mpg
+  par2 create -a test.mpg.par2 test.mpg
 
 If test.mpg is an 800 MB file, then this will create a total of 8 PAR2 files
 with the following filenames (taking roughly 6 minutes on a PC with a
@@ -151,7 +154,7 @@ a blocksize that is equal to the Article size that you will use to post the
 data file. If you wanted to post the test.mpg file using an article size
 of 300 KB then the command you would type is:
 
-  par2 create -s307200 test.mpg
+  par2 create -s307200 -a test.mpg.par2 test.mpg
 
 This will create 9 PAR2 files instead of 8, and they will be capable of
 correcting up to 134 errors totalling 40 MB. It will take roughly 8 minutes
@@ -164,7 +167,7 @@ quantity of recovery data, you can use the "-r" option.
 To create 10% recovery data instead of the default of 5% and also to use a
 block size of 300 KB, you would use the following command:
 
-  par2 create -s307200 -r10 test.mpg
+  par2 create -s307200 -r10 -a test.mpg.par2 test.mpg
 
 This would also create 9 PAR2 files, but they would be able to correct up to
 269 errors totalling 80 MB. Since twice as much recovery data is created, it
@@ -179,7 +182,7 @@ The "-f" option is used when you create additional recovery data.
 e.g. If you have already created 10% and want another 5% then you migh use
 the following command:
 
-  par2 create -s307200 -r5 -f300 test.mpg
+  par2 create -s307200 -r5 -f300 -a test.mpg.par2 test.mpg
 
 This specifies the same block size (which is a requirement for additional
 recovery files), 5% recovery data, and a first block number of 300.
@@ -195,7 +198,7 @@ files.
 
 If test.mpg had been split into multiple RAR files, then you could use:
 
-  par2 create test.mpg.rar.par2 test.mpg.part*.rar
+  par2 create -a test.mpg.rar.par2 test.mpg.part*.rar
 
 The files filename "test.mpg.rar.par2" says what you want the par2 files to
 be called and "test.mpg.part*.rar" should select all of the RAR files.
