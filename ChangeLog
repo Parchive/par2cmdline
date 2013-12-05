@@ -1,4 +1,5 @@
 5 December 2013 Ike Devolder
+	* show usage / version / copyright on request
 	* restore 'old' way of creating make -a optional
 
 30 November 2013 Ike Devolder

@@ -27,24 +27,6 @@ static char THIS_FILE[]=__FILE__;
 #endif
 #endif
 
-void banner(void)
-{
-  string version = PACKAGE " version " VERSION;
-
-  cout << version << endl
-    << "Copyright (C) 2003 Peter Brian Clements." << endl
-    << "Copyright (C) 2011-2012 Marcel Partap." << endl
-    << "Copyright (C) 2012-2013 Ike Devolder." << endl
-    << endl
-    << "par2cmdline comes with ABSOLUTELY NO WARRANTY." << endl
-    << endl
-    << "This is free software, and you are welcome to redistribute it and/or modify" << endl
-    << "it under the terms of the GNU General Public License as published by the" << endl
-    << "Free Software Foundation; either version 2 of the License, or (at your" << endl
-    << "option) any later version. See COPYING for details." << endl
-    << endl;
-}
-
 int main(int argc, char *argv[])
 {
 #ifdef _MSC_VER
@@ -57,16 +39,8 @@ int main(int argc, char *argv[])
 
   Result result = eInvalidCommandLineArguments;
 
-  if (!commandline->Parse(argc, argv))
+  if (commandline->Parse(argc, argv))
   {
-    banner();
-    CommandLine::usage();
-  }
-  else
-  {
-    if (commandline->GetNoiseLevel() > CommandLine::nlSilent)
-      banner();
-
     // Which operation was selected
     switch (commandline->GetOperation())
     {
@@ -128,6 +102,7 @@ int main(int argc, char *argv[])
         }
         break;
       case CommandLine::opNone:
+        result = eSuccess;
         break;
     }
   }

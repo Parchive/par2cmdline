@@ -77,11 +77,35 @@ CommandLine::CommandLine(void)
 {
 }
 
+void CommandLine::showversion(void)
+{
+  string version = PACKAGE " version " VERSION;
+  cout << version << endl;
+}
+
+void CommandLine::banner(void)
+{
+  //showversion();
+  cout << "Copyright (C) 2003 Peter Brian Clements." << endl
+    << "Copyright (C) 2011-2012 Marcel Partap." << endl
+    << "Copyright (C) 2012-2013 Ike Devolder." << endl
+    << endl
+    << "par2cmdline comes with ABSOLUTELY NO WARRANTY." << endl
+    << endl
+    << "This is free software, and you are welcome to redistribute it and/or modify" << endl
+    << "it under the terms of the GNU General Public License as published by the" << endl
+    << "Free Software Foundation; either version 2 of the License, or (at your" << endl
+    << "option) any later version. See COPYING for details." << endl
+    << endl;
+}
+
 void CommandLine::usage(void)
 {
   cout << 
-    "\n"
     "Usage:\n"
+    "  par2 -h  : show this help\n"
+    "  par2 -V  : show version\n"
+    "  par2 -VV : show version and copyright\n"
     "\n"
     "  par2 c(reate) [options] <par2 file> [files] : Create PAR2 files\n"
     "  par2 v(erify) [options] <par2 file> [files] : Verify files using PAR2 file\n"
@@ -123,6 +147,33 @@ bool CommandLine::Parse(int argc, char *argv[])
   DiskFile::SplitFilename(argv[0], path, name);
   argc--;
   argv++;
+
+  if (argc>0)
+  {
+    if (argv[0][0] != 0 &&
+        argv[0][0] == '-')
+    {
+      if (argv[0][1] != 0)
+      {
+        switch (argv[0][1])
+        {
+        case 'h':
+          usage();
+          break;
+        case 'V':
+          showversion();
+          if (argv[0][2] != 0 &&
+              argv[0][2] == 'V')
+          {
+            cout << endl;
+            banner();
+          }
+          break;
+        }
+        return true;
+      }
+    }
+  }
 
   // Strip ".exe" from the end
   if (name.size() > 4 && 0 == stricmp(".exe", name.substr(name.length()-4).c_str()))
@@ -168,6 +219,7 @@ bool CommandLine::Parse(int argc, char *argv[])
         operation = opRepair;
       break;
     }
+
     if (operation == opNone)
     {
       cerr << "Invalid operation specified: " << argv[0] << endl;
@@ -555,6 +607,13 @@ bool CommandLine::Parse(int argc, char *argv[])
             purgefiles = true;
           }
           break;
+
+        case 'h':
+          {
+            usage();
+            return false;
+            break;
+          }
 
         case 'R':
           {

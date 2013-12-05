@@ -32,6 +32,8 @@ public:
   // Parse the supplied command line arguments. 
   bool Parse(int argc, char *argv[]);
 
+  static void showversion(void);
+  static void banner(void);
   // Display details of the correct format for command line parameters.
   static void usage(void);
 

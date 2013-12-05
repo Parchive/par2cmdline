@@ -80,6 +80,10 @@ USING PAR2CMDLINE
 
 The command line parameters for par2cmdline are as follow:
 
+    par2 -h  : show this help
+    par2 -V  : show version
+    par2 -VV : show version and copyright
+
     par2 c(reate) [options] <par2 file> [files]
     par2 v(erify) [options] <par2 file> [files]
     par2 r(epair) [options] <par2 file> [files]

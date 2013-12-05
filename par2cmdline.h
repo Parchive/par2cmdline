@@ -20,7 +20,6 @@
 #ifndef __PARCMDLINE_H__
 #define __PARCMDLINE_H__
 
-
 #ifdef WIN32
 // Windows includes
 #define WIN32_LEAN_AND_MEAN
