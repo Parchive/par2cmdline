@@ -1,4 +1,5 @@
 5 December 2013 Ike Devolder
+	* release: 0.6.1
 	* show usage / version / copyright on request
 	* restore 'old' way of creating make -a optional
 
