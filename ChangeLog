@@ -16,7 +16,7 @@
 	* Applied fix preventing a stack overflow (by Robert Schneider)
 
 14 October 2013 Ike Devolder
-  * Implemented recursion
+	* Implemented recursion
 	* NOTE: only for unix like systems
 	* Windows can be done i guess but i have no access to windows machines
 
@@ -28,21 +28,21 @@
 	* Fixed failing testsuite
 
 9 December 2012 Ike Devolder
-  * rework purging of par(2) files because of possible segfaults
-    and other inconsistencies
+	* rework purging of par(2) files because of possible segfaults
+		and other inconsistencies
 
 4 December 2012 Ike Devolder
-  * fix purge option so it removes the par files when there is no
-    repair needed
-  * add purge option to verify so when there is no repair needed
-    the par2 files are removed when the purge option is given
+	* fix purge option so it removes the par files when there is no
+		repair needed
+	* add purge option to verify so when there is no repair needed
+		the par2 files are removed when the purge option is given
 
 30 November 2012 Ike Devolder
-  * add purge option
-    remove backup files (mostly .1) and par files on request
-    **USE AT YOUR OWN RISK
-  * purge option available in par1 and par2 repair
-  * fix memory leak when using par1 repair
+	* add purge option
+		remove backup files (mostly .1) and par files on request
+		**USE AT YOUR OWN RISK
+	* purge option available in par1 and par2 repair
+	* fix memory leak when using par1 repair
 
 30 January 2012 Ike Devolder
 	* add inlining performance improvement of Gerard Putter
@@ -273,7 +273,7 @@
 	  Test files for "make check".
 
 	* Changed commandline.cpp, commandline.h: Add "version" member 
-          and set it according to whether the recovery file is a .PAR file
+		and set it according to whether the recovery file is a .PAR file
 	  or a .PAR2 file. Rename "par2filename" member to "parfilename".
 
 	* Changed creatorpacket.cpp: Made "string creator" a local variable
@@ -281,7 +281,7 @@
 	  that does nothing.
 
 	* Changed criticalpacket.h: Corrected bug in 
-          CriticalPacketEntry::operator= which failed to return *this.
+		CriticalPacketEntry::operator= which failed to return *this.
 
 	* Changed descriptionpacket.cpp: Commented out code which does
 	  nothing.
