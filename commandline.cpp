@@ -83,7 +83,7 @@ void CommandLine::usage(void)
     "\n"
     "Usage:\n"
     "\n"
-    "  par2 c(reate) [options] -a <par2 file> [files] : Create PAR2 files\n"
+    "  par2 c(reate) [options] <par2 file> [files] : Create PAR2 files\n"
     "  par2 v(erify) [options] <par2 file> [files] : Verify files using PAR2 file\n"
     "  par2 r(epair) [options] <par2 file> [files] : Repair files using PAR2 files\n"
     "\n"
@@ -93,7 +93,6 @@ void CommandLine::usage(void)
     "Options:\n"
     "\n"
     "  -a<file> : set the main par2 archive name\n"
-    "             required on create, optional for verify and repair\n"
     "  -b<n>    : Set the Block-Count\n"
     "  -s<n>    : Set the Block-Size (Don't use both -b and -s)\n"
     "  -r<n>    : Level of Redundancy (%%)\n"
@@ -584,6 +583,20 @@ bool CommandLine::Parse(int argc, char *argv[])
             return false;
           }
         }
+      }
+      else if (operation == opCreate &&
+          parfilename.length() == 0)
+      {
+        string filename = argv[0];
+        string::size_type where;
+        if ((where = filename.find_first_of('*')) != string::npos ||
+            (where = filename.find_first_of('?')) != string::npos)
+        {
+          cerr << "par2 file must not have a wildcard in it." << endl;
+          return false;
+        }
+
+        parfilename = DiskFile::GetCanonicalPathname(filename);
       }
       else
       {

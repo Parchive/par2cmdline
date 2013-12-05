@@ -1,3 +1,6 @@
+5 December 2013 Ike Devolder
+	* restore 'old' way of creating make -a optional
+
 30 November 2013 Ike Devolder
 	* release: 0.6.0
 	* test8: windows generated recovery files with subdir
