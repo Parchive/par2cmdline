@@ -1,3 +1,7 @@
+7 December 2013 Ike Devolder
+	* release: 0.6.2
+	* basepath was not set correctly in restoring of 'old' way
+
 5 December 2013 Ike Devolder
 	* release: 0.6.1
 	* show usage / version / copyright on request
