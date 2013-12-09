@@ -249,18 +249,14 @@ bool CommandLine::Parse(int argc, char *argv[])
               string str = argv[0];
               if (str == "-a")
               {
-                parfilename = DiskFile::GetCanonicalPathname(argv[1]);
+                SetParFilename(argv[1]);
                 argc--;
                 argv++;
               }
               else
               {
-                parfilename = DiskFile::GetCanonicalPathname(str.substr(2));
+                SetParFilename(str.substr(2));
               }
-              version = verPar2;
-
-              string dummy;
-              DiskFile::SplitFilename(parfilename, basepath, dummy);
             }
           }
           break;
@@ -643,8 +639,7 @@ bool CommandLine::Parse(int argc, char *argv[])
           }
         }
       }
-      else if (operation == opCreate &&
-          parfilename.length() == 0)
+      else if (parfilename.length() == 0)
       {
         string filename = argv[0];
         string::size_type where;
@@ -655,12 +650,7 @@ bool CommandLine::Parse(int argc, char *argv[])
           return false;
         }
 
-        parfilename = DiskFile::GetCanonicalPathname(filename);
-
-        version = verPar2;
-
-        string dummy;
-        DiskFile::SplitFilename(parfilename, basepath, dummy);
+        SetParFilename(filename);
       }
       else
       {
@@ -677,114 +667,34 @@ bool CommandLine::Parse(int argc, char *argv[])
           // Convert filename from command line into a full path + filename
           string filename = DiskFile::GetCanonicalPathname(*fn);
 
-          // If this is the first file on the command line, then it
-          // is the main PAR2 file.
-          if (parfilename.length() == 0)
+          // Originally, all specified files were supposed to exist, or the program
+          // would stop with an error message. This was not practical, for example in
+          // a directory with files appearing and disappearing (an active download directory).
+          // So the new rule is: when a specified file doesn't exist, it is silently skipped.
+          if (!DiskFile::FileExists(filename))
           {
-            // If we are verifying or repairing, the PAR2 file must
-            // already exist
-            if (operation != opCreate)
-            {
-              // Find the last '.' in the filename
-              string::size_type where = filename.find_last_of('.');
-              if (where != string::npos)
-              {
-                // Get what follows the last '.'
-                string tail = filename.substr(where+1);
-
-                if (0 == stricmp(tail.c_str(), "par2"))
-                {
-                  parfilename = filename;
-                  version = verPar2;
-                }
-                else if (0 == stricmp(tail.c_str(), "par") ||
-                         (tail.size() == 3 &&
-                         tolower(tail[0]) == 'p' &&
-                         isdigit(tail[1]) &&
-                         isdigit(tail[2])))
-                {
-                  parfilename = filename;
-                  version = verPar1;
-                }
-              }
-
-              // If we haven't figured out which version of PAR file we
-              // are using from the file extension, then presumable the
-              // files filename was actually the name of a data file.
-              if (version == verUnknown)
-              {
-                // Check for the existence of a PAR2 of PAR file.
-                if (DiskFile::FileExists(filename + ".par2"))
-                {
-                  version = verPar2;
-                  parfilename = filename + ".par2";
-                }
-                else if (DiskFile::FileExists(filename + ".PAR2"))
-                {
-                  version = verPar2;
-                  parfilename = filename + ".PAR2";
-                }
-                else if (DiskFile::FileExists(filename + ".par"))
-                {
-                  version = verPar1;
-                  parfilename = filename + ".par";
-                }
-                else if (DiskFile::FileExists(filename + ".PAR"))
-                {
-                  version = verPar1;
-                  parfilename = filename + ".PAR";
-                }
-              }
-              else
-              {
-                // Does the specified PAR or PAR2 file exist
-                if (!DiskFile::FileExists(filename))
-                {
-                  version = verUnknown;
-                }
-              }
-
-              if (version == verUnknown)
-              {
-                cerr << "The recovery file does not exist: " << filename << endl;
-                return false;
-              }
-            }
-
-            string dummy;
-            DiskFile::SplitFilename(parfilename, basepath, dummy);
+            cout << "Ignoring non-existent source file: " << filename << endl;
           }
           else
           {
-            // Originally, all specified files were supposed to exist, or the program
-            // would stop with an error message. This was not practical, for example in
-            // a directory with files appearing and disappearing (an active download directory).
-            // So the new rule is: when a specified file doesn't exist, it is silently skipped.
-            if (!DiskFile::FileExists(filename))
+            u64 filesize = DiskFile::GetFileSize(filename);
+
+            // Ignore all 0 byte files
+            if (filesize > 0)
             {
-              cout << "Ignoring non-existent source file: " << filename << endl;
+              extrafiles.push_back(ExtraFile(filename, filesize));
+
+              // track the total size of the source files and how
+              // big the largest one is.
+              totalsourcesize += filesize;
+              if (largestsourcesize < filesize)
+              largestsourcesize = filesize;
             }
             else
             {
-              u64 filesize = DiskFile::GetFileSize(filename);
-
-              // Ignore all 0 byte files
-              if (filesize > 0)
-              {
-                extrafiles.push_back(ExtraFile(filename, filesize));
-
-                // track the total size of the source files and how
-                // big the largest one is.
-                totalsourcesize += filesize;
-                if (largestsourcesize < filesize)
-                largestsourcesize = filesize;
-              }
-              else
-              {
-                cout << "Skipping 0 byte file: " << filename << endl;
-              }
-            } //end file exists
-          }
+              cout << "Skipping 0 byte file: " << filename << endl;
+            }
+          } //end file exists
 
           ++fn;
         }
@@ -924,4 +834,80 @@ bool CommandLine::Parse(int argc, char *argv[])
   memorylimit *= 1048576;
 
   return true;
+}
+
+void CommandLine::SetParFilename(string filename)
+{
+  parfilename = DiskFile::GetCanonicalPathname(filename);
+
+  // If we are verifying or repairing, the PAR2 file must
+  // already exist
+  if (operation != opCreate)
+  {
+    // Find the last '.' in the filename
+    string::size_type where = filename.find_last_of('.');
+    if (where != string::npos)
+    {
+      // Get what follows the last '.'
+      string tail = filename.substr(where+1);
+
+      if (0 == stricmp(tail.c_str(), "par2"))
+      {
+        parfilename = filename;
+        version = verPar2;
+      }
+      else if (0 == stricmp(tail.c_str(), "par") ||
+               (tail.size() == 3 &&
+               tolower(tail[0]) == 'p' &&
+               isdigit(tail[1]) &&
+               isdigit(tail[2])))
+      {
+        parfilename = filename;
+        version = verPar1;
+      }
+    }
+
+    // If we haven't figured out which version of PAR file we
+    // are using from the file extension, then presumable the
+    // files filename was actually the name of a data file.
+    if (version == verUnknown)
+    {
+      // Check for the existence of a PAR2 of PAR file.
+      if (DiskFile::FileExists(filename + ".par2"))
+      {
+        version = verPar2;
+        parfilename = filename + ".par2";
+      }
+      else if (DiskFile::FileExists(filename + ".PAR2"))
+      {
+        version = verPar2;
+        parfilename = filename + ".PAR2";
+      }
+      else if (DiskFile::FileExists(filename + ".par"))
+      {
+        version = verPar1;
+        parfilename = filename + ".par";
+      }
+      else if (DiskFile::FileExists(filename + ".PAR"))
+      {
+        version = verPar1;
+        parfilename = filename + ".PAR";
+      }
+    }
+    else
+    {
+      // Does the specified PAR or PAR2 file exist
+      if (!DiskFile::FileExists(filename))
+      {
+        version = verUnknown;
+      }
+    }
+  }
+  else
+  {
+    version = verPar2;
+  }
+
+  string dummy;
+  DiskFile::SplitFilename(parfilename, basepath, dummy);
 }
