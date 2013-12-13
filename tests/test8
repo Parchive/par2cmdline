@@ -1,5 +1,7 @@
 #!/bin/sh
 
+cd $(dirname $0)
+
 cd testdir/subdirwin || { echo "ERROR: Could not change to test directory" ; exit 1; } >&2
 
 banner="Repairing two files in subdirs using PAR 2.0 data generated on windows"
@@ -10,7 +12,7 @@ echo $banner
 echo $dashes
 
 rm -f subdir1/test-0.data
-../../par2 r testdata.par2 > ../test8.log || { echo "ERROR: Reconstruction of two files using PAR 2.0 failed" ; exit 1; } >&2
+../../../par2 r testdata.par2 > ../test8.log || { echo "ERROR: Reconstruction of two files using PAR 2.0 failed" ; exit 1; } >&2
 cmp -s subdir1/test-2.data ../test-2.data.orig && cmp -s subdir2/test-7.data ../test-7.data.orig || { echo "ERROR: Repaired files do not match originals" ; exit 1; } >&2
 
 exit 0;

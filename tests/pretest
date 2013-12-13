@@ -1,5 +1,7 @@
 #!/bin/sh
 
+cd $(dirname $0)
+
 rm -f test*.log
 rm -rf testdir
 mkdir testdir && cd testdir || { echo "ERROR: Could not change to test directory" ; exit 1; } >&2

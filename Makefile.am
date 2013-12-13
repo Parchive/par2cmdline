@@ -49,10 +49,12 @@ LDADD = -lstdc++
 AM_CXXFLAGS = -Wall
 
 EXTRA_DIST = PORTING ROADMAP par2cmdline.sln par2cmdline.vcproj \
-	testdata.tar.gz pretest test1 test2 test3 test4 test5 test6 \
-	test7 test8 posttest
+	tests/testdata.tar.gz tests/pretest tests/test1 tests/test2 tests/test3 \
+    tests/test4 tests/test5 tests/test6 tests/test7 tests/test8 \
+    posttest
 
-TESTS = pretest test1 test2 test3 test4 test5 test6 test7 test8 posttest
+TESTS = tests/pretest tests/test1 tests/test2 tests/test3 tests/test4 \
+        tests/test5 tests/test6 tests/test7 tests/test8 tests/posttest
 
 install-exec-hook :
 	ln -sf $(bindir)/par2$(EXEEXT) $(DESTDIR)$(bindir)/par2create$(EXEEXT)
