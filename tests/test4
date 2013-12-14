@@ -2,7 +2,24 @@
 
 cd $(dirname $0)
 
-cd testdir || { echo "ERROR: Could not change to test directory" ; exit 1; } >&2
+testname=$(basename $0)
+rm -f $testname.log
+
+mkdir run$testname && cd run$testname || { echo "ERROR: Could not change to test directory" ; exit 1; } >&2
+
+tar -xf ../flatdata.tar.gz || { echo "ERROR: Could not extract data test files" ; exit 1; } >&2
+tar -xf ../flatdata-par2files.tar.gz || { echo "ERROR: Could not extract par test files" ; exit 1; } >&2
+
+cp test-0.data test-0.data.orig
+cp test-1.data test-1.data.orig
+cp test-2.data test-2.data.orig
+cp test-3.data test-3.data.orig
+cp test-4.data test-4.data.orig
+cp test-5.data test-5.data.orig
+cp test-6.data test-6.data.orig
+cp test-7.data test-7.data.orig
+cp test-8.data test-8.data.orig
+cp test-9.data test-9.data.orig
 
 banner="Repairing two files using PAR 2.0 data"
 dashes=`echo "$banner" | sed s/./-/g`
@@ -12,8 +29,11 @@ echo $banner
 echo $dashes
 
 rm -f test-1.data test-3.data
-../../par2 r testdata.par2 > ../test4.log || { echo "ERROR: Reconstruction of two files using PAR 2.0 failed" ; exit 1; } >&2
+../../par2 r testdata.par2 > ../$testname.log || { echo "ERROR: Reconstruction of two files using PAR 2.0 failed" ; exit 1; } >&2
 cmp -s test-1.data test-1.data.orig && cmp -s test-3.data test-3.data.orig || { echo "ERROR: Repaired files do not match originals" ; exit 1; } >&2
+
+cd ..
+rm -rf run$testname
 
 exit 0;
 

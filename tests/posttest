@@ -1,8 +1,0 @@
-#!/bin/sh
-
-cd $(dirname $0)
-
-rm -rf testdir
-
-exit 77;
-

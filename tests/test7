@@ -2,18 +2,30 @@
 
 cd $(dirname $0)
 
-cd testdir/subdir || { echo "ERROR: Could not change to test directory" ; exit 1; } >&2
+testname=$(basename $0)
+rm -f $testname.log
 
-banner="Repairing two files in subdirs using PAR 2.0 data"
+mkdir run$testname && cd run$testname || { echo "ERROR: Could not change to test directory" ; exit 1; } >&2
+
+tar -xf ../subdirdata.tar.gz || { echo "ERROR: Could not extract data test files" ; exit 1; } >&2
+tar -xf ../subdirdata-par2files-win.tar.gz || { echo "ERROR: Could not extract par test files" ; exit 1; } >&2
+
+banner="Repairing two files in subdirs using PAR 2.0 data generated on windows"
 dashes=`echo "$banner" | sed s/./-/g`
 
 echo $dashes
 echo $banner
 echo $dashes
 
+cp subdir1/test-2.data subdir1/test-2.data.orig
+cp subdir2/test-7.data subdir2/test-7.data.orig
+
 rm -f subdir1/test-2.data subdir2/test-7.data
-../../../par2 r testdata.par2 > ../test7.log || { echo "ERROR: Reconstruction of two files using PAR 2.0 failed" ; exit 1; } >&2
-cmp -s subdir1/test-2.data ../test-2.data.orig && cmp -s subdir2/test-7.data ../test-7.data.orig || { echo "ERROR: Repaired files do not match originals" ; exit 1; } >&2
+../../par2 r testdata.par2 > ../$testname.log || { echo "ERROR: Reconstruction of two files using PAR 2.0 failed" ; exit 1; } >&2
+cmp -s subdir1/test-2.data subdir1/test-2.data.orig && cmp -s subdir2/test-7.data subdir2/test-7.data.orig || { echo "ERROR: Repaired files do not match originals" ; exit 1; } >&2
+
+cd ..
+rm -rf run$testname
 
 exit 0;
 

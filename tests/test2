@@ -2,7 +2,13 @@
 
 cd $(dirname $0)
 
-cd testdir || { echo "ERROR: Could not change to test directory" ; exit 1; } >&2
+testname=$(basename $0)
+rm -f $testname.log
+
+mkdir run$testname && cd run$testname || { echo "ERROR: Could not change to test directory" ; exit 1; } >&2
+
+tar -xf ../flatdata.tar.gz || { echo "ERROR: Could not extract data test files" ; exit 1; } >&2
+tar -xf ../flatdata-par2files.tar.gz || { echo "ERROR: Could not extract par test files" ; exit 1; } >&2
 
 banner="Verifying using PAR 2.0 data"
 dashes=`echo "$banner" | sed s/./-/g`
@@ -11,7 +17,10 @@ echo $dashes
 echo $banner
 echo $dashes
 
-../../par2 v testdata.par2 > ../test2.log || { echo "ERROR: Initial PAR 2.0 verification failed" ; exit 1; } >&2
+../../par2 v testdata.par2 > ../$testname.log || { echo "ERROR: Initial PAR 2.0 verification failed" ; exit 1; } >&2
+
+cd ..
+rm -rf run$testname
 
 exit 0;
 
