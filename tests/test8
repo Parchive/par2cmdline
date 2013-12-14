@@ -1,0 +1,43 @@
+#!/bin/sh
+
+cd $(dirname $0)
+
+testname=$(basename $0)
+rm -f $testname.log
+
+mkdir run$testname && cd run$testname || { echo "ERROR: Could not change to test directory" ; exit 1; } >&2
+
+tar -xf ../subdirdata.tar.gz || { echo "ERROR: Could not extract data test files" ; exit 1; } >&2
+
+mkdir source1 && mv subdir1 subdir2 source1
+
+cd source1
+
+banner="create par2files on subdir"
+dashes=`echo "$banner" | sed s/./-/g`
+
+echo $dashes
+echo $banner
+echo $dashes
+
+../../../par2 c -R testdata.par2 * > ../../$testname.log || { echo "ERROR: construction of files using PAR 2.0 failed" ; exit 1; } >&2
+
+cd ..
+mv source1 source2
+
+cd source2
+
+banner="verify par2files on subdir, moved source folder"
+dashes=`echo "$banner" | sed s/./-/g`
+
+echo $dashes
+echo $banner
+echo $dashes
+
+../../../par2 v testdata.par2 >> ../../$testname.log || { echo "ERROR: verification of files using PAR 2.0 failed" ; exit 1; } >&2
+
+cd ../..
+rm -rf run$testname
+
+exit 0;
+
