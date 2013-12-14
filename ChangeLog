@@ -1,3 +1,18 @@
+14 December 2013 Ike Devolder
+	* release: 0.6.3
+	* rework original tests so parallelisation is no issue
+	* add test8 which makes sure the paths stored are relative
+	* add test9 rename wrongly named file, passed to par2
+	  result is correctly named files after repair
+
+13 Decebmer 2013 Ike Devolder
+	* move tests in separate folder, tests will be extended
+	  and otherwise eventually clutter the source too much
+
+9 December 2013 Ike Devolder
+	* rework parfilename handling + it fixes passing par
+	  filename without extension for repair
+
 7 December 2013 Ike Devolder
 	* release: 0.6.2
 	* basepath was not set correctly in restoring of 'old' way
