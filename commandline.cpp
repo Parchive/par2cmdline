@@ -230,6 +230,7 @@ bool CommandLine::Parse(int argc, char *argv[])
   }
 
   bool options = true;
+  list<string> a_filenames;
 
   while (argc>0)
   {
@@ -680,8 +681,17 @@ bool CommandLine::Parse(int argc, char *argv[])
             u64 filesize = DiskFile::GetFileSize(filename);
 
             // Ignore all 0 byte files
-            if (filesize > 0)
+            if (filesize == 0)
             {
+              cout << "Skipping 0 byte file: " << filename << endl;
+            }
+            else if (a_filenames.end() != find(a_filenames.begin(), a_filenames.end(), filename))
+            {
+              cout << "Skipping duplicate filename: " << filename << endl;
+            }
+            else
+            {
+              a_filenames.push_back(filename);
               extrafiles.push_back(ExtraFile(filename, filesize));
 
               // track the total size of the source files and how
@@ -689,10 +699,6 @@ bool CommandLine::Parse(int argc, char *argv[])
               totalsourcesize += filesize;
               if (largestsourcesize < filesize)
               largestsourcesize = filesize;
-            }
-            else
-            {
-              cout << "Skipping 0 byte file: " << filename << endl;
             }
           } //end file exists
 
