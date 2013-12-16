@@ -592,50 +592,55 @@ bool Par1Repairer::VerifySourceFiles(void)
     // Check to see if we have already used this file
     if (diskfilemap.Find(filename) != 0)
     {
+      string path;
+      string name;
+      DiskFile::SplitRelativeFilename(filename, path, name);
+
       // The file has already been used!
+      cerr << "Source file " << name << " is a duplicate." << endl;
 
-      cerr << "Source file " << filenumber+1 << " is a duplicate." << endl;
-
-      return false;
-    }
-
-    DiskFile *diskfile = new DiskFile;
-
-    // Does the target file exist
-    if (diskfile->Open(filename))
-    {
-      // Yes. Record that fact.
-      sourcefile->SetTargetExists(true);
-
-      // Remember that the DiskFile is the target file
-      sourcefile->SetTargetFile(diskfile);
-
-      // Remember that we have processed this file
-      bool success = diskfilemap.Insert(diskfile);
-      assert(success);
-
-      // Do the actual verification
-      if (!VerifyDataFile(diskfile, sourcefile))
-        finalresult = false;
-
-      // We have finished with the file for now
-      diskfile->Close();
-
-      // Find out how much data we have found
-      UpdateVerificationResults();
+      finalresult = false;
     }
     else
     {
-      // The file does not exist.
-      delete diskfile;
+      DiskFile *diskfile = new DiskFile;
 
-      if (noiselevel > CommandLine::nlSilent)
+      // Does the target file exist
+      if (diskfile->Open(filename))
       {
-        string path;
-        string name;
-        DiskFile::SplitFilename(filename, path, name);
+        // Yes. Record that fact.
+        sourcefile->SetTargetExists(true);
 
-        cout << "Target: \"" << name << "\" - missing." << endl;
+        // Remember that the DiskFile is the target file
+        sourcefile->SetTargetFile(diskfile);
+
+        // Remember that we have processed this file
+        bool success = diskfilemap.Insert(diskfile);
+        assert(success);
+
+        // Do the actual verification
+        if (!VerifyDataFile(diskfile, sourcefile))
+          finalresult = false;
+
+        // We have finished with the file for now
+        diskfile->Close();
+
+        // Find out how much data we have found
+        UpdateVerificationResults();
+      }
+      else
+      {
+        // The file does not exist.
+        delete diskfile;
+
+        if (noiselevel > CommandLine::nlSilent)
+        {
+          string path;
+          string name;
+          DiskFile::SplitFilename(filename, path, name);
+
+          cout << "Target: \"" << name << "\" - missing." << endl;
+        }
       }
     }
 
