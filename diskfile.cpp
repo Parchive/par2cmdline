@@ -67,6 +67,17 @@ bool DiskFile::Create(string _filename, u64 _filesize)
   filename = _filename;
   filesize = _filesize;
 
+  // do we have a path separator in the filename ?
+  string::size_type where;
+  if (string::npos != (where = filename.find_last_of('/')) ||
+      string::npos != (where = filename.find_last_of('\\')))
+  {
+    string path, name;
+    DiskFile::SplitFilename(filename, path, name);
+
+    CreateDirectory(path.c_str(), NULL);
+  }
+
   // Create the file
   hFile = ::CreateFileA(_filename.c_str(), GENERIC_READ | GENERIC_WRITE, 0, NULL, CREATE_NEW, 0, NULL);
   if (hFile == INVALID_HANDLE_VALUE)
@@ -427,6 +438,21 @@ bool DiskFile::Create(string _filename, u64 _filesize)
 
   filename = _filename;
   filesize = _filesize;
+
+  // do we have a path separator in the filename ?
+  string::size_type where;
+  if (string::npos != (where = filename.find_last_of('/')) ||
+      string::npos != (where = filename.find_last_of('\\')))
+  {
+    string path, name;
+    DiskFile::SplitFilename(filename, path, name);
+
+    struct stat st;
+    if (! (stat(path.c_str(), &st) == 0 && S_ISDIR(st.st_mode)))
+    {
+      mkdir(path.c_str(), S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH);
+    }
+  }
 
   file = fopen(_filename.c_str(), "wb");
   if (file == 0)
