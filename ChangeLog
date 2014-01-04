@@ -1,3 +1,15 @@
+4 January 2014 Ike Devolder
+	* release: 0.6.4
+	* when directory is removed, recreate
+	* add test to verify directory behaviour
+	* add test with valgrind
+
+16 December 2013 Ike Devolder
+	* allow verification of files even with ducplicates in parfiles
+
+15 December 2013 Ike Devolder
+	* avoid adding of duplicates
+
 14 December 2013 Ike Devolder
 	* release: 0.6.3
 	* rework original tests so parallelisation is no issue
