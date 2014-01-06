@@ -365,12 +365,7 @@ list<string>* DiskFile::FindFiles(string path, string wildcard, bool recursive)
         string nwwildcard="*";
         dirmatches = DiskFile::FindFiles(fd.cFileName, nwwildcard, true);
 
-        list<string>::iterator fn = dirmatches->begin();
-        while (fn != dirmatches->end())
-        {
-          matches->push_back(*fn);
-          ++fn;
-        }
+        matches->merge(*dirmatches);
       }
     } while (::FindNextFile(h, &fd));
     ::FindClose(h);
@@ -730,12 +725,7 @@ list<string>* DiskFile::FindFiles(string path, string wildcard, bool recursive)
                 string nwwildcard="*";
                 dirmatches = DiskFile::FindFiles(fn, nwwildcard, true);
 
-                list<string>::iterator fn = dirmatches->begin();
-                while (fn != dirmatches->end())
-                {
-                  matches->push_back(*fn);
-                  ++fn;
-                }
+                matches->merge(*dirmatches);
               }
               else if (S_ISREG(st.st_mode))
               {
@@ -772,12 +762,7 @@ list<string>* DiskFile::FindFiles(string path, string wildcard, bool recursive)
                   string nwwildcard="*";
                   dirmatches = DiskFile::FindFiles(fn, nwwildcard, true);
 
-                  list<string>::iterator fn = dirmatches->begin();
-                  while (fn != dirmatches->end())
-                  {
-                    matches->push_back(*fn);
-                    ++fn;
-                  }
+                  matches->merge(*dirmatches);
                 }
                 else if (S_ISREG(st.st_mode))
                 {
@@ -806,12 +791,7 @@ list<string>* DiskFile::FindFiles(string path, string wildcard, bool recursive)
         string nwwildcard="*";
         dirmatches = DiskFile::FindFiles(fn, nwwildcard, true);
 
-        list<string>::iterator fn = dirmatches->begin();
-        while (fn != dirmatches->end())
-        {
-          matches->push_back(*fn);
-          ++fn;
-        }
+        matches->merge(*dirmatches);
       }
       else if (S_ISREG(st.st_mode))
       {
