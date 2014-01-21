@@ -115,7 +115,7 @@ void CommandLine::usage(void)
     "\n"
     "Options:\n"
     "\n"
-    "  -a<file> : set the main par2 archive name\n"
+    "  -a<file> : Set the main par2 archive name\n"
     "  -b<n>    : Set the Block-Count\n"
     "  -s<n>    : Set the Block-Size (Don't use both -b and -s)\n"
     "  -r<n>    : Level of Redundancy (%%)\n"
@@ -127,9 +127,9 @@ void CommandLine::usage(void)
     "  -m<n>    : Memory (in MB) to use\n"
     "  -v [-v]  : Be more verbose\n"
     "  -q [-q]  : Be more quiet (-q -q gives silence)\n"
-    "  -p       : purge backup files and par files on successful recovery or\n"
+    "  -p       : Purge backup files and par files on successful recovery or\n"
     "             when no recovery is needed\n"
-    "  -R       : recurse into subdirectories (only usefull on create)\n"
+    "  -R       : Recurse into subdirectories (only usefull on create)\n"
     "  --       : Treat all remaining CommandLine as filenames\n"
     "\n";
 }
