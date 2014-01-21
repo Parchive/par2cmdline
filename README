@@ -3,11 +3,11 @@ par2cmdline is a PAR 2.0 compatible file verification and repair tool.
 To see the ongoing development see
 https://github.com/BlackIkeEagle/par2cmdline
 
-The original development was done on sourceforge but stalled.
-For more information form the original authors see
+The original development was done on Sourceforge but stalled.
+For more information from the original authors see
 http://parchive.sourceforge.net
-also for details of PAR 2.0 specification and discussion of all things
-PAR.
+Also for details of the PAR 2.0 specification and discussion of all 
+things PAR.
 
 WHAT EXACTLY IS PAR2CMDLINE?
 
@@ -32,8 +32,8 @@ WHY IS PAR 2.0 better than PAR 1.0?
    a repair.
 
  * Because damaged data files are still useable during the recovery
-   process, less recovery data is required to achieve a successfull
-   repair. It is not therefore necessary to create as much recovery
+   process, less recovery data is required to achieve a successful
+   repair. It is therefore not necessary to create as much recovery
    data in the first place to achieve the same level of protection.
 
  * You can protect up to 32768 files rather than the 256 that PAR 1.0
@@ -42,17 +42,17 @@ WHY IS PAR 2.0 better than PAR 1.0?
  * Damaged or incomplete recovery files can also be used during the
    recovery process in the same way that damaged data files can.
 
- * You require less recovery data to provide the same level of protection
-   from damage compared with PAR 1.0.
+ * PAR 2.0 requires less recovery data to provide the same level of 
+   protection from damage compared with PAR 1.0.
 
-DOES PAR 2.0 HAVE ANY DISSADVANTAGES?
+DOES PAR 2.0 HAVE ANY DISADVANTAGES?
 
-Yes, there is one dissadvantage:
+Yes, there is one disadvantage:
 
  * All PAR 2.0 program will take somewhat longer to create recovery
    files than a PAR 1.0 program does.
 
-This dissadvantage is considerably mitigated by the fact that you don't
+This disadvantage is considerably mitigated by the fact that you don't
 need to create as much recovery data in the first place to provide the
 same level of protection against loss and damage.
 
@@ -60,17 +60,17 @@ COMPILING PAR2CMDLINE
 
 You should have received par2cmdline in the form of source code which
 you can compile on your computer. You may optionally have received a
-pre-compiled version of the program for your operating system.
+precompiled version of the program for your operating system.
 
 If you have only downloaded a precompiled executable, then the source
-code should be available from the same location that you downloaded the
+code should be available from the same location where you downloaded the
 executable from.
 
 If you have MS Visual Studio .NET, then just open the par2cmdline.sln
 file and compile. You should then copy par2cmdline.exe to an appropriate
 location that is on your path.
 
-To compile on Linux and other unix variants use the following commands:
+To compile on Linux and other Unix variants use the following commands:
 
   aclocal
   automake --add-missing
@@ -80,7 +80,7 @@ To compile on Linux and other unix variants use the following commands:
   make check
   make install
 
-See INSTALL for full details of how to use the "configure" script.
+See INSTALL for full details on how to use the "configure" script.
 
 USING PAR2CMDLINE
 
@@ -102,7 +102,7 @@ The command line parameters for par2cmdline are as follow:
 
   Options:
 
-    -a<file> : set the main par2 archive name
+    -a<file> : Set the main par2 archive name
                required on create, optional for verify and repair
     -b<n>    : Set the Block-Count
     -s<n>    : Set the Block-Size (Don't use both -b and -s)
@@ -115,9 +115,9 @@ The command line parameters for par2cmdline are as follow:
     -m<n>    : Memory (in MB) to use
     -v [-v]  : Be more verbose
     -q [-q]  : Be more quiet (-qq gives silence)
-    -p       : purge backup files and par files on successful recovery or
+    -p       : Purge backup files and par files on successful recovery or
                when no recovery is needed
-    -R       : recurse into subdirectories (only usefull on create)
+    -R       : Recurse into subdirectories (only usefull on create)
     --       : Treat all remaining CommandLine as filenames
 
 If you wish to create par2 files for a single source file, you may leave
@@ -131,7 +131,7 @@ CREATING PAR2 FILES
 
 With PAR 2.0 you can create PAR2 recovery files for as few as 1 or as many as
 32768 files. If you wanted to create PAR1 recovery files for a single file
-you are forced to split the file into muliple parts and RAR is frequently
+you were forced to split the file into muliple parts and RAR was frequently
 used for this purpose. You do NOT need to split files with PAR 2.0.
 
 To create PAR 2 recovery files for a single data file (e.g. one called
@@ -184,13 +184,12 @@ This would also create 9 PAR2 files, but they would be able to correct up to
 will take about 16 minutes to do so with a 1500MHz CPU.
 
 The "-u" and "-n" options can be used to control exactly how many recovery
-files are created and how the recovery blocks are distributed amoungst them.
+files are created and how the recovery blocks are distributed among them.
 They do not affect the total quantity of recovery data created.
 
-The "-f" option is used when you create additional recovery data.
-
-e.g. If you have already created 10% and want another 5% then you migh use
-the following command:
+The "-f" option is used when you create additional recovery data e.g. If 
+you have already created 10% and want another 5% then you migh use the 
+following command:
 
   par2 create -s307200 -r5 -f300 test.mpg.par2 test.mpg
 
@@ -202,7 +201,7 @@ The "-m" option controls how much memory par2cmdline uses. It defaults to
 
 CREATING PAR2 FILES FOR MULTIPLE DATA FILES
 
-When creating PAR2 recovery files form multiple data files, you must specify
+When creating PAR2 recovery files from multiple data files, you must specify
 the base filename to use for the par2 files and the names of all of the data
 files.
 
@@ -230,7 +229,7 @@ par2cmdline will automatically search for the other par2 files that were
 created and use the information they contain to determine the filenames
 of the original data files and then to verify them.
 
-If all of the data files are ok, then par2cmdline will report that repair
+If all of the data files are OK, then par2cmdline will report that repair
 will not be required.
 
 If any of the data files are missing or damaged, par2cmdline will report
@@ -247,7 +246,7 @@ This tells par2cmdline to verify and if possible repair any damaged or
 missing files. If a repair is carried out, then each file which is
 repaired will be re-verified to confirm that the repair was successful.
 
-MISSNAMED AND INCOMPLETE DATA FILES
+MISNAMED AND INCOMPLETE DATA FILES
 
 If any of the recovery files or data files have the wrong filename, then
 par2cmdline will not automatically find and scan them.
@@ -303,7 +302,7 @@ Then the recovery files that are created would be called:
   test.mpg.vol31+19.par2
 
 The first file in this list does not contain any recovery data, it only
-contains information sufficient to verify the data files.
+contains information to verify the data files.
 
 Each of the other files contains a different number of recovery blocks.
 The number after the '+' sign is the number of recovery blocks and the
@@ -321,4 +320,4 @@ PAR2 uses Reed Solomon Coding to perform its calculations. For details of this
 coding technique try the following link:
 
 ``A Tutorial on Reed-Solomon Coding for Fault-Tolerance in RAID-like Systems''
-<http://www.cs.utk.edu/~plank/plank/papers/CS-96-332.html>
+<http://web.eecs.utk.edu/~plank/plank/papers/CS-96-332.html>
