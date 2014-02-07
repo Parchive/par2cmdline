@@ -18,6 +18,7 @@
 ##  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 bin_PROGRAMS = par2
+man_MANS = par2.1
 
 par2_SOURCES = par2cmdline.cpp par2cmdline.h \
 	commandline.cpp commandline.h \
@@ -49,6 +50,7 @@ LDADD = -lstdc++
 AM_CXXFLAGS = -Wall
 
 EXTRA_DIST = PORTING ROADMAP par2cmdline.sln par2cmdline.vcproj \
+						 par2.1 \
 						 tests/flatdata.tar.gz \
 						 tests/flatdata-par1files.tar.gz \
 						 tests/flatdata-par2files.tar.gz \

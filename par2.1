@@ -1,0 +1,71 @@
+.\" Manpage for par2
+.\" Contact ike.devolder@gmail.com for mistakes.
+.TH man 1 "07 february 2014" "0.6.4" "par2 man page"
+.SH NAME
+par2 create and use recovery files
+.SH SYNOPSIS
+par2 c|v|r [options] <par2 file> [files]
+.SH DESCRIPTION
+par2cmdline is a program for creating and using PAR2 files to detect damage in data files and repair them if necessary. It can be used with any kind of file.
+.SH OPTIONS
+par2 -h  : show this help
+.br
+par2 -V  : show version
+.br
+par2 -VV : show version and copyright
+.sp
+par2 c(reate) [options] <par2 file> [files]
+.br
+par2 v(erify) [options] <par2 file> [files]
+.br
+par2 r(epair) [options] <par2 file> [files]
+.sp
+.B Also:
+.sp
+par2create [options] <par2 file> [files]
+.br
+par2verify [options] <par2 file> [files]
+.br
+par2repair [options] <par2 file> [files]
+.sp
+.B Options:
+.sp
+-a<file> : Set the main par2 archive name
+.br
+           required on create, optional for verify and repair
+.br
+-b<n>    : Set the Block-Count
+.br
+-s<n>    : Set the Block-Size (Don't use both -b and -s)
+.br
+-r<n>    : Level of Redundancy (%)
+.br
+-c<n>    : Recovery block count (don't use both -r and -c)
+.br
+-f<n>    : First Recovery-Block-Number
+.br
+-u       : Uniform recovery file sizes
+.br
+-l       : Limit size of recovery files (Don't use both -u and -l)
+.br
+-n<n>    : Number of recovery files (Don't use both -n and -l)
+.br
+-m<n>    : Memory (in MB) to use
+.br
+-v [-v]  : Be more verbose
+.br
+-q [-q]  : Be more quiet (-qq gives silence)
+.br
+-p       : Purge backup files and par files on successful recovery or
+.br
+           when no recovery is needed
+.br
+-R       : Recurse into subdirectories (only usefull on create)
+.br
+--       : Treat all remaining CommandLine as filenames
+.SH AUTHORS
+Peter Brian Clements <peterbclements@users.sourceforge.net>
+.br
+Marcel Partap <mpartap@gmx.net>
+.br
+Ike Devolder <ike.devolder@gmail.com>
