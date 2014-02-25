@@ -129,7 +129,7 @@ void CommandLine::usage(void)
     "  -q [-q]  : Be more quiet (-q -q gives silence)\n"
     "  -p       : Purge backup files and par files on successful recovery or\n"
     "             when no recovery is needed\n"
-    "  -R       : Recurse into subdirectories (only usefull on create)\n"
+    "  -R       : Recurse into subdirectories (only useful on create)\n"
     "  --       : Treat all remaining CommandLine as filenames\n"
     "\n";
 }

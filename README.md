@@ -95,7 +95,7 @@ The command line parameters for par2cmdline are as follow:
     -q [-q]  : Be more quiet (-qq gives silence)
     -p       : Purge backup files and par files on successful recovery or
                when no recovery is needed
-    -R       : Recurse into subdirectories (only usefull on create)
+    -R       : Recurse into subdirectories (only useful on create)
     --       : Treat all remaining CommandLine as filenames
 
 If you wish to create par2 files for a single source file, you may leave out the name of the par2 file from the command line. par2cmdline will then assume that you wish to base the filenames for the par2 files on the name of the source file.
