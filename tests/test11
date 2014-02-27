@@ -1,0 +1,47 @@
+#!/bin/sh
+
+cd $(dirname $0)
+
+testname=$(basename $0)
+rm -f $testname.log
+
+mkdir run$testname && cd run$testname || { echo "ERROR: Could not change to test directory" ; exit 1; } >&2
+
+tar -xf ../100blocks.tar.gz || { echo "ERROR: Could not extract data test files" ; exit 1; } >&2
+
+banner="create par2files using 100 blocks"
+dashes=`echo "$banner" | sed s/./-/g`
+
+echo $dashes
+echo $banner
+echo $dashes
+
+../../par2 c -b100 testdata.par2 * > ../$testname.log || { echo "ERROR: construction of files using PAR 2.0 failed" ; exit 1; } >&2
+
+banner="repair 5% of 100 blocks par2files removing 3 files"
+dashes=`echo "$banner" | sed s/./-/g`
+
+echo $dashes
+echo $banner
+echo $dashes
+
+rm file file1 file3
+
+../../par2 r testdata.par2 * > ../$testname.log || { echo "ERROR: construction of files using PAR 2.0 failed" ; exit 1; } >&2
+
+banner="repair 5% of 100 blocks par2files removing 1 files"
+dashes=`echo "$banner" | sed s/./-/g`
+
+echo $dashes
+echo $banner
+echo $dashes
+
+rm file5
+
+../../par2 r testdata.par2 * > ../$testname.log || { echo "ERROR: construction of files using PAR 2.0 failed" ; exit 1; } >&2
+
+cd ..
+rm -rf run$testname
+
+exit 0;
+

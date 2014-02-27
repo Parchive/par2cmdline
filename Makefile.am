@@ -59,6 +59,7 @@ EXTRA_DIST = PORTING ROADMAP par2cmdline.sln par2cmdline.vcproj \
 						 tests/subdirdata-par2files-win.tar.gz \
 						 tests/smallsubdirdata.tar.gz \
 						 tests/smallsubdirdata-par2files.tar.gz \
+						 tests/100blocks.tar.gz \
 						 tests/test1 \
 						 tests/test2 \
 						 tests/test3 \
@@ -68,7 +69,8 @@ EXTRA_DIST = PORTING ROADMAP par2cmdline.sln par2cmdline.vcproj \
 						 tests/test7 \
 						 tests/test8 \
 						 tests/test9 \
-						 tests/test10
+						 tests/test10 \
+						 tests/test11
 
 TESTS = tests/test1 \
 				tests/test2 \
@@ -79,7 +81,8 @@ TESTS = tests/test1 \
 				tests/test7 \
 				tests/test8 \
 				tests/test9 \
-				tests/test10
+				tests/test10 \
+				tests/test11
 
 install-exec-hook :
 	ln -sf $(bindir)/par2$(EXEEXT) $(DESTDIR)$(bindir)/par2create$(EXEEXT)
