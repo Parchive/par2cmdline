@@ -1,3 +1,28 @@
+FOR FURTHER CHANGELOG INFORMATION:
+https://github.com/BlackIkeEagle/par2cmdline/commits/master
+
+27 February 2014 Ike Devolder
+	* release: 0.6.5
+	* fix blocksize calculation
+
+25 February 2014 JCF Ploemen
+	* lintian warning spelling fix
+
+7 February 2014 Ike Devolder
+	* add manfile for par2
+
+29 January 2014 Jan van Haarst
+	* README in Markdown
+
+21 January 2014 Ike Devolder
+	* add spelling fixes to cmdline output
+
+18 January 2014 Jan van Haarst
+	* fixed some spelling
+
+6 January 2014 Ike Devolder
+	* simplify FindFiles
+
 4 January 2014 Ike Devolder
 	* release: 0.6.4
 	* when directory is removed, recreate
