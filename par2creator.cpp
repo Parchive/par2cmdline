@@ -265,51 +265,10 @@ bool Par2Creator::ComputeBlockSizeAndBlockCount(const list<CommandLine::ExtraFil
         u64 lowerBound = totalsize / sourceblockcount;
         u64 upperBound = (totalsize + sourceblockcount - extrafiles.size() - 1) / (sourceblockcount - extrafiles.size());
 
-        u64 bestsize = lowerBound;
-        u64 bestdistance = 1000000;
-        u64 bestcount = 0;
-
-        u64 count;
+        u64 count = 0;
         u64 size;
 
-        // Work out how many blocks you get for the lower bound block size
-        {
-          size = lowerBound;
-
-          count = 0;
-          for (ExtraFileIterator i=extrafiles.begin(); i!=extrafiles.end(); i++)
-          {
-            count += ((i->FileSize()+3)/4 + size-1) / size;
-          }
-
-          if (bestdistance > (count>sourceblockcount ? count-sourceblockcount : sourceblockcount-count))
-          {
-            bestdistance = (count>sourceblockcount ? count-sourceblockcount : sourceblockcount-count);
-            bestcount = count;
-            bestsize = size;
-          }
-        }
-
-        // Work out how many blocks you get for the upper bound block size
-        {
-          size = upperBound;
-
-          count = 0;
-          for (ExtraFileIterator i=extrafiles.begin(); i!=extrafiles.end(); i++)
-          {
-            count += ((i->FileSize()+3)/4 + size-1) / size;
-          }
-
-          if (bestdistance > (count>sourceblockcount ? count-sourceblockcount : sourceblockcount-count))
-          {
-            bestdistance = (count>sourceblockcount ? count-sourceblockcount : sourceblockcount-count);
-            bestcount = count;
-            bestsize = size;
-          }
-        }
-
-        // Use binary search to find best block size
-        while (lowerBound+1 < upperBound)
+        do
         {
           size = (lowerBound + upperBound)/2;
 
@@ -318,34 +277,34 @@ bool Par2Creator::ComputeBlockSizeAndBlockCount(const list<CommandLine::ExtraFil
           {
             count += ((i->FileSize()+3)/4 + size-1) / size;
           }
-
-          if (bestdistance > (count>sourceblockcount ? count-sourceblockcount : sourceblockcount-count))
+          if (count > sourceblockcount)
           {
-            bestdistance = (count>sourceblockcount ? count-sourceblockcount : sourceblockcount-count);
-            bestcount = count;
-            bestsize = size;
-          }
-
-          if (count < sourceblockcount)
-          {
-            upperBound = size;
-          }
-          else if (count > sourceblockcount)
-          {
-            lowerBound = size;
+            lowerBound = size+1;
+            if (lowerBound >= upperBound)
+            {
+              size = lowerBound;
+              count = 0;
+              for (ExtraFileIterator i=extrafiles.begin(); i!=extrafiles.end(); i++)
+              {
+                count += ((i->FileSize()+3)/4 + size-1) / size;
+              }
+            }
           }
           else
           {
             upperBound = size;
           }
         }
-
-        size = bestsize;
-        count = bestcount;
+        while (lowerBound < upperBound);
 
         if (count > 32768)
         {
-          cerr << "Error calculating block size." << endl;
+          cerr << "Error calculating block size. cannot be higher than 32768." << endl;
+          return false;
+        }
+        else if (count == 0)
+        {
+          cerr << "Error calculating block size. cannot be 0." << endl;
           return false;
         }
 
