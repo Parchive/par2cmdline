@@ -1,68 +1,91 @@
 .\" Manpage for par2
 .\" Contact ike.devolder@gmail.com for mistakes.
-.TH man 1 "07 february 2014" "0.6.5" "par2 man page"
+.TH par2 1 "february 2014" "0.6.5" "Parity archive utils"
 .SH NAME
-par2 create and use recovery files
+par2 \- PAR 2.0 compatible file verification and repair tool.
 .SH SYNOPSIS
-par2 c|v|r [options] <par2 file> [files]
+.B par2 c|v|r
+.RI "[options] <" "par2 file" "> [" "files" "]"
+.br
+
+.B par2 c(reate)
+.RI "[options] <" "par2 file" "> [" "files" "]"
+.br
+.B par2 v(erify)
+.RI "[options] <" "par2 file" "> [" "files" "]"
+.br
+.B par2 r(epair)
+.RI "[options] <" "par2 file" "> [" "files" "]"
+.br
+
+Also:
+.br
+.B par2create
+.RI "[options] <" "par2 file" "> [" "files" "]"
+.br
+.B par2verify
+.RI "[options] <" "par2 file" "> [" "files" "]"
+.br
+.B par2repair
+.RI "[options] <" "par2 file" "> [" "files" "]"
+.br
 .SH DESCRIPTION
 par2cmdline is a program for creating and using PAR2 files to detect damage in data files and repair them if necessary. It can be used with any kind of file.
 .SH OPTIONS
-par2 -h  : show this help
-.br
-par2 -V  : show version
-.br
-par2 -VV : show version and copyright
-.sp
-par2 c(reate) [options] <par2 file> [files]
-.br
-par2 v(erify) [options] <par2 file> [files]
-.br
-par2 r(epair) [options] <par2 file> [files]
-.sp
-.B Also:
-.sp
-par2create [options] <par2 file> [files]
-.br
-par2verify [options] <par2 file> [files]
-.br
-par2repair [options] <par2 file> [files]
-.sp
-.B Options:
-.sp
--a<file> : Set the main par2 archive name
-.br
-           required on create, optional for verify and repair
-.br
--b<n>    : Set the Block-Count
-.br
--s<n>    : Set the Block-Size (Don't use both -b and -s)
-.br
--r<n>    : Level of Redundancy (%)
-.br
--c<n>    : Recovery block count (don't use both -r and -c)
-.br
--f<n>    : First Recovery-Block-Number
-.br
--u       : Uniform recovery file sizes
-.br
--l       : Limit size of recovery files (Don't use both -u and -l)
-.br
--n<n>    : Number of recovery files (Don't use both -n and -l)
-.br
--m<n>    : Memory (in MB) to use
-.br
--v [-v]  : Be more verbose
-.br
--q [-q]  : Be more quiet (-qq gives silence)
-.br
--p       : Purge backup files and par files on successful recovery or
-.br
-           when no recovery is needed
-.br
--R       : Recurse into subdirectories (only useful on create)
-.br
---       : Treat all remaining CommandLine as filenames
+.TP
+.B \-h
+Show this help
+.TP
+.B \-V
+Show version
+.TP
+.B \-VV
+Show version and copyright
+.TP
+.BI "\-a <" "file" ">"
+Set the main par2 archive name; required on create, optional for verify and repair
+.TP
+.B \-b
+Set the Block\(hyCount
+.TP
+.B \-s<n>
+.RB "Set the Block\(hySize (don't use both " "\-b" " and " "\-s" ")"
+.TP
+.B \-r<n>
+Level of redundancy (percentage)
+.TP
+.B \-c<n>
+.RB "Recovery block count (don't use both " "\-r" " and " "\-c" ")"
+.TP
+.B \-f<n>
+First Recovery\(hyBlock\(hyNumber
+.TP
+.B \-u
+Uniform recovery file sizes
+.TP
+.B \-l
+.RB "Limit size of recovery files (don't use both " "\-u" " and " "\-l" ")"
+.TP
+.B \-n<n>
+.RB "Number of recovery files (don't use both " "\-n" " and " "\-l" ")"
+.TP
+.B \-m<n>
+Memory (in MB) to use
+.TP
+.B \-v [\-v]
+Be more verbose
+.TP
+.B \-q [\-q]
+.RB "Be more quiet (" "\-qq" " gives silence)"
+.TP
+.B \-p
+Purge backup files and par files on successful recovery or when no recovery is needed
+.TP
+.B \-R
+Recurse into subdirectories (only useful on create)
+.TP
+.B \-\-
+Treat all remaining command line as filenames
 .SH AUTHORS
 Peter Brian Clements <peterbclements@users.sourceforge.net>
 .br
