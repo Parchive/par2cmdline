@@ -158,7 +158,7 @@ bool CommandLine::Parse(int argc, char *argv[])
         {
         case 'h':
           usage();
-          break;
+          return true;
         case 'V':
           showversion();
           if (argv[0][2] != 0 &&
@@ -167,9 +167,8 @@ bool CommandLine::Parse(int argc, char *argv[])
             cout << endl;
             banner();
           }
-          break;
+          return true;
         }
-        return true;
       }
     }
   }
