@@ -1,0 +1,21 @@
+# compilation output
+par2
+*.o
+.deps/
+
+# test output
+*.trs
+*.log
+
+# autotools output
+aclocal.m4
+autom4te.cache/
+compile
+test-driver
+Makefile.in
+Makefile
+config.h
+config.status
+configure
+stamp-h
+stamp-h1
