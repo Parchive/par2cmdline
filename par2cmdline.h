@@ -135,6 +135,10 @@ typedef unsigned long long u64;
 #  include <sys/stat.h>
 #endif
 
+#if HAVE_LIMITS_H
+#  include <limits.h>
+#endif
+
 #if HAVE_SYS_TYPES_H
 #  include <sys/types.h>
 #endif

@@ -42,7 +42,7 @@ AC_HEADER_DIRENT
 AC_HEADER_STDBOOL
 AC_HEADER_STDC
 AC_CHECK_HEADERS([stdio.h] [endian.h])
-AC_CHECK_HEADERS([getopt.h])
+AC_CHECK_HEADERS([getopt.h] [limits.h])
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 AC_TYPE_SIZE_T
