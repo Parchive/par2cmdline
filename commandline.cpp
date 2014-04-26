@@ -168,6 +168,13 @@ bool CommandLine::Parse(int argc, char *argv[])
             banner();
           }
           return true;
+        case '-':
+          string str = argv[0];
+          if (str == "--help")
+          {
+            usage();
+            return true;
+          }
         }
       }
     }
