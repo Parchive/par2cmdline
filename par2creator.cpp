@@ -75,6 +75,7 @@ Result Par2Creator::Process(const CommandLine &commandline)
   const list<CommandLine::ExtraFile> extrafiles = commandline.GetExtraFiles();
   sourcefilecount = (u32)extrafiles.size();
   u32 redundancy = commandline.GetRedundancy();
+  u64 redundancysize = commandline.GetRedundancySize();
   recoveryblockcount = commandline.GetRecoveryBlockCount();
   recoveryfilecount = commandline.GetRecoveryFileCount();
   firstrecoveryblock = commandline.GetFirstRecoveryBlock();
@@ -91,7 +92,7 @@ Result Par2Creator::Process(const CommandLine &commandline)
 
   // Determine how many recovery blocks to create based on the source block
   // count and the requested level of redundancy.
-  if (redundancy > 0 && !ComputeRecoveryBlockCount(redundancy))
+  if ((redundancy > 0 || redundancysize >0) && !ComputeRecoveryBlockCount(redundancy, redundancysize))
     return eInvalidCommandLineArguments;
 
   // Determine how much recovery data can be computed on one pass
@@ -320,10 +321,52 @@ bool Par2Creator::ComputeBlockSizeAndBlockCount(const list<CommandLine::ExtraFil
 
 // Determine how many recovery blocks to create based on the source block
 // count and the requested level of redundancy.
-bool Par2Creator::ComputeRecoveryBlockCount(u32 redundancy)
+bool Par2Creator::ComputeRecoveryBlockCount(u32 redundancy, u64 redundancysize)
 {
-  // Determine recoveryblockcount
-  recoveryblockcount = (sourceblockcount * redundancy + 50) / 100;
+  if (redundancy > 0)
+  {
+    // Determine recoveryblockcount
+    recoveryblockcount = (sourceblockcount * redundancy + 50) / 100;
+  }
+  else if (redundancysize > 0)
+  {
+    bool closest = false;
+
+    u64 overhead;
+    overhead = sourceblockcount * 21;
+
+    u32 estimatedFileCount;
+    u64 totalOverhead;
+
+    do
+    {
+      if (recoveryfilecount == 0)
+      {
+        estimatedFileCount = 15;
+      }
+      else
+      {
+        closest = true;
+        estimatedFileCount = recoveryfilecount + 1;
+      }
+      totalOverhead = estimatedFileCount * overhead;
+      if (totalOverhead > redundancysize)
+      {
+        recoveryblockcount = 1;
+      }
+      else
+      {
+        recoveryblockcount = (redundancysize - totalOverhead) / (blocksize + 70);
+      }
+      ComputeRecoveryFileCount();
+    } while(closest == false);
+    recoveryfilecount = 0;
+  }
+  else
+  {
+    cerr << "Redundancy and Redundancysize not set." << endl;
+    return false;
+  }
 
   // Force valid values if necessary
   if (recoveryblockcount == 0 && redundancy > 0)
@@ -342,6 +385,7 @@ bool Par2Creator::ComputeRecoveryBlockCount(u32 redundancy)
     return false;
   }
 
+      cout << endl;
   return true;
 }
 
