@@ -85,6 +85,7 @@ The command line parameters for par2cmdline are as follow:
     -b<n>    : Set the Block-Count
     -s<n>    : Set the Block-Size (Don't use both -b and -s)
     -r<n>    : Level of Redundancy (%)
+    -r<c><n> : Redundancy target size, <c>=g(iga),m(ega),k(ilo) bytes
     -c<n>    : Recovery block count (don't use both -r and -c)
     -f<n>    : First Recovery-Block-Number
     -u       : Uniform recovery file sizes
@@ -148,6 +149,12 @@ The `-f` option is used when you create additional recovery data e.g. if you hav
 This specifies the same block size (which is a requirement for additional recovery files), 5% recovery data, and a first block number of 300.
 
 The `-m` option controls how much memory par2cmdline uses. It defaults to 16 MB unless you override it.
+
+When creating PAR2 recovery files you might want to fill up a "medium" like a DVD or a Blu-Ray. Therefore we can set the target size of the recovery files by issuing the following command:
+
+    par2 create -rm200 recovery.par2 *
+
+It makes no sense to set a insanely high recovery size. The command will make that the resulting sum of the par2 files approaches the requested size. It is an estimate so don't go to crazy.
 
 ##Creating par2 files for multiple data files
 

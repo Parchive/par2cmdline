@@ -119,6 +119,7 @@ void CommandLine::usage(void)
     "  -b<n>    : Set the Block-Count\n"
     "  -s<n>    : Set the Block-Size (Don't use both -b and -s)\n"
     "  -r<n>    : Level of Redundancy (%%)\n"
+    "  -r<c><n> : Redundancy target size, <c>=g(iga),m(ega),k(ilo) bytes\n"
     "  -c<n>    : Recovery block count (Don't use both -r and -c)\n"
     "  -f<n>    : First Recovery-Block-Number\n"
     "  -u       : Uniform recovery file sizes\n"
