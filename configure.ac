@@ -22,7 +22,7 @@ dnl                                               -*- Autoconf -*-
 dnl Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.58a)
-AC_INIT([par2cmdline], [0.6.5], [ike.devolder@gmail.com])
+AC_INIT([par2cmdline], [0.6.6], [ike.devolder@gmail.com])
 AC_CONFIG_SRCDIR([par2cmdline.cpp])
 
 AC_CANONICAL_HOST
