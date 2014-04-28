@@ -97,6 +97,7 @@ public:
   u64                    GetBlockSize(void) const          {return blocksize;}
   u32                    GetBlockCount(void) const         {return blockcount;}
   u32                    GetRedundancy(void) const         {return redundancy;}
+  u64                    GetRedundancySize(void) const     {return redundancysize;}
   u32                    GetFirstRecoveryBlock(void) const {return firstblock;}
   u32                    GetRecoveryFileCount(void) const  {return recoveryfilecount;}
   u32                    GetRecoveryBlockCount(void) const {return recoveryblockcount;}
@@ -137,6 +138,8 @@ protected:
 
   u32 redundancy;              // What percentage of recovery data should
                                // be created.
+  u64 redundancysize;          // target filesize of recovery files
+
   bool redundancyset;          // Set if the redundancy has been specified
 
   string parfilename;          // The name of the PAR2 file to create, or

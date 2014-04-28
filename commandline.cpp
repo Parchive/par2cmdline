@@ -119,6 +119,7 @@ void CommandLine::usage(void)
     "  -b<n>    : Set the Block-Count\n"
     "  -s<n>    : Set the Block-Size (Don't use both -b and -s)\n"
     "  -r<n>    : Level of Redundancy (%%)\n"
+    "  -r<c><n> : Redundancy target size, <c>=g(iga),m(ega),k(ilo) bytes\n"
     "  -c<n>    : Recovery block count (Don't use both -r and -c)\n"
     "  -f<n>    : First Recovery-Block-Number\n"
     "  -u       : Uniform recovery file sizes\n"
@@ -353,21 +354,46 @@ bool CommandLine::Parse(int argc, char *argv[])
               return false;
             }
 
-            char *p = &argv[0][2];
-            while (redundancy <= 10 && *p && isdigit(*p))
+            if (argv[0][2] == 'k'
+                || argv[0][2] == 'm'
+                || argv[0][2] == 'g'
+            )
             {
-              redundancy = redundancy * 10 + (*p - '0');
-              p++;
+              char *p = &argv[0][3];
+              while (*p && isdigit(*p))
+              {
+                redundancysize = redundancysize * 10 + (*p - '0');
+                p++;
+              }
+              switch (argv[0][2])
+              {
+                case 'g':
+                  redundancysize = redundancysize * 1024;
+                case 'm':
+                  redundancysize = redundancysize * 1024;
+                case 'k':
+                  redundancysize = redundancysize * 1024;
+                  break;
+              }
             }
-            if (redundancy > 100 || *p)
+            else
             {
-              cerr << "Invalid redundancy option: " << argv[0] << endl;
-              return false;
-            }
-            if (redundancy == 0 && recoveryfilecount > 0)
-            {
-              cerr << "Cannot set redundancy to 0 and file count > 0" << endl;
-              return false;
+              char *p = &argv[0][2];
+              while (redundancy <= 10 && *p && isdigit(*p))
+              {
+                redundancy = redundancy * 10 + (*p - '0');
+                p++;
+              }
+              if (redundancy > 100 || *p)
+              {
+                cerr << "Invalid redundancy option: " << argv[0] << endl;
+                return false;
+              }
+              if (redundancy == 0 && recoveryfilecount > 0)
+              {
+                cerr << "Cannot set redundancy to 0 and file count > 0" << endl;
+                return false;
+              }
             }
             redundancyset = true;
           }

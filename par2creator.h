@@ -42,7 +42,7 @@ protected:
 
   // Determine how many recovery blocks to create based on the source block
   // count and the requested level of redundancy.
-  bool ComputeRecoveryBlockCount(u32 redundancy);
+  bool ComputeRecoveryBlockCount(u32 redundancy, u64 redundancysize);
 
   // Determine how much recovery data can be computed on one pass
   bool CalculateProcessBlockSize(size_t memorylimit);
