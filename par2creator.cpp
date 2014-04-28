@@ -359,7 +359,9 @@ bool Par2Creator::ComputeRecoveryBlockCount(u32 redundancy, u64 redundancysize)
         recoveryblockcount = (redundancysize - totalOverhead) / (blocksize + 70);
       }
       ComputeRecoveryFileCount();
-    } while(closest == false);
+    }
+    while(closest == false);
+
     recoveryfilecount = 0;
   }
   else
