@@ -54,7 +54,10 @@ bool DataBlock::ReadData(u64    position, // Position within the block
   {
     // Compute the file offset and how much data to physically read from disk
     u64    fileoffset = offset + position;
-    size_t want       = (size_t)min((u64)size, length - position);
+    size_t want       = (size_t)min(
+        min((u64)size, length - position),
+        diskfile->FileSize() - fileoffset
+    );
 
     // Read the data from the file into the buffer
     if (!diskfile->Read(fileoffset, buffer, want))
