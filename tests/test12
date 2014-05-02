@@ -1,0 +1,28 @@
+#!/bin/sh
+
+cd $(dirname $0)
+
+testname=$(basename $0)
+rm -f $testname.log
+
+mkdir run$testname && cd run$testname || { echo "ERROR: Could not change to test directory" ; exit 1; } >&2
+
+tar -xf ../readbeyondeof.tar.gz || { echo "ERROR: Could not extract data test files" ; exit 1; } >&2
+
+banner="repair files where the filesize got changed"
+dashes=`echo "$banner" | sed s/./-/g`
+
+echo $dashes
+echo $banner
+echo $dashes
+
+mv test.data test.data-correct
+head -c 113579 test.data-correct > test.data
+
+../../par2 r test.par2 > ../$testname.log || { echo "ERROR: repair files using PAR 2.0 failed" ; exit 1; } >&2
+
+cd ..
+rm -rf run$testname
+
+exit 0;
+
