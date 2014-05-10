@@ -43,6 +43,8 @@ public:
   void SetLocation(DiskFile *diskfile, u64 offset);
   void ClearLocation(void);
 
+  void SetFilesize(u64 filesize);
+
 public:
   // Check to see if the location of the block has been set
   bool IsSet(void) const;
@@ -70,6 +72,7 @@ protected:
   DiskFile *diskfile;  // Which disk file is the block associated with
   u64       offset;    // What is the file offset
   u64       length;    // How large is the block
+  u64       filesize;  // How large was the original file
 };
 
 
@@ -79,6 +82,7 @@ inline DataBlock::DataBlock(void)
   diskfile = 0;
   offset = 0;
   length = 0;
+  filesize = 0;
 }
 
 // Destroy the data block
@@ -90,6 +94,11 @@ inline DataBlock::~DataBlock(void)
 inline void DataBlock::SetLength(u64 _length)
 {
   length = _length;
+}
+
+inline void DataBlock::SetFilesize(u64 _filesize)
+{
+  filesize = _filesize;
 }
 
 // Set the location of the block
@@ -109,6 +118,21 @@ inline void DataBlock::ClearLocation(void)
 // Check to see of the location is known
 inline bool DataBlock::IsSet(void) const
 {
+  if (filesize > 0)
+  {
+    if (diskfile != 0)
+    {
+      if ((offset + length) > diskfile->FileSize()
+          && filesize > diskfile->FileSize())
+      {
+        return false;
+      }
+      else
+      {
+        return (diskfile != 0);
+      }
+    }
+  }
   return (diskfile != 0);
 }
 

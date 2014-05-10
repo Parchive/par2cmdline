@@ -128,6 +128,7 @@ void Par2RepairerSourceFile::SetBlocks(u32 _blocknumber,
 
       u64 blocklength = min(blocksize, filesize-(u64)blocknumber*blocksize);
 
+      datablock.SetFilesize(filesize);
       datablock.SetLength(blocklength);
     }
   }
