@@ -1477,6 +1477,9 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
 
   u64 progress = 0;
 
+  u32 noduplicatenonext = 0;
+  u32 noduplicatenonextmax = 10;
+
   // Whilst we have not reached the end of the file
   while (filechecksummer.Offset() < diskfile->FileSize())
   {
@@ -1570,9 +1573,20 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
         // What entry do we expect next
         nextentry = 0;
 
-        // Advance 1 byte
-        if (!filechecksummer.Step())
-          return false;
+        if (noduplicatenonext < noduplicatenonextmax)
+        {
+          if (!filechecksummer.Step())
+            return false;
+
+          noduplicatenonext++;
+        }
+        else
+        {
+          if (!filechecksummer.Jump((blocksize - noduplicatenonext)))
+            return false;
+
+          noduplicatenonext = 0;
+        }
       }
     }
   }
