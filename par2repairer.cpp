@@ -2198,6 +2198,7 @@ bool Par2Repairer::ProcessData(u64 blockoffset, size_t blocklength)
       }
 
       // For each output block
+      #pragma omp parallel for      
       for (u32 outputindex=0; outputindex<missingblockcount; outputindex++)
       {
         // Select the appropriate part of the output buffer
@@ -2215,6 +2216,7 @@ bool Par2Repairer::ProcessData(u64 blockoffset, size_t blocklength)
 
           if (oldfraction != newfraction)
           {
+            #pragma omp critical
             cout << "Repairing: " << newfraction/10 << '.' << newfraction%10 << "%\r" << flush;
           }
         }
