@@ -86,7 +86,6 @@ The command line parameters for par2cmdline are as follow:
                required on create, optional for verify and repair
     -b<n>    : Set the Block-Count
     -s<n>    : Set the Block-Size (Don't use both -b and -s)
-   
     -r<n>    : Level of Redundancy (%)
     -r<c><n> : Redundancy target size, <c>=g(iga),m(ega),k(ilo) bytes
     -c<n>    : Recovery block count (don't use both -r and -c)
