@@ -119,12 +119,7 @@ void CommandLine::usage(void)
     "\n"
     "  -a<file> : Set the main par2 archive name\n"
     "  -b<n>    : Set the Block-Count\n"
-    "  -s<n>    : Set the Block-Size (Don't use both -b and -s)\n";
-#ifdef _OPENMP
-  cout << 
-    "  -t<n>    : Number of threads to use (" << omp_get_max_threads() << " detected)\n";  
-#endif
-  cout << 
+    "  -s<n>    : Set the Block-Size (Don't use both -b and -s)\n"
     "  -r<n>    : Level of Redundancy (%%)\n"
     "  -r<c><n> : Redundancy target size, <c>=g(iga),m(ega),k(ilo) bytes\n"
     "  -c<n>    : Recovery block count (Don't use both -r and -c)\n"
@@ -132,7 +127,12 @@ void CommandLine::usage(void)
     "  -u       : Uniform recovery file sizes\n"
     "  -l       : Limit size of recovery files (Don't use both -u and -l)\n"
     "  -n<n>    : Number of recovery files (Don't use both -n and -l)\n"
-    "  -m<n>    : Memory (in MB) to use\n"
+    "  -m<n>    : Memory (in MB) to use\n";
+#ifdef _OPENMP
+  cout << 
+    "  -t<n>    : Number of threads to use (" << omp_get_max_threads() << " detected)\n";
+#endif
+  cout << 
     "  -v [-v]  : Be more verbose\n"
     "  -q [-q]  : Be more quiet (-q -q gives silence)\n"
     "  -p       : Purge backup files and par files on successful recovery or\n"
