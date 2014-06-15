@@ -1594,6 +1594,12 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
   // Get the Full and 16k hash values of the file
   filechecksummer.GetFileHashes(hashfull, hash16k);
 
+  if (noiselevel >= CommandLine::nlDebug)
+  {
+    cout << "duplicates: " << duplicatecount << endl;
+    cout << "matchcount: " << count << endl;
+  }
+
   // Did we make any matches at all
   if (count > 0)
   {
