@@ -82,7 +82,6 @@ bool FileCheckSummer::Jump(u64 distance)
     return Step();
 
   // Not allowed to jump more than one block
-  assert(distance <= blocksize);
   if (distance > blocksize)
     distance = blocksize;
 
