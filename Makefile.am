@@ -76,7 +76,8 @@ EXTRA_DIST = PORTING ROADMAP par2cmdline.sln par2cmdline.vcproj \
 						 tests/test12 \
 						 tests/test13 \
 						 tests/test14 \
-						 tests/test15
+						 tests/test15 \
+						 tests/test16
 
 TESTS = tests/test1 \
 				tests/test2 \
@@ -92,7 +93,8 @@ TESTS = tests/test1 \
 				tests/test12 \
 				tests/test13 \
 				tests/test14 \
-				tests/test15
+				tests/test15 \
+				tests/test16
 
 install-exec-hook :
 	ln -sf $(bindir)/par2$(EXEEXT) $(DESTDIR)$(bindir)/par2create$(EXEEXT)
