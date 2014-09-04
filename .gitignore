@@ -1,3 +1,6 @@
+# when developing and you really want to clean everything up
+# comment all the stuff in this file and run git clean -fd
+
 # compilation output
 par2
 *.o
