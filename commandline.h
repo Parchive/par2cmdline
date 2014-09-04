@@ -114,7 +114,7 @@ public:
   bool                                GetRecursive(void) const  {return recursive;}
 
 protected:
-  void                         SetParFilename(string filename);
+  bool                         SetParFilename(string filename);
   Operation operation;         // The operation to be carried out.
   Version version;             // What version files will be processed.
 
