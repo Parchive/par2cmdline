@@ -1,5 +1,6 @@
 # when developing and you really want to clean everything up
-# comment all the stuff in this file and run git clean -fd
+# run git clean -fdx
+# thx @spider-mario
 
 # compilation output
 par2
