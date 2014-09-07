@@ -9,7 +9,7 @@ mkdir run$testname && cd run$testname || { echo "ERROR: Could not change to test
 
 tar -xf ../flatdata.tar.gz || { echo "ERROR: Could not extract data test files" ; exit 1; } >&2
 
-banner="dont allow parfiles in subdir, (issue #34)"
+banner="dont allow files outside par2 basedir, (issue #34, #36)"
 dashes=`echo "$banner" | sed s/./-/g`
 
 echo $dashes

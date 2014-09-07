@@ -708,6 +708,11 @@ bool CommandLine::Parse(int argc, char *argv[])
           {
             cout << "Ignoring non-existent source file: " << filename << endl;
           }
+		  // skip files outside basepath
+		  else if (filename.find(basepath) == string::npos)
+		  {
+            cout << "Ignoring out of basepath source file: " << filename << endl;
+		  }
           else
           {
             u64 filesize = DiskFile::GetFileSize(filename);
