@@ -257,21 +257,13 @@ bool CommandLine::Parse(int argc, char *argv[])
               string str = argv[0];
               if (str == "-a")
               {
-                if (! SetParFilename(argv[1]))
-                {
-                  cerr << "invalid par2 file." << endl;
-                  return false;
-                }
+                SetParFilename(argv[1]);
                 argc--;
                 argv++;
               }
               else
               {
-                if (! SetParFilename(str.substr(2)))
-                {
-                  cerr << "invalid par2 file." << endl;
-                  return false;
-                }
+                SetParFilename(str.substr(2));
               }
             }
           }
@@ -691,11 +683,7 @@ bool CommandLine::Parse(int argc, char *argv[])
           return false;
         }
 
-        if (! SetParFilename(filename))
-        {
-          cerr << "invalid par2 file." << endl;
-          return false;
-        }
+        SetParFilename(filename);
       }
       else
       {
@@ -886,15 +874,8 @@ bool CommandLine::Parse(int argc, char *argv[])
   return true;
 }
 
-bool CommandLine::SetParFilename(string filename)
+void CommandLine::SetParFilename(string filename)
 {
-  if (filename.find("/") != string::npos
-      || filename.find("\\") != string::npos)
-  {
-    cout << "the par2 files cannot be created in a subdirectory" << endl;
-    return false;
-  }
-  cout << filename << endl;
   parfilename = DiskFile::GetCanonicalPathname(filename);
 
   // If we are verifying or repairing, the PAR2 file must
@@ -967,6 +948,4 @@ bool CommandLine::SetParFilename(string filename)
 
   string dummy;
   DiskFile::SplitFilename(parfilename, basepath, dummy);
-
-  return true;
 }
