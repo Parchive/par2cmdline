@@ -693,6 +693,7 @@ bool CommandLine::Parse(int argc, char *argv[])
         string name;
         DiskFile::SplitFilename(argv[0], path, name);
         filenames = DiskFile::FindFiles(path, name, recursive);
+        string canonicalBasepath = DiskFile::GetCanonicalPathname(basepath);
 
         list<string>::iterator fn = filenames->begin();
         while (fn != filenames->end())
@@ -708,11 +709,11 @@ bool CommandLine::Parse(int argc, char *argv[])
           {
             cout << "Ignoring non-existent source file: " << filename << endl;
           }
-		  // skip files outside basepath
-		  else if (filename.find(basepath) == string::npos)
-		  {
-            cout << "Ignoring out of basepath source file: " << filename << endl;
-		  }
+          // skip files outside basepath
+          else if (filename.find(canonicalBasepath) == string::npos)
+          {
+                cout << "Ignoring out of basepath source file: " << filename << endl;
+          }
           else
           {
             u64 filesize = DiskFile::GetFileSize(filename);
