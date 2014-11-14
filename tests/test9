@@ -17,9 +17,26 @@ echo $dashes
 echo $banner
 echo $dashes
 
-mv test-5.data rename
-../../par2 r testdata.par2 rename > ../$testname.log || { echo "ERROR: Initial PAR 2.0 verification and rename failed" ; exit 1; } >&2
+mv test-1.data rename4
+mv test-2.data rename5
+mv test-3.data rename6
+mv test-4.data rename7
+mv test-5.data rename9
+mv test-6.data rename8
+mv test-7.data rename3
+mv test-8.data rename1
+mv test-9.data rename2
+
+../../par2 r testdata.par2 rename* > ../$testname.log || { echo "ERROR: Initial PAR 2.0 verification and rename failed" ; exit 1; } >&2
+test -e test-1.data ||  { echo "ERROR: rename failed" ; exit 1; } >&2
+test -e test-2.data ||  { echo "ERROR: rename failed" ; exit 1; } >&2
+test -e test-3.data ||  { echo "ERROR: rename failed" ; exit 1; } >&2
+test -e test-4.data ||  { echo "ERROR: rename failed" ; exit 1; } >&2
 test -e test-5.data ||  { echo "ERROR: rename failed" ; exit 1; } >&2
+test -e test-6.data ||  { echo "ERROR: rename failed" ; exit 1; } >&2
+test -e test-7.data ||  { echo "ERROR: rename failed" ; exit 1; } >&2
+test -e test-8.data ||  { echo "ERROR: rename failed" ; exit 1; } >&2
+test -e test-9.data ||  { echo "ERROR: rename failed" ; exit 1; } >&2
 
 cd ..
 rm -rf run$testname
