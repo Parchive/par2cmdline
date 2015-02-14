@@ -177,8 +177,7 @@ bool CommandLine::Parse(int argc, char *argv[])
           }
           return true;
         case '-':
-          string str = argv[0];
-          if (str == "--help")
+          if (0 == stricmp(argv[0], "--help"))
           {
             usage();
             return true;
