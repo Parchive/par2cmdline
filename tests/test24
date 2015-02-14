@@ -1,0 +1,43 @@
+#!/bin/sh
+
+cd $(dirname $0)
+
+testname=$(basename $0)
+rm -f $testname.log
+
+mkdir run$testname && cd run$testname || { echo "ERROR: Could not change to test directory" ; exit 1; } >&2
+
+faraway='in/a/folder/far/far/away'
+
+mkdir -p "$faraway" || { echo "ERROR: Could not create fancy folder" ; exit 1; } >&2
+
+tar -xf ../flatdata.tar.gz -C "$faraway" || { echo "ERROR: Could not extract data test files" ; exit 1; } >&2
+tar -xf ../flatdata-par2files.tar.gz -C "$faraway" || { echo "ERROR: Could not extract data test files" ; exit 1; } >&2
+
+cp "$faraway"/test-0.data "$faraway"/test-0.data.orig
+cp "$faraway"/test-1.data "$faraway"/test-1.data.orig
+cp "$faraway"/test-2.data "$faraway"/test-2.data.orig
+cp "$faraway"/test-3.data "$faraway"/test-3.data.orig
+cp "$faraway"/test-4.data "$faraway"/test-4.data.orig
+cp "$faraway"/test-5.data "$faraway"/test-5.data.orig
+cp "$faraway"/test-6.data "$faraway"/test-6.data.orig
+cp "$faraway"/test-7.data "$faraway"/test-7.data.orig
+cp "$faraway"/test-8.data "$faraway"/test-8.data.orig
+cp "$faraway"/test-9.data "$faraway"/test-9.data.orig
+
+banner="par2 can be run from any starting dir"
+dashes=`echo "$banner" | sed s/./-/g`
+
+echo $dashes
+echo $banner
+echo $dashes
+
+rm -f "$faraway"/test-1.data "$faraway"/test-3.data
+../../par2 r "$faraway"/testdata.par2  > ../$testname.log || { echo "ERROR: repair of PAR 2.0 files failed" ; exit 1; } >&2
+cmp -s "$faraway"/test-1.data "$faraway"/test-1.data.orig && cmp -s "$faraway"/test-3.data "$faraway"/test-3.data.orig || { echo "ERROR: Repaired files do not match originals" ; exit 1; } >&2
+
+cd ..
+rm -rf run$testname
+
+exit 0;
+
