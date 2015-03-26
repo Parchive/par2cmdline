@@ -58,6 +58,34 @@ DiskFile::~DiskFile(void)
     ::CloseHandle(hFile);
 }
 
+bool DiskFile::CreateParentDirectory(string _pathname)
+{
+  // do we have a path separator in the filename ?
+  string::size_type where;
+  if (string::npos != (where = _pathname.find_last_of('/')) ||
+      string::npos != (where = _pathname.find_last_of('\\')))
+  {
+    string path = filename.substr(0, where);
+   
+    struct stat st;
+    if (stat(path.c_str(), &st) == 0)
+      return true; // let the caller deal with non-directories
+    
+    if (!DiskFile::CreateParentDirectory(path))
+      return false;
+    
+    if (!CreateDirectory(path.c_str(), NULL))
+    {
+      DWORD error = ::GetLastError();
+
+      cerr << "Could not create the " << path << " directory: " << ErrorMessage(error) << endl;
+
+      return false;
+    }
+  }
+  return true;
+}
+
 // Create new file on disk and make sure that there is enough
 // space on disk for it.
 bool DiskFile::Create(string _filename, u64 _filesize)
@@ -67,16 +95,8 @@ bool DiskFile::Create(string _filename, u64 _filesize)
   filename = _filename;
   filesize = _filesize;
 
-  // do we have a path separator in the filename ?
-  string::size_type where;
-  if (string::npos != (where = filename.find_last_of('/')) ||
-      string::npos != (where = filename.find_last_of('\\')))
-  {
-    string path, name;
-    DiskFile::SplitFilename(filename, path, name);
-
-    CreateDirectory(path.c_str(), NULL);
-  }
+  if (!DiskFile::CreateParentDirectory(filename))
+    return false;
 
   // Create the file
   hFile = ::CreateFileA(_filename.c_str(), GENERIC_READ | GENERIC_WRITE, 0, NULL, CREATE_NEW, 0, NULL);
@@ -425,6 +445,31 @@ DiskFile::~DiskFile(void)
     fclose(file);
 }
 
+bool DiskFile::CreateParentDirectory(string _pathname)
+{
+  // do we have a path separator in the filename ?
+  string::size_type where;
+  if (string::npos != (where = _pathname.find_last_of('/')) ||
+      string::npos != (where = _pathname.find_last_of('\\')))
+  {
+    string path = filename.substr(0, where);
+   
+    struct stat st;
+    if (stat(path.c_str(), &st) == 0)
+      return true; // let the caller deal with non-directories
+    
+    if (!DiskFile::CreateParentDirectory(path))
+      return false;
+    
+    if (mkdir(path.c_str(), S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH))
+    {
+      cerr << "Could not create the " << path << " directory: " << strerror(errno) << endl;
+      return false;
+    }
+  }
+  return true;
+}
+
 // Create new file on disk and make sure that there is enough
 // space on disk for it.
 bool DiskFile::Create(string _filename, u64 _filesize)
@@ -434,20 +479,8 @@ bool DiskFile::Create(string _filename, u64 _filesize)
   filename = _filename;
   filesize = _filesize;
 
-  // do we have a path separator in the filename ?
-  string::size_type where;
-  if (string::npos != (where = filename.find_last_of('/')) ||
-      string::npos != (where = filename.find_last_of('\\')))
-  {
-    string path, name;
-    DiskFile::SplitFilename(filename, path, name);
-
-    struct stat st;
-    if (! (stat(path.c_str(), &st) == 0 && S_ISDIR(st.st_mode)))
-    {
-      mkdir(path.c_str(), S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH);
-    }
-  }
+  if (!DiskFile::CreateParentDirectory(filename))
+    return false;
 
   file = fopen(_filename.c_str(), "wb");
   if (file == 0)
