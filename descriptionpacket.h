@@ -94,7 +94,7 @@ inline const MD5Hash& DescriptionPacket::HashFull(void) const
   return ((const FILEDESCRIPTIONPACKET*)packetdata)->hashfull;
 }
 
-// The the hash of the first 16k of the file from the packet
+// The hash of the first 16k of the file from the packet
 inline const MD5Hash& DescriptionPacket::Hash16k(void) const
 {
   assert(packetdata != 0);

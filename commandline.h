@@ -128,7 +128,7 @@ protected:
   u32 firstblock;              // What the exponent value for the first
                                // recovery block will be.
 
-  Scheme recoveryfilescheme;   // How the the size of the recovery files should
+  Scheme recoveryfilescheme;   // How the size of the recovery files should
                                // be calculated.
 
   u32 recoveryfilecount;       // How many recovery files should be created.
@@ -162,7 +162,7 @@ protected:
                                // for the output buffer when creating
                                // or repairing.
 
-  bool purgefiles;             // purge backup and par files on successfull
+  bool purgefiles;             // purge backup and par files on success
                                // recovery
   bool recursive;              // recurse into subdirectories
 };

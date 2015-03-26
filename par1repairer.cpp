@@ -529,7 +529,7 @@ bool Par1Repairer::LoadOtherRecoveryFiles(string filename)
     {
       string tail = filename.substr(where+1);
 
-      // Check the the file extension is the correct form
+      // Check the file extension is the correct form
       if ((tail[0] == 'P' || tail[0] == 'p') &&
           (
             ((tail[1] == 'A' || tail[1] == 'a') && (tail[2] == 'R' || tail[2] == 'r'))
@@ -560,7 +560,7 @@ bool Par1Repairer::LoadExtraRecoveryFiles(const list<CommandLine::ExtraFile> &ex
     {
       string tail = filename.substr(where+1);
 
-      // Check the the file extension is the correct form
+      // Check the file extension is the correct form
       if ((tail[0] == 'P' || tail[0] == 'p') &&
           (
             ((tail[1] == 'A' || tail[1] == 'a') && (tail[2] == 'R' || tail[2] == 'r'))
@@ -668,7 +668,7 @@ bool Par1Repairer::VerifyExtraFiles(const list<CommandLine::ExtraFile> &extrafil
     {
       string tail = filename.substr(where+1);
 
-      // Check the the file extension is the correct form
+      // Check the file extension is the correct form
       if ((tail[0] == 'P' || tail[0] == 'p') &&
           (
             ((tail[1] == 'A' || tail[1] == 'a') && (tail[2] == 'R' || tail[2] == 'r'))
