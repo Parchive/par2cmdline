@@ -452,7 +452,7 @@ bool DiskFile::Create(string _filename, u64 _filesize)
   file = fopen(_filename.c_str(), "wb");
   if (file == 0)
   {
-    cerr << "Could not create: " << _filename << endl;
+    cerr << "Could not create " << _filename << ": " << strerror(errno) << endl;
 
     return false;
   }
@@ -467,21 +467,21 @@ bool DiskFile::Create(string _filename, u64 _filesize)
   {
     if (fseek(file, (OffsetType)_filesize-1, SEEK_SET))
     {
+      cerr << "Could not set end of file of " << _filename << ": " << strerror(errno) << endl;
+
       fclose(file);
       file = 0;
       ::remove(filename.c_str());
-
-      cerr << "Could not set end of file: " << _filename << endl;
       return false;
     }
 
     if (1 != fwrite(&_filesize, 1, 1, file))
     {
+      cerr << "Could not set end of file of " << _filename << ": " << strerror(errno) << endl;
+
       fclose(file);
       file = 0;
       ::remove(filename.c_str());
-
-      cerr << "Could not set end of file: " << _filename << endl;
       return false;
     }
   }
@@ -502,14 +502,14 @@ bool DiskFile::Write(u64 _offset, const void *buffer, size_t length)
   {
     if (_offset > (u64)MaxOffset)
     {
-      cerr << "Could not write " << (u64)length << " bytes to " << filename << " at offset " << _offset << endl;
+        cerr << "Could not write " << (u64)length << " bytes to " << filename << " at offset " << _offset << endl;
       return false;
     }
 
 
     if (fseek(file, (OffsetType)_offset, SEEK_SET))
     {
-      cerr << "Could not write " << (u64)length << " bytes to " << filename << " at offset " << _offset << endl;
+      cerr << "Could not write " << (u64)length << " bytes to " << filename << " at offset " << _offset << ": " << strerror(errno) << endl;
       return false;
     }
     offset = _offset;
@@ -523,7 +523,7 @@ bool DiskFile::Write(u64 _offset, const void *buffer, size_t length)
 
   if (1 != fwrite(buffer, (LengthType)length, 1, file))
   {
-    cerr << "Could not write " << (u64)length << " bytes to " << filename << " at offset " << _offset << endl;
+    cerr << "Could not write " << (u64)length << " bytes to " << filename << " at offset " << _offset << ": " << strerror(errno) << endl;
     return false;
   }
 
@@ -581,7 +581,7 @@ bool DiskFile::Read(u64 _offset, void *buffer, size_t length)
 
     if (fseek(file, (OffsetType)_offset, SEEK_SET))
     {
-      cerr << "Could not read " << (u64)length << " bytes from " << filename << " at offset " << _offset << endl;
+      cerr << "Could not read " << (u64)length << " bytes from " << filename << " at offset " << _offset << ": " << strerror(errno) << endl;
       return false;
     }
     offset = _offset;
@@ -595,7 +595,7 @@ bool DiskFile::Read(u64 _offset, void *buffer, size_t length)
 
   if (1 != fread(buffer, (LengthType)length, 1, file))
   {
-    cerr << "Could not read " << (u64)length << " bytes from " << filename << " at offset " << _offset << endl;
+    cerr << "Could not read " << (u64)length << " bytes from " << filename << " at offset " << _offset << ": " << strerror(errno) << endl;
     return false;
   }
 
