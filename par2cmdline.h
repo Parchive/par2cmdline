@@ -147,6 +147,8 @@ typedef unsigned long long u64;
 #  include <unistd.h>
 #endif
 
+#include <errno.h>
+
 #define _MAX_PATH 4095
 
 #if HAVE_ENDIAN_H

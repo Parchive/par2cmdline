@@ -58,6 +58,34 @@ DiskFile::~DiskFile(void)
     ::CloseHandle(hFile);
 }
 
+bool DiskFile::CreateParentDirectory(string _pathname)
+{
+  // do we have a path separator in the filename ?
+  string::size_type where;
+  if (string::npos != (where = _pathname.find_last_of('/')) ||
+      string::npos != (where = _pathname.find_last_of('\\')))
+  {
+    string path = filename.substr(0, where);
+   
+    struct stat st;
+    if (stat(path.c_str(), &st) == 0)
+      return true; // let the caller deal with non-directories
+    
+    if (!DiskFile::CreateParentDirectory(path))
+      return false;
+    
+    if (!CreateDirectory(path.c_str(), NULL))
+    {
+      DWORD error = ::GetLastError();
+
+      cerr << "Could not create the " << path << " directory: " << ErrorMessage(error) << endl;
+
+      return false;
+    }
+  }
+  return true;
+}
+
 // Create new file on disk and make sure that there is enough
 // space on disk for it.
 bool DiskFile::Create(string _filename, u64 _filesize)
@@ -67,16 +95,8 @@ bool DiskFile::Create(string _filename, u64 _filesize)
   filename = _filename;
   filesize = _filesize;
 
-  // do we have a path separator in the filename ?
-  string::size_type where;
-  if (string::npos != (where = filename.find_last_of('/')) ||
-      string::npos != (where = filename.find_last_of('\\')))
-  {
-    string path, name;
-    DiskFile::SplitFilename(filename, path, name);
-
-    CreateDirectory(path.c_str(), NULL);
-  }
+  if (!DiskFile::CreateParentDirectory(filename))
+    return false;
 
   // Create the file
   hFile = ::CreateFileA(_filename.c_str(), GENERIC_READ | GENERIC_WRITE, 0, NULL, CREATE_NEW, 0, NULL);
@@ -425,6 +445,31 @@ DiskFile::~DiskFile(void)
     fclose(file);
 }
 
+bool DiskFile::CreateParentDirectory(string _pathname)
+{
+  // do we have a path separator in the filename ?
+  string::size_type where;
+  if (string::npos != (where = _pathname.find_last_of('/')) ||
+      string::npos != (where = _pathname.find_last_of('\\')))
+  {
+    string path = filename.substr(0, where);
+   
+    struct stat st;
+    if (stat(path.c_str(), &st) == 0)
+      return true; // let the caller deal with non-directories
+    
+    if (!DiskFile::CreateParentDirectory(path))
+      return false;
+    
+    if (mkdir(path.c_str(), S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH))
+    {
+      cerr << "Could not create the " << path << " directory: " << strerror(errno) << endl;
+      return false;
+    }
+  }
+  return true;
+}
+
 // Create new file on disk and make sure that there is enough
 // space on disk for it.
 bool DiskFile::Create(string _filename, u64 _filesize)
@@ -434,25 +479,13 @@ bool DiskFile::Create(string _filename, u64 _filesize)
   filename = _filename;
   filesize = _filesize;
 
-  // do we have a path separator in the filename ?
-  string::size_type where;
-  if (string::npos != (where = filename.find_last_of('/')) ||
-      string::npos != (where = filename.find_last_of('\\')))
-  {
-    string path, name;
-    DiskFile::SplitFilename(filename, path, name);
-
-    struct stat st;
-    if (! (stat(path.c_str(), &st) == 0 && S_ISDIR(st.st_mode)))
-    {
-      mkdir(path.c_str(), S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH);
-    }
-  }
+  if (!DiskFile::CreateParentDirectory(filename))
+    return false;
 
   file = fopen(_filename.c_str(), "wb");
   if (file == 0)
   {
-    cerr << "Could not create: " << _filename << endl;
+    cerr << "Could not create " << _filename << ": " << strerror(errno) << endl;
 
     return false;
   }
@@ -467,21 +500,21 @@ bool DiskFile::Create(string _filename, u64 _filesize)
   {
     if (fseek(file, (OffsetType)_filesize-1, SEEK_SET))
     {
+      cerr << "Could not set end of file of " << _filename << ": " << strerror(errno) << endl;
+
       fclose(file);
       file = 0;
       ::remove(filename.c_str());
-
-      cerr << "Could not set end of file: " << _filename << endl;
       return false;
     }
 
     if (1 != fwrite(&_filesize, 1, 1, file))
     {
+      cerr << "Could not set end of file of " << _filename << ": " << strerror(errno) << endl;
+
       fclose(file);
       file = 0;
       ::remove(filename.c_str());
-
-      cerr << "Could not set end of file: " << _filename << endl;
       return false;
     }
   }
@@ -502,14 +535,14 @@ bool DiskFile::Write(u64 _offset, const void *buffer, size_t length)
   {
     if (_offset > (u64)MaxOffset)
     {
-      cerr << "Could not write " << (u64)length << " bytes to " << filename << " at offset " << _offset << endl;
+        cerr << "Could not write " << (u64)length << " bytes to " << filename << " at offset " << _offset << endl;
       return false;
     }
 
 
     if (fseek(file, (OffsetType)_offset, SEEK_SET))
     {
-      cerr << "Could not write " << (u64)length << " bytes to " << filename << " at offset " << _offset << endl;
+      cerr << "Could not write " << (u64)length << " bytes to " << filename << " at offset " << _offset << ": " << strerror(errno) << endl;
       return false;
     }
     offset = _offset;
@@ -523,7 +556,7 @@ bool DiskFile::Write(u64 _offset, const void *buffer, size_t length)
 
   if (1 != fwrite(buffer, (LengthType)length, 1, file))
   {
-    cerr << "Could not write " << (u64)length << " bytes to " << filename << " at offset " << _offset << endl;
+    cerr << "Could not write " << (u64)length << " bytes to " << filename << " at offset " << _offset << ": " << strerror(errno) << endl;
     return false;
   }
 
@@ -581,7 +614,7 @@ bool DiskFile::Read(u64 _offset, void *buffer, size_t length)
 
     if (fseek(file, (OffsetType)_offset, SEEK_SET))
     {
-      cerr << "Could not read " << (u64)length << " bytes from " << filename << " at offset " << _offset << endl;
+      cerr << "Could not read " << (u64)length << " bytes from " << filename << " at offset " << _offset << ": " << strerror(errno) << endl;
       return false;
     }
     offset = _offset;
@@ -595,7 +628,7 @@ bool DiskFile::Read(u64 _offset, void *buffer, size_t length)
 
   if (1 != fread(buffer, (LengthType)length, 1, file))
   {
-    cerr << "Could not read " << (u64)length << " bytes from " << filename << " at offset " << _offset << endl;
+    cerr << "Could not read " << (u64)length << " bytes from " << filename << " at offset " << _offset << ": " << strerror(errno) << endl;
     return false;
   }
 
