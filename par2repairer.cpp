@@ -740,7 +740,7 @@ bool Par2Repairer::LoadPacketsFromOtherFiles(string filename)
       }
     }
 
-    // If we matched then retain only what preceeds the "."
+    // If we matched then retain only what precedes the "."
     if (p == tail.end())
     {
       name = name.substr(0,where);

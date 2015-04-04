@@ -73,7 +73,7 @@ void VerificationHashTable::Load(Par2RepairerSourceFile *sourcefile, u64 blocksi
   VerificationPacket *verificationpacket = sourcefile->GetVerificationPacket();
   u32 blockcount                         = verificationpacket->BlockCount();
 
-  // Iterate throught the data blocks for the source file and the verification
+  // Iterate through the data blocks for the source file and the verification
   // entries in the verification packet.
   vector<DataBlock>::iterator sourceblocks       = sourcefile->SourceBlocks();
   const FILEVERIFICATIONENTRY *verificationentry = verificationpacket->VerificationEntry(0);
