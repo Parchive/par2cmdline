@@ -129,10 +129,10 @@ void CommandLine::usage(void)
     "  -n<n>    : Number of recovery files (Don't use both -n and -l)\n"
     "  -m<n>    : Memory (in MB) to use\n";
 #ifdef _OPENMP
-  cout << 
+  cout <<
     "  -t<n>    : Number of threads to use (" << omp_get_max_threads() << " detected)\n";
 #endif
-  cout << 
+  cout <<
     "  -v [-v]  : Be more verbose\n"
     "  -q [-q]  : Be more quiet (-q -q gives silence)\n"
     "  -p       : Purge backup files and par files on successful recovery or\n"
@@ -342,12 +342,13 @@ bool CommandLine::Parse(int argc, char *argv[])
             }
           }
           break;
-        
+
+#ifdef _OPENMP
         case 't':  // Set the amount of threads
           {
             u32 nthreads = 0;
             char *p = &argv[0][2];
-            
+
             while (*p && isdigit(*p))
             {
               nthreads = nthreads * 10 + (*p - '0');
@@ -360,13 +361,12 @@ bool CommandLine::Parse(int argc, char *argv[])
               return false;
             }
 
-            // Sets the number of threads to use            
+            // Sets the number of threads to use
             omp_set_num_threads(nthreads);
-            
+
           }
           break;
-
-
+#endif
         case 'r':  // Set the amount of redundancy required
           {
             if (operation != opCreate)
