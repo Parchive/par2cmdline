@@ -54,10 +54,10 @@ public:
   bool Load(DiskFile *diskfile, u64 offset, PACKET_HEADER &header);
 
 public:
-  // Get the lenght of the packet.
+  // Get the length of the packet.
   u64 PacketLength(void) const;
 
-  // The the exponent of the packet.
+  // The exponent of the packet.
   u32 Exponent(void) const;
 
   // The length of the recovery data

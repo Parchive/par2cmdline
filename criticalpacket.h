@@ -35,7 +35,7 @@ public:
   // Write a copy of the packet to the specified file at the specified offset
   bool    WritePacket(DiskFile &diskfile, u64 fileoffset) const;
 
-  // Obtain the lenght of the packet.
+  // Obtain the length of the packet.
   size_t  PacketLength(void) const;
 
   // Allocate some memory for the packet (plus some extra padding).

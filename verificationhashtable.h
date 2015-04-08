@@ -311,6 +311,7 @@ inline const VerificationHashEntry* VerificationHashTable::FindMatch(const Verif
       // Is the checksum correct
       if (checksum == suggestedentry->Checksum())
       {
+        havehash = true;
         // Get a short hash from the checksummer
         hash = checksummer.ShortHash(length);
 
@@ -324,8 +325,8 @@ inline const VerificationHashEntry* VerificationHashTable::FindMatch(const Verif
     // If the suggested entry has not already been found, compare the checksum
     else if (!suggestedentry->IsSet() && suggestedentry->Checksum() == crc)
     {
-      // Get the hash value from the checksummer
       havehash = true;
+      // Get the hash value from the checksummer
       hash = checksummer.Hash();
 
       // If the hash value matches, then return it.
@@ -455,10 +456,12 @@ inline const VerificationHashEntry* VerificationHashTable::FindMatch(const Verif
   }
 
   // Return what we have found
+  /*
   if (nextentry == 0)
   {
     duplicate = true;
   }
+  */
 
   return nextentry;
 }

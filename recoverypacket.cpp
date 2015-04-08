@@ -67,7 +67,7 @@ void RecoveryPacket::Create(DiskFile      *_diskfile,
   packetcontext->Update(&packet.header.setid, 
                         sizeof(RECOVERYBLOCKPACKET)-offsetof(RECOVERYBLOCKPACKET, header.setid));
 
-  // Set the data block to immediatly follow the header on disk
+  // Set the data block to immediately follow the header on disk
   datablock.SetLocation(_diskfile, _offset + sizeof(packet));
   datablock.SetLength(_blocksize);
 }
@@ -118,7 +118,7 @@ bool RecoveryPacket::Load(DiskFile      *_diskfile,
   // Save the fixed header
   packet.header = _header;
 
-  // Set the data block to immediatly follow the header on disk
+  // Set the data block to immediately follow the header on disk
   datablock.SetLocation(diskfile, offset + sizeof(packet));
   datablock.SetLength(packet.header.length - sizeof(packet));
 

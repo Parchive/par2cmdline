@@ -1,3 +1,7 @@
+# when developing and you really want to clean everything up
+# run git clean -fdx
+# thx @spider-mario
+
 # compilation output
 par2
 *.o

@@ -29,6 +29,9 @@ public:
   DiskFile(void);
   ~DiskFile(void);
 
+  // Ensures the specified path's parent directory exists
+  bool CreateParentDirectory(string pathname);
+
   // Create a file and set its length
   bool Create(string filename, u64 filesize);
 

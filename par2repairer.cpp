@@ -740,7 +740,7 @@ bool Par2Repairer::LoadPacketsFromOtherFiles(string filename)
       }
     }
 
-    // If we matched then retain only what preceeds the "."
+    // If we matched then retain only what precedes the "."
     if (p == tail.end())
     {
       name = name.substr(0,where);
@@ -1477,6 +1477,9 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
 
   u64 progress = 0;
 
+  u32 noduplicatenonext = 0;
+  u32 noduplicatenonextmax = 10;
+
   // Whilst we have not reached the end of the file
   while (filechecksummer.Offset() < diskfile->FileSize())
   {
@@ -1570,15 +1573,32 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
         // What entry do we expect next
         nextentry = 0;
 
-        // Advance 1 byte
-        if (!filechecksummer.Step())
-          return false;
+        if (noduplicatenonext < noduplicatenonextmax)
+        {
+          if (!filechecksummer.Step())
+            return false;
+
+          noduplicatenonext++;
+        }
+        else
+        {
+          if (!filechecksummer.Jump((blocksize - noduplicatenonext)))
+            return false;
+
+          noduplicatenonext = 0;
+        }
       }
     }
   }
 
   // Get the Full and 16k hash values of the file
   filechecksummer.GetFileHashes(hashfull, hash16k);
+
+  if (noiselevel >= CommandLine::nlDebug)
+  {
+    cout << "duplicates: " << duplicatecount << endl;
+    cout << "matchcount: " << count << endl;
+  }
 
   // Did we make any matches at all
   if (count > 0)

@@ -147,6 +147,8 @@ typedef unsigned long long u64;
 #  include <unistd.h>
 #endif
 
+#include <errno.h>
+
 #define _MAX_PATH 4095
 
 #if HAVE_ENDIAN_H
@@ -231,7 +233,7 @@ typedef enum Result
                                      // still appear to be damaged.
 
 
-  eFileIOError                 = 6,  // An error occured when accessing files
+  eFileIOError                 = 6,  // An error occurred when accessing files
   eLogicError                  = 7,  // In internal error occurred
   eMemoryError                 = 8,  // Out of memory
 

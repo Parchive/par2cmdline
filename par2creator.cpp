@@ -227,7 +227,7 @@ bool Par2Creator::ComputeBlockSizeAndBlockCount(const list<CommandLine::ExtraFil
       // The block count cannot be less than the number of files.
 
       cerr << "Block count (" << sourceblockcount <<
-              ") can not be smaller than the number of files(" << extrafiles.size() << "). " << endl;
+              ") cannot be smaller than the number of files(" << extrafiles.size() << "). " << endl;
       return false;
     }
     else if (sourceblockcount == extrafiles.size())

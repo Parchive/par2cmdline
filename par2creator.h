@@ -102,7 +102,7 @@ protected:
   
   u32 sourcefilecount;   // Number of source files for which recovery data will be computed.
   u32 sourceblockcount;  // Total number of data blocks that the source files will be
-                         // virtualy sliced into.
+                         // virtually sliced into.
 
   u64 largestfilesize;   // The size of the largest source file
 

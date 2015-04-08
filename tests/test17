@@ -1,0 +1,27 @@
+#!/bin/sh
+
+cd $(dirname $0)
+
+testname=$(basename $0)
+rm -f $testname.log
+
+mkdir run$testname && cd run$testname || { echo "ERROR: Could not change to test directory" ; exit 1; } >&2
+
+tar -xf ../bug44.tar.gz || { echo "ERROR: Could not extract data test files" ; exit 1; } >&2
+
+banner="remove subdir structure and repair, see #44"
+dashes=`echo "$banner" | sed s/./-/g`
+
+rm -rf subdir1
+
+echo $dashes
+echo $banner
+echo $dashes
+
+../../par2 r recovery.par2 >> ../$testname.log || { echo "ERROR: reparation of files using PAR 2.0 failed" ; exit 1; } >&2
+
+cd ..
+rm -rf run$testname
+
+exit 0;
+

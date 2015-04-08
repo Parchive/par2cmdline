@@ -22,7 +22,7 @@ dnl                                               -*- Autoconf -*-
 dnl Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.62)
-AC_INIT([par2cmdline-mt], [0.6.7-mt1], [jussi.kansanen@gmail.com])
+AC_INIT([par2cmdline-mt], [0.6.11-mt1], [jussi.kansanen@gmail.com])
 AC_CONFIG_SRCDIR([par2cmdline.cpp])
 
 

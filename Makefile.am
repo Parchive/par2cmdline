@@ -61,6 +61,7 @@ EXTRA_DIST = PORTING ROADMAP par2cmdline.sln par2cmdline.vcproj \
 						 tests/smallsubdirdata-par2files.tar.gz \
 						 tests/100blocks.tar.gz \
 						 tests/readbeyondeof.tar.gz \
+						 tests/par2-0.6.8-crash.tar.gz \
 						 tests/test1 \
 						 tests/test2 \
 						 tests/test3 \
@@ -74,7 +75,10 @@ EXTRA_DIST = PORTING ROADMAP par2cmdline.sln par2cmdline.vcproj \
 						 tests/test11 \
 						 tests/test12 \
 						 tests/test13 \
-						 tests/test14
+						 tests/test14 \
+						 tests/test15 \
+						 tests/test16 \
+						 tests/test17
 
 TESTS = tests/test1 \
 				tests/test2 \
@@ -89,7 +93,10 @@ TESTS = tests/test1 \
 				tests/test11 \
 				tests/test12 \
 				tests/test13 \
-				tests/test14
+				tests/test14 \
+				tests/test15 \
+				tests/test16 \
+				tests/test17
 
 install-exec-hook :
 	ln -sf $(bindir)/par2$(EXEEXT) $(DESTDIR)$(bindir)/par2create$(EXEEXT)
