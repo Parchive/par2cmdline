@@ -4,6 +4,7 @@ cd $(dirname $0)
 
 testname=$(basename $0)
 rm -f $testname.log
+rm -rf run$testname
 
 mkdir run$testname && cd run$testname || { echo "ERROR: Could not change to test directory" ; exit 1; } >&2
 
