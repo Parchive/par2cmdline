@@ -88,7 +88,7 @@ void CommandLine::banner(void)
 {
   cout << "Copyright (C) 2003 Peter Brian Clements." << endl
     << "Copyright (C) 2011-2012 Marcel Partap." << endl
-    << "Copyright (C) 2012-2014 Ike Devolder." << endl
+    << "Copyright (C) 2012-2015 Ike Devolder." << endl
     << endl
     << "par2cmdline comes with ABSOLUTELY NO WARRANTY." << endl
     << endl
