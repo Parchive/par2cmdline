@@ -32,3 +32,14 @@ Debug/
 par2cmdline.vcxproj.user
 par2cmdline.suo
 .vs/
+
+test.*
+# Linux perf record output
+perf.*
+# gcc -fprofile-use
+*.gcda
+
+# eclipse stuff you get when you point it at a Makefile project
+.cproject
+.project
+.settings
