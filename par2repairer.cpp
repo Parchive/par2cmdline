@@ -86,10 +86,10 @@ Result Par2Repairer::Process(const CommandLine &commandline, bool dorepair)
   // do we want to purge par files on success ?
   bool purgefiles = commandline.GetPurgeFiles();
 
-  // Get filesnames from the command line
-  string par2filename = commandline.GetParFilename();
-  string basepath = commandline.GetBasePath();
-  const list<CommandLine::ExtraFile> &extrafiles = commandline.GetExtraFiles();
+  // Get filenames from the command line
+  std::string par2filename = commandline.GetParFilename();
+  std::string basepath = commandline.GetBasePath();
+  std::list<CommandLine::ExtraFile> extrafiles = commandline.GetExtraFiles();
 
   // Determine the searchpath from the location of the main PAR2 file
   string name;
@@ -140,10 +140,10 @@ Result Par2Repairer::Process(const CommandLine &commandline, bool dorepair)
     cout << endl << "Verifying source files:" << endl << endl;
 
   // Attempt to verify all of the source files
-  if (!VerifySourceFiles(basepath))
+  if (!VerifySourceFiles(basepath, extrafiles))
     return eFileIOError;
 
-  if (completefilecount<mainpacket->RecoverableFileCount())
+  if (completefilecount < mainpacket->RecoverableFileCount())
   {
     if (noiselevel > CommandLine::nlQuiet)
       cout << endl << "Scanning extra files:" << endl << endl;
@@ -164,7 +164,7 @@ Result Par2Repairer::Process(const CommandLine &commandline, bool dorepair)
     return eRepairNotPossible;
 
   // Are any of the files incomplete
-  if (completefilecount<mainpacket->RecoverableFileCount())
+  if (completefilecount < mainpacket->RecoverableFileCount())
   {
     // Do we want to carry out a repair
     if (dorepair)
@@ -177,7 +177,7 @@ Result Par2Repairer::Process(const CommandLine &commandline, bool dorepair)
         return eFileIOError;
 
       // Are we still missing any files
-      if (completefilecount<mainpacket->RecoverableFileCount())
+      if (completefilecount < mainpacket->RecoverableFileCount())
       {
         // Work out which files are being repaired, create them, and allocate
         // target DataBlocks to them, and remember them for later verification.
@@ -1083,7 +1083,7 @@ static bool SortSourceFilesByFileName(Par2RepairerSourceFile *low,
 }
 
 // Attempt to verify all of the source files
-bool Par2Repairer::VerifySourceFiles(string basepath)
+bool Par2Repairer::VerifySourceFiles(const std::string& basepath, std::list<CommandLine::ExtraFile>& extrafiles)
 {
   bool finalresult = true;
 
@@ -1130,14 +1130,26 @@ bool Par2Repairer::VerifySourceFiles(string basepath)
     Par2RepairerSourceFile *sourcefile = *sf;
 
     // What filename does the file use
-    string filename = sourcefile->TargetFileName();
+    const std::string& file = sourcefile->TargetFileName();
+    const std::string& name = DiskFile::SplitRelativeFilename(file, basepath);
+
+    // if the target file is in the list of extra files, we remove it
+    // from the extra files.
+    list<CommandLine::ExtraFile>::iterator it = extrafiles.begin();
+    for (; it != extrafiles.end(); ++it)
+    {
+      const CommandLine::ExtraFile& e = *it;
+      const std::string& file = e.FileName();
+      if (file.find(name) != std::string::npos)
+      {
+        extrafiles.erase(it);
+        break;
+      }
+    }
 
     // Check to see if we have already used this file
-    if (diskFileMap.Find(filename) != 0)
+    if (diskFileMap.Find(file) != 0)
     {
-      string name;
-      DiskFile::SplitRelativeFilename(filename, basepath, name);
-
       // The file has already been used!
       cerr << "Source file " << name << " is a duplicate." << endl;
 
@@ -1148,7 +1160,7 @@ bool Par2Repairer::VerifySourceFiles(string basepath)
       DiskFile *diskfile = new DiskFile;
 
       // Does the target file exist
-      if (diskfile->Open(filename))
+      if (diskfile->Open(file))
       {
         // Yes. Record that fact.
         sourcefile->SetTargetExists(true);
@@ -1173,9 +1185,6 @@ bool Par2Repairer::VerifySourceFiles(string basepath)
 
         if (noiselevel > CommandLine::nlSilent)
         {
-          string name;
-          DiskFile::SplitRelativeFilename(filename, basepath, name);
-
           cout << "Target: \"" << name << "\" - missing." << endl;
         }
       }

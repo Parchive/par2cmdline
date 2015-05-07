@@ -70,7 +70,7 @@ protected:
   bool ComputeWindowTable(void);
 
   // Attempt to verify all of the source files
-  bool VerifySourceFiles(string basepath);
+  bool VerifySourceFiles(const std::string& basepath, std::list<CommandLine::ExtraFile>& extrafiles);
 
   // Scan any extra files specified on the command line
   bool VerifyExtraFiles(const list<CommandLine::ExtraFile> &extrafiles, string basepath);
