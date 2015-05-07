@@ -1,0 +1,30 @@
+# Auto detect text files and perform LF normalization
+# see http://stackoverflow.com/questions/170961/whats-the-best-crlf-carriage-return-line-feed-handling-strategy-with-git
+
+*        text=auto
+
+*.cpp    text
+*.h      text
+*.txt    text
+*.s	 text
+
+*.csproj   text merge=union
+*.sln      text=unset merge=union
+*.vcproj   text=unset merge=union
+*.vcxproj* text=unset merge=union
+
+# The VC++ files were already in the repo with DOS line endings
+# This setting would make git store them internally with LF
+#*.sln      text merge=union eol=crlf
+
+# instead, use text=unset to tell git to not do any conversions on
+# those files
+
+
+# This will only work well in a repo where all the files have Unix line
+# endings.  Having this file in a repo with DOS text files in the tree will
+# make git see those files as changed (to Unix line endings, regardless of
+# what they are in your working copy).
+
+# Conversely, this will make all new commits of text files commit with Unix
+# line endings, regardless of what they are in your working copy.
