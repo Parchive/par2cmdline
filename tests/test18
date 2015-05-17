@@ -1,0 +1,39 @@
+#!/bin/sh
+
+cd $(dirname $0)
+
+testname=$(basename $0)
+rm -f $testname.log
+rm -rf run$testname
+
+mkdir run$testname && cd run$testname || { echo "ERROR: Could not change to test directory" ; exit 1; } >&2
+
+cp ../flatdata.tar.gz ./ || { echo "ERROR: Could not copy data test files" ; exit 1; } >&2
+
+banner="Creating PAR 2.0 recovery data"
+dashes=`echo "$banner" | sed s/./-/g`
+
+echo $dashes
+echo $banner
+echo $dashes
+
+../../par2 c recovery flatdata.tar.gz > ../$testname.log || { echo "ERROR: Creating PAR 2.0 data failed" ; exit 1; } >&2
+
+banner="Verifying using PAR 2.0 data"
+dashes=`echo "$banner" | sed s/./-/g`
+
+echo $dashes
+echo $banner
+echo $dashes
+
+mv flatdata.tar.gz flatdata.tar.gz-orig
+head -c 1983 flatdata.tar.gz-orig > flatdata.tar.gz
+rm flatdata.tar.gz-orig
+
+../../par2 r recovery.par2 ./* > ../$testname.log || { echo "ERROR: PAR 2.0 repair failed" ; exit 1; } >&2
+
+cd ..
+rm -rf run$testname
+
+exit 0;
+
