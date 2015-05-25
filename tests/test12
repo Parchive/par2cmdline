@@ -1,6 +1,7 @@
 #!/bin/sh
 
-cd $(dirname $0)
+cd tests || { echo "ERROR: Could not change to tests directory" ; exit 1; } >&2
+tests=../../$srcdir/tests
 
 testname=$(basename $0)
 rm -f $testname.log
@@ -8,7 +9,7 @@ rm -rf run$testname
 
 mkdir run$testname && cd run$testname || { echo "ERROR: Could not change to test directory" ; exit 1; } >&2
 
-tar -xf ../readbeyondeof.tar.gz || { echo "ERROR: Could not extract data test files" ; exit 1; } >&2
+tar -xf $tests/readbeyondeof.tar.gz || { echo "ERROR: Could not extract data test files" ; exit 1; } >&2
 
 banner="repair files where the filesize got changed"
 dashes=`echo "$banner" | sed s/./-/g`

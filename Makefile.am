@@ -62,6 +62,7 @@ EXTRA_DIST = PORTING ROADMAP par2cmdline.sln par2cmdline.vcproj \
 						 tests/100blocks.tar.gz \
 						 tests/readbeyondeof.tar.gz \
 						 tests/par2-0.6.8-crash.tar.gz \
+						 tests/bug44.tar.gz \
 						 tests/test1 \
 						 tests/test2 \
 						 tests/test3 \

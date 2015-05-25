@@ -1,6 +1,7 @@
 #!/bin/sh
 
-cd $(dirname $0)
+cd tests || { echo "ERROR: Could not change to tests directory" ; exit 1; } >&2
+tests=../../$srcdir/tests
 
 testname=$(basename $0)
 rm -f $testname.log
@@ -8,8 +9,8 @@ rm -rf run$testname
 
 mkdir run$testname && cd run$testname || { echo "ERROR: Could not change to test directory" ; exit 1; } >&2
 
-tar -xf ../flatdata.tar.gz || { echo "ERROR: Could not extract data test files" ; exit 1; } >&2
-tar -xf ../flatdata-par2files.tar.gz || { echo "ERROR: Could not extract par test files" ; exit 1; } >&2
+tar -xf $tests/flatdata.tar.gz || { echo "ERROR: Could not extract data test files" ; exit 1; } >&2
+tar -xf $tests/flatdata-par2files.tar.gz || { echo "ERROR: Could not extract par test files" ; exit 1; } >&2
 
 cp test-0.data test-0.data.orig
 cp test-1.data test-1.data.orig
