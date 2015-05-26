@@ -50,6 +50,9 @@ Par2Repairer::Par2Repairer(void)
   outputbuffer = 0;
 
   noiselevel = CommandLine::nlNormal;
+
+  skipdata = false;
+  skipleaway = 0;
 }
 
 Par2Repairer::~Par2Repairer(void)
@@ -82,6 +85,12 @@ Result Par2Repairer::Process(const CommandLine &commandline, bool dorepair)
 {
   // What noiselevel are we using
   noiselevel = commandline.GetNoiseLevel();
+
+  // Should we skip data whilst scanning files
+  skipdata = commandline.GetSkipData();
+
+  // How much leaway should we allow when scanning files
+  skipleaway = commandline.GetSkipLeaway();
 
   // do we want to purge par files on success ?
   bool purgefiles = commandline.GetPurgeFiles();
@@ -1486,8 +1495,23 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
 
   u64 progress = 0;
 
-  u32 noduplicatenonext = 0;
-  u32 noduplicatenonextmax = 10;
+  // How far will we scan the file (1 byte at a time)
+  // before skipping ahead looking for the next block
+  u64 scandistance = min(skipleaway<<1, blocksize);
+
+  // Distance to skip forward if we don't find a block
+  u64 scanskip = skipdata ? blocksize - scandistance : 0;
+
+  // Assume with are half way through scanning
+  u64 scanoffset = scandistance >> 1;
+
+  // Total number of bytes that were skipped whilst scanning
+  u64 skippeddata = 0;
+
+  // Offset of last data that was found
+  u64 lastmatchoffset = 0;
+
+  bool progressline = false;
 
   // Whilst we have not reached the end of the file
   while (filechecksummer.Offset() < diskfile->FileSize())
@@ -1500,6 +1524,8 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
       if (oldfraction != newfraction)
       {
         cout << "Scanning: \"" << shortname << "\": " << newfraction/10 << '.' << newfraction%10 << "%\r" << flush;
+
+	progressline = true;
       }
     }
 
@@ -1513,6 +1539,18 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
     // Did we find a match
     if (currententry != 0)
     {
+      if (lastmatchoffset < filechecksummer.Offset() && noiselevel > CommandLine::nlNormal)
+      {
+	if (progressline)
+	{
+	  cout << endl;
+	  progressline = false;
+	}
+
+	cout << "No data found between offset " << lastmatchoffset
+	     << " and " << filechecksummer.Offset() << endl;
+      }
+
       // Is this the first match
       if (count == 0)
       {
@@ -1559,6 +1597,12 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
       // Advance to the next block
       if (!filechecksummer.Jump(currententry->GetDataBlock()->GetLength()))
         return false;
+
+      // If the next match fails, assume we hare half way through scanning for the next block
+      scanoffset = scandistance >> 1;
+
+      // Update offset of last match
+      lastmatchoffset = filechecksummer.Offset();
     }
     else
     {
@@ -1566,7 +1610,7 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
       matchtype = ePartialMatch;
 
       // Was this a duplicate match
-      if (duplicate)
+      if (duplicate && false) // ignore duplicates
       {
         duplicatecount++;
 
@@ -1582,22 +1626,40 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
         // What entry do we expect next
         nextentry = 0;
 
-        if (noduplicatenonext < noduplicatenonextmax)
-        {
-          if (!filechecksummer.Step())
-            return false;
+        if (!filechecksummer.Step())
+          return false;
 
-          noduplicatenonext++;
-        }
-        else
-        {
-          if (!filechecksummer.Jump((blocksize - noduplicatenonext)))
-            return false;
+	u64 skipfrom = filechecksummer.Offset();
 
-          noduplicatenonext = 0;
-        }
+	// Have we scanned too far without finding a block?
+	if (scanskip > 0
+	    && ++scanoffset >= scandistance
+	    && skipfrom < diskfile->FileSize())
+	{
+	  // Skip forwards to where we think we might find more data
+	  if (!filechecksummer.Jump(scanskip))
+	    return false;
+
+	  // Update the count of skipped data
+	  skippeddata += filechecksummer.Offset() - skipfrom;
+
+	  // Reset scan offset to 0
+	  scanoffset = 0;
+	}
       }
     }
+  }
+
+  if (lastmatchoffset < filechecksummer.Offset() && noiselevel > CommandLine::nlNormal)
+  {
+    if (progressline)
+    {
+      cout << endl;
+      progressline = false;
+    }
+
+    cout << "No data found between offset " << lastmatchoffset
+         << " and " << filechecksummer.Offset() << endl;
   }
 
   // Get the Full and 16k hash values of the file
@@ -1605,7 +1667,8 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
 
   if (noiselevel >= CommandLine::nlDebug)
   {
-    cout << "duplicates: " << duplicatecount << endl;
+    if (duplicatecount > 0)
+      cout << "duplicates: " << duplicatecount << endl;
     cout << "matchcount: " << count << endl;
   }
 
@@ -1695,6 +1758,13 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
                  << endl;
           }
         }
+
+	if (skippeddata > 0)
+        {
+	  cout << skippeddata << " bytes of data were skipped whilst scanning." << endl
+	       << "If there are not enough blocks found to repair: try again "
+	       << "with the -N option." << endl;
+	}
       }
     }
     else
@@ -1757,6 +1827,13 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
              << name 
              << "\" - no data found." 
              << endl;
+      }
+
+      if (skippeddata > 0)
+      {
+	cout << skippeddata << " bytes of data were skipped whilst scanning." << endl
+	     << "If there are not enough blocks found to repair: try again "
+	     << "with the -N option." << endl;
       }
     }
   }

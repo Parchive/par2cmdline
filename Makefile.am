@@ -50,56 +50,58 @@ LDADD = -lstdc++
 AM_CXXFLAGS = -Wall
 
 EXTRA_DIST = PORTING ROADMAP par2cmdline.sln par2cmdline.vcproj \
-						 par2.1 \
-						 tests/flatdata.tar.gz \
-						 tests/flatdata-par1files.tar.gz \
-						 tests/flatdata-par2files.tar.gz \
-						 tests/subdirdata.tar.gz \
-						 tests/subdirdata-par2files-unix.tar.gz \
-						 tests/subdirdata-par2files-win.tar.gz \
-						 tests/smallsubdirdata.tar.gz \
-						 tests/smallsubdirdata-par2files.tar.gz \
-						 tests/100blocks.tar.gz \
-						 tests/readbeyondeof.tar.gz \
-						 tests/par2-0.6.8-crash.tar.gz \
-						 tests/bug44.tar.gz \
-						 tests/test1 \
-						 tests/test2 \
-						 tests/test3 \
-						 tests/test4 \
-						 tests/test5 \
-						 tests/test6 \
-						 tests/test7 \
-						 tests/test8 \
-						 tests/test9 \
-						 tests/test10 \
-						 tests/test11 \
-						 tests/test12 \
-						 tests/test13 \
-						 tests/test14 \
-						 tests/test15 \
-						 tests/test16 \
-						 tests/test17 \
-						 tests/test18
+	     par2.1 \
+	     tests/flatdata.tar.gz \
+	     tests/flatdata-par1files.tar.gz \
+	     tests/flatdata-par2files.tar.gz \
+	     tests/subdirdata.tar.gz \
+	     tests/subdirdata-par2files-unix.tar.gz \
+	     tests/subdirdata-par2files-win.tar.gz \
+	     tests/smallsubdirdata.tar.gz \
+	     tests/smallsubdirdata-par2files.tar.gz \
+	     tests/100blocks.tar.gz \
+	     tests/readbeyondeof.tar.gz \
+	     tests/par2-0.6.8-crash.tar.gz \
+	     tests/bug44.tar.gz \
+	     tests/test1 \
+	     tests/test2 \
+	     tests/test3 \
+	     tests/test4 \
+	     tests/test5 \
+	     tests/test6 \
+	     tests/test7 \
+	     tests/test8 \
+	     tests/test9 \
+	     tests/test10 \
+	     tests/test11 \
+	     tests/test12 \
+	     tests/test13 \
+	     tests/test14 \
+	     tests/test15 \
+	     tests/test16 \
+	     tests/test17 \
+	     tests/test18 \
+	     tests/test19
 
 TESTS = tests/test1 \
-				tests/test2 \
-				tests/test3 \
-				tests/test4 \
-				tests/test5 \
-				tests/test6 \
-				tests/test7 \
-				tests/test8 \
-				tests/test9 \
-				tests/test10 \
-				tests/test11 \
-				tests/test12 \
-				tests/test13 \
-				tests/test14 \
-				tests/test15 \
-				tests/test16 \
-				tests/test17 \
-				tests/test18
+	tests/test2 \
+	tests/test3 \
+	tests/test4 \
+	tests/test5 \
+	tests/test6 \
+	tests/test7 \
+	tests/test8 \
+	tests/test9 \
+	tests/test10 \
+	tests/test11 \
+	tests/test12 \
+	tests/test13 \
+	tests/test14 \
+	tests/test15 \
+	tests/test16 \
+	tests/test17 \
+	tests/test18 \
+	tests/test19
 
 install-exec-hook :
 	ln -sf $(bindir)/par2$(EXEEXT) $(DESTDIR)$(bindir)/par2create$(EXEEXT)

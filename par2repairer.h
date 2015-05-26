@@ -130,6 +130,9 @@ protected:
 
   string                    searchpath;              // Where to find files on disk
 
+  bool                      skipdata;                // Should we skip data whilst scanning
+  u64                       skipleaway;              // The leaway +/- we should allow whilst scanning
+
   bool                      firstpacket;             // Whether or not a valid packet has been found.
   MD5Hash                   setid;                   // The SetId extracted from the first packet.
 

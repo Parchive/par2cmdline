@@ -75,6 +75,8 @@ CommandLine::CommandLine(void)
 , memorylimit(0)
 , purgefiles(false)
 , recursive(false)
+, skipdata(true)
+, skipleaway(0)
 {
 }
 
@@ -132,6 +134,8 @@ void CommandLine::usage(void)
     "  -p       : Purge backup files and par files on successful recovery or\n"
     "             when no recovery is needed\n"
     "  -R       : Recurse into subdirectories (only useful on create)\n"
+    "  -N       : No data skipping (find badly misspositioned data blocks)\n"
+    "  -S<n>    : Skip leaway (distance +/- from expected block position)\n"
     "  --       : Treat all remaining CommandLine as filenames\n"
     "\n";
 }
@@ -657,6 +661,49 @@ bool CommandLine::Parse(int argc, char *argv[])
           }
           break;
 
+        case 'N':
+          {
+            if (operation == opCreate)
+            {
+              cerr << "Cannot specify No Data Skipping unless reparing or verifying." << endl;
+              return false;
+            }
+            if (skipleaway > 0)
+            {
+              cerr << "Cannot specify no skipping and skip leaway." << endl;
+              return false;
+            }
+            skipdata = false;
+          }
+          break;
+
+        case 'S':  // Set the skip leaway
+          {
+            if (operation == opCreate)
+            {
+              cerr << "Cannot specify skip leaway when creating." << endl;
+              return false;
+            }
+            if (!skipdata)
+            {
+              cerr << "Cannot specify skip leaway and no skipping." << endl;
+              return false;
+            }
+
+            char *p = &argv[0][2];
+            while (skipleaway <= 429496729 && *p && isdigit(*p))
+            {
+              skipleaway = skipleaway * 10 + (*p - '0');
+              p++;
+            }
+            if (*p || skipleaway == 0)
+            {
+              cerr << "Invalid skipleaway option: " << argv[0] << endl;
+              return false;
+            }
+          }
+          break;
+
         case '-':
           {
             argc--;
@@ -760,6 +807,16 @@ bool CommandLine::Parse(int argc, char *argv[])
   if (noiselevel == nlUnknown)
   {
     noiselevel = nlNormal;
+  }
+
+  // Default skip leaway
+  if (operation != opCreate
+      && skipdata
+      && skipleaway == 0)
+  {
+    // Expect to find blocks within +/- 64 bytes of the expected
+    // position relative to the last block that was found.
+    skipleaway = 64;
   }
 
   // If we a creating, check the other parameters
