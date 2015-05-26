@@ -1,0 +1,68 @@
+#!/bin/sh
+
+cd tests || { echo "ERROR: Could not change to tests directory" ; exit 1; } >&2
+tests=../../$srcdir/tests
+
+testname=$(basename $0)
+rm -f $testname.log
+rm -rf run$testname
+
+mkdir run$testname && cd run$testname || { echo "ERROR: Could not change to test directory" ; exit 1; } >&2
+
+banner="Creating 1024 byte test data file"
+dashes=`echo "$banner" | sed s/./-/g`
+
+echo $dashes
+echo $banner
+echo $dashes
+
+dd if=/dev/urandom of=datafile bs=1024 count=1 || { echo "ERROR: Unable to create test data file" ; exit 1; } >&2
+ls -l
+
+banner="Creating PAR 2.0 recovery data (block size 200)"
+dashes=`echo "$banner" | sed s/./-/g`
+
+echo $dashes
+echo $banner
+echo $dashes
+
+../../par2 c -s200 -c1 recovery datafile > ../$testname.log || { echo "ERROR: Creating PAR 2.0 data failed" ; exit 1; } >&2
+ls -l
+
+banner="Damaging data file (trim first 100 bytes)"
+dashes=`echo "$banner" | sed s/./-/g`
+
+echo $dashes
+echo $banner
+echo $dashes
+
+mv datafile datafile.orig
+dd if=datafile.orig of=datafile bs=100 skip=1 || { echo "ERROR: Unable to create damaged data file" ; exit 1; } >&2
+rm datafile.orig
+ls -l
+
+banner="Repairing using PAR 2.0 data (with skip leaway 99 - should fail)"
+dashes=`echo "$banner" | sed s/./-/g`
+
+echo $dashes
+echo $banner
+echo $dashes
+
+../../par2 r -S99 -vv recovery.par2 > ../$testname.log && { echo "ERROR: Repair should not be possible with skip leaway set to 99" ; exit 1; } >&2
+ls -l
+
+banner="Repairing using PAR 2.0 data (with skip leaway 100 - should succeed)"
+dashes=`echo "$banner" | sed s/./-/g`
+
+echo $dashes
+echo $banner
+echo $dashes
+
+../../par2 r -S100 -vv recovery.par2 > ../$testname.log || { echo "ERROR: Repair should be possible with skip leaway set to 100" ; exit 1; } >&2
+ls -l
+
+cd ..
+rm -rf run$testname
+
+exit 0;
+
