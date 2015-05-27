@@ -134,7 +134,7 @@ void CommandLine::usage(void)
     "  -p       : Purge backup files and par files on successful recovery or\n"
     "             when no recovery is needed\n"
     "  -R       : Recurse into subdirectories (only useful on create)\n"
-    "  -N       : No data skipping (find badly misspositioned data blocks)\n"
+    "  -N       : No data skipping (find badly mispositioned data blocks)\n"
     "  -S<n>    : Skip leaway (distance +/- from expected block position)\n"
     "  --       : Treat all remaining CommandLine as filenames\n"
     "\n";
