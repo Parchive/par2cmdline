@@ -87,6 +87,12 @@ Purge backup files and par files on successful recovery or when no recovery is n
 .B \-R
 Recurse into subdirectories (only useful on create)
 .TP
+.B \-N
+No data skipping (find badly mispositioned data blocks)
+.TP
+.B \-S<n>
+Skip leaway (distance +/\- from expected block position)
+.TP
 .B \-\-
 Treat all remaining command line as filenames
 .SH AUTHORS
