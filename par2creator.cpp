@@ -698,7 +698,7 @@ bool Par2Creator::InitialiseOutputFiles(string par2filename)
     fileallocations[recoveryfilecount].count = 0;
 
     // Determine the format to use for filenames of recovery files
-    char filenameformat[300];
+    char filenameformat[_MAX_PATH];
     {
       u32 limitLow = 0;
       u32 limitCount = 0;
@@ -732,7 +732,7 @@ bool Par2Creator::InitialiseOutputFiles(string par2filename)
     // Set the filenames
     for (u32 filenumber=0; filenumber<recoveryfilecount; filenumber++)
     {
-      char filename[300];
+      char filename[_MAX_PATH];
       snprintf(filename, sizeof(filename), filenameformat, par2filename.c_str(), fileallocations[filenumber].exponent, fileallocations[filenumber].count);
       fileallocations[filenumber].filename = filename;
     }
