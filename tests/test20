@@ -1,0 +1,55 @@
+#!/bin/sh
+
+cd tests || { echo "ERROR: Could not change to tests directory" ; exit 1; } >&2
+tests=../../$srcdir/tests
+
+testname=$(basename $0)
+rm -f $testname.log
+rm -rf run$testname
+
+mkdir run$testname && cd run$testname || { echo "ERROR: Could not change to test directory" ; exit 1; } >&2
+
+banner="genereate datafile with 2000 random bytes"
+dashes=`echo "$banner" | sed s/./-/g`
+
+echo $dashes
+echo $banner
+echo $dashes
+
+dd bs=1000 count=2 iflag=fullblock if=/dev/random of=myfile.dat
+
+banner="Creating PAR 2.0 recovery data"
+dashes=`echo "$banner" | sed s/./-/g`
+
+echo $dashes
+echo $banner
+echo $dashes
+
+../../par2 c -s1000 -c0 recovery myfile.dat > ../$testname.log || { echo "ERROR: Creating PAR 2.0 data failed" ; exit 1; } >&2
+
+banner="split files"
+dashes=`echo "$banner" | sed s/./-/g`
+
+echo $dashes
+echo $banner
+echo $dashes
+
+dd bs=1000 count=1 if=myfile.dat of=myfile.dat.001
+dd bs=1000 count=1 skip=1 if=myfile.dat of=myfile.dat.002
+
+rm myfile.dat
+
+banner="Repairing using PAR 2.0 data"
+dashes=`echo "$banner" | sed s/./-/g`
+
+echo $dashes
+echo $banner
+echo $dashes
+
+../../par2 r recovery.par2 ./* > ../$testname.log || { echo "ERROR: PAR 2.0 repair failed" ; exit 1; } >&2
+
+cd ..
+rm -rf run$testname
+
+exit 0;
+
