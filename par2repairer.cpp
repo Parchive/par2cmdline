@@ -1141,15 +1141,16 @@ bool Par2Repairer::VerifySourceFiles(const std::string& basepath, std::list<Comm
     // What filename does the file use
     const std::string& file = sourcefile->TargetFileName();
     const std::string& name = DiskFile::SplitRelativeFilename(file, basepath);
-
+    const std::string& target_pathname = DiskFile::GetCanonicalPathname(file);
+    
     // if the target file is in the list of extra files, we remove it
     // from the extra files.
     list<CommandLine::ExtraFile>::iterator it = extrafiles.begin();
     for (; it != extrafiles.end(); ++it)
     {
       const CommandLine::ExtraFile& e = *it;
-      const std::string& file = e.FileName();
-      if (file.find(name) != std::string::npos)
+      const std::string& extra_pathname = e.FileName();
+      if (!extra_pathname.compare(target_pathname))
       {
         extrafiles.erase(it);
         break;
