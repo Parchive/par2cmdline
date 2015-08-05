@@ -937,6 +937,7 @@ bool Par2Creator::ProcessData(u64 blockoffset, size_t blocklength)
       {
         // Update a progress indicator
         u32 oldfraction = (u32)(1000 * progress / totaldata);
+        #pragma omp atomic
         progress += blocklength;
         u32 newfraction = (u32)(1000 * progress / totaldata);
 
