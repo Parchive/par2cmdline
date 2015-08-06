@@ -16,7 +16,7 @@ echo $dashes
 echo $banner
 echo $dashes
 
-dd bs=1000 count=2 iflag=fullblock if=/dev/random of=myfile.dat
+dd bs=1000 count=2 iflag=fullblock if=/dev/urandom of=myfile.dat
 
 banner="Creating PAR 2.0 recovery data"
 dashes=`echo "$banner" | sed s/./-/g`
