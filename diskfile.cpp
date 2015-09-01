@@ -654,8 +654,14 @@ string DiskFile::GetCanonicalPathname(string filename)
     return filename;
 
   // Get the current directory
+#ifdef PATH_MAX
   char curdir[PATH_MAX];
   if (0 == getcwd(curdir, sizeof(curdir)))
+#else
+  // Avoid unconditional use of PATH_MAX (not defined on hurd)
+  char *curdir = get_current_dir_name();
+  if (curdir == NULL)
+#endif
   {
     return filename;
   }
@@ -664,6 +670,9 @@ string DiskFile::GetCanonicalPathname(string filename)
   // Allocate a work buffer and copy the resulting full path into it.
   char *work = new char[strlen(curdir) + filename.size() + 2];
   strcpy(work, curdir);
+#ifndef PATH_MAX
+  free(curdir);
+#endif
   if (work[strlen(work)-1] != '/')
     strcat(work, "/");
   strcat(work, filename.c_str());
