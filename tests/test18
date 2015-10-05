@@ -28,7 +28,7 @@ echo $banner
 echo $dashes
 
 mv flatdata.tar.gz flatdata.tar.gz-orig
-head -c 1983 flatdata.tar.gz-orig > flatdata.tar.gz
+dd if=flatdata.tar.gz-orig bs=1983 count=1 status=none of=flatdata.tar.gz
 rm -f flatdata.tar.gz-orig
 
 ../../par2 r recovery.par2 ./* > ../$testname.log || { echo "ERROR: PAR 2.0 repair failed" ; exit 1; } >&2

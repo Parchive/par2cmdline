@@ -28,7 +28,7 @@ echo $banner
 echo $dashes
 
 mv test-1.data test-1.data-correct
-head -c 177173 test-1.data-correct > test-1.data
+dd if=test-1.data-correct bs=177173 count=1 status=none of=test-1.data
 
 ../../par2 r testdata.par2 > ../$testname.log || { echo "ERROR: repair files using PAR 2.0 failed" ; exit 1; } >&2
 
