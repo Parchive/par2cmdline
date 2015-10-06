@@ -9,7 +9,7 @@ rm -rf run$testname
 
 mkdir run$testname && cd run$testname || { echo "ERROR: Could not change to test directory" ; exit 1; } >&2
 
-tar -xf $tests/par2-0.6.8-crash.tar.gz || { echo "ERROR: Could not extract data test files" ; exit 1; } >&2
+tar -xzf $tests/par2-0.6.8-crash.tar.gz || { echo "ERROR: Could not extract data test files" ; exit 1; } >&2
 
 banner="repair files should succeed, (issue #35)"
 dashes=`echo "$banner" | sed s/./-/g`

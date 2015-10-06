@@ -9,7 +9,7 @@ rm -rf run$testname
 
 mkdir run$testname && cd run$testname || { echo "ERROR: Could not change to test directory" ; exit 1; } >&2
 
-tar -xf $tests/readbeyondeof.tar.gz || { echo "ERROR: Could not extract data test files" ; exit 1; } >&2
+tar -xzf $tests/readbeyondeof.tar.gz || { echo "ERROR: Could not extract data test files" ; exit 1; } >&2
 
 banner="repair files where the filesize got changed"
 dashes=`echo "$banner" | sed s/./-/g`

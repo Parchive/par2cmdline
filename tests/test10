@@ -9,8 +9,8 @@ rm -rf run$testname
 
 mkdir run$testname && cd run$testname || { echo "ERROR: Could not change to test directory" ; exit 1; } >&2
 
-tar -xf $tests/smallsubdirdata.tar.gz || { echo "ERROR: Could not extract data test files" ; exit 1; } >&2
-tar -xf $tests/smallsubdirdata-par2files.tar.gz || { echo "ERROR: Could not extract par test files" ; exit 1; } >&2
+tar -xzf $tests/smallsubdirdata.tar.gz || { echo "ERROR: Could not extract data test files" ; exit 1; } >&2
+tar -xzf $tests/smallsubdirdata-par2files.tar.gz || { echo "ERROR: Could not extract par test files" ; exit 1; } >&2
 
 banner="Repairing deleted subdir using PAR 2.0 data"
 dashes=`echo "$banner" | sed s/./-/g`

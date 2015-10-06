@@ -9,8 +9,8 @@ rm -rf run$testname
 
 mkdir run$testname && cd run$testname || { echo "ERROR: Could not change to test directory" ; exit 1; } >&2
 
-tar -xf $tests/flatdata.tar.gz || { echo "ERROR: Could not extract data test files" ; exit 1; } >&2
-tar -xf $tests/flatdata-par1files.tar.gz || { echo "ERROR: Could not extract par test files" ; exit 1; } >&2
+tar -xzf $tests/flatdata.tar.gz || { echo "ERROR: Could not extract data test files" ; exit 1; } >&2
+tar -xzf $tests/flatdata-par1files.tar.gz || { echo "ERROR: Could not extract par test files" ; exit 1; } >&2
 
 cp test-0.data test-0.data.orig
 cp test-1.data test-1.data.orig

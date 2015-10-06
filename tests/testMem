@@ -9,8 +9,8 @@ rm -rf run$testname
 
 mkdir run$testname && cd run$testname || { echo "ERROR: Could not change to test directory" ; exit 1; } >&2
 
-tar -xf $tests/subdirdata.tar.gz || { echo "ERROR: Could not extract data test files" ; exit 1; } >&2
-tar -xf $tests/subdirdata-par2files-unix.tar.gz || { echo "ERROR: Could not extract par test files" ; exit 1; } >&2
+tar -xzf $tests/subdirdata.tar.gz || { echo "ERROR: Could not extract data test files" ; exit 1; } >&2
+tar -xzf $tests/subdirdata-par2files-unix.tar.gz || { echo "ERROR: Could not extract par test files" ; exit 1; } >&2
 
 rm -f subdir1/test-2.data subdir2/test-7.data
 valgrind --tool=memcheck --leak-check=yes ../../par2 r testdata.par2
