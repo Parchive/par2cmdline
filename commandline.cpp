@@ -103,7 +103,7 @@ void CommandLine::banner(void)
 
 void CommandLine::usage(void)
 {
-  cout << 
+  cout <<
     "Usage:\n"
     "  par2 -h  : show this help\n"
     "  par2 -V  : show version\n"
@@ -153,6 +153,8 @@ bool CommandLine::Parse(int argc, char *argv[])
   argc--;
   argv++;
 
+  basepath = DiskFile::GetCanonicalPathname("./");
+
   if (argc>0)
   {
     if (argv[0][0] != 0 &&
@@ -196,7 +198,7 @@ bool CommandLine::Parse(int argc, char *argv[])
   if (0 == stricmp("par2create", name.c_str()))
   {
     operation = opCreate;
-  } 
+  }
   else if (0 == stricmp("par2verify", name.c_str()))
   {
     operation = opVerify;
@@ -289,7 +291,7 @@ bool CommandLine::Parse(int argc, char *argv[])
               cerr << "Cannot specify both block count and block size." << endl;
               return false;
             }
-            
+
             char *p = &argv[0][2];
             while (blockcount <= 3276 && *p && isdigit(*p))
             {
@@ -740,7 +742,6 @@ bool CommandLine::Parse(int argc, char *argv[])
         string name;
         DiskFile::SplitFilename(argv[0], path, name);
         filenames = DiskFile::FindFiles(path, name, recursive);
-        string canonicalBasepath = DiskFile::GetCanonicalPathname(basepath);
 
         list<string>::iterator fn = filenames->begin();
         while (fn != filenames->end())
@@ -757,7 +758,7 @@ bool CommandLine::Parse(int argc, char *argv[])
             cout << "Ignoring non-existent source file: " << filename << endl;
           }
           // skip files outside basepath
-          else if (filename.find(canonicalBasepath) == string::npos)
+          else if (filename.find(basepath) == string::npos)
           {
                 cout << "Ignoring out of basepath source file: " << filename << endl;
           }
@@ -1008,7 +1009,4 @@ void CommandLine::SetParFilename(string filename)
   {
     version = verPar2;
   }
-
-  string dummy;
-  DiskFile::SplitFilename(parfilename, basepath, dummy);
 }
