@@ -25,7 +25,7 @@ echo $dashes
 
 cd rundir
 
-../../../par2 c -r2 -B"$faraway" "$faraway"/test.par2 "$faraway"/*.data > ../$testname.log || { echo "ERROR: create of PAR 2.0 files failed" ; exit 1; } >&2
+../../../par2 c -r2 -B"$faraway" "$faraway"/test.par2 "$faraway"/*.data > $tests/$testname.log || { echo "ERROR: create of PAR 2.0 files failed" ; exit 1; } >&2
 
 cd ../..
 rm -rf run$testname
