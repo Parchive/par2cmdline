@@ -30,7 +30,7 @@ cd subdir1
 # check if there were ignored files
 grep 'Ignoring' $tests/$testname.log || { echo "ERROR: there were no files ignored"; exit 1; } >&2
 
-cd ..
+cd ../..
 rm -rf run$testname
 
 exit 0;

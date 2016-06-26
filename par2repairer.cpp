@@ -107,7 +107,7 @@ Result Par2Repairer::Process(const CommandLine &commandline, bool dorepair)
   par2list.push_back(par2filename);
 
   // Load packets from the main PAR2 file
-  if (!LoadPacketsFromFile(basepath + name))
+  if (!LoadPacketsFromFile(searchpath + name))
     return eLogicError;
 
   // Load packets from other PAR2 files with names based on the original PAR2 file

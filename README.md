@@ -99,6 +99,7 @@ The command line parameters for par2cmdline are as follow:
     -R       : Recurse into subdirectories (only useful on create)
     -N       : No data skipping (find badly misspositioned data blocks)
     -S<n>    : Skip leaway (distance +/- from expected block position)
+    -B<path> : Set the basepath to use as reference for the datafiles
     --       : Treat all remaining CommandLine as filenames
 
 If you wish to create par2 files for a single source file, you may leave out the name of the par2 file from the command line. par2cmdline will then assume that you wish to base the filenames for the par2 files on the name of the source file.

@@ -66,14 +66,14 @@ bool DiskFile::CreateParentDirectory(string _pathname)
       string::npos != (where = _pathname.find_last_of('\\')))
   {
     string path = filename.substr(0, where);
-   
+
     struct stat st;
     if (stat(path.c_str(), &st) == 0)
       return true; // let the caller deal with non-directories
-    
+
     if (!DiskFile::CreateParentDirectory(path))
       return false;
-    
+
     if (!CreateDirectory(path.c_str(), NULL))
     {
       DWORD error = ::GetLastError();
@@ -453,14 +453,14 @@ bool DiskFile::CreateParentDirectory(string _pathname)
       string::npos != (where = _pathname.find_last_of('\\')))
   {
     string path = filename.substr(0, where);
-   
+
     struct stat st;
     if (stat(path.c_str(), &st) == 0)
       return true; // let the caller deal with non-directories
-    
+
     if (!DiskFile::CreateParentDirectory(path))
       return false;
-    
+
     if (mkdir(path.c_str(), S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH))
     {
       cerr << "Could not create the " << path << " directory: " << strerror(errno) << endl;
@@ -841,7 +841,7 @@ list<string>* DiskFile::FindFiles(string path, string wildcard, bool recursive)
       }
     }
   }
-  
+
   return matches;
 }
 

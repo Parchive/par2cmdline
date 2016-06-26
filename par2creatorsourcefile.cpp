@@ -77,7 +77,7 @@ bool Par2CreatorSourceFile::Open(CommandLine::NoiseLevel noiselevel, const Comma
   if (!diskfile->Open(diskfilename, filesize))
     return false;
 
-  // Do we want to defer the computation of the full file hash, and 
+  // Do we want to defer the computation of the full file hash, and
   // the block crc and hashes. This is only permitted if there
   // is sufficient memory available to create all recovery blocks
   // in one pass of the source files (i.e. chunksize == blocksize)
