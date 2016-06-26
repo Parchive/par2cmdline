@@ -1,7 +1,7 @@
 #!/bin/sh
 
 cd tests || { echo "ERROR: Could not change to tests directory" ; exit 1; } >&2
-tests=../../$srcdir/tests
+tests=$PWD
 
 testname=$(basename $0)
 rm -f $testname.log
@@ -29,7 +29,7 @@ mv test-7.data rename3
 mv test-8.data rename1
 mv test-9.data rename2
 
-../../par2 r testdata.par2 rename* > ../$testname.log || { echo "ERROR: Initial PAR 2.0 verification and rename failed" ; exit 1; } >&2
+../../par2 r testdata.par2 rename* > $tests/$testname.log || { echo "ERROR: Initial PAR 2.0 verification and rename failed" ; exit 1; } >&2
 test -e test-1.data ||  { echo "ERROR: rename failed" ; exit 1; } >&2
 test -e test-2.data ||  { echo "ERROR: rename failed" ; exit 1; } >&2
 test -e test-3.data ||  { echo "ERROR: rename failed" ; exit 1; } >&2

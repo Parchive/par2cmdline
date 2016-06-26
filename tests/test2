@@ -1,7 +1,7 @@
 #!/bin/sh
 
 cd tests || { echo "ERROR: Could not change to tests directory" ; exit 1; } >&2
-tests=../../$srcdir/tests
+tests=$PWD
 
 testname=$(basename $0)
 rm -f $testname.log
@@ -19,7 +19,7 @@ echo $dashes
 echo $banner
 echo $dashes
 
-../../par2 v testdata.par2 > ../$testname.log || { echo "ERROR: Initial PAR 2.0 verification failed" ; exit 1; } >&2
+../../par2 v testdata.par2 > $tests/$testname.log || { echo "ERROR: Initial PAR 2.0 verification failed" ; exit 1; } >&2
 
 cd ..
 rm -rf run$testname

@@ -78,7 +78,7 @@ protected:
   // Attempt to match the data in the DiskFile with the source file
   bool VerifyDataFile(DiskFile *diskfile, Par2RepairerSourceFile *sourcefile, string basepath);
 
-  // Perform a sliding window scan of the DiskFile looking for blocks of data that 
+  // Perform a sliding window scan of the DiskFile looking for blocks of data that
   // might belong to any of the source files (for which a verification packet was
   // available). If a block of data might be from more than one source file, prefer
   // the one specified by the "sourcefile" parameter. If the first data block
@@ -94,7 +94,7 @@ protected:
   // Find out how much data we have found
   void UpdateVerificationResults(void);
 
-  // Check the verification results and report the results 
+  // Check the verification results and report the results
   bool CheckVerificationResults(void);
 
   // Rename any damaged or missnamed target files.
@@ -129,6 +129,8 @@ protected:
   CommandLine::NoiseLevel   noiselevel;              // OnScreen display
 
   string                    searchpath;              // Where to find files on disk
+
+  std::string               basepath;
 
   bool                      skipdata;                // Should we skip data whilst scanning
   u64                       skipleaway;              // The leaway +/- we should allow whilst scanning

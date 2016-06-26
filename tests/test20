@@ -1,7 +1,7 @@
 #!/bin/sh
 
 cd tests || { echo "ERROR: Could not change to tests directory" ; exit 1; } >&2
-tests=../../$srcdir/tests
+tests=$PWD
 
 testname=$(basename $0)
 rm -f $testname.log
@@ -25,7 +25,7 @@ echo $dashes
 echo $banner
 echo $dashes
 
-../../par2 c -s1000 -c0 recovery myfile.dat > ../$testname.log || { echo "ERROR: Creating PAR 2.0 data failed" ; exit 1; } >&2
+../../par2 c -s1000 -c0 recovery myfile.dat > $tests/$testname.log || { echo "ERROR: Creating PAR 2.0 data failed" ; exit 1; } >&2
 
 banner="split files"
 dashes=`echo "$banner" | sed s/./-/g`
@@ -46,7 +46,7 @@ echo $dashes
 echo $banner
 echo $dashes
 
-../../par2 r recovery.par2 ./* > ../$testname.log || { echo "ERROR: PAR 2.0 repair failed" ; exit 1; } >&2
+../../par2 r recovery.par2 ./* >> $tests/$testname.log || { echo "ERROR: PAR 2.0 repair failed" ; exit 1; } >&2
 
 cd ..
 rm -rf run$testname

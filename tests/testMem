@@ -1,7 +1,7 @@
 #!/bin/sh
 
 cd tests || { echo "ERROR: Could not change to tests directory" ; exit 1; } >&2
-tests=../../$srcdir/tests
+tests=$PWD
 
 testname=$(basename $0)
 rm -f $testname.log
