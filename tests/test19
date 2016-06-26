@@ -26,7 +26,7 @@ echo $dashes
 echo $banner
 echo $dashes
 
-../../par2 c -s200 -c1 recovery datafile > ../$testname.log || { echo "ERROR: Creating PAR 2.0 data failed" ; exit 1; } >&2
+../../par2 c -s200 -c1 recovery datafile > $tests/$testname.log || { echo "ERROR: Creating PAR 2.0 data failed" ; exit 1; } >&2
 ls -l
 
 banner="Damaging data file (trim first 100 bytes)"
@@ -48,7 +48,7 @@ echo $dashes
 echo $banner
 echo $dashes
 
-../../par2 r -S99 -vv recovery.par2 > ../$testname.log && { echo "ERROR: Repair should not be possible with skip leaway set to 99" ; exit 1; } >&2
+../../par2 r -S99 -vv recovery.par2 >> $tests/$testname.log && { echo "ERROR: Repair should not be possible with skip leaway set to 99" ; exit 1; } >&2
 ls -l
 
 banner="Repairing using PAR 2.0 data (with skip leaway 100 - should succeed)"
@@ -58,7 +58,7 @@ echo $dashes
 echo $banner
 echo $dashes
 
-../../par2 r -S100 -vv recovery.par2 > ../$testname.log || { echo "ERROR: Repair should be possible with skip leaway set to 100" ; exit 1; } >&2
+../../par2 r -S100 -vv recovery.par2 >> $tests/$testname.log || { echo "ERROR: Repair should be possible with skip leaway set to 100" ; exit 1; } >&2
 ls -l
 
 cd ..

@@ -19,7 +19,7 @@ echo $banner
 echo $dashes
 
 cd par2-0.6.8-crash
-../../../par2 r pack-ea5f7f848340980493ed39f5b7173d956c680e43.par2 > ../../$testname.log || { echo "ERROR: repair files using PAR 2.0 failed" ; exit 1; } >&2
+../../../par2 r pack-ea5f7f848340980493ed39f5b7173d956c680e43.par2 > $tests/$testname.log || { echo "ERROR: repair files using PAR 2.0 failed" ; exit 1; } >&2
 
 cd ../..
 rm -rf run$testname
