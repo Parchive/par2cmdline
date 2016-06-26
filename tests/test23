@@ -26,9 +26,9 @@ echo $dashes
 
 cd rundir
 
-../../../par2 v "$faraway"/testdata.par2  > ../$testname.log || { echo "ERROR: verify of PAR 2.0 files failed" ; exit 1; } >&2
+../../../par2 v -B "$faraway" "$faraway"/testdata.par2  > ../$testname.log || { echo "ERROR: verify of PAR 2.0 files failed" ; exit 1; } >&2
 
-cd ..
+cd ../..
 rm -rf run$testname
 
 exit 0;

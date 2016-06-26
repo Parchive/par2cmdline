@@ -136,6 +136,7 @@ void CommandLine::usage(void)
     "  -R       : Recurse into subdirectories (only useful on create)\n"
     "  -N       : No data skipping (find badly mispositioned data blocks)\n"
     "  -S<n>    : Skip leaway (distance +/- from expected block position)\n"
+    "  -B<path> : Set the basepath to use as reference for the datafiles\n"
     "  --       : Treat all remaining CommandLine as filenames\n"
     "\n";
 }
@@ -701,6 +702,31 @@ bool CommandLine::Parse(int argc, char *argv[])
             {
               cerr << "Invalid skipleaway option: " << argv[0] << endl;
               return false;
+            }
+          }
+          break;
+
+        case 'B': // Set the basepath manually
+          {
+            string str = argv[0];
+            if (str == "-B")
+            {
+              basepath = DiskFile::GetCanonicalPathname(argv[1]);
+              argc--;
+              argv++;
+            }
+            else
+            {
+              basepath = DiskFile::GetCanonicalPathname(str.substr(2));
+            }
+            string lastchar = basepath.substr(basepath.length() -1);
+            if ("/" != lastchar && "\\" != lastchar)
+            {
+#ifdef WIN32
+              basepath = basepath + "\\";
+#else
+              basepath = basepath + "/";
+#endif
             }
           }
           break;

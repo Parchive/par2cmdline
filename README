@@ -6,7 +6,7 @@ https://github.com/BlackIkeEagle/par2cmdline
 The original development was done on Sourceforge but stalled.
 For more information from the original authors see
 http://parchive.sourceforge.net
-Also for details of the PAR 2.0 specification and discussion of all 
+Also for details of the PAR 2.0 specification and discussion of all
 things PAR.
 
 WHAT EXACTLY IS PAR2CMDLINE?
@@ -42,7 +42,7 @@ WHY IS PAR 2.0 better than PAR 1.0?
  * Damaged or incomplete recovery files can also be used during the
    recovery process in the same way that damaged data files can.
 
- * PAR 2.0 requires less recovery data to provide the same level of 
+ * PAR 2.0 requires less recovery data to provide the same level of
    protection from damage compared with PAR 1.0.
 
 DOES PAR 2.0 HAVE ANY DISADVANTAGES?
@@ -121,6 +121,7 @@ The command line parameters for par2cmdline are as follow:
     -R       : Recurse into subdirectories (only useful on create)
     -N       : No data skipping (find badly misspositioned data blocks)
     -S<n>    : Skip leaway (distance +/- from expected block position)
+    -B<path> : Set the basepath to use as reference for the datafiles
     --       : Treat all remaining CommandLine as filenames
 
 If you wish to create par2 files for a single source file, you may leave
@@ -190,8 +191,8 @@ The "-u" and "-n" options can be used to control exactly how many recovery
 files are created and how the recovery blocks are distributed among them.
 They do not affect the total quantity of recovery data created.
 
-The "-f" option is used when you create additional recovery data e.g. If 
-you have already created 10% and want another 5% then you migh use the 
+The "-f" option is used when you create additional recovery data e.g. If
+you have already created 10% and want another 5% then you migh use the
 following command:
 
   par2 create -s307200 -r5 -f300 test.mpg.par2 test.mpg
