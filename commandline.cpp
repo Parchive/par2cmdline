@@ -75,7 +75,7 @@ CommandLine::CommandLine(void)
 , memorylimit(0)
 , purgefiles(false)
 , recursive(false)
-, skipdata(true)
+, skipdata(false)
 , skipleaway(0)
 {
 }
@@ -134,7 +134,7 @@ void CommandLine::usage(void)
     "  -p       : Purge backup files and par files on successful recovery or\n"
     "             when no recovery is needed\n"
     "  -R       : Recurse into subdirectories (only useful on create)\n"
-    "  -N       : No data skipping (find badly mispositioned data blocks)\n"
+    "  -N       : data skipping (find badly mispositioned data blocks)\n"
     "  -S<n>    : Skip leaway (distance +/- from expected block position)\n"
     "  -B<path> : Set the basepath to use as reference for the datafiles\n"
     "  --       : Treat all remaining CommandLine as filenames\n"
@@ -667,15 +667,10 @@ bool CommandLine::Parse(int argc, char *argv[])
           {
             if (operation == opCreate)
             {
-              cerr << "Cannot specify No Data Skipping unless reparing or verifying." << endl;
+              cerr << "Cannot specify Data Skipping unless reparing or verifying." << endl;
               return false;
             }
-            if (skipleaway > 0)
-            {
-              cerr << "Cannot specify no skipping and skip leaway." << endl;
-              return false;
-            }
-            skipdata = false;
+            skipdata = true;
           }
           break;
 
