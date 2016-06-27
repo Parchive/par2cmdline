@@ -17,40 +17,42 @@
 ##  along with this program; if not, write to the Free Software
 ##  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-bin_PROGRAMS = par2
-man_MANS = par2.1
+AUTOMAKE_OPTIONS = subdir-objects
 
-par2_SOURCES = par2cmdline.cpp par2cmdline.h \
-	commandline.cpp commandline.h \
-	crc.cpp crc.h \
-	creatorpacket.cpp creatorpacket.h \
-	criticalpacket.cpp criticalpacket.h \
-	datablock.cpp datablock.h \
-	descriptionpacket.cpp descriptionpacket.h \
-	diskfile.cpp diskfile.h \
-	filechecksummer.cpp filechecksummer.h \
-	galois.cpp galois.h \
-	letype.h \
-	mainpacket.cpp mainpacket.h \
-	md5.cpp md5.h \
-	par1fileformat.cpp par1fileformat.h \
-	par1repairer.cpp par1repairer.h \
-	par1repairersourcefile.cpp par1repairersourcefile.h \
-	par2creator.cpp par2creator.h \
-	par2creatorsourcefile.cpp par2creatorsourcefile.h \
-	par2fileformat.cpp par2fileformat.h \
-	par2repairer.cpp par2repairer.h \
-	par2repairersourcefile.cpp par2repairersourcefile.h \
-	recoverypacket.cpp recoverypacket.h \
-	reedsolomon.cpp reedsolomon.h \
-	verificationhashtable.cpp verificationhashtable.h \
-	verificationpacket.cpp verificationpacket.h
+bin_PROGRAMS = par2
+man_MANS = man/par2.1
+
+par2_SOURCES = src/par2cmdline.cpp src/par2cmdline.h \
+	src/commandline.cpp src/commandline.h \
+	src/crc.cpp src/crc.h \
+	src/creatorpacket.cpp src/creatorpacket.h \
+	src/criticalpacket.cpp src/criticalpacket.h \
+	src/datablock.cpp src/datablock.h \
+	src/descriptionpacket.cpp src/descriptionpacket.h \
+	src/diskfile.cpp src/diskfile.h \
+	src/filechecksummer.cpp src/filechecksummer.h \
+	src/galois.cpp src/galois.h \
+	src/letype.h \
+	src/mainpacket.cpp src/mainpacket.h \
+	src/md5.cpp src/md5.h \
+	src/par1fileformat.cpp src/par1fileformat.h \
+	src/par1repairer.cpp src/par1repairer.h \
+	src/par1repairersourcefile.cpp src/par1repairersourcefile.h \
+	src/par2creator.cpp src/par2creator.h \
+	src/par2creatorsourcefile.cpp src/par2creatorsourcefile.h \
+	src/par2fileformat.cpp src/par2fileformat.h \
+	src/par2repairer.cpp src/par2repairer.h \
+	src/par2repairersourcefile.cpp src/par2repairersourcefile.h \
+	src/recoverypacket.cpp src/recoverypacket.h \
+	src/reedsolomon.cpp src/reedsolomon.h \
+	src/verificationhashtable.cpp src/verificationhashtable.h \
+	src/verificationpacket.cpp src/verificationpacket.h
 
 LDADD = -lstdc++
 AM_CXXFLAGS = -Wall $(OPENMP_CXXFLAGS)
 
 EXTRA_DIST = PORTING ROADMAP par2cmdline.sln par2cmdline.vcproj \
-						 par2.1 \
+						 man/par2.1 \
 						 tests/flatdata.tar.gz \
 						 tests/flatdata-par1files.tar.gz \
 						 tests/flatdata-par2files.tar.gz \
