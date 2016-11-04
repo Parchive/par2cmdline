@@ -5,29 +5,29 @@
 par2 \- PAR 2.0 compatible file verification and repair tool.
 .SH SYNOPSIS
 .B par2 c|v|r
-.RI "[options] <" "par2 file" "> [" "files" "]"
+.RI "[options] <" "PAR2 file" "> [" "files" "]"
 .br
 
 .B par2 c(reate)
-.RI "[options] <" "par2 file" "> [" "files" "]"
+.RI "[options] <" "PAR2 file" "> [" "files" "]"
 .br
 .B par2 v(erify)
-.RI "[options] <" "par2 file" "> [" "files" "]"
+.RI "[options] <" "PAR2 file" "> [" "files" "]"
 .br
 .B par2 r(epair)
-.RI "[options] <" "par2 file" "> [" "files" "]"
+.RI "[options] <" "PAR2 file" "> [" "files" "]"
 .br
 
 Also:
 .br
 .B par2create
-.RI "[options] <" "par2 file" "> [" "files" "]"
+.RI "[options] <" "PAR2 file" "> [" "files" "]"
 .br
 .B par2verify
-.RI "[options] <" "par2 file" "> [" "files" "]"
+.RI "[options] <" "PAR2 file" "> [" "files" "]"
 .br
 .B par2repair
-.RI "[options] <" "par2 file" "> [" "files" "]"
+.RI "[options] <" "PAR2 file" "> [" "files" "]"
 .br
 .SH DESCRIPTION
 par2cmdline is a program for creating and using PAR2 files to detect damage in data files and repair them if necessary. It can be used with any kind of file.
@@ -43,7 +43,7 @@ Show version
 Show version and copyright
 .TP
 .BI "\-a <" "file" ">"
-Set the main par2 archive name; required on create, optional for verify and repair
+Set the main PAR2 archive name; required on create, optional for verify and repair
 .TP
 .B \-b<n>
 Set the Block\(hyCount
@@ -97,7 +97,7 @@ Skip leaway (distance +/\- from expected block position)
 Set the basepath to use as reference for the datafiles
 .TP
 .B \-\-
-Treat all remaining command line as filenames
+Treat all following arguments as filenames
 .SH AUTHORS
 Peter Brian Clements <peterbclements@users.sourceforge.net>
 .br

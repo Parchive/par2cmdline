@@ -14,7 +14,7 @@ This is also the place for details on the PAR 2.0 specification and discussion o
 
 par2cmdline is a program for creating and using PAR2 files to detect damage in data files and repair them if necessary. It can be used with any kind of file.
 
-##Why is par 2.0 better than par 1.0?
+##Why is PAR 2.0 better than PAR 1.0?
 
  * It is not necessary to split a single large file into many equal-sized small files (although you can still do so if you wish).
 
@@ -32,7 +32,7 @@ par2cmdline is a program for creating and using PAR2 files to detect damage in d
 
  * PAR 2.0 requires less recovery data to provide the same level of  protection from damage compared with PAR 1.0.
 
-##Does par 2.0 have any disadvantages?
+##Does PAR 2.0 have any disadvantages?
 
 Yes, there is one disadvantage:
 
@@ -68,29 +68,29 @@ The command line parameters for par2cmdline are as follow:
     par2 -V  : show version
     par2 -VV : show version and copyright
 
-    par2 c(reate) [options] <par2 file> [files]
-    par2 v(erify) [options] <par2 file> [files]
-    par2 r(epair) [options] <par2 file> [files]
+    par2 c(reate) [options] <PAR2 file> [files]
+    par2 v(erify) [options] <PAR2 file> [files]
+    par2 r(epair) [options] <PAR2 file> [files]
 
   Also:
 
-    par2create [options] <par2 file> [files]
-    par2verify [options] <par2 file> [files]
-    par2repair [options] <par2 file> [files]
+    par2create [options] <PAR2 file> [files]
+    par2verify [options] <PAR2 file> [files]
+    par2repair [options] <PAR2 file> [files]
 
   Options:
 
-    -a<file> : Set the main par2 archive name
+    -a<file> : Set the main PAR2 archive name
                required on create, optional for verify and repair
     -b<n>    : Set the Block-Count
-    -s<n>    : Set the Block-Size (Don't use both -b and -s)
-    -r<n>    : Level of Redundancy (%)
+    -s<n>    : Set the Block-Size (don't use both -b and -s)
+    -r<n>    : Level of redundancy (%)
     -r<c><n> : Redundancy target size, <c>=g(iga),m(ega),k(ilo) bytes
     -c<n>    : Recovery block count (don't use both -r and -c)
     -f<n>    : First Recovery-Block-Number
     -u       : Uniform recovery file sizes
-    -l       : Limit size of recovery files (Don't use both -u and -l)
-    -n<n>    : Number of recovery files (Don't use both -n and -l)
+    -l       : Limit size of recovery files (don't use both -u and -l)
+    -n<n>    : Number of recovery files (don't use both -n and -l)
     -m<n>    : Memory (in MB) to use
     -v [-v]  : Be more verbose
     -q [-q]  : Be more quiet (-qq gives silence)
@@ -100,13 +100,13 @@ The command line parameters for par2cmdline are as follow:
     -N       : data skipping (find badly mispositioned data blocks)
     -S<n>    : Skip leaway (distance +/- from expected block position)
     -B<path> : Set the basepath to use as reference for the datafiles
-    --       : Treat all remaining CommandLine as filenames
+    --       : Treat all following arguments as filenames
 
-If you wish to create par2 files for a single source file, you may leave out the name of the par2 file from the command line. par2cmdline will then assume that you wish to base the filenames for the par2 files on the name of the source file.
+If you wish to create PAR2 files for a single source file, you may leave out the name of the PAR2 file from the command line. par2cmdline will then assume that you wish to base the filenames for the PAR2 files on the name of the source file.
 
 You may also leave off the .par2 file extension when verifying and repairing.
 
-##Creating par2 files
+##Creating PAR2 files
 
 With PAR 2.0 you can create PAR2 recovery files for as few as 1 or as many as 32768 files. If you wanted to create PAR1 recovery files for a single file you were forced to split the file into muliple parts and RAR was frequently used for this purpose. You do NOT need to split files with PAR 2.0.
 
@@ -114,7 +114,7 @@ To create PAR 2 recovery files for a single data file (e.g. one called *test.mpg
 
     par2 create test.mpg.par2 test.mpg
 
-If *test.mpg* is an 800 MB file, then this will create a total of 8 PAR2 files with the following filenames (taking roughly 6 minutes on a PC with a 1500MHz CPU):
+If *test.mpg* is an 800 MB file, then this will create a total of 8 PAR2 files with the following filenames (taking roughly 6 minutes on a PC with a 1500 MHz CPU):
 
     test.mpg.par2          - This is an index file for verification only
     test.mpg.vol00+01.par2 - Recovery file with 1 recovery block
@@ -127,7 +127,7 @@ If *test.mpg* is an 800 MB file, then this will create a total of 8 PAR2 files w
 
 The *test.mpg.par2* file is 39 KB in size and the other files vary in size from 443 KB to 15 MB.
 
-These par2 files will enable the recovery of up to 100 errors totalling 40 MB of lost or damaged data from the original *test.mpg* file when it and the par2 files are posted on UseNet.
+These PAR2 files will enable the recovery of up to 100 errors totalling 40 MB of lost or damaged data from the original *test.mpg* file when it and the PAR2 files are posted on UseNet.
 
 When posting on UseNet it is recommended that you use the `-s` option to set a blocksize that is equal to the Article size that you will use to post the data file. If you wanted to post the test.mpg file using an article size of 300 KB then the command you would type is:
 
@@ -141,7 +141,7 @@ To create 10% recovery data instead of the default of 5% and also to use a block
 
     par2 create -s307200 -r10 test.mpg.par2 test.mpg
 
-This would also create 9 PAR2 files, but they would be able to correct up to 269 errors totalling 80 MB. Since twice as much recovery data is created, it will take about 16 minutes to do so with a 1500MHz CPU.
+This would also create 9 PAR2 files, but they would be able to correct up to 269 errors totalling 80 MB. Since twice as much recovery data is created, it will take about 16 minutes to do so with a 1500 MHz CPU.
 
 The `-u` and `-n` options can be used to control exactly how many recovery files are created and how the recovery blocks are distributed among them. They do not affect the total quantity of recovery data created.
 
@@ -153,13 +153,13 @@ This specifies the same block size (which is a requirement for additional recove
 
 The `-m` option controls how much memory par2cmdline uses. It defaults to 16 MB unless you override it.
 
-When creating PAR2 recovery files you might want to fill up a "medium" like a DVD or a Blu-Ray. Therefore we can set the target size of the recovery files by issuing the following command:
+When creating PAR2 recovery files you might want to fill up a storage medium like a DVD or a Blu-Ray. Therefore we can set the target size of the recovery files by issuing the following command:
 
     par2 create -rm200 recovery.par2 *
 
-It makes no sense to set an insanely high recovery size. The command will make that the resulting sum of the par2 files approaches the requested size. It is an estimate so don't go too crazy.
+It makes no sense to set an insanely high recovery size. The command will make that the resulting sum of the PAR2 files approaches the requested size. It is an estimate so don't go too crazy.
 
-##Creating par2 files for multiple data files
+##Creating PAR2 files for multiple data files
 
 When creating PAR2 recovery files from multiple data files, you must specify the base filename to use for the par2 files and the names of all of the data files.
 
@@ -167,19 +167,17 @@ If *test.mpg* had been split into multiple RAR files, then you could use:
 
     par2 create test.mpg.rar.par2 test.mpg.part*.rar
 
-The filename _test.mpg.rar.par2_ states what you want the par2 files to be called and _test.mpg.part*.rar_ should select all of the RAR files.
+The filename _test.mpg.rar.par2_ states what you want the PAR2 files to be called and _test.mpg.part*.rar_ should select all of the RAR files.
 
 ##Verifying and repairing
 
-When using par2 recovery files to verify or repair the data files from which they were created, you only need to specify the filename of one of the par2 files to par2cmdline.
-
-e.g.:
+When using PAR2 recovery files to verify or repair the data files from which they were created, you only need to specify the filename of one of the PAR2 files to par2cmdline:
 
     par2 verify test.mpg.par2
 
 This tells par2cmdline to use the information in _test.mpg.par2_ to verify the data files.
 
-par2cmdline will automatically search for the other par2 files that were created and use the information they contain to determine the filenames of the original data files and then to verify them.
+par2cmdline will automatically search for the other PAR2 files that were created and use the information they contain to determine the filenames of the original data files and then to verify them.
 
 If all of the data files are OK, then par2cmdline will report that repair will not be required.
 
@@ -215,7 +213,7 @@ You can have par2cmdline scan all files that are in the current directory using 
 
 If par2cmdline determines that any of the data files are damaged or missing and finds that there is insufficient recovery data to effect a repair, you will be told that you need a certain number of recovery blocks. You can obtain these by downloading additional recovery files.
 
-In order to make things easy, par2 files have filenames that tell you exactly how many recovery blocks each one contains.
+In order to make things easy, PAR2 files have filenames that tell you exactly how many recovery blocks each one contains.
 
 Assuming that the following command was used to create recovery data:
 
