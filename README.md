@@ -16,7 +16,7 @@ par2cmdline is a program for creating and using PAR2 files to detect damage in d
 
 ##Why is par 2.0 better than par 1.0?
 
- * It is not necessary to split a single large file into many equally size small files (although you can still do so if you wish).
+ * It is not necessary to split a single large file into many equal-sized small files (although you can still do so if you wish).
 
  * There is no loss of efficiency when operating on multiple files of different sizes.
 
@@ -145,7 +145,7 @@ This would also create 9 PAR2 files, but they would be able to correct up to 269
 
 The `-u` and `-n` options can be used to control exactly how many recovery files are created and how the recovery blocks are distributed among them. They do not affect the total quantity of recovery data created.
 
-The `-f` option is used when you create additional recovery data e.g. if you have already created 10% and want another 5% then you migh use the following command:
+The `-f` option is used when you create additional recovery data e.g. if you have already created 10% and want another 5% then you might use the following command:
 
     par2 create -s307200 -r5 -f300 test.mpg.par2 test.mpg
 
@@ -157,7 +157,7 @@ When creating PAR2 recovery files you might want to fill up a "medium" like a DV
 
     par2 create -rm200 recovery.par2 *
 
-It makes no sense to set a insanely high recovery size. The command will make that the resulting sum of the par2 files approaches the requested size. It is an estimate so don't go to crazy.
+It makes no sense to set an insanely high recovery size. The command will make that the resulting sum of the par2 files approaches the requested size. It is an estimate so don't go too crazy.
 
 ##Creating par2 files for multiple data files
 
@@ -237,8 +237,8 @@ Each of the other files contains a different number of recovery blocks. The numb
 
 If par2cmdline told you that you needed 10 recovery blocks, then you would need *test.mpg.vol01+02.par2* and *test.mpg.vol07+08.par*. You might of course choose to fetch *test.mpg.vol15+16.par2* instead (in which case you would have an extra 6 recovery blocks which would not be used for the repair).
 
-##Reed Solomon Coding
+##Reed-Solomon Coding
 
-PAR2 uses Reed Solomon Coding to perform its calculations. For details of this coding technique try the following link:
+PAR2 uses Reed-Solomon Coding to perform its calculations. For details of this coding technique try the following link:
 
 [**A Tutorial on Reed-Solomon Coding for Fault-Tolerance in RAID-like Systems**](http://web.eecs.utk.edu/~plank/plank/papers/CS-96-332.html)
