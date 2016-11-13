@@ -29,7 +29,7 @@ class CommandLine
 public:
   CommandLine(void);
 
-  // Parse the supplied command line arguments. 
+  // Parse the supplied command line arguments.
   bool Parse(int argc, char *argv[]);
 
   static void showversion(void);
@@ -116,13 +116,13 @@ public:
   u64                                 GetSkipLeaway(void) const  {return skipleaway;}
 
 protected:
-  void                         SetParFilename(string filename);
+  bool                         SetParFilename(string filename);
   Operation operation;         // The operation to be carried out.
   Version version;             // What version files will be processed.
 
   NoiseLevel noiselevel;       // How much display output should there be.
 
-  u32 blockcount;              // How many blocks the source files should 
+  u32 blockcount;              // How many blocks the source files should
                                // be virtually split into.
 
   u64 blocksize;               // What virtual block size to use.

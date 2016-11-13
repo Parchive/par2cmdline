@@ -267,15 +267,22 @@ bool CommandLine::Parse(int argc, char *argv[])
             if (operation == opCreate)
             {
               string str = argv[0];
+              bool setparfile = false;
               if (str == "-a")
               {
-                SetParFilename(argv[1]);
+                setparfile = SetParFilename(argv[1]);
                 argc--;
                 argv++;
               }
               else
               {
-                SetParFilename(str.substr(2));
+                setparfile = SetParFilename(str.substr(2));
+              }
+
+              if (! setparfile)
+              {
+                cerr << "failed to set the main par file" << endl;
+                return false;
               }
             }
           }
@@ -770,15 +777,12 @@ bool CommandLine::Parse(int argc, char *argv[])
       else if (parfilename.length() == 0)
       {
         string filename = argv[0];
-        string::size_type where;
-        if ((where = filename.find_first_of('*')) != string::npos ||
-            (where = filename.find_first_of('?')) != string::npos)
+        bool setparfile = SetParFilename(filename);
+        if (! setparfile)
         {
-          cerr << "par2 file must not have a wildcard in it." << endl;
+          cerr << "failed to set the main par file" << endl;
           return false;
         }
-
-        SetParFilename(filename);
       }
       else
       {
@@ -984,9 +988,17 @@ bool CommandLine::Parse(int argc, char *argv[])
   return true;
 }
 
-void CommandLine::SetParFilename(string filename)
+bool CommandLine::SetParFilename(string filename)
 {
-  parfilename = DiskFile::GetCanonicalPathname(filename);
+  bool result = false;
+  string::size_type where;
+
+  if ((where = filename.find_first_of('*')) != string::npos ||
+      (where = filename.find_first_of('?')) != string::npos)
+  {
+    cerr << "par2 file must not have a wildcard in it." << endl;
+    return result;
+  }
 
   // If we are verifying or repairing, the PAR2 file must
   // already exist
@@ -1013,6 +1025,10 @@ void CommandLine::SetParFilename(string filename)
         parfilename = filename;
         version = verPar1;
       }
+
+      if (DiskFile::FileExists(filename)) {
+        result = true;
+      }
     }
 
     // If we haven't figured out which version of PAR file we
@@ -1025,34 +1041,34 @@ void CommandLine::SetParFilename(string filename)
       {
         version = verPar2;
         parfilename = filename + ".par2";
+        result = true;
       }
       else if (DiskFile::FileExists(filename + ".PAR2"))
       {
         version = verPar2;
         parfilename = filename + ".PAR2";
+        result = true;
       }
       else if (DiskFile::FileExists(filename + ".par"))
       {
         version = verPar1;
         parfilename = filename + ".par";
+        result = true;
       }
       else if (DiskFile::FileExists(filename + ".PAR"))
       {
         version = verPar1;
         parfilename = filename + ".PAR";
-      }
-    }
-    else
-    {
-      // Does the specified PAR or PAR2 file exist
-      if (!DiskFile::FileExists(filename))
-      {
-        version = verUnknown;
+        result = true;
       }
     }
   }
   else
   {
+    parfilename = DiskFile::GetCanonicalPathname(filename);
     version = verPar2;
+    result = true;
   }
+
+  return result;
 }
