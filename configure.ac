@@ -1,9 +1,9 @@
 dnl  This file is part of par2cmdline (a PAR 2.0 compatible file verification and
 dnl  repair tool). See http://parchive.sourceforge.net for details of PAR 2.0.
 dnl
-dnl  Copyright (c) 2003 Peter Brian Clements
+dnl  Copyright (c) 2003-2015 Peter Brian Clements
 dnl  Copyright (c) 2011-2012 Marcel Partap
-dnl  Copyright (c) 2012-2014 Ike Devolder
+dnl  Copyright (c) 2012-2015 Ike Devolder
 dnl
 dnl  par2cmdline is free software; you can redistribute it and/or modify
 dnl  it under the terms of the GNU General Public License as published by
@@ -22,10 +22,8 @@ dnl                                               -*- Autoconf -*-
 dnl Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.62)
-AC_INIT([par2cmdline-mt], [0.6.11-mt2], [jussi.kansanen@gmail.com])
+AC_INIT([par2cmdline-mt], [0.6.14-mt1], [jussi.kansanen@gmail.com])
 AC_CONFIG_SRCDIR([par2cmdline.cpp])
-
-
 
 AC_CANONICAL_HOST
 

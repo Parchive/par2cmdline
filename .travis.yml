@@ -1,0 +1,18 @@
+# Enable C++ support
+language: cpp
+# OS selection
+os:
+  - linux
+  - osx
+# Compiler selection
+compiler:
+  - clang
+  - gcc
+# Build steps
+script:
+  - aclocal
+  - automake --add-missing
+  - autoconf
+  - ./configure
+  - make
+  - make check

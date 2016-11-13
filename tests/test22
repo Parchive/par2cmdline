@@ -1,0 +1,34 @@
+#!/bin/sh
+
+cd tests || { echo "ERROR: Could not change to tests directory" ; exit 1; } >&2
+tests=$PWD
+
+testname=$(basename $0)
+rm -f $testname.log
+rm -rf run$testname
+
+mkdir run$testname && cd run$testname || { echo "ERROR: Could not change to test directory" ; exit 1; } >&2
+
+faraway="$PWD/in/a/folder/far/far/away"
+
+mkdir -p "$faraway" || { echo "ERROR: Could not create fancy folder" ; exit 1; } >&2
+mkdir rundir
+
+tar -xf ../flatdata.tar.gz -C "$faraway" || { echo "ERROR: Could not extract data test files" ; exit 1; } >&2
+
+banner="par2 can be run from any starting dir"
+dashes=`echo "$banner" | sed s/./-/g`
+
+echo $dashes
+echo $banner
+echo $dashes
+
+cd rundir
+
+../../../par2 c -r2 -B"$faraway" "$faraway"/test.par2 "$faraway"/*.data > $tests/$testname.log || { echo "ERROR: create of PAR 2.0 files failed" ; exit 1; } >&2
+
+cd ../..
+rm -rf run$testname
+
+exit 0;
+

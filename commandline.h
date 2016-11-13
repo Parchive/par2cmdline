@@ -108,10 +108,12 @@ public:
   CommandLine::NoiseLevel GetNoiseLevel(void) const        {return noiselevel;}
 
   string                              GetParFilename(void) const {return parfilename;}
-  string                              GetBasePath(void) const {return basepath;}
+  string                              GetBasePath(void) const    {return basepath;}
   const list<CommandLine::ExtraFile>& GetExtraFiles(void) const  {return extrafiles;}
   bool                                GetPurgeFiles(void) const  {return purgefiles;}
-  bool                                GetRecursive(void) const  {return recursive;}
+  bool                                GetRecursive(void) const   {return recursive;}
+  bool                                GetSkipData(void) const    {return skipdata;}
+  u64                                 GetSkipLeaway(void) const  {return skipleaway;}
 
 protected:
   void                         SetParFilename(string filename);
@@ -165,6 +167,13 @@ protected:
   bool purgefiles;             // purge backup and par files on success
                                // recovery
   bool recursive;              // recurse into subdirectories
+
+  bool skipdata;               // Whether we should assume that all good
+                               // data blocks are within +/- bytes of
+                               // where we expect to find them and should
+                               // skip data that is too far away.
+  u64 skipleaway;              // The maximum leaway +/- that we will
+                               // allow when searching for blocks.
 };
 
 typedef list<CommandLine::ExtraFile>::const_iterator ExtraFileIterator;

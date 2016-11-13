@@ -429,7 +429,7 @@ bool Par2Creator::ComputeRecoveryFileCount(void)
     recoveryfilecount = 0;
     return true;
   }
- 
+
   switch (recoveryfilescheme)
   {
   case CommandLine::scUnknown:
@@ -453,7 +453,7 @@ bool Par2Creator::ComputeRecoveryFileCount(void)
           recoveryfilecount++;
         }
       }
-  
+
       if (recoveryfilecount > recoveryblockcount)
       {
         // You cannot have move recovery files that there are recovery blocks
@@ -556,7 +556,7 @@ bool Par2Creator::CreateSourceBlocks(void)
   sourceblocks.resize(sourceblockcount);
 
   vector<DataBlock>::iterator sourceblock = sourceblocks.begin();
-  
+
   for (vector<Par2CreatorSourceFile*>::iterator sourcefile = sourcefiles.begin();
        sourcefile!= sourcefiles.end();
        sourcefile++)
@@ -573,7 +573,7 @@ bool Par2Creator::CreateSourceBlocks(void)
 class FileAllocation
 {
 public:
-  FileAllocation(void) 
+  FileAllocation(void)
   {
     filename = "";
     exponent = 0;
@@ -658,7 +658,7 @@ bool Par2Creator::InitialiseOutputFiles(string par2filename)
           u32 largest = (u32)((largestfilesize + blocksize-1) / blocksize);
           u32 filenumber = recoveryfilecount;
           u32 blocks = recoveryblockcount;
-         
+
           exponent = firstrecoveryblock + recoveryblockcount;
 
           // Allocate uniformly at the top
@@ -692,13 +692,13 @@ bool Par2Creator::InitialiseOutputFiles(string par2filename)
         break;
       }
     }
-     
+
      // There will be an extra file with no recovery blocks.
     fileallocations[recoveryfilecount].exponent = exponent;
     fileallocations[recoveryfilecount].count = 0;
 
     // Determine the format to use for filenames of recovery files
-    char filenameformat[300];
+    char filenameformat[_MAX_PATH];
     {
       u32 limitLow = 0;
       u32 limitCount = 0;
@@ -719,7 +719,7 @@ bool Par2Creator::InitialiseOutputFiles(string par2filename)
       {
         digitsLow++;
       }
-      
+
       u32 digitsCount = 1;
       for (u32 t=limitCount; t>=10; t/=10)
       {
@@ -732,7 +732,7 @@ bool Par2Creator::InitialiseOutputFiles(string par2filename)
     // Set the filenames
     for (u32 filenumber=0; filenumber<recoveryfilecount; filenumber++)
     {
-      char filename[300];
+      char filename[_MAX_PATH];
       snprintf(filename, sizeof(filename), filenameformat, par2filename.c_str(), fileallocations[filenumber].exponent, fileallocations[filenumber].count);
       fileallocations[filenumber].filename = filename;
     }
@@ -767,8 +767,8 @@ bool Par2Creator::InitialiseOutputFiles(string par2filename)
 
           while (nextCriticalPacket != criticalpackets.end())
           {
-            criticalpacketentries.push_back(CriticalPacketEntry(&*recoveryfile, 
-                                                                offset, 
+            criticalpacketentries.push_back(CriticalPacketEntry(&*recoveryfile,
+                                                                offset,
                                                                 *nextCriticalPacket));
             offset += (*nextCriticalPacket)->PacketLength();
 
@@ -807,7 +807,7 @@ bool Par2Creator::InitialiseOutputFiles(string par2filename)
             while (packetCount >= count)
             {
               if (nextCriticalPacket == criticalpackets.end()) nextCriticalPacket = criticalpackets.begin();
-              criticalpacketentries.push_back(CriticalPacketEntry(&*recoveryfile, 
+              criticalpacketentries.push_back(CriticalPacketEntry(&*recoveryfile,
                                                                   offset,
                                                                   *nextCriticalPacket));
               offset += (*nextCriticalPacket)->PacketLength();
@@ -819,8 +819,8 @@ bool Par2Creator::InitialiseOutputFiles(string par2filename)
         }
 
         // Add one copy of the creator packet
-        criticalpacketentries.push_back(CriticalPacketEntry(&*recoveryfile, 
-                                                            offset, 
+        criticalpacketentries.push_back(CriticalPacketEntry(&*recoveryfile,
+                                                            offset,
                                                             creatorpacket));
         offset += creatorpacket->PacketLength();
 
@@ -860,8 +860,8 @@ bool Par2Creator::ComputeRSMatrix(void)
     return false;
 
   // Set the number of output blocks to be created
-  if (!rs.SetOutput(false, 
-                    (u16)firstrecoveryblock, 
+  if (!rs.SetOutput(false,
+                    (u16)firstrecoveryblock,
                     (u16)firstrecoveryblock + (u16)(recoveryblockcount-1)))
     return false;
 
@@ -1024,8 +1024,8 @@ bool Par2Creator::FinishCriticalPackets(void)
   // Get the setid from the main packet
   const MD5Hash &setid = mainpacket->SetId();
 
-  for (list<CriticalPacket*>::iterator criticalpacket=criticalpackets.begin(); 
-       criticalpacket!=criticalpackets.end(); 
+  for (list<CriticalPacket*>::iterator criticalpacket=criticalpackets.begin();
+       criticalpacket!=criticalpackets.end();
        criticalpacket++)
   {
     // Store the setid in each of the critical packets

@@ -75,6 +75,8 @@ CommandLine::CommandLine(void)
 , memorylimit(0)
 , purgefiles(false)
 , recursive(false)
+, skipdata(false)
+, skipleaway(0)
 {
 }
 
@@ -86,10 +88,10 @@ void CommandLine::showversion(void)
 
 void CommandLine::banner(void)
 {
-  cout << "Copyright (C) 2003 Peter Brian Clements." << endl
+  cout << "Copyright (C) 2003-2015 Peter Brian Clements." << endl
     << "Copyright (C) 2011-2012 Marcel Partap." << endl
-    << "Copyright (C) 2012-2014 Ike Devolder." << endl
-    << "Copyright (C) 2014 Jussi Kansanen." << endl
+    << "Copyright (C) 2012-2015 Ike Devolder." << endl
+    << "Copyright (C) 2014-2016 Jussi Kansanen." << endl
     << endl
     << "par2cmdline-mt comes with ABSOLUTELY NO WARRANTY." << endl
     << endl
@@ -102,31 +104,31 @@ void CommandLine::banner(void)
 
 void CommandLine::usage(void)
 {
-  cout << 
+  cout <<
     "Usage:\n"
     "  par2 -h  : show this help\n"
     "  par2 -V  : show version\n"
     "  par2 -VV : show version and copyright\n"
     "\n"
-    "  par2 c(reate) [options] <par2 file> [files] : Create PAR2 files\n"
-    "  par2 v(erify) [options] <par2 file> [files] : Verify files using PAR2 file\n"
-    "  par2 r(epair) [options] <par2 file> [files] : Repair files using PAR2 files\n"
+    "  par2 c(reate) [options] <PAR2 file> [files] : Create PAR2 files\n"
+    "  par2 v(erify) [options] <PAR2 file> [files] : Verify files using PAR2 file\n"
+    "  par2 r(epair) [options] <PAR2 file> [files] : Repair files using PAR2 files\n"
     "\n"
     "You may also leave out the \"c\", \"v\", and \"r\" commands by using \"par2create\",\n"
     "\"par2verify\", or \"par2repair\" instead.\n"
     "\n"
     "Options:\n"
     "\n"
-    "  -a<file> : Set the main par2 archive name\n"
+    "  -a<file> : Set the main PAR2 archive name\n"
     "  -b<n>    : Set the Block-Count\n"
-    "  -s<n>    : Set the Block-Size (Don't use both -b and -s)\n"
-    "  -r<n>    : Level of Redundancy (%%)\n"
+    "  -s<n>    : Set the Block-Size (don't use both -b and -s)\n"
+    "  -r<n>    : Level of redundancy (%%)\n"
     "  -r<c><n> : Redundancy target size, <c>=g(iga),m(ega),k(ilo) bytes\n"
     "  -c<n>    : Recovery block count (Don't use both -r and -c)\n"
     "  -f<n>    : First Recovery-Block-Number\n"
     "  -u       : Uniform recovery file sizes\n"
-    "  -l       : Limit size of recovery files (Don't use both -u and -l)\n"
-    "  -n<n>    : Number of recovery files (Don't use both -n and -l)\n"
+    "  -l       : Limit size of recovery files (don't use both -u and -l)\n"
+    "  -n<n>    : Number of recovery files (don't use both -n and -l)\n"
     "  -m<n>    : Memory (in MB) to use\n";
 #ifdef _OPENMP
   cout <<
@@ -138,7 +140,10 @@ void CommandLine::usage(void)
     "  -p       : Purge backup files and par files on successful recovery or\n"
     "             when no recovery is needed\n"
     "  -R       : Recurse into subdirectories (only useful on create)\n"
-    "  --       : Treat all remaining CommandLine as filenames\n"
+    "  -N       : data skipping (find badly mispositioned data blocks)\n"
+    "  -S<n>    : Skip leaway (distance +/- from expected block position)\n"
+    "  -B<path> : Set the basepath to use as reference for the datafiles\n"
+    "  --       : Treat all following arguments as filenames\n"
     "\n";
 }
 
@@ -154,6 +159,8 @@ bool CommandLine::Parse(int argc, char *argv[])
   DiskFile::SplitFilename(argv[0], path, name);
   argc--;
   argv++;
+
+  basepath = DiskFile::GetCanonicalPathname("./");
 
   if (argc>0)
   {
@@ -177,8 +184,7 @@ bool CommandLine::Parse(int argc, char *argv[])
           }
           return true;
         case '-':
-          string str = argv[0];
-          if (str == "--help")
+          if (0 == stricmp(argv[0], "--help"))
           {
             usage();
             return true;
@@ -198,7 +204,7 @@ bool CommandLine::Parse(int argc, char *argv[])
   if (0 == stricmp("par2create", name.c_str()))
   {
     operation = opCreate;
-  } 
+  }
   else if (0 == stricmp("par2verify", name.c_str()))
   {
     operation = opVerify;
@@ -291,7 +297,7 @@ bool CommandLine::Parse(int argc, char *argv[])
               cerr << "Cannot specify both block count and block size." << endl;
               return false;
             }
-            
+
             char *p = &argv[0][2];
             while (blockcount <= 3276 && *p && isdigit(*p))
             {
@@ -687,6 +693,69 @@ bool CommandLine::Parse(int argc, char *argv[])
           }
           break;
 
+        case 'N':
+          {
+            if (operation == opCreate)
+            {
+              cerr << "Cannot specify Data Skipping unless reparing or verifying." << endl;
+              return false;
+            }
+            skipdata = true;
+          }
+          break;
+
+        case 'S':  // Set the skip leaway
+          {
+            if (operation == opCreate)
+            {
+              cerr << "Cannot specify skip leaway when creating." << endl;
+              return false;
+            }
+            if (!skipdata)
+            {
+              cerr << "Cannot specify skip leaway and no skipping." << endl;
+              return false;
+            }
+
+            char *p = &argv[0][2];
+            while (skipleaway <= 429496729 && *p && isdigit(*p))
+            {
+              skipleaway = skipleaway * 10 + (*p - '0');
+              p++;
+            }
+            if (*p || skipleaway == 0)
+            {
+              cerr << "Invalid skipleaway option: " << argv[0] << endl;
+              return false;
+            }
+          }
+          break;
+
+        case 'B': // Set the basepath manually
+          {
+            string str = argv[0];
+            if (str == "-B")
+            {
+              basepath = DiskFile::GetCanonicalPathname(argv[1]);
+              argc--;
+              argv++;
+            }
+            else
+            {
+              basepath = DiskFile::GetCanonicalPathname(str.substr(2));
+            }
+            string lastchar = basepath.substr(basepath.length() -1);
+            if ("/" != lastchar && "\\" != lastchar)
+            {
+#ifdef WIN32
+              basepath = basepath + "\\";
+#else
+              basepath = basepath + "/";
+#endif
+            }
+          }
+          break;
+
         case '-':
           {
             argc--;
@@ -723,7 +792,6 @@ bool CommandLine::Parse(int argc, char *argv[])
         string name;
         DiskFile::SplitFilename(argv[0], path, name);
         filenames = DiskFile::FindFiles(path, name, recursive);
-        string canonicalBasepath = DiskFile::GetCanonicalPathname(basepath);
 
         list<string>::iterator fn = filenames->begin();
         while (fn != filenames->end())
@@ -740,7 +808,7 @@ bool CommandLine::Parse(int argc, char *argv[])
             cout << "Ignoring non-existent source file: " << filename << endl;
           }
           // skip files outside basepath
-          else if (filename.find(canonicalBasepath) == string::npos)
+          else if (filename.find(basepath) == string::npos)
           {
                 cout << "Ignoring out of basepath source file: " << filename << endl;
           }
@@ -790,6 +858,16 @@ bool CommandLine::Parse(int argc, char *argv[])
   if (noiselevel == nlUnknown)
   {
     noiselevel = nlNormal;
+  }
+
+  // Default skip leaway
+  if (operation != opCreate
+      && skipdata
+      && skipleaway == 0)
+  {
+    // Expect to find blocks within +/- 64 bytes of the expected
+    // position relative to the last block that was found.
+    skipleaway = 64;
   }
 
   // If we a creating, check the other parameters
@@ -981,7 +1059,4 @@ void CommandLine::SetParFilename(string filename)
   {
     version = verPar2;
   }
-
-  string dummy;
-  DiskFile::SplitFilename(parfilename, basepath, dummy);
 }

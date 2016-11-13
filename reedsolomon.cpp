@@ -294,7 +294,7 @@ template<> bool ReedSolomon<Galois16>::InternalProcess(const Galois16 &factor, s
     *pL = *LL + *HL;
 #else
     unsigned int temp = *LL + *HL;
-    *pL = (temp >> 8) & 0xff | (temp << 8) & 0xff00;
+    *pL = ((temp >> 8) & 0xff) | ((temp << 8) & 0xff00);
 #endif
 
     pL++;
@@ -305,7 +305,7 @@ template<> bool ReedSolomon<Galois16>::InternalProcess(const Galois16 &factor, s
     *pH = *LH + *HH;
 #else
     temp = *LH + *HH;
-    *pH = (temp >> 8) & 0xff | (temp << 8) & 0xff00;
+    *pH = ((temp >> 8) & 0xff) | ((temp << 8) & 0xff00);
 #endif
 
     pH++;

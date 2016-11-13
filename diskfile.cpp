@@ -66,14 +66,14 @@ bool DiskFile::CreateParentDirectory(string _pathname)
       string::npos != (where = _pathname.find_last_of('\\')))
   {
     string path = filename.substr(0, where);
-   
+
     struct stat st;
     if (stat(path.c_str(), &st) == 0)
       return true; // let the caller deal with non-directories
-    
+
     if (!DiskFile::CreateParentDirectory(path))
       return false;
-    
+
     if (!CreateDirectory(path.c_str(), NULL))
     {
       DWORD error = ::GetLastError();
@@ -453,14 +453,14 @@ bool DiskFile::CreateParentDirectory(string _pathname)
       string::npos != (where = _pathname.find_last_of('\\')))
   {
     string path = filename.substr(0, where);
-   
+
     struct stat st;
     if (stat(path.c_str(), &st) == 0)
       return true; // let the caller deal with non-directories
-    
+
     if (!DiskFile::CreateParentDirectory(path))
       return false;
-    
+
     if (mkdir(path.c_str(), S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH))
     {
       cerr << "Could not create the " << path << " directory: " << strerror(errno) << endl;
@@ -654,8 +654,14 @@ string DiskFile::GetCanonicalPathname(string filename)
     return filename;
 
   // Get the current directory
+#ifdef PATH_MAX
   char curdir[PATH_MAX];
   if (0 == getcwd(curdir, sizeof(curdir)))
+#else
+  // Avoid unconditional use of PATH_MAX (not defined on hurd)
+  char *curdir = get_current_dir_name();
+  if (curdir == NULL)
+#endif
   {
     return filename;
   }
@@ -664,6 +670,9 @@ string DiskFile::GetCanonicalPathname(string filename)
   // Allocate a work buffer and copy the resulting full path into it.
   char *work = new char[strlen(curdir) + filename.size() + 2];
   strcpy(work, curdir);
+#ifndef PATH_MAX
+  free(curdir);
+#endif
   if (work[strlen(work)-1] != '/')
     strcat(work, "/");
   strcat(work, filename.c_str());
@@ -832,7 +841,7 @@ list<string>* DiskFile::FindFiles(string path, string wildcard, bool recursive)
       }
     }
   }
-  
+
   return matches;
 }
 
