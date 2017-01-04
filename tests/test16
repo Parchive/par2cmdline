@@ -6,7 +6,7 @@
 ######
 
 cd tests || { echo "ERROR: Could not change to tests directory" ; exit 1; } >&2
-tests=$(realpath .)
+tests=../../$srcdir/tests
 
 testname=$(basename $0)
 rm -f $testname.log
