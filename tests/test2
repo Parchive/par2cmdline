@@ -19,7 +19,7 @@ echo $dashes
 echo $banner
 echo $dashes
 
-../../par2 v testdata.par2 > $tests/$testname.log || { echo "ERROR: Initial PAR 2.0 verification failed" ; exit 1; } >&2
+../../par2 v testdata.par2 > ../$testname.log || { echo "ERROR: Initial PAR 2.0 verification failed" ; exit 1; } >&2
 
 cd ..
 rm -rf run$testname
