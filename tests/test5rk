@@ -1,0 +1,75 @@
+#!/bin/sh
+# This is a copy of test5 but using "-rk" instead of "-r100".
+# (This increases redundancy, but I'm missing system knowledge
+# to refactore the test core).
+
+# Couldn't we move the stuff common for all tests and maybe some
+# helper functions to a utility file and source it? For example:
+#   source testfuncs.sh
+
+cd tests || { echo "ERROR: Could not change to tests directory" ; exit 1; } >&2
+tests=../../$srcdir/tests
+
+testname=$(basename $0)
+rm -f $testname.log
+rm -rf run$testname
+
+mkdir run$testname && cd run$testname || { echo "ERROR: Could not change to test directory" ; exit 1; } >&2
+
+tar -xzf $tests/flatdata.tar.gz || { echo "ERROR: Could not extract data test files" ; exit 1; } >&2
+
+banner="Creating 100% PAR 2.0 recovery data"
+dashes=`echo "$banner" | sed s/./-/g`
+
+echo $dashes
+echo $banner
+echo $dashes
+
+# About the "magic -rk1302":
+# par2 c -r100 creates PAR2 files of in sum 1302436 bytes, so do
+# we approximately (-rk1302).
+# To also test ISSUE-80 (https://github.com/Parchive/par2cmdline/issues/80)
+# we also use "-n2".
+../../par2 c -rk1302 -b190 -n2 -a newtest test-*.data > ../$testname.log || { echo "ERROR: Creating PAR 2.0 data failed" ; exit 1; } >&2
+
+# Checking whether "-n2" worked by creating two newtest.vol*.par2 files
+# (and also tolerate newtest.VOL*.PAR2 as seen on Windows)
+test "$(ls newtest.[Vv][Oo][Ll]*.[Pp][Aa][Rr]2 | wc -l)" = "2" || { echo "ERROR: File count option -n2 did not work." ; exit 1; } >&2
+
+# Why not simply "mv"?
+#    for f in test-*.data; do mv "$f" "$f.orig"; done
+# Would save the cp, the rm and keep file date (may help debug).
+cp test-0.data test-0.data.orig
+cp test-1.data test-1.data.orig
+cp test-2.data test-2.data.orig
+cp test-3.data test-3.data.orig
+cp test-4.data test-4.data.orig
+cp test-5.data test-5.data.orig
+cp test-6.data test-6.data.orig
+cp test-7.data test-7.data.orig
+cp test-8.data test-8.data.orig
+cp test-9.data test-9.data.orig
+
+rm -f test-*.data
+
+test -e test-0.data && { echo "ERROR: File deletion did not work." ; exit 1; } >&2
+
+banner="Repairing 100% loss using PAR 2.0 data"
+dashes=`echo "$banner" | sed s/./-/g`
+
+echo $dashes
+echo $banner
+echo $dashes
+
+rm -f test-*.data
+
+../../par2 r newtest.par2 >> ../$testname.log || { echo "ERROR: Full Repair using PAR 2.0 failed" ; exit 1; } >&2
+
+#    for f in test-*.data; do cmp "$f" "$f.orig" || { echo XXX; exit 1; }; done
+cmp -s test-0.data test-0.data.orig && cmp -s test-1.data test-1.data.orig && cmp -s test-2.data test-2.data.orig && cmp -s test-3.data test-3.data.orig && cmp -s test-4.data test-4.data.orig && cmp -s test-5.data test-5.data.orig && cmp -s test-6.data test-6.data.orig && cmp -s test-7.data test-7.data.orig && cmp -s test-8.data test-8.data.orig && cmp -s test-9.data test-9.data.orig || { echo "ERROR: Repaired files do not match originals" ; exit 1 ; } >&2
+
+cd ..
+rm -rf run$testname
+
+exit 0;
+
