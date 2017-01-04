@@ -362,7 +362,11 @@ bool Par2Creator::ComputeRecoveryBlockCount(u32 redundancy, u64 redundancysize)
     }
     while(closest == false);
 
-    recoveryfilecount = 0;
+    // ComputeRecoveryFileCount() has been called before, so
+    // NO: recoveryfilecount = 0;
+    // Please note that recoveryfilecount can be set by command line,
+    // resetting it here would not be expected, see
+    // https://github.com/Parchive/par2cmdline/issues/80
   }
   else
   {

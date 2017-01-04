@@ -532,11 +532,7 @@ bool CommandLine::Parse(int argc, char *argv[])
               cerr << "Cannot specify recovery file count twice." << endl;
               return false;
             }
-            if (redundancyset && redundancy == 0)
-            {
-              cerr << "Cannot set file count when redundancy is set to 0." << endl;
-              return false;
-            }
+            // (Removed "Cannot set file count when redundancy is set to 0.")
             if (recoveryblockcountset && recoveryblockcount == 0)
             {
               cerr << "Cannot set file count when recovery block count is set to 0." << endl;
