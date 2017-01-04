@@ -8,6 +8,8 @@
 #   source testfuncs.sh
 
 cd tests || { echo "ERROR: Could not change to tests directory" ; exit 1; } >&2
+# Allow running test script directly on command line:
+test "$srcdir" || srcdir=.
 tests=../../$srcdir/tests
 
 testname=$(basename $0)
@@ -34,7 +36,7 @@ echo $dashes
 
 # Checking whether "-n2" worked by creating two newtest.vol*.par2 files
 # (and also tolerate newtest.VOL*.PAR2 as seen on Windows)
-test "$(ls newtest.[Vv][Oo][Ll]*.[Pp][Aa][Rr]2 | wc -l)" = "2" || { echo "ERROR: File count option -n2 did not work." ; exit 1; } >&2
+test "$(ls newtest.[Vv][Oo][Ll]*.[Pp][Aa][Rr]2 | wc -l)" -eq 2 || { echo "ERROR: File count option -n2 did not work." ; exit 1; } >&2
 
 # Why not simply "mv"?
 #    for f in test-*.data; do mv "$f" "$f.orig"; done
