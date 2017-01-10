@@ -26,7 +26,7 @@ par2cmdline is a program for creating and using PAR2 files to detect damage in d
 
  * Because damaged data files are still useable during the recovery process, less recovery data is required to achieve a successful repair. It is therefore not necessary to create as much recovery data in the first place to achieve the same level of protection.
 
- * You can protect up to 32768 files rather than the 256 that PAR 1.0 is limited to.
+ * You can protect up to 32,768 files rather than the 256 that PAR 1.0 is limited to.
 
  * Damaged or incomplete recovery files can also be used during the recovery process in the same way that damaged data files can.
 
@@ -108,7 +108,7 @@ You may also leave off the .par2 file extension when verifying and repairing.
 
 ##Creating PAR2 files
 
-With PAR 2.0 you can create PAR2 recovery files for as few as 1 or as many as 32768 files. If you wanted to create PAR1 recovery files for a single file you were forced to split the file into muliple parts and RAR was frequently used for this purpose. You do NOT need to split files with PAR 2.0.
+With PAR 2.0 you can create PAR2 recovery files for as few as 1 or as many as 32,768 files. If you wanted to create PAR1 recovery files for a single file you were forced to split the file into muliple parts and RAR was frequently used for this purpose. You do NOT need to split files with PAR 2.0.
 
 To create PAR 2 recovery files for a single data file (e.g. one called *test.mpg*), you can use the following command:
 

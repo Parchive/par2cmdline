@@ -36,7 +36,7 @@ WHY IS PAR 2.0 better than PAR 1.0?
    repair. It is therefore not necessary to create as much recovery
    data in the first place to achieve the same level of protection.
 
- * You can protect up to 32768 files rather than the 256 that PAR 1.0
+ * You can protect up to 32,768 files rather than the 256 that PAR 1.0
    is limited to.
 
  * Damaged or incomplete recovery files can also be used during the
@@ -134,7 +134,7 @@ You may also leave off the .par2 file extension when verifying and repairing.
 CREATING PAR2 FILES
 
 With PAR 2.0 you can create PAR2 recovery files for as few as 1 or as many as
-32768 files. If you wanted to create PAR1 recovery files for a single file
+32,768 files. If you wanted to create PAR1 recovery files for a single file
 you were forced to split the file into muliple parts and RAR was frequently
 used for this purpose. You do NOT need to split files with PAR 2.0.
 
