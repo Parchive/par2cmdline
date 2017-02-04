@@ -68,6 +68,7 @@ EXTRA_DIST = PORTING ROADMAP par2cmdline.sln par2cmdline.vcproj \
 						 tests/test3 \
 						 tests/test4 \
 						 tests/test5 \
+						 tests/test5rk \
 						 tests/test6 \
 						 tests/test7 \
 						 tests/test8 \
@@ -93,6 +94,7 @@ TESTS = tests/test1 \
 				tests/test3 \
 				tests/test4 \
 				tests/test5 \
+				tests/test5rk \
 				tests/test6 \
 				tests/test7 \
 				tests/test8 \
