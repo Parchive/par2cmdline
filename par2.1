@@ -98,6 +98,87 @@ Set the basepath to use as reference for the datafiles
 .TP
 .B \-\-
 Treat all following arguments as filenames
+.SH EXAMPLES
+With PAR 2.0 you can create PAR2 recovery files for as few as 1 or as many as 32768 files. If you wanted to create PAR1 recovery files for a single file you are forced to split the file into muliple parts and RAR is frequently used for this purpose. You do NOT need to split files with PAR 2.0.
+
+To create PAR 2 recovery files for a single data file (e.g. one called test.mpg), you can use the following command:
+
+  par2 create test.mpg
+
+If test.mpg is an 800 MB file, then this will create a total of 8 PAR2 files with the following filenames (taking roughly 6 minutes on a PC with a 1500MHz CPU):
+
+  test.mpg.par2 	 - This is an index file for verification only
+  test.mpg.vol00+01.par2 - Recovery file with 1 recovery block
+  test.mpg.vol01+02.par2 - Recovery file with 2 recovery blocks
+  test.mpg.vol03+04.par2 - Recovery file with 4 recovery blocks
+  test.mpg.vol07+08.par2 - Recovery file with 8 recovery blocks
+  test.mpg.vol15+16.par2 - Recovery file with 16 recovery blocks
+  test.mpg.vol31+32.par2 - Recovery file with 32 recovery blocks
+  test.mpg.vol63+37.par2 - Recovery file with 37 recovery blocks
+
+The test.mpg.par2 file is 39 KB in size and the other files vary in size from 443 KB to 15 MB. These par2 files will enable the recovery of up to 100 errors totalling 40 MB of lost or damaged data from the original test.mpg file when it and the par2 files are posted on UseNet. When posting on UseNet it is recommended that you use the "-s" option to set a blocksize that is equal to the Article size that you will use to post the data file. If you wanted to post the test.mpg file using an article size of 300 KB then the command you would type is:
+
+  par2 create -s307200 test.mpg
+
+This will create 9 PAR2 files instead of 8, and they will be capable of correcting up to 134 errors totalling 40 MB. It will take roughly 8 minutes to create the recovery files this time. In both of these two examples, the total quantity of recovery data created was 40 MB (which is 5% of 800 MB). If you wish to create a greater or lesser quantity of recovery data, you can use the "-r" option. To create 10% recovery data instead of the default of 5% and also to use a block size of 300 KB, you would use the following command:
+
+  par2 create -s307200 -r10 test.mpg
+
+This would also create 9 PAR2 files, but they would be able to correct up to 269 errors totalling 80 MB. Since twice as much recovery data is created, it will take about 16 minutes to do so with a 1500MHz CPU. The "-u" and "-n" options can be used to control exactly how many recovery files are created and how the recovery blocks are distributed amoungst them. They do not affect the total quantity of recovery data created. The "-f" option is used when you create additional recovery data. e.g. If you have already created 10% and want another 5% then you migh use the following command:
+
+  par2 create -s307200 -r5 -f300 test.mpg
+
+This specifies the same block size (which is a requirement for additional recovery files), 5% recovery data, and a first block number of 300.
+
+The "-m" option controls how much memory par2 uses. It defaults to 16 MB unless you override it.
+
+CREATING PAR2 FILES FOR MULTIPLE DATA FILES
+
+When creating PAR2 recovery files form multiple data files, you must specify the base filename to use for the par2 files and the names of all of the data files. If test.mpg had been split into multiple RAR files, then you could use:
+
+  par2 create test.mpg.rar.par2 test.mpg.part*.rar
+
+The files filename "test.mpg.rar.par2" says what you want the par2 files to be called and "test.mpg.part*.rar" should select all of the RAR files.
+
+VERIFYING AND REPAIRING
+
+When using par2 recovery files to verify or repair the data files from which they were created, you only need to specify the filename of one of the par2 files to par2. For example:
+
+  par2 verify test.mpg.par2
+
+This tells par2 to use the information in test.mpg.par2 to verify the data files. Par2 will automatically search for the other par2 files that were created and use the information they contain to determine the filenames of the original data files and then to verify them.  If all of the data files are ok, then par2 will report that repair will not be required. If any of the data files are missing or damaged, par2 will report the details of what it has found. If the recovery files contain enough recovery blocks to repair the damage, you will be told that repair is possible. Otherwise you will be told exactly how many recovery blocks will be required in order to repair. To carry out a repair use the following command:
+
+  par2 repair test.mpg.par2
+
+This tells par2 to verify and if possible repair any damaged or missing files. If a repair is carried out, then each file which is repaired will be re-verified to confirm that the repair was successful.
+
+MISSNAMED AND INCOMPLETE DATA FILES
+
+If any of the recovery files or data files have the wrong filename, then par2 will not automatically find and scan them. To have par2 scan such files, you must include them on the command line when attempting to verify or repair; e.g.:
+
+  par2 r test.mpg.par2 other.mpg
+
+This tells par2 to scan the file called other.mpg to see if it contains any data belonging to the original data files. If one of the extra files specified in this way is an exact match for a data file, then the repair process will rename the file so that it has the correct filename. Because par2 is designed to be able to find good data within a damaged file, it can do the same with incomplete files downloaded from UseNet. If some of the articles for a file are missing, you should still download the file and save it to disk for par2 to scan. If you do this then you may find that you can carry out a repair in a situation where you would not otherwise have sufficient recovery data. You can have par2 scan all files that are in the current directory using a command such as:
+
+  par2 r test.mpg.par2 *
+
+WHAT TO DO WHEN YOU ARE TOLD YOU NEED MORE RECOVERY BLOCKS
+
+If par2 determines that any of the data files are damaged or missing and finds that there is insufficient recovery data to effect a repair, you will be told that you need a certain number of recovery blocks. You can obtain these by downloading additional recovery files. In order to make things easy, par2 files have filenames that tell you exactly how many recovery blocks each one contains. Assuming that the following command was used to create recovery data:
+
+  par2 c -b1000 -r5 test.mpg
+
+Then the recovery files that are created would be called:
+
+  test.mpg.par2
+  test.mpg.vol00+01.par2
+  test.mpg.vol01+02.par2
+  test.mpg.vol03+04.par2
+  test.mpg.vol07+08.par2
+  test.mpg.vol15+16.par2
+  test.mpg.vol31+19.par2
+
+The first file in this list does not contain any recovery data, it only contains information sufficient to verify the data files. Each of the other files contains a different number of recovery blocks. The number after the '+' sign is the number of recovery blocks and the number preceding the '+' sign is the block number of the first recovery block in that file. If par2 told you that you needed 10 recovery blocks, then you would need "test.mpg.vol01+02.par2" and "test.mpg.vol07+08.par". You might of course choose to fetch "test.mpg.vol15+16.par2" instead (in which case you would have an extra 6 recovery blocks which would not be used for the repair).
 .SH AUTHORS
 Peter Brian Clements <peterbclements@users.sourceforge.net>
 .br
