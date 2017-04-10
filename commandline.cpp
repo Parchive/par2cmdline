@@ -90,10 +90,10 @@ void CommandLine::banner(void)
 {
   cout << "Copyright (C) 2003-2015 Peter Brian Clements." << endl
     << "Copyright (C) 2011-2012 Marcel Partap." << endl
-    << "Copyright (C) 2012-2015 Ike Devolder." << endl
-    << "Copyright (C) 2014-2016 Jussi Kansanen." << endl
+    << "Copyright (C) 2012-2017 Ike Devolder." << endl
+    << "Copyright (C) 2014-2017 Jussi Kansanen." << endl
     << endl
-    << "par2cmdline-mt comes with ABSOLUTELY NO WARRANTY." << endl
+    << "par2cmdline comes with ABSOLUTELY NO WARRANTY." << endl
     << endl
     << "This is free software, and you are welcome to redistribute it and/or modify" << endl
     << "it under the terms of the GNU General Public License as published by the" << endl
@@ -360,8 +360,8 @@ bool CommandLine::Parse(int argc, char *argv[])
               nthreads = nthreads * 10 + (*p - '0');
               p++;
             }
-            
-            if (!nthreads) 
+
+            if (!nthreads)
             {
               cerr << "Invalid thread option: " << argv[0] << endl;
               return false;

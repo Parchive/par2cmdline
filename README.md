@@ -1,10 +1,10 @@
-#par2cmdline-mt
+#par2cmdline
 
-**par2cmdline-mt** is a multithreaded (OpenMP) PAR 2.0 compatible file verification and repair tool.
+**par2cmdline** is a PAR 2.0 compatible file verification and repair tool.
 
-To see the ongoing development see <https://github.com/jkansanen/par2cmdline-mt>
+To see the ongoing development see: <https://github.com/parchive/par2cmdline>
 
-Par2cmdline was forked from <https://github.com/BlackIkeEagle/par2cmdline>
+OpenMP multithreading was originally developed by Jussi Kansanen: <https://github.com/jkansanen/par2cmdline-mt>
 
 The original development was done on Sourceforge but stalled.
 
@@ -48,7 +48,7 @@ You should have received par2cmdline in the form of source code which you can co
 
 If you have only downloaded a precompiled executable, then the source code should be available from the same location where you downloaded the executable from.
 
-*NOT TESTED WITH PAR2CMDLINE-MT* If you have MS Visual Studio .NET, then just open the *par2cmdline.sln* file and compile. You should then copy *par2cmdline.exe* to an appropriate location that is on your path.
+If you have MS Visual Studio .NET, then just open the *par2cmdline.sln* file and compile. You should then copy *par2cmdline.exe* to an appropriate location that is on your path.
 
 To compile on Linux and other Unix variants use the following commands:
 
