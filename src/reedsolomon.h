@@ -368,7 +368,7 @@ inline bool ReedSolomon<g>::Compute(CommandLine::NoiseLevel noiselevel)
 template<class g>
 inline bool ReedSolomon<g>::GaussElim(CommandLine::NoiseLevel noiselevel, unsigned int rows, unsigned int leftcols, G *leftmatrix, G *rightmatrix, unsigned int datamissing)
 {
-  if (noiselevel == CommandLine::nlDebug)
+  if (noiselevel >= CommandLine::nlDebug)
   {
     for (unsigned int row=0; row<rows; row++)
     {
@@ -503,7 +503,7 @@ inline bool ReedSolomon<g>::GaussElim(CommandLine::NoiseLevel noiselevel, unsign
   }
   if (noiselevel > CommandLine::nlQuiet)
     cout << "Solving: done." << endl;
-  if (noiselevel == CommandLine::nlDebug)
+  if (noiselevel >= CommandLine::nlDebug)
   {
     for (unsigned int row=0; row<rows; row++)
     {

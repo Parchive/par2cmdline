@@ -145,18 +145,12 @@ Result Par2Repairer::Process(const CommandLine &commandline, bool dorepair)
   if (!ComputeWindowTable())
     return eLogicError;
 
-  if (noiselevel > CommandLine::nlQuiet)
-    cout << endl << "Verifying source files:" << endl << endl;
-
   // Attempt to verify all of the source files
   if (!VerifySourceFiles(basepath, extrafiles))
     return eFileIOError;
 
   if (completefilecount < mainpacket->RecoverableFileCount())
   {
-    if (noiselevel > CommandLine::nlQuiet)
-      cout << endl << "Scanning extra files:" << endl << endl;
-
     // Scan any extra files specified on the command line
     if (!VerifyExtraFiles(extrafiles, basepath))
       return eLogicError;
@@ -1037,6 +1031,9 @@ bool Par2Repairer::AllocateSourceBlocks(void)
 // a verification packet
 bool Par2Repairer::PrepareVerificationHashTable(void)
 {
+  if (noiselevel >= CommandLine::nlDebug)
+    cout << "[DEBUG] Prepare verification hashtable" << endl;
+
   // Choose a size for the hash table
   verificationhashtable.SetLimit(sourceblockcount);
 
@@ -1076,6 +1073,9 @@ bool Par2Repairer::PrepareVerificationHashTable(void)
 // Compute the table for the sliding CRC computation
 bool Par2Repairer::ComputeWindowTable(void)
 {
+  if (noiselevel >= CommandLine::nlDebug)
+    cout << "[DEBUG] compute window table" << endl;
+
   if (blockverifiable)
   {
     GenerateWindowTable(blocksize, windowtable);
@@ -1094,6 +1094,9 @@ static bool SortSourceFilesByFileName(Par2RepairerSourceFile *low,
 // Attempt to verify all of the source files
 bool Par2Repairer::VerifySourceFiles(const std::string& basepath, std::list<CommandLine::ExtraFile>& extrafiles)
 {
+  if (noiselevel > CommandLine::nlQuiet)
+    cout << endl << "Verifying source files:" << endl << endl;
+
   bool finalresult = true;
 
   // Created a sorted list of the source files and verify them in that
@@ -1145,11 +1148,11 @@ bool Par2Repairer::VerifySourceFiles(const std::string& basepath, std::list<Comm
 
     if (noiselevel >= CommandLine::nlDebug)
     {
-      cout << "VerifySourceFiles ----" << endl;
-      cout << "file: " << file << endl;
-      cout << "name: " << name << endl;
-      cout << "targ: " << target_pathname << endl;
-      cout << "----------------------" << endl;
+      cout << "[DEBUG] VerifySourceFiles ----" << endl;
+      cout << "[DEBUG] file: " << file << endl;
+      cout << "[DEBUG] name: " << name << endl;
+      cout << "[DEBUG] targ: " << target_pathname << endl;
+      cout << "[DEBUG] ----------------------" << endl;
     }
 
     // if the target file is in the list of extra files, we remove it
@@ -1221,6 +1224,9 @@ bool Par2Repairer::VerifySourceFiles(const std::string& basepath, std::list<Comm
 // Scan any extra files specified on the command line
 bool Par2Repairer::VerifyExtraFiles(const list<CommandLine::ExtraFile> &extrafiles, string basepath)
 {
+  if (noiselevel > CommandLine::nlQuiet)
+    cout << endl << "Scanning extra files:" << endl << endl;
+
   for (ExtraFileIterator i=extrafiles.begin();
       i!=extrafiles.end() && completefilecount<mainpacket->RecoverableFileCount();
       ++i)
@@ -1678,8 +1684,8 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
   if (noiselevel >= CommandLine::nlDebug)
   {
     if (duplicatecount > 0)
-      cout << "duplicates: " << duplicatecount << endl;
-    cout << "matchcount: " << count << endl;
+      cout << "[DEBUG] duplicates: " << duplicatecount << endl;
+    cout << "[DEBUG] matchcount: " << count << endl;
   }
 
   // Did we make any matches at all

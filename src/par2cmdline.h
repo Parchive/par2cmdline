@@ -295,7 +295,7 @@ using namespace std;
 #include "par1repairersourcefile.h"
 #include "par1repairer.h"
 
-// Heap checking 
+// Heap checking
 #ifdef _MSC_VER
 #define _CRTDBG_MAP_ALLOC
 #include <crtdbg.h>
