@@ -1,4 +1,4 @@
-#par2cmdline
+# par2cmdline
 
 **par2cmdline** is a PAR 2.0 compatible file verification and repair tool.
 
@@ -12,11 +12,11 @@ For more information from the original authors see <http://parchive.sourceforge.
 
 This is also the place for details on the PAR 2.0 specification and discussion of all things PAR.
 
-##What exactly is par2cmdline?
+## What exactly is par2cmdline?
 
 par2cmdline is a program for creating and using PAR2 files to detect damage in data files and repair them if necessary. It can be used with any kind of file.
 
-##Why is PAR 2.0 better than PAR 1.0?
+## Why is PAR 2.0 better than PAR 1.0?
 
  * It is not necessary to split a single large file into many equal-sized small files (although you can still do so if you wish).
 
@@ -34,7 +34,7 @@ par2cmdline is a program for creating and using PAR2 files to detect damage in d
 
  * PAR 2.0 requires less recovery data to provide the same level of  protection from damage compared with PAR 1.0.
 
-##Does PAR 2.0 have any disadvantages?
+## Does PAR 2.0 have any disadvantages?
 
 Yes, there is one disadvantage:
 
@@ -42,7 +42,7 @@ Yes, there is one disadvantage:
 
 This disadvantage is considerably mitigated by the fact that you don't need to create as much recovery data in the first place to provide the same level of protection against loss and damage.
 
-##Compiling par2cmdline
+## Compiling par2cmdline
 
 You should have received par2cmdline in the form of source code which you can compile on your computer. You may optionally have received a precompiled version of the program for your operating system.
 
@@ -62,7 +62,7 @@ To compile on Linux and other Unix variants use the following commands:
 
 See *INSTALL* for full details on how to use the *configure* script.
 
-##Using par2cmdline
+## Using par2cmdline
 
 The command line parameters for par2cmdline are as follow:
 
@@ -109,7 +109,7 @@ If you wish to create PAR2 files for a single source file, you may leave out the
 
 You may also leave off the .par2 file extension when verifying and repairing.
 
-##Creating PAR2 files
+## Creating PAR2 files
 
 With PAR 2.0 you can create PAR2 recovery files for as few as 1 or as many as 32768 files. If you wanted to create PAR1 recovery files for a single file you were forced to split the file into muliple parts and RAR was frequently used for this purpose. You do NOT need to split files with PAR 2.0.
 
@@ -162,7 +162,7 @@ When creating PAR2 recovery files you might want to fill up a storage medium lik
 
 It makes no sense to set an insanely high recovery size. The command will make that the resulting sum of the PAR2 files approaches the requested size. It is an estimate so don't go too crazy.
 
-##Creating PAR2 files for multiple data files
+## Creating PAR2 files for multiple data files
 
 When creating PAR2 recovery files from multiple data files, you must specify the base filename to use for the par2 files and the names of all of the data files.
 
@@ -172,7 +172,7 @@ If *test.mpg* had been split into multiple RAR files, then you could use:
 
 The filename _test.mpg.rar.par2_ states what you want the PAR2 files to be called and _test.mpg.part*.rar_ should select all of the RAR files.
 
-##Verifying and repairing
+## Verifying and repairing
 
 When using PAR2 recovery files to verify or repair the data files from which they were created, you only need to specify the filename of one of the PAR2 files to par2cmdline:
 
@@ -192,7 +192,7 @@ To carry out a repair use the following command:
 
 This tells par2cmdline to verify and if possible repair any damaged or missing files. When a repair is carried out, each file that is repaired will be verified to confirm that the repair was successful.
 
-##Misnamed and incomplete data files
+## Misnamed and incomplete data files
 
 If any of the recovery files or data files have a wrong filename, then par2cmdline will not automatically find and scan them.
 
@@ -212,7 +212,7 @@ You can have par2cmdline scan all files that are in the current directory using 
 
     par2 r test.mpg.par2 *
 
-##What to do when you are told you need more recovery blocks
+## What to do when you are told you need more recovery blocks
 
 If par2cmdline determines that any of the data files are damaged or missing and finds that there is insufficient recovery data to effect a repair, you will be told that you need a certain number of recovery blocks. You can obtain these by downloading additional recovery files.
 
@@ -238,7 +238,7 @@ Each of the other files contains a different number of recovery blocks. The numb
 
 If par2cmdline told you that you needed 10 recovery blocks, then you would need *test.mpg.vol01+02.par2* and *test.mpg.vol07+08.par*. You might of course choose to fetch *test.mpg.vol15+16.par2* instead (in which case you would have an extra 6 recovery blocks which would not be used for the repair).
 
-##Reed-Solomon Coding
+## Reed-Solomon Coding
 
 PAR2 uses Reed-Solomon Coding to perform its calculations. For details of this coding technique try the following link:
 
