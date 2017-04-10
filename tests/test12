@@ -1,7 +1,7 @@
 #!/bin/sh
 
 cd tests || { echo "ERROR: Could not change to tests directory" ; exit 1; } >&2
-tests=$PWD
+tests=../../$srcdir/tests
 
 testname=$(basename $0)
 rm -f $testname.log
@@ -21,7 +21,7 @@ echo $dashes
 mv test.data test.data-correct
 dd if=test.data-correct bs=113579 count=1 of=test.data
 
-../../par2 r test.par2 > $tests/$testname.log || { echo "ERROR: repair files using PAR 2.0 failed" ; exit 1; } >&2
+../../par2 r test.par2 > ../$testname.log || { echo "ERROR: repair files using PAR 2.0 failed" ; exit 1; } >&2
 
 cd ..
 rm -rf run$testname

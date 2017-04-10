@@ -1,7 +1,7 @@
 #!/bin/sh
 
 cd tests || { echo "ERROR: Could not change to tests directory" ; exit 1; } >&2
-tests=$PWD
+tests=../../$srcdir/tests
 
 testname=$(basename $0)
 rm -f $testname.log
@@ -31,7 +31,7 @@ echo $banner
 echo $dashes
 
 rm -f test-1.data test-3.data
-../../par2 r testdata.par2 > $tests/$testname.log || { echo "ERROR: Reconstruction of two files using PAR 2.0 failed" ; exit 1; } >&2
+../../par2 r testdata.par2 > ../$testname.log || { echo "ERROR: Reconstruction of two files using PAR 2.0 failed" ; exit 1; } >&2
 cmp -s test-1.data test-1.data.orig && cmp -s test-3.data test-3.data.orig || { echo "ERROR: Repaired files do not match originals" ; exit 1; } >&2
 
 cd ..

@@ -1,7 +1,7 @@
 #!/bin/sh
 
 cd tests || { echo "ERROR: Could not change to tests directory" ; exit 1; } >&2
-tests=$PWD
+tests=../../$srcdir/tests
 
 testname=$(basename $0)
 rm -f $testname.log
@@ -27,9 +27,9 @@ echo $banner
 echo $dashes
 
 cd datafiles
-tar -xzf $tests/flatdata.tar.gz || { echo "ERROR: Could not extract data test files" ; exit 1; } >&2
+tar -xzf ../$tests/flatdata.tar.gz || { echo "ERROR: Could not extract data test files" ; exit 1; } >&2
 
-../../../par2 c ../parfiles/recovery * > $tests/$testname.log || { echo "ERROR: Creating PAR 2.0 data failed" ; exit 1; } >&2
+../../../par2 c ../parfiles/recovery * > ../../$testname.log || { echo "ERROR: Creating PAR 2.0 data failed" ; exit 1; } >&2
 
 banner="Verifying PAR 2.0 recovery data"
 dashes=`echo "$banner" | sed s/./-/g`
@@ -38,7 +38,7 @@ echo $dashes
 echo $banner
 echo $dashes
 
-../../../par2 v ../parfiles/recovery.par2 >> $tests/$testname.log || { echo "ERROR: Verifying PAR 2.0 data failed" ; exit 1; } >&2
+../../../par2 v ../parfiles/recovery.par2 > ../../$testname.log || { echo "ERROR: Verifying PAR 2.0 data failed" ; exit 1; } >&2
 
 cd ../..
 rm -rf run$testname

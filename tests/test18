@@ -1,7 +1,7 @@
 #!/bin/sh
 
 cd tests || { echo "ERROR: Could not change to tests directory" ; exit 1; } >&2
-tests=$PWD
+tests=../../$srcdir/tests
 
 testname=$(basename $0)
 rm -f $testname.log
@@ -18,7 +18,7 @@ echo $dashes
 echo $banner
 echo $dashes
 
-../../par2 c recovery flatdata.tar.gz > $tests/$testname.log || { echo "ERROR: Creating PAR 2.0 data failed" ; exit 1; } >&2
+../../par2 c recovery flatdata.tar.gz > ../$testname.log || { echo "ERROR: Creating PAR 2.0 data failed" ; exit 1; } >&2
 
 banner="Verifying using PAR 2.0 data"
 dashes=`echo "$banner" | sed s/./-/g`
@@ -31,7 +31,7 @@ mv flatdata.tar.gz flatdata.tar.gz-orig
 dd if=flatdata.tar.gz-orig bs=1983 count=1 of=flatdata.tar.gz
 rm -f flatdata.tar.gz-orig
 
-../../par2 r recovery.par2 ./* >> $tests/$testname.log || { echo "ERROR: PAR 2.0 repair failed" ; exit 1; } >&2
+../../par2 r recovery.par2 ./* > ../$testname.log || { echo "ERROR: PAR 2.0 repair failed" ; exit 1; } >&2
 
 cd ..
 rm -rf run$testname

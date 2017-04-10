@@ -1,7 +1,7 @@
 #!/bin/sh
 
 cd tests || { echo "ERROR: Could not change to tests directory" ; exit 1; } >&2
-tests=$PWD
+tests=../../$srcdir/tests
 
 testname=$(basename $0)
 rm -f $testname.log
@@ -18,7 +18,7 @@ echo $dashes
 echo $banner
 echo $dashes
 
-../../par2 c testdata.par2 *.data > $tests/$testname.log || { echo "ERROR: creating repair files using PAR 2.0 failed" ; exit 1; } >&2
+../../par2 c testdata.par2 *.data > ../$testname.log || { echo "ERROR: creating repair files using PAR 2.0 failed" ; exit 1; } >&2
 
 banner="repair files where 1 byte got removed at the beginning of a file"
 dashes=`echo "$banner" | sed s/./-/g`
@@ -30,7 +30,7 @@ echo $dashes
 mv test-1.data test-1.data-correct
 tail -c 177173 test-1.data-correct > test-1.data
 
-../../par2 r testdata.par2 >> $tests/$testname.log || { echo "ERROR: repair files using PAR 2.0 failed" ; exit 1; } >&2
+../../par2 r testdata.par2 > ../$testname.log || { echo "ERROR: repair files using PAR 2.0 failed" ; exit 1; } >&2
 
 cd ..
 rm -rf run$testname
