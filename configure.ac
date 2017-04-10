@@ -21,7 +21,7 @@ dnl  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 dnl                                               -*- Autoconf -*-
 dnl Process this file with autoconf to produce a configure script.
 
-AC_PREREQ(2.58a)
+AC_PREREQ(2.62)
 AC_INIT([par2cmdline], [0.6.14], [ike.devolder@gmail.com])
 AC_CONFIG_SRCDIR([par2cmdline.cpp])
 
@@ -35,7 +35,8 @@ dnl Checks for programs.
 AC_PROG_CXX
 AC_PROG_INSTALL
 
-dnl Checks for libraries.
+dnl Set language to C++
+AC_LANG(C++)
 
 dnl Checks for header files.
 AC_HEADER_DIRENT
@@ -51,6 +52,9 @@ AC_C_CONST
 AC_C_INLINE
 AC_SYS_LARGEFILE
 AC_FUNC_FSEEKO
+
+dnl Check for OpenMP
+AC_OPENMP
 
 dnl Checks for library functions.
 AC_FUNC_MEMCMP

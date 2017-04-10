@@ -2,7 +2,9 @@
 
 **par2cmdline** is a PAR 2.0 compatible file verification and repair tool.
 
-To see the ongoing development see <https://github.com/BlackIkeEagle/par2cmdline>
+To see the ongoing development see: <https://github.com/parchive/par2cmdline>
+
+OpenMP multithreading was originally developed by Jussi Kansanen: <https://github.com/jkansanen/par2cmdline-mt>
 
 The original development was done on Sourceforge but stalled.
 
@@ -92,6 +94,7 @@ The command line parameters for par2cmdline are as follow:
     -l       : Limit size of recovery files (don't use both -u and -l)
     -n<n>    : Number of recovery files (don't use both -n and -l)
     -m<n>    : Memory (in MB) to use
+    -t<n>    : Number of threads to use (Auto-detected)    
     -v [-v]  : Be more verbose
     -q [-q]  : Be more quiet (-qq gives silence)
     -p       : Purge backup files and par files on successful recovery or

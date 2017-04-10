@@ -928,6 +928,7 @@ bool Par2Creator::ProcessData(u64 blockoffset, size_t blocklength)
     }
 
     // For each output block
+    #pragma omp parallel for
     for (u32 outputblock=0; outputblock<recoveryblockcount; outputblock++)
     {
       // Select the appropriate part of the output buffer
@@ -940,11 +941,13 @@ bool Par2Creator::ProcessData(u64 blockoffset, size_t blocklength)
       {
         // Update a progress indicator
         u32 oldfraction = (u32)(1000 * progress / totaldata);
+        #pragma omp atomic
         progress += blocklength;
         u32 newfraction = (u32)(1000 * progress / totaldata);
 
         if (oldfraction != newfraction)
         {
+          #pragma omp critical
           cout << "Processing: " << newfraction/10 << '.' << newfraction%10 << "%\r" << flush;
         }
       }
