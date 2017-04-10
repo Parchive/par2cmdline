@@ -47,7 +47,7 @@ par2_SOURCES = par2cmdline.cpp par2cmdline.h \
 	verificationpacket.cpp verificationpacket.h
 
 LDADD = -lstdc++
-AM_CXXFLAGS = -Wall
+AM_CXXFLAGS = -Wall $(OPENMP_CXXFLAGS)
 
 EXTRA_DIST = PORTING ROADMAP par2cmdline.sln par2cmdline.vcproj \
 						 par2.1 \

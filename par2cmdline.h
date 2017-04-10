@@ -302,5 +302,11 @@ using namespace std;
 #define DEBUG_NEW new(_NORMAL_BLOCK, THIS_FILE, __LINE__)
 #endif
 
+// OpenMP
+#ifdef _OPENMP
+# include <omp.h>
+#endif
+
+
 #endif // __PARCMDLINE_H__
 

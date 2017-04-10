@@ -91,8 +91,9 @@ void CommandLine::banner(void)
   cout << "Copyright (C) 2003-2015 Peter Brian Clements." << endl
     << "Copyright (C) 2011-2012 Marcel Partap." << endl
     << "Copyright (C) 2012-2015 Ike Devolder." << endl
+    << "Copyright (C) 2014-2016 Jussi Kansanen." << endl
     << endl
-    << "par2cmdline comes with ABSOLUTELY NO WARRANTY." << endl
+    << "par2cmdline-mt comes with ABSOLUTELY NO WARRANTY." << endl
     << endl
     << "This is free software, and you are welcome to redistribute it and/or modify" << endl
     << "it under the terms of the GNU General Public License as published by the" << endl
@@ -128,7 +129,12 @@ void CommandLine::usage(void)
     "  -u       : Uniform recovery file sizes\n"
     "  -l       : Limit size of recovery files (don't use both -u and -l)\n"
     "  -n<n>    : Number of recovery files (don't use both -n and -l)\n"
-    "  -m<n>    : Memory (in MB) to use\n"
+    "  -m<n>    : Memory (in MB) to use\n";
+#ifdef _OPENMP
+  cout <<
+    "  -t<n>    : Number of threads to use (" << omp_get_max_threads() << " detected)\n";
+#endif
+  cout <<
     "  -v [-v]  : Be more verbose\n"
     "  -q [-q]  : Be more quiet (-q -q gives silence)\n"
     "  -p       : Purge backup files and par files on successful recovery or\n"
@@ -343,6 +349,30 @@ bool CommandLine::Parse(int argc, char *argv[])
           }
           break;
 
+#ifdef _OPENMP
+        case 't':  // Set the amount of threads
+          {
+            u32 nthreads = 0;
+            char *p = &argv[0][2];
+
+            while (*p && isdigit(*p))
+            {
+              nthreads = nthreads * 10 + (*p - '0');
+              p++;
+            }
+            
+            if (!nthreads) 
+            {
+              cerr << "Invalid thread option: " << argv[0] << endl;
+              return false;
+            }
+
+            // Sets the number of threads to use
+            omp_set_num_threads(nthreads);
+
+          }
+          break;
+#endif
         case 'r':  // Set the amount of redundancy required
           {
             if (operation != opCreate)
