@@ -33,11 +33,11 @@ crc32table ccitttable(0xEDB88320L);
 // Construct the CRC32 lookup table from the specified polynomial
 void GenerateCRC32Table(u32 polynomial, u32 (&table)[256])
 {
-  for (u32 i = 0; i <= 255 ; i++) 
+  for (u32 i = 0; i <= 255 ; i++)
   {
     u32 crc = i;
 
-    for (u32 j = 0; j < 8; j++) 
+    for (u32 j = 0; j < 8; j++)
     {
       crc = (crc >> 1) ^ ((crc & 1) ? polynomial : 0);
     }
@@ -49,6 +49,7 @@ void GenerateCRC32Table(u32 polynomial, u32 (&table)[256])
 // Construct a CRC32 lookup table for windowing
 void GenerateWindowTable(u64 window, u32 (&target)[256])
 {
+  #pragma omp parallel for
   for (u32 i=0; i<=255; i++)
   {
     u32 crc = ccitttable.table[i];
