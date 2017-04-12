@@ -25,7 +25,7 @@
 				RuntimeLibrary="5"
 				OpenMP="true"
 				UsePrecompiledHeader="2"
-				PrecompiledHeaderThrough="par2cmdline.h"
+                PrecompiledHeaderThrough="src/par2cmdline.h"
 				WarningLevel="3"
 				Detect64BitPortabilityProblems="TRUE"
 				DebugInformationFormat="4"/>
@@ -122,155 +122,155 @@
 			Name="Source Files"
 			Filter="cpp;c;cxx;def;odl;idl;hpj;bat;asm">
 			<File
-				RelativePath="commandline.cpp">
+                RelativePath="src/commandline.cpp">
 			</File>
 			<File
-				RelativePath="crc.cpp">
+                RelativePath="src/crc.cpp">
 			</File>
 			<File
-				RelativePath="creatorpacket.cpp">
+                RelativePath="src/creatorpacket.cpp">
 			</File>
 			<File
-				RelativePath="criticalpacket.cpp">
+                RelativePath="src/criticalpacket.cpp">
 			</File>
 			<File
-				RelativePath="datablock.cpp">
+                RelativePath="src/datablock.cpp">
 			</File>
 			<File
-				RelativePath="descriptionpacket.cpp">
+                RelativePath="src/descriptionpacket.cpp">
 			</File>
 			<File
-				RelativePath="diskfile.cpp">
+                RelativePath="src/diskfile.cpp">
 			</File>
 			<File
-				RelativePath="filechecksummer.cpp">
+                RelativePath="src/filechecksummer.cpp">
 			</File>
 			<File
-				RelativePath="galois.cpp">
+                RelativePath="src/galois.cpp">
 			</File>
 			<File
-				RelativePath="mainpacket.cpp">
+                RelativePath="src/mainpacket.cpp">
 			</File>
 			<File
-				RelativePath="md5.cpp">
+                RelativePath="src/md5.cpp">
 			</File>
 			<File
-				RelativePath="par1fileformat.cpp">
+                RelativePath="src/par1fileformat.cpp">
 			</File>
 			<File
-				RelativePath="par1repairer.cpp">
+                RelativePath="src/par1repairer.cpp">
 			</File>
 			<File
-				RelativePath="par1repairersourcefile.cpp">
+                RelativePath="src/par1repairersourcefile.cpp">
 			</File>
 			<File
-				RelativePath="par2cmdline.cpp">
+                RelativePath="src/par2cmdline.cpp">
 			</File>
 			<File
-				RelativePath="par2creator.cpp">
+                RelativePath="src/par2creator.cpp">
 			</File>
 			<File
-				RelativePath="par2creatorsourcefile.cpp">
+                RelativePath="src/par2creatorsourcefile.cpp">
 			</File>
 			<File
-				RelativePath="par2fileformat.cpp">
+                RelativePath="src/par2fileformat.cpp">
 			</File>
 			<File
-				RelativePath="par2repairer.cpp">
+                RelativePath="src/par2repairer.cpp">
 			</File>
 			<File
-				RelativePath="par2repairersourcefile.cpp">
+                RelativePath="src/par2repairersourcefile.cpp">
 			</File>
 			<File
-				RelativePath="recoverypacket.cpp">
+                RelativePath="src/recoverypacket.cpp">
 			</File>
 			<File
-				RelativePath="reedsolomon.cpp">
+                RelativePath="src/reedsolomon.cpp">
 			</File>
 			<File
-				RelativePath="verificationhashtable.cpp">
+                RelativePath="src/verificationhashtable.cpp">
 			</File>
 			<File
-				RelativePath="verificationpacket.cpp">
+                RelativePath="src/verificationpacket.cpp">
 			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
 			Filter="h;hpp;hxx;hm;inl;inc">
 			<File
-				RelativePath="commandline.h">
+                RelativePath="src/commandline.h">
 			</File>
 			<File
-				RelativePath="crc.h">
+                RelativePath="src/crc.h">
 			</File>
 			<File
-				RelativePath="creatorpacket.h">
+                RelativePath="src/creatorpacket.h">
 			</File>
 			<File
-				RelativePath="criticalpacket.h">
+                RelativePath="src/criticalpacket.h">
 			</File>
 			<File
-				RelativePath="datablock.h">
+                RelativePath="src/datablock.h">
 			</File>
 			<File
-				RelativePath="descriptionpacket.h">
+                RelativePath="src/descriptionpacket.h">
 			</File>
 			<File
-				RelativePath="diskfile.h">
+                RelativePath="src/diskfile.h">
 			</File>
 			<File
-				RelativePath="filechecksummer.h">
+                RelativePath="src/filechecksummer.h">
 			</File>
 			<File
-				RelativePath="galois.h">
+                RelativePath="src/galois.h">
 			</File>
 			<File
-				RelativePath="letype.h">
+                RelativePath="src/letype.h">
 			</File>
 			<File
-				RelativePath="mainpacket.h">
+                RelativePath="src/mainpacket.h">
 			</File>
 			<File
-				RelativePath="md5.h">
+                RelativePath="src/md5.h">
 			</File>
 			<File
-				RelativePath="par1fileformat.h">
+                RelativePath="src/par1fileformat.h">
 			</File>
 			<File
-				RelativePath="par1repairer.h">
+                RelativePath="src/par1repairer.h">
 			</File>
 			<File
-				RelativePath="par1repairersourcefile.h">
+                RelativePath="src/par1repairersourcefile.h">
 			</File>
 			<File
-				RelativePath="par2cmdline.h">
+                RelativePath="src/par2cmdline.h">
 			</File>
 			<File
-				RelativePath="par2creator.h">
+                RelativePath="src/par2creator.h">
 			</File>
 			<File
-				RelativePath="par2creatorsourcefile.h">
+                RelativePath="src/par2creatorsourcefile.h">
 			</File>
 			<File
-				RelativePath="par2fileformat.h">
+                RelativePath="src/par2fileformat.h">
 			</File>
 			<File
-				RelativePath="par2repairer.h">
+                RelativePath="src/par2repairer.h">
 			</File>
 			<File
-				RelativePath="par2repairersourcefile.h">
+                RelativePath="src/par2repairersourcefile.h">
 			</File>
 			<File
-				RelativePath="recoverypacket.h">
+                RelativePath="src/recoverypacket.h">
 			</File>
 			<File
-				RelativePath="reedsolomon.h">
+                RelativePath="src/reedsolomon.h">
 			</File>
 			<File
-				RelativePath="verificationhashtable.h">
+                RelativePath="src/verificationhashtable.h">
 			</File>
 			<File
-				RelativePath="verificationpacket.h">
+                RelativePath="src/verificationpacket.h">
 			</File>
 		</Filter>
 		<Filter
@@ -278,25 +278,19 @@
 			Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe">
 		</Filter>
 		<File
-			RelativePath="aclocal.m4">
-		</File>
-		<File
 			RelativePath="AUTHORS">
 		</File>
 		<File
 			RelativePath="ChangeLog">
 		</File>
 		<File
-			RelativePath=".\config.guess">
+			RelativePath="config.guess">
 		</File>
 		<File
 			RelativePath="config.h.in">
 		</File>
 		<File
-			RelativePath=".\config.sub">
-		</File>
-		<File
-			RelativePath="configure">
+			RelativePath="config.sub">
 		</File>
 		<File
 			RelativePath="configure.ac">
@@ -314,9 +308,6 @@
 			RelativePath="install-sh">
 		</File>
 		<File
-			RelativePath="Makefile">
-		</File>
-		<File
 			RelativePath="Makefile.am">
 		</File>
 		<File
@@ -332,40 +323,16 @@
 			RelativePath="NEWS">
 		</File>
 		<File
-			RelativePath="PORTING">
-		</File>
-		<File
-			RelativePath="posttest">
-		</File>
-		<File
-			RelativePath="pretest">
-		</File>
-		<File
 			RelativePath="README">
+		</File>
+		<File
+			RelativePath="README.md">
 		</File>
 		<File
 			RelativePath="ROADMAP">
 		</File>
 		<File
-			RelativePath=".\stamp-h.in">
-		</File>
-		<File
-			RelativePath="test1">
-		</File>
-		<File
-			RelativePath="test2">
-		</File>
-		<File
-			RelativePath="test3">
-		</File>
-		<File
-			RelativePath="test4">
-		</File>
-		<File
-			RelativePath="test5">
-		</File>
-		<File
-			RelativePath="test6">
+			RelativePath="stamp-h.in">
 		</File>
 	</Files>
 	<Globals>
