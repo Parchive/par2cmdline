@@ -1,0 +1,169 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{D0A94F83-495E-4FB2-AC33-9A3EC2CC263B}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>10.0.30319.1</_ProjectFileVersion>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Debug\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Debug\</IntDir>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</LinkIncremental>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Release\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Release\</IntDir>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</LinkIncremental>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;PACKAGE="par2cmdline";VERSION="0.6.14";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MinimalRebuild>true</MinimalRebuild>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <OpenMPSupport>true</OpenMPSupport>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <PrecompiledHeaderFile>src/par2cmdline.h</PrecompiledHeaderFile>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+    </ClCompile>
+    <Link>
+      <OutputFile>$(OutDir)par2.exe</OutputFile>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <ProgramDatabaseFile>$(OutDir)par2cmdline.pdb</ProgramDatabaseFile>
+      <SubSystem>Console</SubSystem>
+      <TargetMachine>MachineX86</TargetMachine>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <Optimization>MaxSpeed</Optimization>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <OmitFramePointers>true</OmitFramePointers>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;PACKAGE="par2cmdline";VERSION="0.6.14";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <StringPooling>true</StringPooling>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <PrecompiledHeaderFile>par2cmdline.h</PrecompiledHeaderFile>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+    </ClCompile>
+    <Link>
+      <OutputFile>$(OutDir)par2.exe</OutputFile>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Console</SubSystem>
+      <OptimizeReferences>true</OptimizeReferences>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <TargetMachine>MachineX86</TargetMachine>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="src\commandline.cpp" />
+    <ClCompile Include="src\crc.cpp" />
+    <ClCompile Include="src\creatorpacket.cpp" />
+    <ClCompile Include="src\criticalpacket.cpp" />
+    <ClCompile Include="src\datablock.cpp" />
+    <ClCompile Include="src\descriptionpacket.cpp" />
+    <ClCompile Include="src\diskfile.cpp" />
+    <ClCompile Include="src\filechecksummer.cpp" />
+    <ClCompile Include="src\galois.cpp" />
+    <ClCompile Include="src\mainpacket.cpp" />
+    <ClCompile Include="src\md5.cpp" />
+    <ClCompile Include="src\par1fileformat.cpp" />
+    <ClCompile Include="src\par1repairer.cpp" />
+    <ClCompile Include="src\par1repairersourcefile.cpp" />
+    <ClCompile Include="src\par2cmdline.cpp" />
+    <ClCompile Include="src\par2creator.cpp" />
+    <ClCompile Include="src\par2creatorsourcefile.cpp" />
+    <ClCompile Include="src\par2fileformat.cpp" />
+    <ClCompile Include="src\par2repairer.cpp" />
+    <ClCompile Include="src\par2repairersourcefile.cpp" />
+    <ClCompile Include="src\recoverypacket.cpp" />
+    <ClCompile Include="src\reedsolomon.cpp" />
+    <ClCompile Include="src\verificationhashtable.cpp" />
+    <ClCompile Include="src\verificationpacket.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="src\commandline.h" />
+    <ClInclude Include="src\crc.h" />
+    <ClInclude Include="src\creatorpacket.h" />
+    <ClInclude Include="src\criticalpacket.h" />
+    <ClInclude Include="src\datablock.h" />
+    <ClInclude Include="src\descriptionpacket.h" />
+    <ClInclude Include="src\diskfile.h" />
+    <ClInclude Include="src\filechecksummer.h" />
+    <ClInclude Include="src\galois.h" />
+    <ClInclude Include="src\letype.h" />
+    <ClInclude Include="src\mainpacket.h" />
+    <ClInclude Include="src\md5.h" />
+    <ClInclude Include="src\par1fileformat.h" />
+    <ClInclude Include="src\par1repairer.h" />
+    <ClInclude Include="src\par1repairersourcefile.h" />
+    <ClInclude Include="src\par2cmdline.h" />
+    <ClInclude Include="src\par2creator.h" />
+    <ClInclude Include="src\par2creatorsourcefile.h" />
+    <ClInclude Include="src\par2fileformat.h" />
+    <ClInclude Include="src\par2repairer.h" />
+    <ClInclude Include="src\par2repairersourcefile.h" />
+    <ClInclude Include="src\recoverypacket.h" />
+    <ClInclude Include="src\reedsolomon.h" />
+    <ClInclude Include="src\verificationhashtable.h" />
+    <ClInclude Include="src\verificationpacket.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="AUTHORS" />
+    <None Include="ChangeLog" />
+    <None Include="config.guess" />
+    <None Include="config.h.in" />
+    <None Include="config.sub" />
+    <None Include="configure.ac" />
+    <None Include="COPYING" />
+    <None Include="depcomp" />
+    <None Include="INSTALL" />
+    <None Include="install-sh" />
+    <None Include="Makefile.am" />
+    <None Include="Makefile.in" />
+    <None Include="missing" />
+    <None Include="mkinstalldirs" />
+    <None Include="NEWS" />
+    <None Include="README" />
+    <None Include="README.md" />
+    <None Include="ROADMAP" />
+    <None Include="stamp-h.in" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>
