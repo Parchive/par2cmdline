@@ -31,3 +31,4 @@ Debug/
 *.old
 par2cmdline.vcxproj.user
 par2cmdline.suo
+.vs/
