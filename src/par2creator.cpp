@@ -929,7 +929,7 @@ bool Par2Creator::ProcessData(u64 blockoffset, size_t blocklength)
 
     // For each output block
     #pragma omp parallel for
-    for (u32 outputblock=0; outputblock<recoveryblockcount; outputblock++)
+    for (i64 outputblock=0; outputblock<recoveryblockcount; outputblock++)
     {
       // Select the appropriate part of the output buffer
       void *outbuf = &((u8*)outputbuffer)[chunksize * outputblock];
