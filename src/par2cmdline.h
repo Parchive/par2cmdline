@@ -36,7 +36,10 @@
 #include <fcntl.h>
 #include <assert.h>
 
-#define snprintf _snprintf
+#define snprintf _snprintf_s
+#define sprintf  sprintf_s
+#define stricmp  _stricmp
+#define unlink   _unlink
 #define stat _stat
 
 #define __LITTLE_ENDIAN 1234
