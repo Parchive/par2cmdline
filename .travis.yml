@@ -15,4 +15,5 @@ script:
   - autoconf
   - ./configure
   - make
+  - ./par2 -h
   - make check
