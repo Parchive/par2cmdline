@@ -2323,11 +2323,12 @@ bool Par2Repairer::ProcessData(u64 blockoffset, size_t blocklength)
       #pragma omp parallel for
       for (i64 outputindex=0; outputindex<missingblockcount; outputindex++)
       {
+        u32 internalOutputindex = (u32) outputindex;
         // Select the appropriate part of the output buffer
-        void *outbuf = &((u8*)outputbuffer)[chunksize * outputindex];
+        void *outbuf = &((u8*)outputbuffer)[chunksize * internalOutputindex];
 
         // Process the data
-        rs.Process(blocklength, inputindex, inputbuffer, outputindex, outbuf);
+        rs.Process(blocklength, inputindex, inputbuffer, internalOutputindex, outbuf);
 
         if (noiselevel > CommandLine::nlQuiet)
         {

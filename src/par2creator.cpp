@@ -356,7 +356,7 @@ bool Par2Creator::ComputeRecoveryBlockCount(u32 redundancy, u64 redundancysize)
       }
       else
       {
-        recoveryblockcount = (redundancysize - totalOverhead) / (blocksize + 70);
+        recoveryblockcount = (u32)((redundancysize - totalOverhead) / (blocksize + 70));
       }
       ComputeRecoveryFileCount();
     }
@@ -931,11 +931,13 @@ bool Par2Creator::ProcessData(u64 blockoffset, size_t blocklength)
     #pragma omp parallel for
     for (i64 outputblock=0; outputblock<recoveryblockcount; outputblock++)
     {
+      u32 internalOutputblock = (u32)outputblock;
+
       // Select the appropriate part of the output buffer
-      void *outbuf = &((u8*)outputbuffer)[chunksize * outputblock];
+      void *outbuf = &((u8*)outputbuffer)[chunksize * internalOutputblock];
 
       // Process the data through the RS matrix
-      rs.Process(blocklength, inputblock, inputbuffer, outputblock, outbuf);
+      rs.Process(blocklength, inputblock, inputbuffer, internalOutputblock, outbuf);
 
       if (noiselevel > CommandLine::nlQuiet)
       {
