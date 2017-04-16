@@ -312,9 +312,10 @@ void Par2CreatorSourceFile::UpdateHashes(u32 blocknumber, const void *buffer, si
 
 
   // Update the full file hash, but don't go beyond the end of the file
-  if ((u64)length > filesize - blocknumber * (u64)length)
+  const u64 len = filesize - (u64) blocknumber * (u64) length;
+  if ((u64)length > len)
   {
-    length = (size_t)(filesize - blocknumber * (u64)length);
+    length = (size_t)(len);
   }
 
   assert(contextfull != 0);
