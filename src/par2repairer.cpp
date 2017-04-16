@@ -2320,8 +2320,8 @@ bool Par2Repairer::ProcessData(u64 blockoffset, size_t blocklength)
       }
 
       // For each output block
-      #pragma omp parallel for      
-      for (u32 outputindex=0; outputindex<missingblockcount; outputindex++)
+      #pragma omp parallel for
+      for (i64 outputindex=0; outputindex<missingblockcount; outputindex++)
       {
         // Select the appropriate part of the output buffer
         void *outbuf = &((u8*)outputbuffer)[chunksize * outputindex];

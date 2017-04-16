@@ -50,7 +50,7 @@ void GenerateCRC32Table(u32 polynomial, u32 (&table)[256])
 void GenerateWindowTable(u64 window, u32 (&target)[256])
 {
   #pragma omp parallel for
-  for (u32 i=0; i<=255; i++)
+  for (i16 i=0; i<=255; i++)
   {
     u32 crc = ccitttable.table[i];
 

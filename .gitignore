@@ -24,3 +24,11 @@ configure
 stamp-h
 stamp-h1
 src/.dirstamp
+
+# windows
+Release/
+Debug/
+*.old
+par2cmdline.vcxproj.user
+par2cmdline.suo
+.vs/
