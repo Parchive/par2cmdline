@@ -789,7 +789,7 @@ bool Par2Creator::InitialiseOutputFiles(string par2filename)
           }
 
           // Get ready to iterate through the critical packets
-          u32 packetCount = 0;
+          u64 packetCount = 0;
           list<CriticalPacket*>::const_iterator nextCriticalPacket = criticalpackets.end();
 
           // What is the first exponent
