@@ -160,8 +160,6 @@ bool CommandLine::Parse(int argc, char *argv[])
   argc--;
   argv++;
 
-  basepath = DiskFile::GetCanonicalPathname("./");
-
   if (argc>0)
   {
     if (argv[0][0] != 0 &&
@@ -250,6 +248,7 @@ bool CommandLine::Parse(int argc, char *argv[])
 
   bool options = true;
   list<string> a_filenames;
+  basepath = "";
 
   while (argc>0)
   {
@@ -747,15 +746,6 @@ bool CommandLine::Parse(int argc, char *argv[])
             {
               basepath = DiskFile::GetCanonicalPathname(str.substr(2));
             }
-            string lastchar = basepath.substr(basepath.length() -1);
-            if ("/" != lastchar && "\\" != lastchar)
-            {
-#ifdef WIN32
-              basepath = basepath + "\\";
-#else
-              basepath = basepath + "/";
-#endif
-            }
           }
           break;
 
@@ -798,46 +788,7 @@ bool CommandLine::Parse(int argc, char *argv[])
         {
           // Convert filename from command line into a full path + filename
           string filename = DiskFile::GetCanonicalPathname(*fn);
-
-          // Originally, all specified files were supposed to exist, or the program
-          // would stop with an error message. This was not practical, for example in
-          // a directory with files appearing and disappearing (an active download directory).
-          // So the new rule is: when a specified file doesn't exist, it is silently skipped.
-          if (!DiskFile::FileExists(filename))
-          {
-            cout << "Ignoring non-existent source file: " << filename << endl;
-          }
-          // skip files outside basepath
-          else if (filename.find(basepath) == string::npos)
-          {
-                cout << "Ignoring out of basepath source file: " << filename << endl;
-          }
-          else
-          {
-            u64 filesize = DiskFile::GetFileSize(filename);
-
-            // Ignore all 0 byte files
-            if (filesize == 0)
-            {
-              cout << "Skipping 0 byte file: " << filename << endl;
-            }
-            else if (a_filenames.end() != find(a_filenames.begin(), a_filenames.end(), filename))
-            {
-              cout << "Skipping duplicate filename: " << filename << endl;
-            }
-            else
-            {
-              a_filenames.push_back(filename);
-              extrafiles.push_back(ExtraFile(filename, filesize));
-
-              // track the total size of the source files and how
-              // big the largest one is.
-              totalsourcesize += filesize;
-              if (largestsourcesize < filesize)
-              largestsourcesize = filesize;
-            }
-          } //end file exists
-
+          a_filenames.push_back(filename);
           ++fn;
         }
         delete filenames;
@@ -852,6 +803,83 @@ bool CommandLine::Parse(int argc, char *argv[])
   {
     cerr << "You must specify a Recovery file." << endl;
     return false;
+  }
+
+  if ("" == basepath)
+  {
+    if (opCreate == operation)
+    {
+      basepath = DiskFile::GetCanonicalPathname("./");
+    }
+    else
+    {
+      string dummy;
+      string path;
+      DiskFile::SplitFilename(parfilename, path, dummy);
+      basepath = DiskFile::GetCanonicalPathname(path);
+    }
+  }
+
+  string lastchar = basepath.substr(basepath.length() -1);
+  if ("/" != lastchar && "\\" != lastchar)
+  {
+#ifdef WIN32
+    basepath = basepath + "\\";
+#else
+    basepath = basepath + "/";
+#endif
+  }
+
+  if (noiselevel >= nlDebug)
+  {
+    cout << "basepath: " << basepath << endl;
+  }
+
+  // check correctness of files
+  list<string> b_filenames;
+  list<string>::iterator a_filenames_fn;
+  for (a_filenames_fn = a_filenames.begin(); a_filenames_fn != a_filenames.end(); ++a_filenames_fn)
+  {
+    string filename = *a_filenames_fn;
+
+    // Originally, all specified files were supposed to exist, or the program
+    // would stop with an error message. This was not practical, for example in
+    // a directory with files appearing and disappearing (an active download directory).
+    // So the new rule is: when a specified file doesn't exist, it is silently skipped.
+    if (!DiskFile::FileExists(filename))
+    {
+      cout << "Ignoring non-existent source file: " << filename << endl;
+    }
+    // skip files outside basepath
+    else if (filename.find(basepath) == string::npos)
+    {
+      cout << "Ignoring out of basepath source file: " << filename << endl;
+    }
+    else
+    {
+      u64 filesize = DiskFile::GetFileSize(filename);
+
+      // Ignore all 0 byte files
+      if (filesize == 0)
+      {
+        cout << "Skipping 0 byte file: " << filename << endl;
+      }
+      else if (b_filenames.end() != find(b_filenames.begin(), b_filenames.end(), filename))
+      {
+        cout << "Skipping duplicate filename: " << filename << endl;
+      }
+      else
+      {
+        b_filenames.push_back(filename);
+        extrafiles.push_back(ExtraFile(filename, filesize));
+
+        // track the total size of the source files and how
+        // big the largest one is.
+        totalsourcesize += filesize;
+        if (largestsourcesize < filesize)
+          largestsourcesize = filesize;
+      }
+    } //end file exists
   }
 
   // Default noise level
