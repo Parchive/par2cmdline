@@ -58,6 +58,14 @@ To compile on Linux and other Unix variants use the following commands:
     make check
     make install
 
+For FreeBSD you must install the following dependencies:
+
+    pkg install git automake openmp
+
+OpenMP will only be available for 64bit systems in FreeBSD.
+
+For macOS you can install llvm via homebrew to get OpenMP support.
+
 See *INSTALL* for full details on how to use the *configure* script.
 
 ## Using par2cmdline
