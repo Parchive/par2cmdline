@@ -1,5 +1,10 @@
-FOR FURTHER CHANGELOG INFORMATION:
-https://github.com/BlackIkeEagle/par2cmdline/commits/master
+17 April 2017 Ike Devolder
+	* release: 0.7.0
+	* Merged OpenMP version and so enabled multithreading
+		* added -t flag to set the number of threads (all possible threads
+		  used by default)
+	* Added -B flag to set the basepath for difficult to guess situations
+	* bugfixes
 
 27 February 2014 Ike Devolder
 	* release: 0.6.5
@@ -174,7 +179,7 @@ https://github.com/BlackIkeEagle/par2cmdline/commits/master
 	  recovery file size to be limited so that the largest will have
 	  just enough recovery data to reconstruct the larget source file.
 
-	* par2creator.h, par2creator.cpp: Use the recovery block count 
+	* par2creator.h, par2creator.cpp: Use the recovery block count
 	  specified via the command line instead of the redundancy % if
 	  given. Allocate the sizes of recovery files so the are limited
 	  if requested.
@@ -201,11 +206,11 @@ https://github.com/BlackIkeEagle/par2cmdline/commits/master
 	  and repair to work with large file sets on OS's with a limit
 	  on the number of files that can be open simultaneously.
 
-	* Makefile.in, aclocal.m4, config.guess, config.sub, configure, 
-	  depcomp, install-sh, missing, mkinstalldirs: Updated Automake to 
+	* Makefile.in, aclocal.m4, config.guess, config.sub, configure,
+	  depcomp, install-sh, missing, mkinstalldirs: Updated Automake to
 	  version 1.8.3 and Autoconf to version 2.59.
 
-	* configure.ac, config.h.in, configure: Check for getopt() and 
+	* configure.ac, config.h.in, configure: Check for getopt() and
 	  getopt_long().
 
 19 August 2003 Peter B Clements
@@ -228,11 +233,11 @@ https://github.com/BlackIkeEagle/par2cmdline/commits/master
 	* Updated par2repairer.cpp: When a good packet is found after bad
 	  data, use memcpy to copy the packet header. Don't attempt to get
 	  the block count directly from the verification packet (which
-	  might be missing). 
+	  might be missing).
 
 	* Updated par2repairersourcefile.cpp: Add function to set the block
 	  count when the verification packet is missing.
- 
+
 1 August 2003 Peter B Clements
 
 	* Updated par2cmdline.h: Included <iomanip>.
@@ -243,7 +248,7 @@ https://github.com/BlackIkeEagle/par2cmdline/commits/master
 
 29 July 2003 Peter B Clements
 
-	* Updated galois.h: Use typename when refering to a typedef 
+	* Updated galois.h: Use typename when refering to a typedef
 	  in another class.
 
 	* Updated par1repairer.cpp: Cast size of fileentry in memcpy.
@@ -313,7 +318,7 @@ https://github.com/BlackIkeEagle/par2cmdline/commits/master
 	* Release: Version 0.2.
 
 	* Added config.h.in, configure, configure.ac, depcomp, missing,
-	  mkinstalldirs, stamp-h.in: Autoconf configuration files. 
+	  mkinstalldirs, stamp-h.in: Autoconf configuration files.
 	* Added NEWS
 
 	* Added par1fileformat.h, par1fileformat.cpp: Specifies the
@@ -322,13 +327,13 @@ https://github.com/BlackIkeEagle/par2cmdline/commits/master
 	* Added par1repairer.h, par1repairer.cpp: Encapsulates the details
 	  of repairing using PAR 1.0 files.
 
-	* Added par1repairersourcefile.h, par1repairersourcefile.cpp: 
+	* Added par1repairersourcefile.h, par1repairersourcefile.cpp:
 	  Stores details of a source file.
 
 	* Added test1, test2, test3, test4, test5, test6, testdata.tar.gz:
 	  Test files for "make check".
 
-	* Changed commandline.cpp, commandline.h: Add "version" member 
+	* Changed commandline.cpp, commandline.h: Add "version" member
 		and set it according to whether the recovery file is a .PAR file
 	  or a .PAR2 file. Rename "par2filename" member to "parfilename".
 
@@ -336,7 +341,7 @@ https://github.com/BlackIkeEagle/par2cmdline/commits/master
 	  in CreatorPacket::Create instead of a global. Commented out code
 	  that does nothing.
 
-	* Changed criticalpacket.h: Corrected bug in 
+	* Changed criticalpacket.h: Corrected bug in
 		CriticalPacketEntry::operator= which failed to return *this.
 
 	* Changed descriptionpacket.cpp: Commented out code which does
@@ -354,7 +359,7 @@ https://github.com/BlackIkeEagle/par2cmdline/commits/master
 	* Changed galois.cpp: Move the constructors for GaloisTable and
 	  GaloisLongMultiplyTable to galois.h.
 
-	* Changed galois.h: Changed GaloisTable, Galois, and 
+	* Changed galois.h: Changed GaloisTable, Galois, and
 	  GaloisLongMultipleTable into templates. Corrected bug in
 	  Galois::pow and Galois::operator^ which incorrectly returned 0
 	  for x^0 when it should always return 1. Added Galois8 and
@@ -410,7 +415,7 @@ https://github.com/BlackIkeEagle/par2cmdline/commits/master
 
 	* Changed verificationhashtable.cpp: Removed unused code.
 
-	* Changed verificationpacket.cpp: Commented out code that does 
+	* Changed verificationpacket.cpp: Commented out code that does
 	  nothing.
 
 7 May 2003 Peter B Clements
