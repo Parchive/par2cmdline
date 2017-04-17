@@ -52,9 +52,7 @@ If you have MS Visual Studio .NET, then just open the *par2cmdline.sln* file and
 
 To compile on Linux and other Unix variants use the following commands:
 
-    aclocal
-    automake --add-missing
-    autoconf
+    ./automake.sh
     ./configure
     make
     make check

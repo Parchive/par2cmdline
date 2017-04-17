@@ -75,9 +75,7 @@ location that is on your path.
 
 To compile on Linux and other Unix variants use the following commands:
 
-  aclocal
-  automake --add-missing
-  autoconf
+  ./automake.sh
   ./configure
   make
   make check
