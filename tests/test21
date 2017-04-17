@@ -38,7 +38,7 @@ echo $dashes
 echo $banner
 echo $dashes
 
-../../../par2 v ../parfiles/recovery.par2 > ../../$testname.log || { echo "ERROR: Verifying PAR 2.0 data failed" ; exit 1; } >&2
+../../../par2 v -B ./ ../parfiles/recovery.par2 > ../../$testname.log || { echo "ERROR: Verifying PAR 2.0 data failed" ; exit 1; } >&2
 
 cd ../..
 rm -rf run$testname
