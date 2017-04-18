@@ -51,7 +51,7 @@ par2_SOURCES = src/par2cmdline.cpp src/par2cmdline.h \
 LDADD = -lstdc++
 AM_CXXFLAGS = -Wall $(OPENMP_CXXFLAGS)
 
-EXTRA_DIST = PORTING ROADMAP par2cmdline.sln par2cmdline.vcproj \
+EXTRA_DIST = PORTING ROADMAP \
 			 man/par2.1 \
 			 tests/flatdata.tar.gz \
 			 tests/flatdata-par1files.tar.gz \
@@ -89,7 +89,9 @@ EXTRA_DIST = PORTING ROADMAP par2cmdline.sln par2cmdline.vcproj \
 			 tests/test21 \
 			 tests/test22 \
 			 tests/test23 \
-			 tests/test24
+			 tests/test24 \
+			 tests/test25 \
+			 tests/test26
 
 TESTS = tests/test1 \
 		tests/test2 \
@@ -115,7 +117,9 @@ TESTS = tests/test1 \
 		tests/test21 \
 		tests/test22 \
 		tests/test23 \
-		tests/test24
+		tests/test24 \
+		tests/test25 \
+		tests/test26
 
 install-exec-hook :
 	ln -sf $(bindir)/par2$(EXEEXT) $(DESTDIR)$(bindir)/par2create$(EXEEXT)

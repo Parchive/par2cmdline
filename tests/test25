@@ -1,0 +1,30 @@
+#!/bin/sh
+
+cd tests || { echo "ERROR: Could not change to tests directory" ; exit 1; } >&2
+# Unfortunately test object seems to need absolute path
+TESTROOT=$PWD
+tests=../../$srcdir/tests
+
+testname=$(basename $0)
+rm -f $testname.log
+rm -rf run$testname
+
+mkdir run$testname && cd run$testname || { echo "ERROR: Could not change to test directory" ; exit 1; } >&2
+
+banner="par2 with full path"
+dashes=`echo "$banner" | sed s/./-/g`
+
+echo $dashes
+echo $banner
+echo $dashes
+
+echo "file contents" > some-file
+../../par2 create `pwd`/some-file || { echo "ERROR: Failed to create parchive"; exit1; } >&2
+echo "corrupted contents" > some-file
+../../par2 repair some-file || { echo "ERROR: Failed to repair"; exit 1; } >&2
+
+cd ..
+rm -rf run$testname
+
+exit 0;
+
