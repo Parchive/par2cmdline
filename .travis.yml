@@ -8,6 +8,9 @@ os:
 compiler:
   - clang
   - gcc
+# environment variables
+env:
+  - OMP_NUM_THREADS=4
 # Build steps
 script:
   - aclocal
