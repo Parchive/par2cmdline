@@ -807,16 +807,20 @@ bool CommandLine::Parse(int argc, char *argv[])
 
   if ("" == basepath)
   {
-    if (opCreate == operation)
+    if (noiselevel >= nlDebug)
+    {
+      cout << "[DEBUG] parfilename: " << parfilename << endl;
+    }
+
+    string dummy;
+    string path;
+    DiskFile::SplitFilename(parfilename, path, dummy);
+    basepath = DiskFile::GetCanonicalPathname(path);
+
+    // fallback
+    if ("" == basepath)
     {
       basepath = DiskFile::GetCanonicalPathname("./");
-    }
-    else
-    {
-      string dummy;
-      string path;
-      DiskFile::SplitFilename(parfilename, path, dummy);
-      basepath = DiskFile::GetCanonicalPathname(path);
     }
   }
 
@@ -832,7 +836,7 @@ bool CommandLine::Parse(int argc, char *argv[])
 
   if (noiselevel >= nlDebug)
   {
-    cout << "basepath: " << basepath << endl;
+    cout << "[DEBUG] basepath: " << basepath << endl;
   }
 
   // check correctness of files

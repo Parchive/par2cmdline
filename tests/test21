@@ -29,7 +29,7 @@ echo $dashes
 cd datafiles
 tar -xzf ../$tests/flatdata.tar.gz || { echo "ERROR: Could not extract data test files" ; exit 1; } >&2
 
-../../../par2 c ../parfiles/recovery * > ../../$testname.log || { echo "ERROR: Creating PAR 2.0 data failed" ; exit 1; } >&2
+../../../par2 c -B ./ ../parfiles/recovery * > ../../$testname.log || { echo "ERROR: Creating PAR 2.0 data failed" ; exit 1; } >&2
 
 banner="Verifying PAR 2.0 recovery data"
 dashes=`echo "$banner" | sed s/./-/g`
