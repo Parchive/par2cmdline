@@ -30,7 +30,7 @@ echo "file contents" > some-file
 echo "corrupted contents" > some-file
 "$startdir"/par2 repair some-file || { echo "ERROR: Failed to repair"; exit 1; } >&2
 
-cd ..
+cd ../..
 rm -rf run$testname
 
 exit 0;
