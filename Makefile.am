@@ -91,7 +91,8 @@ EXTRA_DIST = PORTING ROADMAP \
 			 tests/test23 \
 			 tests/test24 \
 			 tests/test25 \
-			 tests/test26
+			 tests/test26 \
+			 tests/test27
 
 TESTS = tests/test1 \
 		tests/test2 \
@@ -119,7 +120,8 @@ TESTS = tests/test1 \
 		tests/test23 \
 		tests/test24 \
 		tests/test25 \
-		tests/test26
+		tests/test26 \
+		tests/test27
 
 install-exec-hook :
 	ln -sf $(bindir)/par2$(EXEEXT) $(DESTDIR)$(bindir)/par2create$(EXEEXT)
