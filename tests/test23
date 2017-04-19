@@ -11,7 +11,7 @@ rm -rf run$testname
 
 mkdir run$testname && cd run$testname || { echo "ERROR: Could not change to test directory" ; exit 1; } >&2
 
-faraway="$TESTROOT/in/a/folder/far/far/away"
+faraway="$TESTROOT/run$testname/in/a/folder/far/far/away"
 
 mkdir -p "$faraway" || { echo "ERROR: Could not create fancy folder" ; exit 1; } >&2
 mkdir rundir
