@@ -24,6 +24,8 @@ configure
 stamp-h
 stamp-h1
 src/.dirstamp
+install-sh
+missing
 
 # windows
 Release/
