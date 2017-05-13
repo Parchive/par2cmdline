@@ -10,7 +10,6 @@ else
   TESTDATA="$srcdir/tests"
 fi
 
-cd tests || { echo "ERROR: Could not change to tests directory" ; exit 1; } >&2
 TESTROOT=$PWD
 
 testname=$(basename $0)
@@ -33,7 +32,7 @@ cp subdir1/test-2.data subdir1/test-2.data.orig
 cp subdir2/test-7.data subdir2/test-7.data.orig
 
 rm -f subdir1/test-2.data subdir2/test-7.data
-$execdir/par2 r testdata.par2 > $TESTROOT/$testname.log || { echo "ERROR: Reconstruction of two files using PAR 2.0 failed" ; exit 1; } >&2
+$execdir/par2 r testdata.par2 || { echo "ERROR: Reconstruction of two files using PAR 2.0 failed" ; exit 1; } >&2
 cmp -s subdir1/test-2.data subdir1/test-2.data.orig && cmp -s subdir2/test-7.data subdir2/test-7.data.orig || { echo "ERROR: Repaired files do not match originals" ; exit 1; } >&2
 
 cd $TESTROOT

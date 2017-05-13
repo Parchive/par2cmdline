@@ -10,7 +10,6 @@ else
   TESTDATA="$srcdir/tests"
 fi
 
-cd tests || { echo "ERROR: Could not change to tests directory" ; exit 1; } >&2
 TESTROOT=$PWD
 
 testname=$(basename $0)
@@ -29,7 +28,7 @@ echo $dashes
 echo $banner
 echo $dashes
 
-$execdir/par2 v testdata.par2 > $TESTROOT/$testname.log || { echo "ERROR: Initial PAR 2.0 verification failed" ; exit 1; } >&2
+$execdir/par2 v testdata.par2 || { echo "ERROR: Initial PAR 2.0 verification failed" ; exit 1; } >&2
 
 cd $TESTROOT
 rm -rf run$testname

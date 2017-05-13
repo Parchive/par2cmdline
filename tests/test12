@@ -10,7 +10,6 @@ else
   TESTDATA="$srcdir/tests"
 fi
 
-cd tests || { echo "ERROR: Could not change to tests directory" ; exit 1; } >&2
 TESTROOT=$PWD
 
 testname=$(basename $0)
@@ -31,7 +30,7 @@ echo $dashes
 mv test.data test.data-correct
 dd if=test.data-correct bs=113579 count=1 of=test.data
 
-$execdir/par2 r test.par2 > $TESTROOT/$testname.log || { echo "ERROR: repair files using PAR 2.0 failed" ; exit 1; } >&2
+$execdir/par2 r test.par2 || { echo "ERROR: repair files using PAR 2.0 failed" ; exit 1; } >&2
 
 cd $TESTROOT
 rm -rf run$testname

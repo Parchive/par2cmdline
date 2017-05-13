@@ -10,7 +10,6 @@ else
   TESTDATA="$srcdir/tests"
 fi
 
-cd tests || { echo "ERROR: Could not change to tests directory" ; exit 1; } >&2
 TESTROOT=$PWD
 
 testname=$(basename $0)

@@ -10,7 +10,6 @@ else
   TESTDATA="$srcdir/tests"
 fi
 
-cd tests || { echo "ERROR: Could not change to tests directory" ; exit 1; } >&2
 TESTROOT=$PWD
 
 testname=$(basename $0)
@@ -29,9 +28,9 @@ echo $dashes
 mkdir subfolder
 
 echo "file contents" > subfolder/some-file
-$execdir/par2 create `pwd`/subfolder/some-file > $TESTROOT/$testname.log || { echo "ERROR: Failed to create parchive"; exit1; } >&2
+$execdir/par2 create `pwd`/subfolder/some-file || { echo "ERROR: Failed to create parchive"; exit1; } >&2
 echo "corrupted contents" > subfolder/some-file
-$execdir/par2 repair subfolder/some-file >> $TESTROOT/$testname.log || { echo "ERROR: Failed to repair"; exit 1; } >&2
+$execdir/par2 repair subfolder/some-file || { echo "ERROR: Failed to repair"; exit 1; } >&2
 
 cd $TESTROOT
 rm -rf run$testname

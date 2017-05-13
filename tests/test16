@@ -15,7 +15,6 @@ else
   TESTDATA="$srcdir/tests"
 fi
 
-cd tests || { echo "ERROR: Could not change to tests directory" ; exit 1; } >&2
 TESTROOT=$PWD
 
 testname=$(basename $0)
@@ -35,10 +34,12 @@ echo $dashes
 
 cd subdir1
 
-$execdir/par2 c -r2 test.par2 *.data ../subdir2/*.data > $TESTROOT/$testname.log || { echo "ERROR: creating files using PAR 2.0 failed" ; exit 1; } >&2
+$execdir/par2 c -r2 test.par2 *.data ../subdir2/*.data > $testname.log || { echo "ERROR: creating files using PAR 2.0 failed" ; exit 1; } >&2
 
 # check if there were ignored files
-grep 'Ignoring' $TESTROOT/$testname.log || { echo "ERROR: there were no files ignored"; exit 1; } >&2
+grep 'Ignoring' $testname.log || { echo "ERROR: there were no files ignored"; exit 1; } >&2
+
+rm $testname.log
 
 cd $TESTROOT
 rm -rf run$testname

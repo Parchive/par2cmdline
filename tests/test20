@@ -10,7 +10,6 @@ else
   TESTDATA="$srcdir/tests"
 fi
 
-cd tests || { echo "ERROR: Could not change to tests directory" ; exit 1; } >&2
 TESTROOT=$PWD
 
 testname=$(basename $0)
@@ -35,7 +34,7 @@ echo $dashes
 echo $banner
 echo $dashes
 
-$execdir/par2 c -s1000 -c0 recovery myfile.dat > $TESTROOT/$testname.log || { echo "ERROR: Creating PAR 2.0 data failed" ; exit 1; } >&2
+$execdir/par2 c -s1000 -c0 recovery myfile.dat || { echo "ERROR: Creating PAR 2.0 data failed" ; exit 1; } >&2
 
 banner="split files"
 dashes=`echo "$banner" | sed s/./-/g`
@@ -56,7 +55,7 @@ echo $dashes
 echo $banner
 echo $dashes
 
-$execdir/par2 r recovery.par2 ./* >> $TESTROOT/$testname.log || { echo "ERROR: PAR 2.0 repair failed" ; exit 1; } >&2
+$execdir/par2 r recovery.par2 ./* || { echo "ERROR: PAR 2.0 repair failed" ; exit 1; } >&2
 
 cd $TESTROOT
 rm -rf run$testname

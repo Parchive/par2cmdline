@@ -10,7 +10,6 @@ else
   TESTDATA="$srcdir/tests"
 fi
 
-cd tests || { echo "ERROR: Could not change to tests directory" ; exit 1; } >&2
 TESTROOT=$PWD
 
 testname=$(basename $0)
@@ -35,7 +34,7 @@ echo $dashes
 
 cd rundir
 
-$execdir/par2 c -r2 -B"$faraway" "$faraway"/test.par2 "$faraway"/*.data > $TESTROOT/$testname.log || { echo "ERROR: create of PAR 2.0 files failed" ; exit 1; } >&2
+$execdir/par2 c -r2 -B"$faraway" "$faraway"/test.par2 "$faraway"/*.data || { echo "ERROR: create of PAR 2.0 files failed" ; exit 1; } >&2
 
 cd $TESTROOT
 rm -rf run$testname

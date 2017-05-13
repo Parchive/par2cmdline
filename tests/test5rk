@@ -17,7 +17,6 @@ else
   TESTDATA="$srcdir/tests"
 fi
 
-cd tests || { echo "ERROR: Could not change to tests directory" ; exit 1; } >&2
 TESTROOT=$PWD
 
 testname=$(basename $0)
@@ -40,7 +39,7 @@ echo $dashes
 # we approximately (-rk1302).
 # To also test ISSUE-80 (https://github.com/Parchive/par2cmdline/issues/80)
 # we also use "-n2".
-$execdir/par2 c -rk1302 -b190 -n2 -a newtest test-*.data > $TESTROOT/$testname.log || { echo "ERROR: Creating PAR 2.0 data failed" ; exit 1; } >&2
+$execdir/par2 c -rk1302 -b190 -n2 -a newtest test-*.data || { echo "ERROR: Creating PAR 2.0 data failed" ; exit 1; } >&2
 
 # Checking whether "-n2" worked by creating two newtest.vol*.par2 files
 # (and also tolerate newtest.VOL*.PAR2 as seen on Windows)
@@ -73,7 +72,7 @@ echo $dashes
 
 rm -f test-*.data
 
-$execdir/par2 r newtest.par2 >> $TESTROOT/$testname.log || { echo "ERROR: Full Repair using PAR 2.0 failed" ; exit 1; } >&2
+$execdir/par2 r newtest.par2 || { echo "ERROR: Full Repair using PAR 2.0 failed" ; exit 1; } >&2
 
 #    for f in test-*.data; do cmp "$f" "$f.orig" || { echo XXX; exit 1; }; done
 cmp -s test-0.data test-0.data.orig && cmp -s test-1.data test-1.data.orig && cmp -s test-2.data test-2.data.orig && cmp -s test-3.data test-3.data.orig && cmp -s test-4.data test-4.data.orig && cmp -s test-5.data test-5.data.orig && cmp -s test-6.data test-6.data.orig && cmp -s test-7.data test-7.data.orig && cmp -s test-8.data test-8.data.orig && cmp -s test-9.data test-9.data.orig || { echo "ERROR: Repaired files do not match originals" ; exit 1 ; } >&2
