@@ -1,16 +1,26 @@
 #!/bin/sh
 
+execdir="$PWD"
+
+if [ -z "$srcdir" ] || [ "." = "$srcdir" ]; then
+  srcdir="$PWD"
+  TESTDATA="$srcdir/tests"
+else
+  srcdir="$PWD/$srcdir"
+  TESTDATA="$srcdir/tests"
+fi
+
 cd tests || { echo "ERROR: Could not change to tests directory" ; exit 1; } >&2
-tests=../../$srcdir/tests
+TESTROOT=$PWD
 
 testname=$(basename $0)
-rm -f $testname.log
-rm -rf run$testname
+rm -f "$testname.log"
+rm -rf "run$testname"
 
-mkdir run$testname && cd run$testname || { echo "ERROR: Could not change to test directory" ; exit 1; } >&2
+mkdir "run$testname" && cd "run$testname" || { echo "ERROR: Could not change to test directory" ; exit 1; } >&2
 
-tar -xzf $tests/flatdata.tar.gz || { echo "ERROR: Could not extract data test files" ; exit 1; } >&2
-tar -xzf $tests/flatdata-par2files.tar.gz || { echo "ERROR: Could not extract par test files" ; exit 1; } >&2
+tar -xzf $TESTDATA/flatdata.tar.gz || { echo "ERROR: Could not extract data test files" ; exit 1; } >&2
+tar -xzf $TESTDATA/flatdata-par2files.tar.gz || { echo "ERROR: Could not extract par test files" ; exit 1; } >&2
 
 cp test-0.data test-0.data.orig
 cp test-1.data test-1.data.orig
@@ -31,10 +41,10 @@ echo $banner
 echo $dashes
 
 rm -f test-1.data test-3.data
-../../par2 r testdata.par2 > ../$testname.log || { echo "ERROR: Reconstruction of two files using PAR 2.0 failed" ; exit 1; } >&2
+$execdir/par2 r testdata.par2 > $TESTROOT/$testname.log || { echo "ERROR: Reconstruction of two files using PAR 2.0 failed" ; exit 1; } >&2
 cmp -s test-1.data test-1.data.orig && cmp -s test-3.data test-3.data.orig || { echo "ERROR: Repaired files do not match originals" ; exit 1; } >&2
 
-cd ..
+cd $TESTROOT
 rm -rf run$testname
 
 exit 0;

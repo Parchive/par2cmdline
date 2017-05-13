@@ -1,13 +1,23 @@
 #!/bin/sh
 
+execdir="$PWD"
+
+if [ -z "$srcdir" ] || [ "." = "$srcdir" ]; then
+  srcdir="$PWD"
+  TESTDATA="$srcdir/tests"
+else
+  srcdir="$PWD/$srcdir"
+  TESTDATA="$srcdir/tests"
+fi
+
 cd tests || { echo "ERROR: Could not change to tests directory" ; exit 1; } >&2
-tests=../../$srcdir/tests
+TESTROOT=$PWD
 
 testname=$(basename $0)
-rm -f $testname.log
-rm -rf run$testname
+rm -f "$testname.log"
+rm -rf "run$testname"
 
-mkdir run$testname && cd run$testname || { echo "ERROR: Could not change to test directory" ; exit 1; } >&2
+mkdir "run$testname" && cd "run$testname" || { echo "ERROR: Could not change to test directory" ; exit 1; } >&2
 
 banner="genereate datafile with 2000 random bytes"
 dashes=`echo "$banner" | sed s/./-/g`
@@ -25,7 +35,7 @@ echo $dashes
 echo $banner
 echo $dashes
 
-../../par2 c -s1000 -c0 recovery myfile.dat > ../$testname.log || { echo "ERROR: Creating PAR 2.0 data failed" ; exit 1; } >&2
+$execdir/par2 c -s1000 -c0 recovery myfile.dat > $TESTROOT/$testname.log || { echo "ERROR: Creating PAR 2.0 data failed" ; exit 1; } >&2
 
 banner="split files"
 dashes=`echo "$banner" | sed s/./-/g`
@@ -46,9 +56,9 @@ echo $dashes
 echo $banner
 echo $dashes
 
-../../par2 r recovery.par2 ./* > ../$testname.log || { echo "ERROR: PAR 2.0 repair failed" ; exit 1; } >&2
+$execdir/par2 r recovery.par2 ./* >> $TESTROOT/$testname.log || { echo "ERROR: PAR 2.0 repair failed" ; exit 1; } >&2
 
-cd ..
+cd $TESTROOT
 rm -rf run$testname
 
 exit 0;

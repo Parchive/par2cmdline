@@ -1,15 +1,25 @@
 #!/bin/sh
 
+execdir="$PWD"
+
+if [ -z "$srcdir" ] || [ "." = "$srcdir" ]; then
+  srcdir="$PWD"
+  TESTDATA="$srcdir/tests"
+else
+  srcdir="$PWD/$srcdir"
+  TESTDATA="$srcdir/tests"
+fi
+
 cd tests || { echo "ERROR: Could not change to tests directory" ; exit 1; } >&2
-tests=../../$srcdir/tests
+TESTROOT=$PWD
 
 testname=$(basename $0)
-rm -f $testname.log
-rm -rf run$testname
+rm -f "$testname.log"
+rm -rf "run$testname"
 
-mkdir run$testname && cd run$testname || { echo "ERROR: Could not change to test directory" ; exit 1; } >&2
+mkdir "run$testname" && cd "run$testname" || { echo "ERROR: Could not change to test directory" ; exit 1; } >&2
 
-tar -xzf $tests/par2-0.6.8-crash.tar.gz || { echo "ERROR: Could not extract data test files" ; exit 1; } >&2
+tar -xzf $TESTDATA/par2-0.6.8-crash.tar.gz || { echo "ERROR: Could not extract data test files" ; exit 1; } >&2
 
 banner="repair files should succeed, (issue #35)"
 dashes=`echo "$banner" | sed s/./-/g`
@@ -19,9 +29,9 @@ echo $banner
 echo $dashes
 
 cd par2-0.6.8-crash
-../../../par2 r pack-ea5f7f848340980493ed39f5b7173d956c680e43.par2 > ../../$testname.log || { echo "ERROR: repair files using PAR 2.0 failed" ; exit 1; } >&2
+$execdir/par2 r pack-ea5f7f848340980493ed39f5b7173d956c680e43.par2 > $TESTROOT/$testname.log || { echo "ERROR: repair files using PAR 2.0 failed" ; exit 1; } >&2
 
-cd ../..
+cd $TESTROOT
 rm -rf run$testname
 
 exit 0;
