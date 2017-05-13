@@ -1,15 +1,24 @@
 #!/bin/sh
 
-cd tests || { echo "ERROR: Could not change to tests directory" ; exit 1; } >&2
-tests=../../$srcdir/tests
+execdir="$PWD"
+
+if [ -z "$srcdir" ] || [ "." = "$srcdir" ]; then
+  srcdir="$PWD"
+  TESTDATA="$srcdir/tests"
+else
+  srcdir="$PWD/$srcdir"
+  TESTDATA="$srcdir/tests"
+fi
+
+TESTROOT=$PWD
 
 testname=$(basename $0)
-rm -f $testname.log
-rm -rf run$testname
+rm -f "$testname.log"
+rm -rf "run$testname"
 
-mkdir run$testname && cd run$testname || { echo "ERROR: Could not change to test directory" ; exit 1; } >&2
+mkdir "run$testname" && cd "run$testname" || { echo "ERROR: Could not change to test directory" ; exit 1; } >&2
 
-tar -xzf $tests/flatdata.tar.gz || { echo "ERROR: Could not extract data test files" ; exit 1; } >&2
+tar -xzf $TESTDATA/flatdata.tar.gz || { echo "ERROR: Could not extract data test files" ; exit 1; } >&2
 
 banner="Creating 100% PAR 2.0 recovery data"
 dashes=`echo "$banner" | sed s/./-/g`
@@ -18,7 +27,7 @@ echo $dashes
 echo $banner
 echo $dashes
 
-../../par2 c -r100 -b190 -a newtest test-*.data > ../$testname.log || { echo "ERROR: Creating PAR 2.0 data failed" ; exit 1; } >&2
+$execdir/par2 c -r100 -b190 -a newtest test-*.data || { echo "ERROR: Creating PAR 2.0 data failed" ; exit 1; } >&2
 
 cp test-0.data test-0.data.orig
 cp test-1.data test-1.data.orig
@@ -42,11 +51,11 @@ echo $dashes
 
 rm -f test-*.data
 
-../../par2 r newtest.par2 >> ../$testname.log || { echo "ERROR: Full Repair using PAR 2.0 failed" ; exit 1; } >&2
+$execdir/par2 r newtest.par2 || { echo "ERROR: Full Repair using PAR 2.0 failed" ; exit 1; } >&2
 
 cmp -s test-0.data test-0.data.orig && cmp -s test-1.data test-1.data.orig && cmp -s test-2.data test-2.data.orig && cmp -s test-3.data test-3.data.orig && cmp -s test-4.data test-4.data.orig && cmp -s test-5.data test-5.data.orig && cmp -s test-6.data test-6.data.orig && cmp -s test-7.data test-7.data.orig && cmp -s test-8.data test-8.data.orig && cmp -s test-9.data test-9.data.orig || { echo "ERROR: Repaired files do not match originals" ; exit 1 ; } >&2
 
-cd ..
+cd $TESTROOT
 rm -rf run$testname
 
 exit 0;

@@ -1,15 +1,24 @@
 #!/bin/sh
 
-cd tests || { echo "ERROR: Could not change to tests directory" ; exit 1; } >&2
-tests=../../$srcdir/tests
+execdir="$PWD"
+
+if [ -z "$srcdir" ] || [ "." = "$srcdir" ]; then
+  srcdir="$PWD"
+  TESTDATA="$srcdir/tests"
+else
+  srcdir="$PWD/$srcdir"
+  TESTDATA="$srcdir/tests"
+fi
+
+TESTROOT=$PWD
 
 testname=$(basename $0)
-rm -f $testname.log
-rm -rf run$testname
+rm -f "$testname.log"
+rm -rf "run$testname"
 
-mkdir run$testname && cd run$testname || { echo "ERROR: Could not change to test directory" ; exit 1; } >&2
+mkdir "run$testname" && cd "run$testname" || { echo "ERROR: Could not change to test directory" ; exit 1; } >&2
 
-tar -xzf $tests/flatdata.tar.gz || { echo "ERROR: Could not extract data test files" ; exit 1; } >&2
+tar -xzf $TESTDATA/flatdata.tar.gz || { echo "ERROR: Could not extract data test files" ; exit 1; } >&2
 
 banner="create 5% recovery files"
 dashes=`echo "$banner" | sed s/./-/g`
@@ -18,7 +27,7 @@ echo $dashes
 echo $banner
 echo $dashes
 
-../../par2 c testdata.par2 *.data > ../$testname.log || { echo "ERROR: creating repair files using PAR 2.0 failed" ; exit 1; } >&2
+$execdir/par2 c testdata.par2 *.data || { echo "ERROR: creating repair files using PAR 2.0 failed" ; exit 1; } >&2
 
 banner="repair files where 1 byte got removed at the beginning of a file"
 dashes=`echo "$banner" | sed s/./-/g`
@@ -30,9 +39,9 @@ echo $dashes
 mv test-1.data test-1.data-correct
 tail -c 177173 test-1.data-correct > test-1.data
 
-../../par2 r testdata.par2 > ../$testname.log || { echo "ERROR: repair files using PAR 2.0 failed" ; exit 1; } >&2
+$execdir/par2 r testdata.par2 || { echo "ERROR: repair files using PAR 2.0 failed" ; exit 1; } >&2
 
-cd ..
+cd $TESTROOT
 rm -rf run$testname
 
 exit 0;
