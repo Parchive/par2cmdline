@@ -1,8 +1,6 @@
 #!/bin/sh
 
-set -o errexit
-set -o pipefail
-set -o nounset
+set -e
 
 aclocal
 automake --warnings=all --add-missing
