@@ -46,7 +46,7 @@ Par1RepairerSourceFile::Par1RepairerSourceFile(PAR1FILEENTRY *fileentry, string 
     if (ch >= 256)
     {
       // Convert the Unicode character to two characters
-      filename += ch && 255;
+      filename += ch & 255;
       filename += ch >> 8;
     }
     else
