@@ -66,6 +66,9 @@ typedef unsigned int     size_t;
 #  define _SIZE_T_DEFINED
 #endif
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 
 #else // WIN32
 #ifdef HAVE_CONFIG_H
