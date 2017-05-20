@@ -11,7 +11,7 @@ mkdir -p ../par2release
 mv par2cmdline-$version.tar.gz ../par2release
 (
     cd ../par2release
-    gzcat par2cmdline-$version.tar.gz | bzip2 > par2cmdline-$version.tar.bz2
+    zcat par2cmdline-$version.tar.gz | bzip2 > par2cmdline-$version.tar.bz2
 )
 git clean -xfd
 build/build-win32.sh
