@@ -10,4 +10,5 @@ export LDFLAGS="-static"
 ./configure --host=x86_64-w64-mingw32
 # make
 make
-
+# strip
+/usr/x86_64-w64-mingw32/bin/strip par2.exe
