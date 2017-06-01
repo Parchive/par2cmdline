@@ -10,7 +10,7 @@ else
   TESTDATA="$srcdir/tests"
 fi
 
-TESTROOT=$PWD
+TESTROOT="$PWD"
 
 testname=$(basename $0)
 rm -f "$testname.log"
@@ -18,8 +18,8 @@ rm -rf "run$testname"
 
 mkdir "run$testname" && cd "run$testname" || { echo "ERROR: Could not change to test directory" ; exit 1; } >&2
 
-tar -xzf $TESTDATA/smallsubdirdata.tar.gz || { echo "ERROR: Could not extract data test files" ; exit 1; } >&2
-tar -xzf $TESTDATA/smallsubdirdata-par2files.tar.gz || { echo "ERROR: Could not extract par test files" ; exit 1; } >&2
+tar -xzf "$TESTDATA/smallsubdirdata.tar.gz" || { echo "ERROR: Could not extract data test files" ; exit 1; } >&2
+tar -xzf "$TESTDATA/smallsubdirdata-par2files.tar.gz" || { echo "ERROR: Could not extract par test files" ; exit 1; } >&2
 
 banner="Repairing deleted subdir using PAR 2.0 data"
 dashes=`echo "$banner" | sed s/./-/g`
@@ -31,11 +31,11 @@ echo $dashes
 cp subdir1/test-0.data ./test-0.data.orig
 rm -rf subdir1
 
-$execdir/par2 r testdata.par2 || { echo "ERROR: Reconstruction of two files using PAR 2.0 failed" ; exit 1; } >&2
+"$execdir/par2" r testdata.par2 || { echo "ERROR: Reconstruction of two files using PAR 2.0 failed" ; exit 1; } >&2
 cmp -s subdir1/test-0.data test-0.data.orig || { echo "ERROR: Repaired files do not match originals" ; exit 1; } >&2
 
-cd $TESTROOT
-rm -rf run$testname
+cd "$TESTROOT"
+rm -rf "run$testname"
 
 exit 0;
 

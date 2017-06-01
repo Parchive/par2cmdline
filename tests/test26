@@ -10,7 +10,7 @@ else
   TESTDATA="$srcdir/tests"
 fi
 
-TESTROOT=$PWD
+TESTROOT="$PWD"
 
 testname=$(basename $0)
 rm -f "$testname.log"
@@ -28,12 +28,12 @@ echo $dashes
 mkdir subfolder
 
 echo "file contents" > subfolder/some-file
-$execdir/par2 create `pwd`/subfolder/some-file || { echo "ERROR: Failed to create parchive"; exit1; } >&2
+"$execdir/par2" create "$(pwd)"/subfolder/some-file || { echo "ERROR: Failed to create parchive"; exit1; } >&2
 echo "corrupted contents" > subfolder/some-file
-$execdir/par2 repair subfolder/some-file || { echo "ERROR: Failed to repair"; exit 1; } >&2
+"$execdir/par2" repair subfolder/some-file || { echo "ERROR: Failed to repair"; exit 1; } >&2
 
-cd $TESTROOT
-rm -rf run$testname
+cd "$TESTROOT"
+rm -rf "run$testname"
 
 exit 0;
 

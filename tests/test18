@@ -10,7 +10,7 @@ else
   TESTDATA="$srcdir/tests"
 fi
 
-TESTROOT=$PWD
+TESTROOT="$PWD"
 
 testname=$(basename $0)
 rm -f "$testname.log"
@@ -18,7 +18,7 @@ rm -rf "run$testname"
 
 mkdir "run$testname" && cd "run$testname" || { echo "ERROR: Could not change to test directory" ; exit 1; } >&2
 
-cp $TESTDATA/flatdata.tar.gz ./ || { echo "ERROR: Could not copy data test files" ; exit 1; } >&2
+cp "$TESTDATA/flatdata.tar.gz" ./ || { echo "ERROR: Could not copy data test files" ; exit 1; } >&2
 
 banner="Creating PAR 2.0 recovery data"
 dashes=`echo "$banner" | sed s/./-/g`
@@ -27,7 +27,7 @@ echo $dashes
 echo $banner
 echo $dashes
 
-$execdir/par2 c recovery flatdata.tar.gz || { echo "ERROR: Creating PAR 2.0 data failed" ; exit 1; } >&2
+"$execdir/par2" c recovery flatdata.tar.gz || { echo "ERROR: Creating PAR 2.0 data failed" ; exit 1; } >&2
 
 banner="Verifying using PAR 2.0 data"
 dashes=`echo "$banner" | sed s/./-/g`
@@ -40,10 +40,10 @@ mv flatdata.tar.gz flatdata.tar.gz-orig
 dd if=flatdata.tar.gz-orig bs=1983 count=1 of=flatdata.tar.gz
 rm -f flatdata.tar.gz-orig
 
-$execdir/par2 r recovery.par2 ./* || { echo "ERROR: PAR 2.0 repair failed" ; exit 1; } >&2
+"$execdir/par2" r recovery.par2 ./* || { echo "ERROR: PAR 2.0 repair failed" ; exit 1; } >&2
 
-cd $TESTROOT
-rm -rf run$testname
+cd "$TESTROOT"
+rm -rf "run$testname"
 
 exit 0;
 

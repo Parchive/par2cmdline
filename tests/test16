@@ -15,7 +15,7 @@ else
   TESTDATA="$srcdir/tests"
 fi
 
-TESTROOT=$PWD
+TESTROOT="$PWD"
 
 testname=$(basename $0)
 rm -f "$testname.log"
@@ -23,7 +23,7 @@ rm -rf "run$testname"
 
 mkdir "run$testname" && cd "run$testname" || { echo "ERROR: Could not change to test directory" ; exit 1; } >&2
 
-tar -xzf $TESTDATA/subdirdata.tar.gz || { echo "ERROR: Could not extract data test files" ; exit 1; } >&2
+tar -xzf "$TESTDATA/subdirdata.tar.gz" || { echo "ERROR: Could not extract data test files" ; exit 1; } >&2
 
 banner="don't allow files outside par2 basedir, (issue #34, #36)"
 dashes=`echo "$banner" | sed s/./-/g`
@@ -34,15 +34,15 @@ echo $dashes
 
 cd subdir1
 
-$execdir/par2 c -r2 test.par2 *.data ../subdir2/*.data > $testname.log || { echo "ERROR: creating files using PAR 2.0 failed" ; exit 1; } >&2
+"$execdir/par2" c -r2 test.par2 *.data ../subdir2/*.data > $testname.log || { echo "ERROR: creating files using PAR 2.0 failed" ; exit 1; } >&2
 
 # check if there were ignored files
-grep 'Ignoring' $testname.log || { echo "ERROR: there were no files ignored"; exit 1; } >&2
+grep 'Ignoring' "$testname.log" || { echo "ERROR: there were no files ignored"; exit 1; } >&2
 
-rm $testname.log
+rm "$testname.log"
 
-cd $TESTROOT
-rm -rf run$testname
+cd "$TESTROOT"
+rm -rf "run$testname"
 
 exit 0;
 
