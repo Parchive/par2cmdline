@@ -23,8 +23,8 @@ faraway="$TESTROOT/run$testname/in/a/folder/far/far/away"
 mkdir -p "$faraway" || { echo "ERROR: Could not create fancy folder" ; exit 1; } >&2
 mkdir rundir
 
-tar -xf "$TESTDATA/flatdata.tar.gz" -C "$faraway" || { echo "ERROR: Could not extract data test files" ; exit 1; } >&2
-tar -xf "$TESTDATA/flatdata-par2files.tar.gz" -C "$faraway" || { echo "ERROR: Could not extract data test files" ; exit 1; } >&2
+tar -xzf "$TESTDATA/flatdata.tar.gz" -C "$faraway" || { echo "ERROR: Could not extract data test files" ; exit 1; } >&2
+tar -xzf "$TESTDATA/flatdata-par2files.tar.gz" -C "$faraway" || { echo "ERROR: Could not extract data test files" ; exit 1; } >&2
 
 banner="par2 can be run from any starting dir"
 dashes=`echo "$banner" | sed s/./-/g`
