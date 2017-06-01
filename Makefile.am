@@ -53,6 +53,7 @@ AM_CXXFLAGS = -Wall $(OPENMP_CXXFLAGS)
 
 EXTRA_DIST = PORTING ROADMAP \
 			 man/par2.1 \
+			 automake.sh \
 			 tests/flatdata.tar.gz \
 			 tests/flatdata-par1files.tar.gz \
 			 tests/flatdata-par2files.tar.gz \
