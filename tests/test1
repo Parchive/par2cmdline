@@ -10,7 +10,7 @@ else
   TESTDATA="$srcdir/tests"
 fi
 
-TESTROOT=$PWD
+TESTROOT="$PWD"
 
 testname=$(basename $0)
 rm -f "$testname.log"
@@ -18,8 +18,8 @@ rm -rf "run$testname"
 
 mkdir "run$testname" && cd "run$testname" || { echo "ERROR: Could not change to test directory" ; exit 1; } >&2
 
-tar -xzf $TESTDATA/flatdata.tar.gz 2>&1 || { echo "ERROR: Could not extract data test files" ; exit 1; } >&2
-tar -xzf $TESTDATA/flatdata-par1files.tar.gz 2>&1 || { echo "ERROR: Could not extract par test files" ; exit 1; } >&2
+tar -xzf "$TESTDATA/flatdata.tar.gz" 2>&1 || { echo "ERROR: Could not extract data test files" ; exit 1; } >&2
+tar -xzf "$TESTDATA/flatdata-par1files.tar.gz" 2>&1 || { echo "ERROR: Could not extract par test files" ; exit 1; } >&2
 
 banner="Verifying using PAR 1.0 data"
 dashes=`echo "$banner" | sed s/./-/g`
@@ -28,10 +28,10 @@ echo $dashes
 echo $banner
 echo $dashes
 
-$execdir/par2 v testdata.par || { echo "ERROR: Initial PAR 1.0 verification failed" ; exit 1; } >&2
+"$execdir/par2" v testdata.par || { echo "ERROR: Initial PAR 1.0 verification failed" ; exit 1; } >&2
 
-cd $TESTROOT
-rm -rf run$testname
+cd "$TESTROOT"
+rm -rf "run$testname"
 
 exit 0;
 

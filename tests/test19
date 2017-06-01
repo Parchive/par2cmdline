@@ -10,7 +10,7 @@ else
   TESTDATA="$srcdir/tests"
 fi
 
-TESTROOT=$PWD
+TESTROOT="$PWD"
 
 testname=$(basename $0)
 rm -f "$testname.log"
@@ -35,7 +35,7 @@ echo $dashes
 echo $banner
 echo $dashes
 
-$execdir/par2 c -s200 -c1 recovery datafile || { echo "ERROR: Creating PAR 2.0 data failed" ; exit 1; } >&2
+"$execdir/par2" c -s200 -c1 recovery datafile || { echo "ERROR: Creating PAR 2.0 data failed" ; exit 1; } >&2
 ls -l
 
 banner="Damaging data file (trim first 100 bytes)"
@@ -57,7 +57,7 @@ echo $dashes
 echo $banner
 echo $dashes
 
-$execdir/par2 r -N -S99 -vv recovery.par2 && { echo "ERROR: Repair should not be possible with skip leaway set to 99" ; exit 1; } >&2
+"$execdir/par2" r -N -S99 -vv recovery.par2 && { echo "ERROR: Repair should not be possible with skip leaway set to 99" ; exit 1; } >&2
 ls -l
 
 banner="Repairing using PAR 2.0 data (with skip leaway 100 - should succeed)"
@@ -67,11 +67,11 @@ echo $dashes
 echo $banner
 echo $dashes
 
-$execdir/par2 r -N -S100 -vv recovery.par2 || { echo "ERROR: Repair should be possible with skip leaway set to 100" ; exit 1; } >&2
+"$execdir/par2" r -N -S100 -vv recovery.par2 || { echo "ERROR: Repair should be possible with skip leaway set to 100" ; exit 1; } >&2
 ls -l
 
-cd $TESTROOT
-rm -rf run$testname
+cd "$TESTROOT"
+rm -rf "run$testname"
 
 exit 0;
 

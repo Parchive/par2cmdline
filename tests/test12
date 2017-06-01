@@ -10,7 +10,7 @@ else
   TESTDATA="$srcdir/tests"
 fi
 
-TESTROOT=$PWD
+TESTROOT="$PWD"
 
 testname=$(basename $0)
 rm -f "$testname.log"
@@ -18,7 +18,7 @@ rm -rf "run$testname"
 
 mkdir "run$testname" && cd "run$testname" || { echo "ERROR: Could not change to test directory" ; exit 1; } >&2
 
-tar -xzf $TESTDATA/readbeyondeof.tar.gz || { echo "ERROR: Could not extract data test files" ; exit 1; } >&2
+tar -xzf "$TESTDATA/readbeyondeof.tar.gz" || { echo "ERROR: Could not extract data test files" ; exit 1; } >&2
 
 banner="repair files where the filesize got changed"
 dashes=`echo "$banner" | sed s/./-/g`
@@ -30,10 +30,10 @@ echo $dashes
 mv test.data test.data-correct
 dd if=test.data-correct bs=113579 count=1 of=test.data
 
-$execdir/par2 r test.par2 || { echo "ERROR: repair files using PAR 2.0 failed" ; exit 1; } >&2
+"$execdir/par2" r test.par2 || { echo "ERROR: repair files using PAR 2.0 failed" ; exit 1; } >&2
 
-cd $TESTROOT
-rm -rf run$testname
+cd "$TESTROOT"
+rm -rf "run$testname"
 
 exit 0;
 

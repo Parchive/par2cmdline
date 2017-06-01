@@ -10,7 +10,7 @@ else
   TESTDATA="$srcdir/tests"
 fi
 
-TESTROOT=$PWD
+TESTROOT="$PWD"
 
 testname=$(basename $0)
 rm -f "$testname.log"
@@ -23,7 +23,7 @@ faraway="$TESTROOT/run$testname/in/a/folder/far/far/away"
 mkdir -p "$faraway" || { echo "ERROR: Could not create fancy folder" ; exit 1; } >&2
 mkdir rundir
 
-tar -xzf $TESTDATA/flatdata.tar.gz -C "$faraway" || { echo "ERROR: Could not extract data test files" ; exit 1; } >&2
+tar -xzf "$TESTDATA/flatdata.tar.gz" -C "$faraway" || { echo "ERROR: Could not extract data test files" ; exit 1; } >&2
 
 banner="par2 can be run from any starting dir"
 dashes=`echo "$banner" | sed s/./-/g`
@@ -34,10 +34,10 @@ echo $dashes
 
 cd rundir
 
-$execdir/par2 c -r2 -B"$faraway" "$faraway"/test.par2 "$faraway"/*.data || { echo "ERROR: create of PAR 2.0 files failed" ; exit 1; } >&2
+"$execdir/par2" c -r2 -B"$faraway" "$faraway"/test.par2 "$faraway"/*.data || { echo "ERROR: create of PAR 2.0 files failed" ; exit 1; } >&2
 
-cd $TESTROOT
-rm -rf run$testname
+cd "$TESTROOT"
+rm -rf "run$testname"
 
 exit 0;
 

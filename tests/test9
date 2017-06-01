@@ -10,7 +10,7 @@ else
   TESTDATA="$srcdir/tests"
 fi
 
-TESTROOT=$PWD
+TESTROOT="$PWD"
 
 testname=$(basename $0)
 rm -f "$testname.log"
@@ -18,8 +18,8 @@ rm -rf "run$testname"
 
 mkdir "run$testname" && cd "run$testname" || { echo "ERROR: Could not change to test directory" ; exit 1; } >&2
 
-tar -xzf $TESTDATA/flatdata.tar.gz || { echo "ERROR: Could not extract data test files" ; exit 1; } >&2
-tar -xzf $TESTDATA/flatdata-par2files.tar.gz || { echo "ERROR: Could not extract par test files" ; exit 1; } >&2
+tar -xzf "$TESTDATA/flatdata.tar.gz" || { echo "ERROR: Could not extract data test files" ; exit 1; } >&2
+tar -xzf "$TESTDATA/flatdata-par2files.tar.gz" || { echo "ERROR: Could not extract par test files" ; exit 1; } >&2
 
 banner="rename using PAR 2.0 data"
 dashes=`echo "$banner" | sed s/./-/g`
@@ -38,7 +38,7 @@ mv test-7.data rename3
 mv test-8.data rename1
 mv test-9.data rename2
 
-$execdir/par2 r testdata.par2 rename* || { echo "ERROR: Initial PAR 2.0 verification and rename failed" ; exit 1; } >&2
+"$execdir/par2" r testdata.par2 rename* || { echo "ERROR: Initial PAR 2.0 verification and rename failed" ; exit 1; } >&2
 test -e test-1.data ||  { echo "ERROR: rename failed" ; exit 1; } >&2
 test -e test-2.data ||  { echo "ERROR: rename failed" ; exit 1; } >&2
 test -e test-3.data ||  { echo "ERROR: rename failed" ; exit 1; } >&2
@@ -49,8 +49,8 @@ test -e test-7.data ||  { echo "ERROR: rename failed" ; exit 1; } >&2
 test -e test-8.data ||  { echo "ERROR: rename failed" ; exit 1; } >&2
 test -e test-9.data ||  { echo "ERROR: rename failed" ; exit 1; } >&2
 
-cd $TESTROOT
-rm -rf run$testname
+cd "$TESTROOT"
+rm -rf "run$testname"
 
 exit 0;
 

@@ -10,7 +10,7 @@ else
   TESTDATA="$srcdir/tests"
 fi
 
-TESTROOT=$PWD
+TESTROOT="$PWD"
 
 testname=$(basename $0)
 rm -f "$testname.log"
@@ -18,7 +18,7 @@ rm -rf "run$testname"
 
 mkdir "run$testname" && cd "run$testname" || { echo "ERROR: Could not change to test directory" ; exit 1; } >&2
 
-tar -xzf $TESTDATA/flatdata.tar.gz || { echo "ERROR: Could not extract data test files" ; exit 1; } >&2
+tar -xzf "$TESTDATA/flatdata.tar.gz" || { echo "ERROR: Could not extract data test files" ; exit 1; } >&2
 
 banner="create 5% recovery files"
 dashes=`echo "$banner" | sed s/./-/g`
@@ -27,7 +27,7 @@ echo $dashes
 echo $banner
 echo $dashes
 
-$execdir/par2 c testdata.par2 *.data || { echo "ERROR: creating repair files using PAR 2.0 failed" ; exit 1; } >&2
+"$execdir/par2" c testdata.par2 *.data || { echo "ERROR: creating repair files using PAR 2.0 failed" ; exit 1; } >&2
 
 banner="repair files where 1 byte got removed at the end of a file"
 dashes=`echo "$banner" | sed s/./-/g`
@@ -39,10 +39,10 @@ echo $dashes
 mv test-1.data test-1.data-correct
 dd if=test-1.data-correct bs=177173 count=1 of=test-1.data
 
-$execdir/par2 r testdata.par2 || { echo "ERROR: repair files using PAR 2.0 failed" ; exit 1; } >&2
+"$execdir/par2" r testdata.par2 || { echo "ERROR: repair files using PAR 2.0 failed" ; exit 1; } >&2
 
-cd $TESTROOT
-rm -rf run$testname
+cd "$TESTROOT"
+rm -rf "run$testname"
 
 exit 0;
 
