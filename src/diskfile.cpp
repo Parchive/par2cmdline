@@ -1073,7 +1073,7 @@ string DiskFile::ErrorMessage(DWORD error)
   else
   {
     char message[40];
-    snprintf(message, sizeof(message), "Unknown error code (%d)", error);
+    snprintf(message, sizeof(message), "Unknown error code (%lu)", error);
     result = message;
   }
 
