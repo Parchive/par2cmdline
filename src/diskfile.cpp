@@ -43,7 +43,7 @@ static char THIS_FILE[]=__FILE__;
 
 DiskFile::DiskFile(void)
 {
-  filename;
+  filename = "";
   filesize = 0;
   offset = 0;
 
@@ -297,7 +297,7 @@ string DiskFile::GetCanonicalPathname(string filename)
   char *filepart;
 
   // Resolve a relative path to a full path
-  int length = ::GetFullPathName(filename.c_str(), sizeof(fullname), fullname, &filepart);
+  unsigned int length = ::GetFullPathName(filename.c_str(), sizeof(fullname), fullname, &filepart);
   if (length <= 0 || sizeof(fullname) < length)
     return filename;
 
