@@ -1,3 +1,11 @@
+30 June 2017 Ike Devolder
+	* relase: 0.7.2
+	* fixed tests on NetBSD, #102
+	* fixed failing tests when dir contains whitespace, #103
+	* added automake.sh to the files, #104
+	* changed some flags related to windows build, #94
+	* cleaned up compiler warnings for mingw build
+
 19 May 2017 Ike Devolder
 	* release: 0.7.1
 	* fixed basepath issues #93
