@@ -112,8 +112,9 @@ bool DiskFile::Create(string _filename, u64 _filesize)
   if (filesize > 0)
   {
     // Seek to the end of the file
-    LONG lowoffset = ((LONG*)&filesize)[0];
-    LONG highoffset = ((LONG*)&filesize)[1];
+    LONG* ptrfilesize = (LONG*)&filesize;
+    LONG lowoffset = ptrfilesize[0];
+    LONG highoffset = ptrfilesize[1];
 
     if (INVALID_SET_FILE_POINTER == SetFilePointer(hFile, lowoffset, &highoffset, FILE_BEGIN))
     {
@@ -157,8 +158,9 @@ bool DiskFile::Write(u64 _offset, const void *buffer, size_t length)
 
   if (offset != _offset)
   {
-    LONG lowoffset = ((LONG*)&_offset)[0];
-    LONG highoffset = ((LONG*)&_offset)[1];
+    LONG* ptrfilesize = (LONG*)&filesize;
+    LONG lowoffset = ptrfilesize[0];
+    LONG highoffset = ptrfilesize[1];
 
     // Seek to the required offset
     if (INVALID_SET_FILE_POINTER == SetFilePointer(hFile, lowoffset, &highoffset, FILE_BEGIN))
@@ -242,8 +244,9 @@ bool DiskFile::Read(u64 _offset, void *buffer, size_t length)
 
   if (offset != _offset)
   {
-    LONG lowoffset = ((LONG*)&_offset)[0];
-    LONG highoffset = ((LONG*)&_offset)[1];
+    LONG* ptrfilesize = (LONG*)&filesize;
+    LONG lowoffset = ptrfilesize[0];
+    LONG highoffset = ptrfilesize[1];
 
     // Seek to the required offset
     if (INVALID_SET_FILE_POINTER == SetFilePointer(hFile, lowoffset, &highoffset, FILE_BEGIN))
