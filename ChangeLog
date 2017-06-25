@@ -1,5 +1,9 @@
-30 June 2017 Ike Devolder
-	* relase: 0.7.2
+25 June 2017 Ike Devolder
+  * release: 0.7.3
+	* fixed critical issue on windows where created parfiles were corrupt
+
+03 June 2017 Ike Devolder
+	* release: 0.7.2
 	* fixed tests on NetBSD, #102
 	* fixed failing tests when dir contains whitespace, #103
 	* added automake.sh to the files, #104
