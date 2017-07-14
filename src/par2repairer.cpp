@@ -1152,7 +1152,6 @@ bool Par2Repairer::VerifySourceFiles(const std::string& basepath, std::list<Comm
       cout << "[DEBUG] file: " << file << endl;
       cout << "[DEBUG] name: " << name << endl;
       cout << "[DEBUG] targ: " << target_pathname << endl;
-      cout << "[DEBUG] ----------------------" << endl;
     }
 
     // if the target file is in the list of extra files, we remove it
@@ -1683,9 +1682,13 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
 
   if (noiselevel >= CommandLine::nlDebug)
   {
+    // Clear out old scanning line
+    cout << std::setw(shortname.size()+19) << std::setfill(' ') << "";
+    
     if (duplicatecount > 0)
-      cout << "[DEBUG] duplicates: " << duplicatecount << endl;
-    cout << "[DEBUG] matchcount: " << count << endl;
+      cout << "\r[DEBUG] duplicates: " << duplicatecount << endl;
+    cout << "\r[DEBUG] matchcount: " << count << endl;
+    cout << "[DEBUG] ----------------------" << endl;
   }
 
   // Did we make any matches at all
