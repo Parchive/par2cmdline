@@ -1508,8 +1508,6 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
   // Which block do we expect to find first
   const VerificationHashEntry *nextentry = 0;
 
-  u64 progress = 0;
-
   // How far will we scan the file (1 byte at a time)
   // before skipping ahead looking for the next block
   u64 scandistance = min(skipleaway<<1, blocksize);
@@ -1528,20 +1526,30 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
 
   bool progressline = false;
 
+  u64 oldoffset = 0;
+  u64 printprogress = 0;
+
   // Whilst we have not reached the end of the file
   while (filechecksummer.Offset() < diskfile->FileSize())
   {
     if (noiselevel > CommandLine::nlQuiet)
     {
-      // Update a progress indicator
-      u32 oldfraction = (u32)(1000 * progress / diskfile->FileSize());
-      u32 newfraction = (u32)(1000 * (progress = filechecksummer.Offset()) / diskfile->FileSize());
-      if (oldfraction != newfraction)
+      // Update progress indicator
+      printprogress += filechecksummer.Offset() - oldoffset;
+      if (printprogress == blocksize || filechecksummer.ShortBlock())
       {
-        cout << "Scanning: \"" << shortname << "\": " << newfraction/10 << '.' << newfraction%10 << "%\r" << flush;
+        u32 oldfraction = (u32)(1000 * (filechecksummer.Offset() - printprogress) / diskfile->FileSize());
+        u32 newfraction = (u32)(1000 * filechecksummer.Offset() / diskfile->FileSize());
+        printprogress = 0;
 
-        progressline = true;
+        if (oldfraction != newfraction)
+        {
+          cout << "Scanning: \"" << shortname << "\": " << newfraction/10 << '.' << newfraction%10 << "%\r" << flush;
+
+          progressline = true;
+        }
       }
+      oldoffset = filechecksummer.Offset();
     }
 
     // If we fail to find a match, it might be because it was a duplicate of a block
