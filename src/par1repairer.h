@@ -36,14 +36,14 @@ protected:
   bool LoadOtherRecoveryFiles(string filename);
 
   // Load any extra PAR files specified on the command line
-  bool LoadExtraRecoveryFiles(const list<CommandLine::ExtraFile> &extrafiles);
+  bool LoadExtraRecoveryFiles(const vector<CommandLine::ExtraFile> &extrafiles);
 
   // Check for the existence of and verify each of the source files
   bool VerifySourceFiles(void);
 
   // Check any other files specified on the command line to see if they are
   // actually copies of the source files that have the wrong filename
-  bool VerifyExtraFiles(const list<CommandLine::ExtraFile> &extrafiles);
+  bool VerifyExtraFiles(const vector<CommandLine::ExtraFile> &extrafiles);
 
   // Attempt to match the data in the DiskFile with the source file
   bool VerifyDataFile(DiskFile *diskfile, Par1RepairerSourceFile *sourcefile);

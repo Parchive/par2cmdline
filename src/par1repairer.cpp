@@ -90,7 +90,7 @@ Result Par1Repairer::Process(const CommandLine &commandline, bool dorepair)
 
   // Get filesnames from the command line
   string par1filename = commandline.GetParFilename();
-  const list<CommandLine::ExtraFile> &extrafiles = commandline.GetExtraFiles();
+  const vector<CommandLine::ExtraFile> &extrafiles = commandline.GetExtraFiles();
 
   // Determine the searchpath from the location of the main PAR file
   string name;
@@ -548,7 +548,7 @@ bool Par1Repairer::LoadOtherRecoveryFiles(string filename)
 }
 
 // Load packets from any other PAR files whose names are given on the command line
-bool Par1Repairer::LoadExtraRecoveryFiles(const list<CommandLine::ExtraFile> &extrafiles)
+bool Par1Repairer::LoadExtraRecoveryFiles(const vector<CommandLine::ExtraFile> &extrafiles)
 {
   for (ExtraFileIterator i=extrafiles.begin(); i!=extrafiles.end(); i++)
   {
@@ -652,7 +652,7 @@ bool Par1Repairer::VerifySourceFiles(void)
 }
 
 // Scan any extra files specified on the command line
-bool Par1Repairer::VerifyExtraFiles(const list<CommandLine::ExtraFile> &extrafiles)
+bool Par1Repairer::VerifyExtraFiles(const vector<CommandLine::ExtraFile> &extrafiles)
 {
   for (ExtraFileIterator i=extrafiles.begin(); 
        i!=extrafiles.end() && completefilecount<sourcefiles.size(); 

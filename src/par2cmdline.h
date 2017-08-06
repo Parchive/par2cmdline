@@ -227,6 +227,8 @@ typedef   unsigned long long   u64;
 #define ALTPATHSEP "\\"
 #endif
 
+#define _FILE_THREADS 2
+
 // Return type of par2cmdline
 typedef enum Result
 {

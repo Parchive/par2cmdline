@@ -38,7 +38,7 @@ protected:
 
   // Compute block size from block count or vice versa depending on which was
   // specified on the command line
-  bool ComputeBlockSizeAndBlockCount(const list<CommandLine::ExtraFile> &extrafiles);
+  bool ComputeBlockSizeAndBlockCount(const vector<CommandLine::ExtraFile> &extrafiles);
 
   // Determine how many recovery blocks to create based on the source block
   // count and the requested level of redundancy.
@@ -52,7 +52,7 @@ protected:
 
   // Open all of the source files, compute the Hashes and CRC values, and store
   // the results in the file verification and file description packets.
-  bool OpenSourceFiles(const list<CommandLine::ExtraFile> &extrafiles, string basepath);
+  bool OpenSourceFiles(const vector<CommandLine::ExtraFile> &extrafiles, string basepath);
 
   // Create the main packet and determine the set_id_hash to use with all packets
   bool CreateMainPacket(void);
@@ -140,6 +140,10 @@ protected:
                              // in one pass, then we can defer the computation of
                              // the full file hash and block crc and hashes until
                              // the recovery data is computed.
+#ifdef _OPENMP
+  u64 mttotalsize;           // Total size of files for mt-progress line
+
+#endif  
 };
 
 #endif // __PAR2CREATOR_H__

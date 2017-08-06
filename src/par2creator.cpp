@@ -47,6 +47,9 @@ Par2Creator::Par2Creator(void)
 , creatorpacket(0)
 
 , deferhashcomputation(false)
+#ifdef _OPENMP
+, mttotalsize(0)
+#endif
 {
 }
 
@@ -72,7 +75,7 @@ Result Par2Creator::Process(const CommandLine &commandline)
   noiselevel = commandline.GetNoiseLevel();
   blocksize = commandline.GetBlockSize();
   sourceblockcount = commandline.GetBlockCount();
-  const list<CommandLine::ExtraFile> extrafiles = commandline.GetExtraFiles();
+  const vector<CommandLine::ExtraFile> extrafiles = commandline.GetExtraFiles();
   sourcefilecount = (u32)extrafiles.size();
   u32 redundancy = commandline.GetRedundancy();
   u64 redundancysize = commandline.GetRedundancySize();
@@ -200,7 +203,7 @@ Result Par2Creator::Process(const CommandLine &commandline)
 
 // Compute block size from block count or vice versa depending on which was
 // specified on the command line
-bool Par2Creator::ComputeBlockSizeAndBlockCount(const list<CommandLine::ExtraFile> &extrafiles)
+bool Par2Creator::ComputeBlockSizeAndBlockCount(const vector<CommandLine::ExtraFile> &extrafiles)
 {
   // Determine blocksize from sourceblockcount or vice-versa
   if (blocksize > 0)
@@ -494,38 +497,71 @@ bool Par2Creator::ComputeRecoveryFileCount(void)
 
 // Open all of the source files, compute the Hashes and CRC values, and store
 // the results in the file verification and file description packets.
-bool Par2Creator::OpenSourceFiles(const list<CommandLine::ExtraFile> &extrafiles, string basepath)
+bool Par2Creator::OpenSourceFiles(const vector<CommandLine::ExtraFile> &extrafiles, string basepath)
 {
-  ExtraFileIterator extrafile = extrafiles.begin();
-  while (extrafile != extrafiles.end())
+#ifdef _OPENMP
+  bool openfailed = false;
+  u64 totalprogress = 0;
+
+  //Total size of files for mt-progress line
+  for (u64 i=0; i<extrafiles.size(); ++i)
+    mttotalsize += extrafiles[i].FileSize();
+
+#endif
+
+  #pragma omp parallel for schedule(dynamic) num_threads(CommandLine::GetFileThreads())
+  for (i64 i=0; i<(i64)extrafiles.size(); ++i)
   {
+#ifdef _OPENMP
+    if (openfailed)
+      continue;
+#endif
+
     Par2CreatorSourceFile *sourcefile = new Par2CreatorSourceFile;
 
     string name;
-    DiskFile::SplitRelativeFilename(extrafile->FileName(), basepath, name);
+    DiskFile::SplitRelativeFilename(extrafiles[i].FileName(), basepath, name);
 
     if (noiselevel > CommandLine::nlSilent)
+    {
+      #pragma omp critical
       cout << "Opening: " << name << endl;
+    }
 
     // Open the source file and compute its Hashes and CRCs.
-    if (!sourcefile->Open(noiselevel, *extrafile, blocksize, deferhashcomputation, basepath))
+#ifdef _OPENMP
+    if (!sourcefile->Open(noiselevel, extrafiles[i], blocksize, deferhashcomputation, basepath, mttotalsize, totalprogress))
+#else
+    if (!sourcefile->Open(noiselevel, extrafiles[i], blocksize, deferhashcomputation, basepath))
+#endif
     {
       delete sourcefile;
+#ifdef _OPENMP
+      openfailed = true;
+      continue;
+#else
       return false;
+#endif
     }
 
     // Record the file verification and file description packets
     // in the critical packet list.
+    #pragma omp critical
+    {
     sourcefile->RecordCriticalPackets(criticalpackets);
 
     // Add the source file to the sourcefiles array.
     sourcefiles.push_back(sourcefile);
-
+    }
     // Close the source file until its needed
     sourcefile->Close();
 
-    ++extrafile;
   }
+
+#ifdef _OPENMP
+  if (openfailed)
+    return false;
+#endif
 
   return true;
 }
