@@ -1120,17 +1120,6 @@ bool Par2Repairer::VerifySourceFiles(const std::string& basepath, std::vector<Co
 #ifdef _OPENMP
   mttotalsize = 0;
   mttotalprogress = 0;
-
-  // Get total filesizes for mt-progress line
-  while (sf != sourcefiles.end())
-  {
-    Par2RepairerSourceFile *sourcefile = *sf;
-    if (sourcefile)
-      mttotalsize += sourcefile->DiskFileSize();
-    
-    ++sf;
-  }
-  sf = sourcefiles.begin();
 #endif
 
   while (sf != sourcefiles.end())
@@ -1140,7 +1129,11 @@ bool Par2Repairer::VerifySourceFiles(const std::string& basepath, std::vector<Co
     if (sourcefile)
     {
       sortedfiles.push_back(sourcefile);
-    }
+#ifdef _OPENMP
+      // Total filesizes for mt-progress line
+      mttotalsize += sourcefile->DiskFileSize();
+#endif
+     }
     else
     {
       // Was this one of the recoverable files
