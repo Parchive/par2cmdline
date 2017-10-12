@@ -151,8 +151,6 @@ void Par2RepairerSourceFile::SetBlockCount(u64 blocksize)
 }
 
 #ifdef _OPENMP
-
-//void Par2RepairerSourceFile::SetDiskFileSize(u64 filesize)
 void Par2RepairerSourceFile::SetDiskFileSize()
 {
   diskfilesize = DiskFile::GetFileSize(targetfilename);

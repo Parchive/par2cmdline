@@ -212,24 +212,14 @@ bool Par2CreatorSourceFile::Open(CommandLine::NoiseLevel noiselevel, const Comma
       if (noiselevel > CommandLine::nlQuiet)
       {
         // Display progress
-        u32 oldfraction;
-        u32 newfraction;
 #ifdef _OPENMP
-        if (CommandLine::GetFileThreads() == 1)
-        {
-          oldfraction = (u32)(1000 * offset / filesize);
-          newfraction = (u32)(1000 * (offset + want) / filesize);
-        }
-        else
-        {
-          oldfraction = (u32)(1000 * totalprogress / totalsize);
-          #pragma omp atomic
-          totalprogress += want;
-          newfraction = (u32)(1000 * totalprogress / totalsize);
-        }
+        u32 oldfraction = (u32)(1000 * totalprogress / totalsize);
+        #pragma omp atomic
+        totalprogress += want;
+        u32 newfraction = (u32)(1000 * totalprogress / totalsize);
 #else
-        oldfraction = (u32)(1000 * offset / filesize);
-        newfraction = (u32)(1000 * (offset + want) / filesize);
+        u32 oldfraction = (u32)(1000 * offset / filesize);
+        u32 newfraction = (u32)(1000 * (offset + want) / filesize);
 #endif
 
         if (oldfraction != newfraction)

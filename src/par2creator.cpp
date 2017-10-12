@@ -506,7 +506,6 @@ bool Par2Creator::OpenSourceFiles(const vector<CommandLine::ExtraFile> &extrafil
   //Total size of files for mt-progress line
   for (u64 i=0; i<extrafiles.size(); ++i)
     mttotalsize += extrafiles[i].FileSize();
-
 #endif
 
   #pragma omp parallel for schedule(dynamic) num_threads(CommandLine::GetFileThreads())

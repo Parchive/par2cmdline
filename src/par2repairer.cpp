@@ -1586,7 +1586,7 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
   u64 printprogress = 0;
 
 #ifdef _OPENMP
-  if (noiselevel > CommandLine::nlQuiet && CommandLine::GetFileThreads() > 1)
+  if (noiselevel > CommandLine::nlQuiet)
   {
     #pragma omp critical
     cout << "Opening: \"" << shortname << "\"" << endl;
@@ -1596,32 +1596,9 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
   // Whilst we have not reached the end of the file
   while (filechecksummer.Offset() < diskfile->FileSize())
   {
+// OPENMP progress line printing
 #ifdef _OPENMP
-    if (noiselevel > CommandLine::nlQuiet && CommandLine::GetFileThreads() == 1)
-#else
     if (noiselevel > CommandLine::nlQuiet)
-#endif
-    {
-      // Update progress indicator
-      printprogress += filechecksummer.Offset() - oldoffset;
-      if (printprogress == blocksize || filechecksummer.ShortBlock())
-      {
-        u32 oldfraction = (u32)(1000 * (filechecksummer.Offset() - printprogress) / diskfile->FileSize());
-        u32 newfraction = (u32)(1000 * filechecksummer.Offset() / diskfile->FileSize());
-        printprogress = 0;
-
-        if (oldfraction != newfraction)
-        {
-          cout << "Scanning: \"" << shortname << "\": " << newfraction/10 << '.' << newfraction%10 << "%\r" << flush;
-
-          progressline = true;
-        }
-      }
-      oldoffset = filechecksummer.Offset();
-    }
-
-#ifdef _OPENMP
-    if (noiselevel > CommandLine::nlQuiet && CommandLine::GetFileThreads() > 1)
     {
       // Are we processing extrafiles? Use correct total size
       u64 ts = mtprocessingextrafiles ? mttotalextrasize : mttotalsize;
@@ -1651,6 +1628,27 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
       }
       oldoffset = filechecksummer.Offset();
 
+    }
+// NON-OPENMP progress line printing
+#else
+    if (noiselevel > CommandLine::nlQuiet)
+    {
+      // Update progress indicator
+      printprogress += filechecksummer.Offset() - oldoffset;
+      if (printprogress == blocksize || filechecksummer.ShortBlock())
+      {
+        u32 oldfraction = (u32)(1000 * (filechecksummer.Offset() - printprogress) / diskfile->FileSize());
+        u32 newfraction = (u32)(1000 * filechecksummer.Offset() / diskfile->FileSize());
+        printprogress = 0;
+
+        if (oldfraction != newfraction)
+        {
+          cout << "Scanning: \"" << shortname << "\": " << newfraction/10 << '.' << newfraction%10 << "%\r" << flush;
+
+          progressline = true;
+        }
+      }
+      oldoffset = filechecksummer.Offset();
     }
 #endif 
 

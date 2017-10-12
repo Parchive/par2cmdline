@@ -142,7 +142,6 @@ protected:
                              // the recovery data is computed.
 #ifdef _OPENMP
   u64 mttotalsize;           // Total size of files for mt-progress line
-
 #endif  
 };
 
