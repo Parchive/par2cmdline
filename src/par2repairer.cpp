@@ -1774,6 +1774,16 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
     }
   }
 
+#ifdef _OPENMP
+  if (noiselevel > CommandLine::nlQuiet)
+  {
+    if (filechecksummer.Offset() == diskfile->FileSize()) {
+      #pragma omp atomic
+      mttotalprogress += filechecksummer.Offset() - oldoffset;
+    }
+  }
+#endif
+
   if (lastmatchoffset < filechecksummer.Offset() && noiselevel > CommandLine::nlNormal)
   {
     if (progressline)
