@@ -138,8 +138,8 @@ void CommandLine::usage(void)
 #ifdef _OPENMP
   cout <<
     "  -t<n>    : Number of threads used for main processing (" << omp_get_max_threads() << " detected)\n"
-    "  -T<n>    : Number of files processed in parallel (" << filethreads << " default) used\n"
-    "           : when can't parallelize otherwise\n";
+    "  -T<n>    : Number of files hashed in parallel (" << filethreads << " default)\n"
+    "             see man page for more information\n";
 #endif
   cout <<
     "  -v [-v]  : Be more verbose\n"

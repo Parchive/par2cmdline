@@ -77,7 +77,10 @@ Uniform recovery file sizes
 Memory (in MB) to use
 .TP
 .B \-t<n>
-.RB "Number of threads to use (Auto-detected)"
+.RB "Number of threads used for main processing (auto-detected)"
+.TP
+.B \-T<n>
+.RB "Number of files hashed in parallel (2 default)" 
 .TP
 .B \-v [\-v]
 Be more verbose
@@ -183,6 +186,11 @@ Then the recovery files that are created would be called:
   test.mpg.vol31+19.par2
 
 The first file in this list does not contain any recovery data, it only contains information sufficient to verify the data files. Each of the other files contains a different number of recovery blocks. The number after the '+' sign is the number of recovery blocks and the number preceding the '+' sign is the block number of the first recovery block in that file. If par2 told you that you needed 10 recovery blocks, then you would need "test.mpg.vol01+02.par2" and "test.mpg.vol07+08.par". You might of course choose to fetch "test.mpg.vol15+16.par2" instead (in which case you would have an extra 6 recovery blocks which would not be used for the repair).
+
+HASHING
+
+Hashing portion of the code can't be parallelized without processing multiple files simultaneously. The two file/thread default is a good choice for HDDs, using more threads can result in worse performance. Four or more threads can be used for better performance with SSDs.
+
 .SH AUTHORS
 Peter Brian Clements <peterbclements@users.sourceforge.net>
 .br
