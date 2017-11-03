@@ -91,7 +91,6 @@ public:
 
 public:
   // Accessor functions for the command line parameters
-
   CommandLine::Operation GetOperation(void) const          {return operation;}
   CommandLine::Version   GetVersion(void) const            {return version;}
   u64                    GetBlockSize(void) const          {return blocksize;}
@@ -109,11 +108,14 @@ public:
 
   string                              GetParFilename(void) const {return parfilename;}
   string                              GetBasePath(void) const    {return basepath;}
-  const list<CommandLine::ExtraFile>& GetExtraFiles(void) const  {return extrafiles;}
+  const vector<CommandLine::ExtraFile>& GetExtraFiles(void) const  {return extrafiles;}
   bool                                GetPurgeFiles(void) const  {return purgefiles;}
   bool                                GetRecursive(void) const   {return recursive;}
   bool                                GetSkipData(void) const    {return skipdata;}
   u64                                 GetSkipLeaway(void) const  {return skipleaway;}
+#ifdef _OPENMP
+  static u32                          GetFileThreads(void) {return filethreads;}
+#endif
 
 protected:
   bool                         SetParFilename(string filename);
@@ -150,7 +152,7 @@ protected:
 
   string basepath;             // the path par2 is run from
 
-  list<ExtraFile> extrafiles;  // The list of other files specified on the
+  vector<ExtraFile> extrafiles;  // The list of other files specified on the
                                // command line. When creating, this will be
                                // the source files, and when verifying or
                                // repairing, this will be additional PAR2
@@ -174,8 +176,11 @@ protected:
                                // skip data that is too far away.
   u64 skipleaway;              // The maximum leaway +/- that we will
                                // allow when searching for blocks.
+#ifdef _OPENMP
+  static u32 filethreads;      // Number of files to process in parallel
+#endif
 };
 
-typedef list<CommandLine::ExtraFile>::const_iterator ExtraFileIterator;
+typedef vector<CommandLine::ExtraFile>::const_iterator ExtraFileIterator;
 
 #endif // __COMMANDLINE_H__

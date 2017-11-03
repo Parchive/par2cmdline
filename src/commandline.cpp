@@ -27,6 +27,11 @@ static char THIS_FILE[]=__FILE__;
 #endif
 #endif
 
+// Set default for filethreads
+#ifdef _OPENMP
+u32 CommandLine::filethreads = _FILE_THREADS;
+#endif
+
 CommandLine::ExtraFile::ExtraFile(void)
 : filename()
 , filesize(0)
@@ -132,7 +137,9 @@ void CommandLine::usage(void)
     "  -m<n>    : Memory (in MB) to use\n";
 #ifdef _OPENMP
   cout <<
-    "  -t<n>    : Number of threads to use (" << omp_get_max_threads() << " detected)\n";
+    "  -t<n>    : Number of threads used for main processing (" << omp_get_max_threads() << " detected)\n"
+    "  -T<n>    : Number of files hashed in parallel (" << filethreads << " default)\n"
+    "             see man page for more information\n";
 #endif
   cout <<
     "  -v [-v]  : Be more verbose\n"
@@ -140,7 +147,7 @@ void CommandLine::usage(void)
     "  -p       : Purge backup files and par files on successful recovery or\n"
     "             when no recovery is needed\n"
     "  -R       : Recurse into subdirectories (only useful on create)\n"
-    "  -N       : data skipping (find badly mispositioned data blocks)\n"
+    "  -N       : Data skipping (find badly mispositioned data blocks)\n"
     "  -S<n>    : Skip leaway (distance +/- from expected block position)\n"
     "  -B<path> : Set the basepath to use as reference for the datafiles\n"
     "  --       : Treat all following arguments as filenames\n"
@@ -356,7 +363,7 @@ bool CommandLine::Parse(int argc, char *argv[])
           break;
 
 #ifdef _OPENMP
-        case 't':  // Set the amount of threads
+        case 't':  // Set amount of threads
           {
             u32 nthreads = 0;
             char *p = &argv[0][2];
@@ -378,7 +385,27 @@ bool CommandLine::Parse(int argc, char *argv[])
 
           }
           break;
+
+        case 'T':  // Set amount of file threads
+          {
+            filethreads = 0;
+            char *p = &argv[0][2];
+
+            while (*p && isdigit(*p))
+            {
+              filethreads = filethreads * 10 + (*p - '0');
+              p++;
+            }
+
+            if (!filethreads)
+            {
+              cerr << "Invalid file-thread option: " << argv[0] << endl;
+              return false;
+            }
+          }
+          break;
 #endif
+
         case 'r':  // Set the amount of redundancy required
           {
             if (operation != opCreate)

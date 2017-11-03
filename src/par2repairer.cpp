@@ -53,6 +53,12 @@ Par2Repairer::Par2Repairer(void)
 
   skipdata = false;
   skipleaway = 0;
+#ifdef _OPENMP
+  mttotalsize = 0;
+  mttotalextrasize = 0;
+  mttotalprogress = 0;
+  mtprocessingextrafiles = false;
+#endif
 }
 
 Par2Repairer::~Par2Repairer(void)
@@ -98,7 +104,7 @@ Result Par2Repairer::Process(const CommandLine &commandline, bool dorepair)
   // Get filenames from the command line
   std::string par2filename = commandline.GetParFilename();
   basepath = commandline.GetBasePath();
-  std::list<CommandLine::ExtraFile> extrafiles = commandline.GetExtraFiles();
+  std::vector<CommandLine::ExtraFile> extrafiles = commandline.GetExtraFiles();
 
   // Determine the searchpath from the location of the main PAR2 file
   string name;
@@ -774,7 +780,7 @@ bool Par2Repairer::LoadPacketsFromOtherFiles(string filename)
 }
 
 // Load packets from any other PAR2 files whose names are given on the command line
-bool Par2Repairer::LoadPacketsFromExtraFiles(const list<CommandLine::ExtraFile> &extrafiles)
+bool Par2Repairer::LoadPacketsFromExtraFiles(const vector<CommandLine::ExtraFile> &extrafiles)
 {
   for (ExtraFileIterator i=extrafiles.begin(); i!=extrafiles.end(); i++)
   {
@@ -926,6 +932,11 @@ bool Par2Repairer::CreateSourceFileList(void)
     if (sourcefile)
     {
       sourcefile->ComputeTargetFileName(basepath);
+
+#ifdef _OPENMP
+      // Need actual filesize on disk for mt-progress line
+      sourcefile->SetDiskFileSize();
+#endif
     }
 
     sourcefiles.push_back(sourcefile);
@@ -1092,7 +1103,7 @@ static bool SortSourceFilesByFileName(Par2RepairerSourceFile *low,
 }
 
 // Attempt to verify all of the source files
-bool Par2Repairer::VerifySourceFiles(const std::string& basepath, std::list<CommandLine::ExtraFile>& extrafiles)
+bool Par2Repairer::VerifySourceFiles(const std::string& basepath, std::vector<CommandLine::ExtraFile>& extrafiles)
 {
   if (noiselevel > CommandLine::nlQuiet)
     cout << endl << "Verifying source files:" << endl << endl;
@@ -1105,6 +1116,12 @@ bool Par2Repairer::VerifySourceFiles(const std::string& basepath, std::list<Comm
 
   u32 filenumber = 0;
   vector<Par2RepairerSourceFile*>::iterator sf = sourcefiles.begin();
+
+#ifdef _OPENMP
+  mttotalsize = 0;
+  mttotalprogress = 0;
+#endif
+
   while (sf != sourcefiles.end())
   {
     // Do we have a source file
@@ -1112,7 +1129,11 @@ bool Par2Repairer::VerifySourceFiles(const std::string& basepath, std::list<Comm
     if (sourcefile)
     {
       sortedfiles.push_back(sourcefile);
-    }
+#ifdef _OPENMP
+      // Total filesizes for mt-progress line
+      mttotalsize += sourcefile->DiskFileSize();
+#endif
+     }
     else
     {
       // Was this one of the recoverable files
@@ -1135,11 +1156,11 @@ bool Par2Repairer::VerifySourceFiles(const std::string& basepath, std::list<Comm
   sort(sortedfiles.begin(), sortedfiles.end(), SortSourceFilesByFileName);
 
   // Start verifying the files
-  sf = sortedfiles.begin();
-  while (sf != sortedfiles.end())
+  #pragma omp parallel for schedule(dynamic) num_threads(CommandLine::GetFileThreads())
+  for (i64 i=0; i<(i64)sortedfiles.size(); ++i)
   {
     // Do we have a source file
-    Par2RepairerSourceFile *sourcefile = *sf;
+    Par2RepairerSourceFile *sourcefile = sortedfiles[i];
 
     // What filename does the file use
     const std::string& file = sourcefile->TargetFileName();
@@ -1148,15 +1169,20 @@ bool Par2Repairer::VerifySourceFiles(const std::string& basepath, std::list<Comm
 
     if (noiselevel >= CommandLine::nlDebug)
     {
+      #pragma omp critical
+      {
       cout << "[DEBUG] VerifySourceFiles ----" << endl;
       cout << "[DEBUG] file: " << file << endl;
       cout << "[DEBUG] name: " << name << endl;
       cout << "[DEBUG] targ: " << target_pathname << endl;
+      }
     }
 
     // if the target file is in the list of extra files, we remove it
     // from the extra files.
-    list<CommandLine::ExtraFile>::iterator it = extrafiles.begin();
+    #pragma omp critical
+    {
+    vector<CommandLine::ExtraFile>::iterator it = extrafiles.begin();
     for (; it != extrafiles.end(); ++it)
     {
       const CommandLine::ExtraFile& e = *it;
@@ -1167,11 +1193,16 @@ bool Par2Repairer::VerifySourceFiles(const std::string& basepath, std::list<Comm
         break;
       }
     }
+    }
 
     // Check to see if we have already used this file
-    if (diskFileMap.Find(file) != 0)
+    bool b;
+    #pragma omp critical
+    b = diskFileMap.Find(file) != 0;
+    if (b)
     {
       // The file has already been used!
+      #pragma omp critical
       cerr << "Source file " << name << " is a duplicate." << endl;
 
       finalresult = false;
@@ -1190,7 +1221,9 @@ bool Par2Repairer::VerifySourceFiles(const std::string& basepath, std::list<Comm
         sourcefile->SetTargetFile(diskfile);
 
         // Remember that we have processed this file
-        bool success = diskFileMap.Insert(diskfile);
+        bool success;
+        #pragma omp critical
+        success = diskFileMap.Insert(diskfile);
         assert(success);
         // Do the actual verification
         if (!VerifyDataFile(diskfile, sourcefile, basepath))
@@ -1206,12 +1239,11 @@ bool Par2Repairer::VerifySourceFiles(const std::string& basepath, std::list<Comm
 
         if (noiselevel > CommandLine::nlSilent)
         {
+          #pragma omp critical
           cout << "Target: \"" << name << "\" - missing." << endl;
         }
       }
     }
-
-    ++sf;
   }
 
   // Find out how much data we have found
@@ -1221,51 +1253,71 @@ bool Par2Repairer::VerifySourceFiles(const std::string& basepath, std::list<Comm
 }
 
 // Scan any extra files specified on the command line
-bool Par2Repairer::VerifyExtraFiles(const list<CommandLine::ExtraFile> &extrafiles, string basepath)
+bool Par2Repairer::VerifyExtraFiles(const vector<CommandLine::ExtraFile> &extrafiles, string basepath)
 {
   if (noiselevel > CommandLine::nlQuiet)
     cout << endl << "Scanning extra files:" << endl << endl;
 
-  for (ExtraFileIterator i=extrafiles.begin();
-      i!=extrafiles.end() && completefilecount<mainpacket->RecoverableFileCount();
-      ++i)
+  if (completefilecount < mainpacket->RecoverableFileCount())
   {
-    string filename = i->FileName();
+#ifdef _OPENMP
+    // Total size of extra files for mt-progress line
+    mtprocessingextrafiles = true;
+    mttotalprogress = 0;
+    mttotalextrasize = 0;
 
-    // If the filename does not include ".par2" we are interested in it.
-    if (string::npos == filename.find(".par2") &&
-        string::npos == filename.find(".PAR2"))
+    for (u64 i=0; i<extrafiles.size(); ++i)
+      mttotalextrasize += extrafiles[i].FileSize();
+#endif
+
+    #pragma omp parallel for schedule(dynamic) num_threads(CommandLine::GetFileThreads())
+    for (i64 i=0; i<(i64)extrafiles.size(); ++i)
     {
-      filename = DiskFile::GetCanonicalPathname(filename);
+      string filename = extrafiles[i].FileName();
 
-      // Has this file already been dealt with
-      if (diskFileMap.Find(filename) == 0)
+      // If the filename does not include ".par2" we are interested in it.
+      if (string::npos == filename.find(".par2") &&
+          string::npos == filename.find(".PAR2"))
       {
-        DiskFile *diskfile = new DiskFile;
+        filename = DiskFile::GetCanonicalPathname(filename);
 
-        // Does the file exist
-        if (!diskfile->Open(filename))
+        // Has this file already been dealt with
+        bool b;
+        #pragma omp critical
+        b = diskFileMap.Find(filename) == 0;
+        if (b)
         {
-          delete diskfile;
-          continue;
+          DiskFile *diskfile = new DiskFile;
+
+          // Does the file exist
+          if (!diskfile->Open(filename))
+          {
+            delete diskfile;
+            continue;
+          }
+
+          // Remember that we have processed this file
+          bool success;
+          #pragma omp critical
+          success = diskFileMap.Insert(diskfile);
+          assert(success);
+
+          // Do the actual verification
+          VerifyDataFile(diskfile, 0, basepath);
+          // Ignore errors
+
+          // We have finished with the file for now
+          diskfile->Close();
         }
-
-        // Remember that we have processed this file
-        bool success = diskFileMap.Insert(diskfile);
-        assert(success);
-
-        // Do the actual verification
-        VerifyDataFile(diskfile, 0, basepath);
-        // Ignore errors
-
-        // We have finished with the file for now
-        diskfile->Close();
       }
     }
   }
-
   // Find out how much data we have found
   UpdateVerificationResults();
+
+#if _OPENMP
+    mtprocessingextrafiles = false;
+#endif
 
   return true;
 }
@@ -1402,8 +1454,10 @@ bool Par2Repairer::VerifyDataFile(DiskFile *diskfile, Par2RepairerSourceFile *so
           hashfull == sourcefile->GetDescriptionPacket()->HashFull())
       {
         if (noiselevel > CommandLine::nlSilent)
+        {
+          #pragma omp critical
           cout << diskfile->FileName() << " is a perfect match for " << sourcefile->GetDescriptionPacket()->FileName() << endl;
-
+        }
         // Record that we have a perfect match for this source file
         sourcefile->SetCompleteFile(diskfile);
 
@@ -1468,10 +1522,12 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
     {
       if (originalsourcefile != 0)
       {
+        #pragma omp critical
         cout << "Target: \"" << name << "\" - empty." << endl;
       }
       else
       {
+        #pragma omp critical
         cout << "File: \"" << name << "\" - empty." << endl;
       }
     }
@@ -1529,9 +1585,52 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
   u64 oldoffset = 0;
   u64 printprogress = 0;
 
+#ifdef _OPENMP
+  if (noiselevel > CommandLine::nlQuiet)
+  {
+    #pragma omp critical
+    cout << "Opening: \"" << shortname << "\"" << endl;
+  }
+#endif
+
   // Whilst we have not reached the end of the file
   while (filechecksummer.Offset() < diskfile->FileSize())
   {
+// OPENMP progress line printing
+#ifdef _OPENMP
+    if (noiselevel > CommandLine::nlQuiet)
+    {
+      // Are we processing extrafiles? Use correct total size
+      u64 ts = mtprocessingextrafiles ? mttotalextrasize : mttotalsize;
+
+      // Update progress indicator
+      printprogress += filechecksummer.Offset() - oldoffset;
+      if (printprogress == blocksize || filechecksummer.ShortBlock())
+      {
+        u32 oldfraction;
+        u32 newfraction;
+        #pragma omp critical
+        {
+        oldfraction = (u32)(1000 * mttotalprogress / ts);
+        mttotalprogress += printprogress;
+        newfraction = (u32)(1000 * mttotalprogress / ts);
+        }
+
+        printprogress = 0;
+
+        if (oldfraction != newfraction)
+        {
+          #pragma omp critical
+          cout << "Scanning: " << newfraction/10 << '.' << newfraction%10 << "%\r" << flush;
+
+          progressline = true;
+        }
+      }
+      oldoffset = filechecksummer.Offset();
+
+    }
+// NON-OPENMP progress line printing
+#else
     if (noiselevel > CommandLine::nlQuiet)
     {
       // Update progress indicator
@@ -1551,6 +1650,7 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
       }
       oldoffset = filechecksummer.Offset();
     }
+#endif 
 
     // If we fail to find a match, it might be because it was a duplicate of a block
     // that we have already found.
@@ -1566,10 +1666,11 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
       {
         if (progressline)
         {
+          #pragma omp critical
           cout << endl;
           progressline = false;
         }
-
+        #pragma omp critical
         cout << "No data found between offset " << lastmatchoffset
           << " and " << filechecksummer.Offset() << endl;
       }
@@ -1673,14 +1774,26 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
     }
   }
 
+#ifdef _OPENMP
+  if (noiselevel > CommandLine::nlQuiet)
+  {
+    if (filechecksummer.Offset() == diskfile->FileSize()) {
+      #pragma omp atomic
+      mttotalprogress += filechecksummer.Offset() - oldoffset;
+    }
+  }
+#endif
+
   if (lastmatchoffset < filechecksummer.Offset() && noiselevel > CommandLine::nlNormal)
   {
     if (progressline)
     {
+      #pragma omp critical
       cout << endl;
       progressline = false;
     }
 
+    #pragma omp critical
     cout << "No data found between offset " << lastmatchoffset
       << " and " << filechecksummer.Offset() << endl;
   }
@@ -1690,6 +1803,8 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
 
   if (noiselevel >= CommandLine::nlDebug)
   {
+    #pragma omp critical
+    {
     // Clear out old scanning line
     cout << std::setw(shortname.size()+19) << std::setfill(' ') << "";
     
@@ -1697,6 +1812,7 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
       cout << "\r[DEBUG] duplicates: " << duplicatecount << endl;
     cout << "\r[DEBUG] matchcount: " << count << endl;
     cout << "[DEBUG] ----------------------" << endl;
+    }
   }
 
   // Did we make any matches at all
@@ -1720,6 +1836,7 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
           // Were we scanning the target file or an extra file
           if (originalsourcefile != 0)
           {
+            #pragma omp critical
             cout << "Target: \""
               << name
               << "\" - damaged, found "
@@ -1729,6 +1846,7 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
           }
           else
           {
+            #pragma omp critical
             cout << "File: \""
               << name
               << "\" - found "
@@ -1742,6 +1860,7 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
           // Did we find data blocks that belong to the target file
           if (originalsourcefile == sourcefile)
           {
+            #pragma omp critical
             cout << "Target: \""
               << name
               << "\" - damaged. Found "
@@ -1757,6 +1876,7 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
             string targetname;
             DiskFile::SplitRelativeFilename(sourcefile->TargetFileName(), basepath, targetname);
 
+            #pragma omp critical
             cout << "Target: \""
               << name
               << "\" - damaged. Found "
@@ -1773,6 +1893,7 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
             string targetname;
             DiskFile::SplitRelativeFilename(sourcefile->TargetFileName(), basepath, targetname);
 
+            #pragma omp critical
             cout << "File: \""
               << name
               << "\" - found "
@@ -1788,6 +1909,7 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
 
         if (skippeddata > 0)
         {
+          #pragma omp critical
           cout << skippeddata << " bytes of data were skipped whilst scanning." << endl
             << "If there are not enough blocks found to repair: try again "
             << "with the -N option." << endl;
@@ -1801,6 +1923,7 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
         // Did we match the target file
         if (originalsourcefile == sourcefile)
         {
+          #pragma omp critical
           cout << "Target: \"" << name << "\" - found." << endl;
         }
         // Were we scanning the target file or an extra file
@@ -1809,6 +1932,7 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
           string targetname;
           DiskFile::SplitRelativeFilename(sourcefile->TargetFileName(), basepath, targetname);
 
+          #pragma omp critical
           cout << "Target: \""
             << name
             << "\" - is a match for \""
@@ -1821,6 +1945,7 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
           string targetname;
           DiskFile::SplitRelativeFilename(sourcefile->TargetFileName(), basepath, targetname);
 
+          #pragma omp critical
           cout << "File: \""
             << name
             << "\" - is a match for \""
@@ -1841,6 +1966,7 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
       // had already found in other files.
       if (duplicatecount > 0)
       {
+        #pragma omp critical
         cout << "File: \""
           << name
           << "\" - found "
@@ -1850,6 +1976,7 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
       }
       else
       {
+        #pragma omp critical
         cout << "File: \""
           << name
           << "\" - no data found."
@@ -1858,6 +1985,7 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
 
       if (skippeddata > 0)
       {
+        #pragma omp critical
         cout << skippeddata << " bytes of data were skipped whilst scanning." << endl
           << "If there are not enough blocks found to repair: try again "
           << "with the -N option." << endl;
@@ -2455,12 +2583,22 @@ bool Par2Repairer::VerifyTargetFiles(string basepath)
   // Verify the target files in alphabetical order
   sort(verifylist.begin(), verifylist.end(), SortSourceFilesByFileName);
 
-  // Iterate through each file in the verification list
-  for (vector<Par2RepairerSourceFile*>::iterator sf = verifylist.begin();
-      sf != verifylist.end();
-      ++sf)
+#ifdef _OPENMP
+  mttotalsize = 0;
+  mttotalprogress = 0;
+
+  for (i64 i=0; i<(i64)verifylist.size(); ++i)
   {
-    Par2RepairerSourceFile *sourcefile = *sf;
+    if (verifylist[i])
+      mttotalsize += verifylist[i]->GetDescriptionPacket()->FileSize();
+  }
+#endif
+
+  // Iterate through each file in the verification list
+  #pragma omp parallel for schedule(dynamic) num_threads(CommandLine::GetFileThreads())
+  for (i64 i=0; i<(i64)verifylist.size(); ++i)
+  {
+    Par2RepairerSourceFile *sourcefile = verifylist[i];
     DiskFile *targetfile = sourcefile->GetTargetFile();
 
     // Close the file

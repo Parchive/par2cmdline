@@ -6,7 +6,7 @@ os:
   - osx
 # Compiler selection
 compiler:
-  - clang
+  #- clang
   - gcc
 # environment variables
 env:

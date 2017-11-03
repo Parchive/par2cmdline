@@ -86,6 +86,12 @@ public:
   // Get the first target DataBlock for the file
   vector<DataBlock>::iterator TargetBlocks(void) const {return targetblocks;}
 
+#if _OPENMP
+  // Set/Get "filesize on disk" needed for mt progress line
+  void SetDiskFileSize();                           
+  u64 DiskFileSize(void) const {return diskfilesize;}
+#endif
+
 protected:
   DescriptionPacket           *descriptionpacket;   // The file description packet
   VerificationPacket          *verificationpacket;  // The file verification packet
@@ -101,6 +107,9 @@ protected:
   DiskFile                    *completefile;        // A complete version of the file
 
   string                       targetfilename;      // The filename of the target file
+#if _OPENMP
+  u64                          diskfilesize;        // The filesize of sourcefile on disk
+#endif
 };
 
 #endif // __PAR2REPAIRERSOURCEFILE_H__

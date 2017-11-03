@@ -48,7 +48,7 @@ protected:
   bool LoadPacketsFromOtherFiles(string filename);
 
   // Load packets from any other PAR2 files whose names are given on the command line
-  bool LoadPacketsFromExtraFiles(const list<CommandLine::ExtraFile> &extrafiles);
+  bool LoadPacketsFromExtraFiles(const vector<CommandLine::ExtraFile> &extrafiles);
 
   // Check that the packets are consistent and discard any that are not
   bool CheckPacketConsistency(void);
@@ -70,10 +70,10 @@ protected:
   bool ComputeWindowTable(void);
 
   // Attempt to verify all of the source files
-  bool VerifySourceFiles(const std::string& basepath, std::list<CommandLine::ExtraFile>& extrafiles);
+  bool VerifySourceFiles(const std::string& basepath, std::vector<CommandLine::ExtraFile>& extrafiles);
 
   // Scan any extra files specified on the command line
-  bool VerifyExtraFiles(const list<CommandLine::ExtraFile> &extrafiles, string basepath);
+  bool VerifyExtraFiles(const vector<CommandLine::ExtraFile> &extrafiles, string basepath);
 
   // Attempt to match the data in the DiskFile with the source file
   bool VerifyDataFile(DiskFile *diskfile, Par2RepairerSourceFile *sourcefile, string basepath);
@@ -183,6 +183,12 @@ protected:
 
   u64                       progress;                // How much data has been processed.
   u64                       totaldata;               // Total amount of data to be processed.
+#ifdef _OPENMP
+  u64                       mttotalsize;             // Total size of files for mt-progress line
+  u64                       mttotalextrasize;        // Total size of extra files for mt-progress line
+  u64                       mttotalprogress;         // MT total progress
+  bool                      mtprocessingextrafiles;  // Are we currently processing extra files
+#endif
 };
 
 #endif // __PAR2REPAIRER_H__

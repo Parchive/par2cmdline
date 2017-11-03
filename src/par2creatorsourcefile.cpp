@@ -50,7 +50,11 @@ Par2CreatorSourceFile::~Par2CreatorSourceFile(void)
 // 16k of the file, and then compute the FileId and store the results
 // in a file description packet and a file verification packet.
 
+#ifdef _OPENMP
+bool Par2CreatorSourceFile::Open(CommandLine::NoiseLevel noiselevel, const CommandLine::ExtraFile &extrafile, u64 blocksize, bool deferhashcomputation, string basepath, u64 totalsize, u64 &totalprogress)
+#else
 bool Par2CreatorSourceFile::Open(CommandLine::NoiseLevel noiselevel, const CommandLine::ExtraFile &extrafile, u64 blocksize, bool deferhashcomputation, string basepath)
+#endif
 {
   // Get the filename and filesize
   diskfilename = extrafile.FileName();
@@ -208,10 +212,19 @@ bool Par2CreatorSourceFile::Open(CommandLine::NoiseLevel noiselevel, const Comma
       if (noiselevel > CommandLine::nlQuiet)
       {
         // Display progress
+#ifdef _OPENMP
+        u32 oldfraction = (u32)(1000 * totalprogress / totalsize);
+        #pragma omp atomic
+        totalprogress += want;
+        u32 newfraction = (u32)(1000 * totalprogress / totalsize);
+#else
         u32 oldfraction = (u32)(1000 * offset / filesize);
         u32 newfraction = (u32)(1000 * (offset + want) / filesize);
+#endif
+
         if (oldfraction != newfraction)
         {
+          #pragma omp critical
           cout << newfraction/10 << '.' << newfraction%10 << "%\r" << flush;
         }
       }
