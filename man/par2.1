@@ -80,7 +80,7 @@ Memory (in MB) to use
 .RB "Number of threads used for main processing (auto-detected)"
 .TP
 .B \-T<n>
-.RB "Number of files hashed in parallel (2 default)" 
+.RB "Number of files hashed in parallel (during file verification and creation stages, 2 default)"
 .TP
 .B \-v [\-v]
 Be more verbose
@@ -189,7 +189,7 @@ The first file in this list does not contain any recovery data, it only contains
 
 HASHING
 
-Hashing portion of the code can't be parallelized without processing multiple files simultaneously. The two file/thread default is a good choice for HDDs, using more threads can result in worse performance. Four or more threads can be used for better performance with SSDs.
+Hashing portion (file verification and creation stages) of the code can't be parallelized without processing multiple files simultaneously. The 2 file/thread default is a good choice for HDDs, using more threads can result in worse performance. Four or more threads can be used for better performance with SSDs.
 
 .SH AUTHORS
 Peter Brian Clements <peterbclements@users.sourceforge.net>

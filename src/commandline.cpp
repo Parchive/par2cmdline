@@ -129,7 +129,7 @@ void CommandLine::usage(void)
     "  -s<n>    : Set the Block-Size (don't use both -b and -s)\n"
     "  -r<n>    : Level of redundancy (%%)\n"
     "  -r<c><n> : Redundancy target size, <c>=g(iga),m(ega),k(ilo) bytes\n"
-    "  -c<n>    : Recovery block count (Don't use both -r and -c)\n"
+    "  -c<n>    : Recovery Block-Count (don't use both -r and -c)\n"
     "  -f<n>    : First Recovery-Block-Number\n"
     "  -u       : Uniform recovery file sizes\n"
     "  -l       : Limit size of recovery files (don't use both -u and -l)\n"
@@ -138,8 +138,8 @@ void CommandLine::usage(void)
 #ifdef _OPENMP
   cout <<
     "  -t<n>    : Number of threads used for main processing (" << omp_get_max_threads() << " detected)\n"
-    "  -T<n>    : Number of files hashed in parallel (" << filethreads << " default)\n"
-    "             see man page for more information\n";
+    "  -T<n>    : Number of files hashed in parallel\n"
+    "             (file verification and creation stages, " << filethreads << " default)\n";
 #endif
   cout <<
     "  -v [-v]  : Be more verbose\n"
