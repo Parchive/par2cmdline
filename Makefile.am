@@ -19,6 +19,8 @@
 
 AUTOMAKE_OPTIONS = subdir-objects
 
+.DELETE_ON_ERROR:
+
 bin_PROGRAMS = par2
 man_MANS = man/par2.1
 
