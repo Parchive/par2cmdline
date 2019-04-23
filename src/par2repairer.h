@@ -23,7 +23,7 @@
 class Par2Repairer
 {
 public:
-  Par2Repairer(void);
+  Par2Repairer(std::ostream &sout, std::ostream &serr);
   ~Par2Repairer(void);
 
   Result Process(const CommandLine &commandline, bool dorepair);
@@ -126,6 +126,9 @@ protected:
   bool RemoveParFiles(void);
 
 protected:
+  std::ostream &sout; // stream for output (for commandline, this is cout)
+  std::ostream &serr; // stream for errors (for commandline, this is cerr)
+
   CommandLine::NoiseLevel   noiselevel;              // OnScreen display
 
   string                    searchpath;              // Where to find files on disk

@@ -19,6 +19,9 @@
 
 #include "par2cmdline.h"
 
+// This is included here, so that cout and cerr are not used elsewhere.
+#include <iostream>
+
 #ifdef _MSC_VER
 #ifdef _DEBUG
 #undef THIS_FILE
@@ -48,7 +51,7 @@ int main(int argc, char *argv[])
         {
           // Create recovery data
 
-          Par2Creator *creator = new Par2Creator;
+          Par2Creator *creator = new Par2Creator(cout, cerr);
           result = creator->Process(*commandline);
           delete creator;
         }
@@ -60,14 +63,14 @@ int main(int argc, char *argv[])
           {
             case CommandLine::verPar1:
               {
-                Par1Repairer *repairer = new Par1Repairer;
+                Par1Repairer *repairer = new Par1Repairer(cout, cerr);
                 result = repairer->Process(*commandline, false);
                 delete repairer;
               }
               break;
             case CommandLine::verPar2:
               {
-                Par2Repairer *repairer = new Par2Repairer;
+                Par2Repairer *repairer = new Par2Repairer(cout, cerr);
                 result = repairer->Process(*commandline, false);
                 delete repairer;
               }
@@ -84,14 +87,14 @@ int main(int argc, char *argv[])
           {
             case CommandLine::verPar1:
               {
-                Par1Repairer *repairer = new Par1Repairer;
+                Par1Repairer *repairer = new Par1Repairer(cout, cerr);
                 result = repairer->Process(*commandline, true);
                 delete repairer;
               }
               break;
             case CommandLine::verPar2:
               {
-                Par2Repairer *repairer = new Par2Repairer;
+                Par2Repairer *repairer = new Par2Repairer(cout, cerr);
                 result = repairer->Process(*commandline, true);
                 delete repairer;
               }

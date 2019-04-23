@@ -27,7 +27,7 @@ class CriticalPacket;
 class Par2Creator
 {
 public:
-  Par2Creator(void);
+  Par2Creator(std::ostream &sout, std::ostream &serr);
   ~Par2Creator(void);
 
   // Create recovery files from the source files specified on the command line
@@ -91,6 +91,9 @@ protected:
   bool CloseFiles(void);
 
 protected:
+  std::ostream &sout; // stream for output (for commandline, this is cout)
+  std::ostream &serr; // stream for errors (for commandline, this is cerr)
+  
   CommandLine::NoiseLevel noiselevel; // How noisy we should be
 
   u64 blocksize;      // The size of each block.

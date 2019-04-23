@@ -48,15 +48,17 @@ public:
   ~ReedSolomon(void);
 
   // Set which input blocks are present or missing
-  bool SetInput(const vector<bool> &present); // Some input blocks are present
-  bool SetInput(u32 count);                   // All input blocks are present
+  // Some input blocks are present
+  bool SetInput(const vector<bool> &present, std::ostream &sout, std::ostream &serr);
+  // All input blocks are present
+  bool SetInput(u32 count, std::ostream &sout, std::ostream &serr);
 
   // Set which output block are available or need to be computed
   bool SetOutput(bool present, u16 exponent);
   bool SetOutput(bool present, u16 lowexponent, u16 highexponent);
 
   // Compute the RS Matrix
-  bool Compute(CommandLine::NoiseLevel noiselevel);
+  bool Compute(CommandLine::NoiseLevel noiselevel, std::ostream &sout, std::ostream &serr);
 
   // Process a block of data
   bool Process(size_t size,             // The size of the block of data
@@ -70,7 +72,9 @@ private:
 protected:
   // Perform Gaussian Elimination
   bool GaussElim(CommandLine::NoiseLevel noiselevel,
-                 unsigned int rows,
+		 std::ostream &sout,
+		 std::ostream &serr,
+		 unsigned int rows,
                  unsigned int leftcols,
                  G *leftmatrix,
                  G *rightmatrix,
@@ -203,24 +207,24 @@ inline bool ReedSolomon<g>::SetOutput(bool present, u16 lowexponent, u16 highexp
 
 // Construct the Vandermonde matrix and solve it if necessary
 template<class g>
-inline bool ReedSolomon<g>::Compute(CommandLine::NoiseLevel noiselevel)
+inline bool ReedSolomon<g>::Compute(CommandLine::NoiseLevel noiselevel, std::ostream &sout, std::ostream &serr)
 {
   u32 outcount = datamissing + parmissing;
   u32 incount = datapresent + datamissing;
 
   if (datamissing > parpresent)
   {
-    cerr << "Not enough recovery blocks." << endl;
+    serr << "Not enough recovery blocks." << endl;
     return false;
   }
   else if (outcount == 0)
   {
-    cerr << "No output blocks." << endl;
+    serr << "No output blocks." << endl;
     return false;
   }
 
   if (noiselevel > CommandLine::nlQuiet)
-    cout << "Computing Reed Solomon matrix." << endl;
+    sout << "Computing Reed Solomon matrix." << endl;
 
   /*  Layout of RS Matrix:
       NOTE: The second set of columns represents the parity vectors present,
@@ -265,7 +269,7 @@ inline bool ReedSolomon<g>::Compute(CommandLine::NoiseLevel noiselevel)
     if (noiselevel > CommandLine::nlQuiet)
     {
       int progress = row * 1000 / (datamissing+parmissing);
-      cout << "Constructing: " << progress/10 << '.' << progress%10 << "%\r" << flush;
+      sout << "Constructing: " << progress/10 << '.' << progress%10 << "%\r" << flush;
     }
 #endif
 
@@ -312,7 +316,7 @@ inline bool ReedSolomon<g>::Compute(CommandLine::NoiseLevel noiselevel)
     if (noiselevel > CommandLine::nlQuiet)
     {
       int progress = (row+datamissing) * 1000 / (datamissing+parmissing);
-      cout << "Constructing: " << progress/10 << '.' << progress%10 << "%\r" << flush;
+      sout << "Constructing: " << progress/10 << '.' << progress%10 << "%\r" << flush;
     }
 #endif
 
@@ -351,14 +355,14 @@ inline bool ReedSolomon<g>::Compute(CommandLine::NoiseLevel noiselevel)
     outputrow++;
   }
   if (noiselevel > CommandLine::nlQuiet)
-    cout << "Constructing: done." << endl;
+    sout << "Constructing: done." << endl;
 
   // Solve the matrices only if recovering data
   if (datamissing > 0)
   {
     // Perform Gaussian Elimination and then delete the right matrix (which
     // will no longer be required).
-    bool success = GaussElim(noiselevel, outcount, incount, leftmatrix, rightmatrix, datamissing);
+    bool success = GaussElim(noiselevel, sout, serr, outcount, incount, leftmatrix, rightmatrix, datamissing);
     delete [] rightmatrix;
     return success;
   }
@@ -368,30 +372,30 @@ inline bool ReedSolomon<g>::Compute(CommandLine::NoiseLevel noiselevel)
 
 // Use Gaussian Elimination to solve the matrices
 template<class g>
-inline bool ReedSolomon<g>::GaussElim(CommandLine::NoiseLevel noiselevel, unsigned int rows, unsigned int leftcols, G *leftmatrix, G *rightmatrix, unsigned int datamissing)
+inline bool ReedSolomon<g>::GaussElim(CommandLine::NoiseLevel noiselevel, std::ostream &sout, std::ostream &serr, unsigned int rows, unsigned int leftcols, G *leftmatrix, G *rightmatrix, unsigned int datamissing)
 {
   if (noiselevel >= CommandLine::nlDebug)
   {
     for (unsigned int row=0; row<rows; row++)
     {
-      cout << ((row==0) ? "/"    : (row==rows-1) ? "\\"    : "|");
+      sout << ((row==0) ? "/"    : (row==rows-1) ? "\\"    : "|");
       for (unsigned int col=0; col<leftcols; col++)
       {
-        cout << " "
+        sout << " "
              << hex << setw(G::Bits>8?4:2) << setfill('0')
              << (unsigned int)leftmatrix[row*leftcols+col];
       }
-      cout << ((row==0) ? " \\ /" : (row==rows-1) ? " / \\" : " | |");
+      sout << ((row==0) ? " \\ /" : (row==rows-1) ? " / \\" : " | |");
       for (unsigned int col=0; col<rows; col++)
       {
-        cout << " "
+        sout << " "
              << hex << setw(G::Bits>8?4:2) << setfill('0')
              << (unsigned int)rightmatrix[row*rows+col];
       }
-      cout << ((row==0) ? " \\"   : (row==rows-1) ? " /"    : " | |");
-      cout << endl;
+      sout << ((row==0) ? " \\"   : (row==rows-1) ? " /"    : " | |");
+      sout << endl;
 
-      cout << dec << setw(0) << setfill(' ');
+      sout << dec << setw(0) << setfill(' ');
     }
   }
 
@@ -417,7 +421,7 @@ inline bool ReedSolomon<g>::GaussElim(CommandLine::NoiseLevel noiselevel, unsign
     assert(pivotvalue != 0);
     if (pivotvalue == 0)
     {
-      cerr << "RS computation error." << endl;
+      serr << "RS computation error." << endl;
       return false;
     }
 
@@ -452,7 +456,7 @@ inline bool ReedSolomon<g>::GaussElim(CommandLine::NoiseLevel noiselevel, unsign
         if (progress != newprogress)
         {
           progress = newprogress;
-          cout << "Solving: " << progress/10 << '.' << progress%10 << "%\r" << flush;
+          sout << "Solving: " << progress/10 << '.' << progress%10 << "%\r" << flush;
         }
       }
 #endif
@@ -504,29 +508,29 @@ inline bool ReedSolomon<g>::GaussElim(CommandLine::NoiseLevel noiselevel, unsign
     }
   }
   if (noiselevel > CommandLine::nlQuiet)
-    cout << "Solving: done." << endl;
+    sout << "Solving: done." << endl;
   if (noiselevel >= CommandLine::nlDebug)
   {
     for (unsigned int row=0; row<rows; row++)
     {
-      cout << ((row==0) ? "/"    : (row==rows-1) ? "\\"    : "|");
+      sout << ((row==0) ? "/"    : (row==rows-1) ? "\\"    : "|");
       for (unsigned int col=0; col<leftcols; col++)
       {
-        cout << " "
+        sout << " "
              << hex << setw(G::Bits>8?4:2) << setfill('0')
              << (unsigned int)leftmatrix[row*leftcols+col];
       }
-      cout << ((row==0) ? " \\ /" : (row==rows-1) ? " / \\" : " | |");
+      sout << ((row==0) ? " \\ /" : (row==rows-1) ? " / \\" : " | |");
       for (unsigned int col=0; col<rows; col++)
       {
-        cout << " "
+        sout << " "
              << hex << setw(G::Bits>8?4:2) << setfill('0')
              << (unsigned int)rightmatrix[row*rows+col];
       }
-      cout << ((row==0) ? " \\"   : (row==rows-1) ? " /"    : " | |");
-      cout << endl;
+      sout << ((row==0) ? " \\"   : (row==rows-1) ? " /"    : " | |");
+      sout << endl;
 
-      cout << dec << setw(0) << setfill(' ');
+      sout << dec << setw(0) << setfill(' ');
     }
   }
 

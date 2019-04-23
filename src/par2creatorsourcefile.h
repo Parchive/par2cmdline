@@ -41,9 +41,9 @@ public:
   // Open the source file and compute the Hashes and CRCs.
   //bool Open(CommandLine::NoiseLevel noiselevel, const CommandLine::ExtraFile &extrafile, u64 blocksize, bool deferhashcomputation, string basepath);
 #ifdef _OPENMP
-  bool Open(CommandLine::NoiseLevel noiselevel, const CommandLine::ExtraFile &extrafile, u64 blocksize, bool deferhashcomputation, string basepath, u64 totalsize, u64 &totalprogress);
+  bool Open(CommandLine::NoiseLevel noiselevel, std::ostream &sout, std::ostream &serr, const CommandLine::ExtraFile &extrafile, u64 blocksize, bool deferhashcomputation, string basepath, u64 totalsize, u64 &totalprogress);
 #else
-  bool Open(CommandLine::NoiseLevel noiselevel, const CommandLine::ExtraFile &extrafile, u64 blocksize, bool deferhashcomputation, string basepath);
+  bool Open(CommandLine::NoiseLevel noiselevel, std::ostream &sout, std::ostream &serr, const CommandLine::ExtraFile &extrafile, u64 blocksize, bool deferhashcomputation, string basepath);
 #endif
   void Close(void);
 

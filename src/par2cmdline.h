@@ -269,7 +269,6 @@ typedef enum Result
 #include <algorithm>
 
 #include <ctype.h>
-#include <iostream>
 #include <iomanip>
 
 #include <cassert>

@@ -51,9 +51,9 @@ Par2CreatorSourceFile::~Par2CreatorSourceFile(void)
 // in a file description packet and a file verification packet.
 
 #ifdef _OPENMP
-bool Par2CreatorSourceFile::Open(CommandLine::NoiseLevel noiselevel, const CommandLine::ExtraFile &extrafile, u64 blocksize, bool deferhashcomputation, string basepath, u64 totalsize, u64 &totalprogress)
+bool Par2CreatorSourceFile::Open(CommandLine::NoiseLevel noiselevel, std::ostream &sout, std::ostream &serr, const CommandLine::ExtraFile &extrafile, u64 blocksize, bool deferhashcomputation, string basepath, u64 totalsize, u64 &totalprogress)
 #else
-bool Par2CreatorSourceFile::Open(CommandLine::NoiseLevel noiselevel, const CommandLine::ExtraFile &extrafile, u64 blocksize, bool deferhashcomputation, string basepath)
+bool Par2CreatorSourceFile::Open(CommandLine::NoiseLevel noiselevel, std::ostream &sout, std::ostream &serr, const CommandLine::ExtraFile &extrafile, u64 blocksize, bool deferhashcomputation, string basepath)
 #endif
 {
   // Get the filename and filesize
@@ -75,7 +75,7 @@ bool Par2CreatorSourceFile::Open(CommandLine::NoiseLevel noiselevel, const Comma
   verificationpacket->Create(blockcount);
 
   // Create the diskfile object
-  diskfile  = new DiskFile;
+  diskfile  = new DiskFile(sout, serr);
 
   // Open the source file
   if (!diskfile->Open(diskfilename, filesize))
@@ -225,7 +225,7 @@ bool Par2CreatorSourceFile::Open(CommandLine::NoiseLevel noiselevel, const Comma
         if (oldfraction != newfraction)
         {
           #pragma omp critical
-          cout << newfraction/10 << '.' << newfraction%10 << "%\r" << flush;
+          sout << newfraction/10 << '.' << newfraction%10 << "%\r" << flush;
         }
       }
 

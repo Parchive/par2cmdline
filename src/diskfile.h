@@ -26,7 +26,7 @@
 class DiskFile
 {
 public:
-  DiskFile(void);
+  DiskFile(std::ostream &sout, std::ostream &serr);
   ~DiskFile(void);
 
   // Ensures the specified path's parent directory exists
@@ -93,6 +93,12 @@ public:
   static list<string>* FindFiles(string path, string wildcard, bool recursive);
 
 protected:
+  // NOTE: These are pointers so that the operator= works correctly.
+  // The references used elsewhere cannot be reassigned.
+  // (Operator= is needed when vectors are resized.)
+  std::ostream *sout; // stream for output (for commandline, this is cout)
+  std::ostream *serr; // stream for errors (for commandline, this is cerr)
+  
   string filename;
   u64    filesize;
 

@@ -205,7 +205,7 @@ int generate_data(unsigned int seed, u8 data[][BUF_SIZE], int in_count, int reco
   ReedSolomon<gtype> rs_creator;
 
   //cout << "creator.setinput" << in_count << endl;
-  if (!rs_creator.SetInput(in_count)) {
+  if (!rs_creator.SetInput(in_count, cout, cerr)) {
     cerr << "rs_creator.SetInput returned false";
     return 1;
   }
@@ -215,7 +215,7 @@ int generate_data(unsigned int seed, u8 data[][BUF_SIZE], int in_count, int reco
     return 1;
   }
   //cout << "creator.compute" << endl;
-  if (!rs_creator.Compute(CommandLine::nlSilent)) {
+  if (!rs_creator.Compute(CommandLine::nlSilent, cout, cerr)) {
     cerr << "rs_creator.Compute returned false";
     return 1;
   }
@@ -238,7 +238,7 @@ int init_repair_rs(ReedSolomon<gtype> &rs_repair, vector<bool> &in_present, vect
   //for (unsigned int z = 0; z < in_present.size(); z++)
   //  cout << (in_present[z] ? " true": " false");
   //cout << endl;
-  if (!rs_repair.SetInput(in_present)) {
+  if (!rs_repair.SetInput(in_present, cout, cerr)) {
     cerr << "rs_repair.SetInput returned false";
     return 1;
   }
@@ -254,7 +254,7 @@ int init_repair_rs(ReedSolomon<gtype> &rs_repair, vector<bool> &in_present, vect
   }
   
   //cout << "Repair.compute" << endl;
-  if (!rs_repair.Compute(CommandLine::nlSilent)) {
+  if (!rs_repair.Compute(CommandLine::nlSilent, cout, cerr)) {
     cerr << "rs_repair.Compute returned false";
     return 1;
   }
@@ -462,7 +462,7 @@ int test4(int NUM_IN, int *expected_bases) {
   ReedSolomon<gtype> rs_creator;
 
   //cout << "creator.setinput" << NUM_IN << endl;
-  if (!rs_creator.SetInput(NUM_IN)) {
+  if (!rs_creator.SetInput(NUM_IN, cout, cerr)) {
     cerr << "rs_creator.SetInput returned false";
     return 1;
   }
@@ -472,7 +472,7 @@ int test4(int NUM_IN, int *expected_bases) {
     return 1;
   }
   //cout << "creator.compute" << endl;
-  if (!rs_creator.Compute(CommandLine::nlSilent)) {
+  if (!rs_creator.Compute(CommandLine::nlSilent, cout, cerr)) {
     cerr << "rs_creator.Compute returned false";
     return 1;
   }
