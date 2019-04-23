@@ -406,6 +406,8 @@ bool Par2Creator::CalculateProcessBlockSize(size_t memorylimit)
   // Are we computing any recovery blocks
   if (recoveryblockcount == 0)
   {
+    chunksize = 0;
+    
     deferhashcomputation = false;
   }
   else
