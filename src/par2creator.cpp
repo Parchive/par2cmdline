@@ -100,13 +100,13 @@ Result Par2Creator::Process(const CommandLine &commandline)
   if ((redundancy > 0 || redundancysize >0) && !ComputeRecoveryBlockCount(redundancy, redundancysize))
     return eInvalidCommandLineArguments;
 
-  // Determine how much recovery data can be computed on one pass
-  if (!CalculateProcessBlockSize(memorylimit))
-    return eLogicError;
-
   // Determine how many recovery files to create.
   if (!ComputeRecoveryFileCount())
     return eInvalidCommandLineArguments;
+
+  // Determine how much recovery data can be computed on one pass
+  if (!CalculateProcessBlockSize(memorylimit))
+    return eLogicError;
 
   if (noiselevel > CommandLine::nlQuiet)
   {
