@@ -280,7 +280,7 @@ inline Galois<bits,generator,valuetype> Galois<bits,generator,valuetype>::operat
 template <const unsigned int bits, const unsigned int generator, typename valuetype>
 inline Galois<bits,generator,valuetype>& Galois<bits,generator,valuetype>::operator ^= (unsigned int right)
 {
-  if (right == 1) {value = 1; return *this;}
+  if (right == 0) {value = 1; return *this;}
   if (value == 0) return *this;
 
   unsigned int sum = table.log[value] * right;
