@@ -46,3 +46,9 @@ perf.*
 .cproject
 .project
 .settings
+
+# emacs files
+*~
+.#*
+\#*#
+.~lock.*#
