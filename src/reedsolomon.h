@@ -223,11 +223,13 @@ inline bool ReedSolomon<g>::Compute(CommandLine::NoiseLevel noiselevel)
     cout << "Computing Reed Solomon matrix." << endl;
 
   /*  Layout of RS Matrix:
+      NOTE: The second set of columns represents the parity vectors present,
+      but this only uses datamissing of them.  Otherwise, it is over constrained. 
 
-                                       parpresent
-                     datapresent       datamissing         datamissing       parmissing
+                                       datamissing
+                     datapresent      <=parpresent        datamissing       parmissing
                /                     |             \ /                     |           \
-   parpresent  |           (ppi[row])|             | |           (ppi[row])|           |
+               |           (ppi[row])|             | |           (ppi[row])|           |
    datamissing |          ^          |      I      | |          ^          |     0     |
                |(dpi[col])           |             | |(dmi[col])           |           |
                +---------------------+-------------+ +---------------------+-----------+

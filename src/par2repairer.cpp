@@ -1182,17 +1182,17 @@ bool Par2Repairer::VerifySourceFiles(const std::string& basepath, std::vector<Co
     // from the extra files.
     #pragma omp critical
     {
-    vector<CommandLine::ExtraFile>::iterator it = extrafiles.begin();
-    for (; it != extrafiles.end(); ++it)
-    {
-      const CommandLine::ExtraFile& e = *it;
-      const std::string& extra_pathname = e.FileName();
-      if (!extra_pathname.compare(target_pathname))
+      vector<CommandLine::ExtraFile>::iterator it = extrafiles.begin();
+      for (; it != extrafiles.end(); ++it)
       {
-        extrafiles.erase(it);
-        break;
+	const CommandLine::ExtraFile& e = *it;
+	const std::string& extra_pathname = e.FileName();
+	if (!extra_pathname.compare(target_pathname))
+	{
+	  extrafiles.erase(it);
+	  break;
+	}
       }
-    }
     }
 
     // Check to see if we have already used this file
