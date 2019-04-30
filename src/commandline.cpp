@@ -78,8 +78,6 @@ CommandLine::CommandLine(void)
 , redundancyset(false)
 , parfilename()
 , extrafiles()
-, totalsourcesize(0)
-, largestsourcesize(0)
 , memorylimit(0)
 , purgefiles(false)
 , recursive(false)
@@ -906,12 +904,6 @@ bool CommandLine::Parse(int argc, char *argv[])
       {
         b_filenames.push_back(filename);
         extrafiles.push_back(ExtraFile(filename, filesize));
-
-        // track the total size of the source files and how
-        // big the largest one is.
-        totalsourcesize += filesize;
-        if (largestsourcesize < filesize)
-          largestsourcesize = filesize;
       }
     } //end file exists
   }
@@ -970,12 +962,6 @@ bool CommandLine::Parse(int argc, char *argv[])
             (filesize = DiskFile::GetFileSize(parfilename)) > 0)
         {
           extrafiles.push_back(ExtraFile(parfilename, filesize));
-
-          // track the total size of the source files and how
-          // big the largest one is.
-          totalsourcesize += filesize;
-          if (largestsourcesize < filesize)
-            largestsourcesize = filesize;
         }
         else
         {

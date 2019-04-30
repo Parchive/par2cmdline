@@ -102,8 +102,6 @@ public:
   u32                    GetRecoveryBlockCount(void) const {return recoveryblockcount;}
   CommandLine::Scheme    GetRecoveryFileScheme(void) const {return recoveryfilescheme;}
   size_t                 GetMemoryLimit(void) const        {return memorylimit;}
-  u64                    GetLargestSourceSize(void) const  {return largestsourcesize;}
-  u64                    GetTotalSourceSize(void) const    {return totalsourcesize;}
   CommandLine::NoiseLevel GetNoiseLevel(void) const        {return noiselevel;}
 
   string                              GetParFilename(void) const {return parfilename;}
@@ -157,10 +155,6 @@ protected:
                                // the source files, and when verifying or
                                // repairing, this will be additional PAR2
                                // files or data files to be examined.
-
-  u64 totalsourcesize;         // Total size of the source files.
-
-  u64 largestsourcesize;       // Size of the largest source file.
 
   size_t memorylimit;          // How much memory is permitted to be used
                                // for the output buffer when creating

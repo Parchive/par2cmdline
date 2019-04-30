@@ -88,7 +88,6 @@ Result Par2Creator::Process(const CommandLine &commandline)
   string par2filename = commandline.GetParFilename();
   string basepath = commandline.GetBasePath();
   size_t memorylimit = commandline.GetMemoryLimit();
-  largestfilesize = commandline.GetLargestSourceSize();
 
   // Compute block size from block count or vice versa depending on which was
   // specified on the command line
@@ -207,6 +206,15 @@ Result Par2Creator::Process(const CommandLine &commandline)
 // specified on the command line
 bool Par2Creator::ComputeBlockSizeAndBlockCount(const vector<CommandLine::ExtraFile> &extrafiles)
 {
+  largestfilesize = 0;
+  for (ExtraFileIterator i=extrafiles.begin(); i!=extrafiles.end(); i++)
+  {
+    if (largestfilesize < i->FileSize())
+      {
+	largestfilesize = i->FileSize();
+      }
+  }
+  
   // Determine blocksize from sourceblockcount or vice-versa
   if (blocksize > 0)
   {
@@ -240,16 +248,7 @@ bool Par2Creator::ComputeBlockSizeAndBlockCount(const vector<CommandLine::ExtraF
       // If the block count is the same as the number of files, then the block
       // size is the size of the largest file (rounded up to a multiple of 4).
 
-      u64 largestsourcesize = 0;
-      for (ExtraFileIterator i=extrafiles.begin(); i!=extrafiles.end(); i++)
-      {
-        if (largestsourcesize < i->FileSize())
-        {
-          largestsourcesize = i->FileSize();
-        }
-      }
-
-      blocksize = (largestsourcesize + 3) & ~3;
+      blocksize = (largestfilesize + 3) & ~3;
     }
     else
     {
