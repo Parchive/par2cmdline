@@ -109,6 +109,12 @@ Result Par2Repairer::Process(const CommandLine &commandline, bool dorepair)
   std::vector<CommandLine::ExtraFile> extrafiles = commandline.GetExtraFiles();
   size_t memorylimit = commandline.GetMemoryLimit();
   
+#ifdef _OPENMP
+  // Set the number of threads
+  if (commandline.GetNumThreads() != 0)
+    omp_set_num_threads(commandline.GetNumThreads());
+#endif
+
   // Determine the searchpath from the location of the main PAR2 file
   string name;
   DiskFile::SplitFilename(par2filename, searchpath, name);

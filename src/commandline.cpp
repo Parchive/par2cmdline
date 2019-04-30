@@ -32,6 +32,7 @@ static char THIS_FILE[]=__FILE__;
 
 // Set default for filethreads
 #ifdef _OPENMP
+u32 CommandLine::nthreads = 0; // use default number
 u32 CommandLine::filethreads = _FILE_THREADS;
 #endif
 
@@ -41,6 +42,7 @@ CommandLine::CommandLine(void)
 , noiselevel(nlUnknown)
 , memorylimit(0)
 , basepath()
+// NOTE: nthreads is static and set above.
 // NOTE: filethreads is static and set above.
 , parfilename()
 , extrafiles()
@@ -348,7 +350,7 @@ bool CommandLine::Parse(int argc, char *argv[])
 #ifdef _OPENMP
         case 't':  // Set amount of threads
           {
-            u32 nthreads = 0;
+            nthreads = 0;
             char *p = &argv[0][2];
 
             while (*p && isdigit(*p))
@@ -362,10 +364,6 @@ bool CommandLine::Parse(int argc, char *argv[])
               cerr << "Invalid thread option: " << argv[0] << endl;
               return false;
             }
-
-            // Sets the number of threads to use
-            omp_set_num_threads(nthreads);
-
           }
           break;
 

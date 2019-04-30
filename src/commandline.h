@@ -98,6 +98,7 @@ public:
   bool                                GetSkipData(void) const    {return skipdata;}
   u64                                 GetSkipLeaway(void) const  {return skipleaway;}
 #ifdef _OPENMP
+  static u32                          GetNumThreads(void) {return nthreads;}
   static u32                          GetFileThreads(void) {return filethreads;}
 #endif
 
@@ -112,7 +113,8 @@ protected:
                                // or repairing.
   string basepath;             // the path par2 is run from
 #ifdef _OPENMP
-  static u32 filethreads;      // Number of files to process in parallel
+  static u32 nthreads;         // Default number of threads
+  static u32 filethreads;      // Number of threads for file processing
 #endif
   // NOTE: using the "-t" option to set the number of threads does not
   // end up here, but results in a direct call to "omp_set_num_threads"

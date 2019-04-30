@@ -89,6 +89,12 @@ Result Par2Creator::Process(const CommandLine &commandline)
   string basepath = commandline.GetBasePath();
   size_t memorylimit = commandline.GetMemoryLimit();
 
+#ifdef _OPENMP
+  // Set the number of threads
+  if (commandline.GetNumThreads() != 0)
+    omp_set_num_threads(commandline.GetNumThreads());
+#endif
+
   // Compute block size from block count or vice versa depending on which was
   // specified on the command line
   if (!ComputeBlockSizeAndBlockCount(extrafiles))
