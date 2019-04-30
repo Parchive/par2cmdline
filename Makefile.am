@@ -97,6 +97,26 @@ EXTRA_DIST = PORTING ROADMAP \
 			 tests/test26 \
 			 tests/test27
 
+
+# Programs that need to be compiled for the test suite.
+# These are the unit tests.  
+check_PROGRAMS = tests/letype_test tests/crc_test tests/md5_test tests/reedsolomon_test tests/galois_test 
+
+tests_letype_test_SOURCES = src/letype_test.cpp src/letype.h
+
+tests_crc_test_SOURCES = src/crc_test.cpp src/crc.cpp src/crc.h
+
+tests_md5_test_SOURCES = src/md5_test.cpp src/md5.cpp src/md5.h
+
+tests_reedsolomon_test_SOURCES = src/reedsolomon_test.cpp src/reedsolomon.cpp src/reedsolomon.h
+
+tests_galois_test_SOURCES = src/galois_test.cpp src/galois.cpp src/galois.h
+
+
+
+# List of all tests.
+# tests/test* are integration tests that use the binary.
+# $(check_PROGRAMS) is the list of compiled unit tests.
 TESTS = tests/test1 \
 		tests/test2 \
 		tests/test3 \
@@ -124,7 +144,8 @@ TESTS = tests/test1 \
 		tests/test24 \
 		tests/test25 \
 		tests/test26 \
-		tests/test27
+		tests/test27 \
+		$(check_PROGRAMS) 
 
 install-exec-hook :
 	ln -sf $(bindir)/par2$(EXEEXT) $(DESTDIR)$(bindir)/par2create$(EXEEXT)
