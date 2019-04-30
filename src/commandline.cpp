@@ -74,6 +74,7 @@ void CommandLine::banner(void)
     << "Copyright (C) 2011-2012 Marcel Partap." << endl
     << "Copyright (C) 2012-2017 Ike Devolder." << endl
     << "Copyright (C) 2014-2017 Jussi Kansanen." << endl
+    << "Copyright (C) 2019 Michael Nahas." << endl
     << endl
     << "par2cmdline comes with ABSOLUTELY NO WARRANTY." << endl
     << endl
