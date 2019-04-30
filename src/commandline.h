@@ -103,14 +103,48 @@ public:
 
 protected:
   bool                         SetParFilename(string filename);
-  Operation operation;         // The operation to be carried out.
+
+  // options for all operations
   Version version;             // What version files will be processed.
-
   NoiseLevel noiselevel;       // How much display output should there be.
+  size_t memorylimit;          // How much memory is permitted to be used
+                               // for the output buffer when creating
+                               // or repairing.
+  string basepath;             // the path par2 is run from
+#ifdef _OPENMP
+  static u32 filethreads;      // Number of files to process in parallel
+#endif
+  // NOTE: using the "-t" option to set the number of threads does not
+  // end up here, but results in a direct call to "omp_set_num_threads"
 
+  string parfilename;          // The name of the PAR2 file to create, or
+                               // the name of the first PAR2 file to read
+                               // when verifying or repairing.
+
+
+  vector<ExtraFile> extrafiles;  // The list of other files specified on the
+                               // command line. When creating, this will be
+                               // the source files, and when verifying or
+                               // repairing, this will be additional PAR2
+                               // files or data files to be examined.
+  
+  // which operation
+  Operation operation;         // The operation to be carried out.
+
+  // options for verify/repair operation
+  bool purgefiles;             // purge backup and par files on success
+                               // recovery
+  bool skipdata;               // Whether we should assume that all good
+                               // data blocks are within +/- bytes of
+                               // where we expect to find them and should
+                               // skip data that is too far away.
+  u64 skipleaway;              // The maximum leaway +/- that we will
+                               // allow when searching for blocks.
+
+  
+  // options for creating par files  
   u32 blockcount;              // How many blocks the source files should
                                // be virtually split into.
-
   u64 blocksize;               // What virtual block size to use.
 
   u32 firstblock;              // What the exponent value for the first
@@ -130,35 +164,8 @@ protected:
 
   bool redundancyset;          // Set if the redundancy has been specified
 
-  string parfilename;          // The name of the PAR2 file to create, or
-                               // the name of the first PAR2 file to read
-                               // when verifying or repairing.
-
-  string basepath;             // the path par2 is run from
-
-  vector<ExtraFile> extrafiles;  // The list of other files specified on the
-                               // command line. When creating, this will be
-                               // the source files, and when verifying or
-                               // repairing, this will be additional PAR2
-                               // files or data files to be examined.
-
-  size_t memorylimit;          // How much memory is permitted to be used
-                               // for the output buffer when creating
-                               // or repairing.
-
-  bool purgefiles;             // purge backup and par files on success
-                               // recovery
   bool recursive;              // recurse into subdirectories
 
-  bool skipdata;               // Whether we should assume that all good
-                               // data blocks are within +/- bytes of
-                               // where we expect to find them and should
-                               // skip data that is too far away.
-  u64 skipleaway;              // The maximum leaway +/- that we will
-                               // allow when searching for blocks.
-#ifdef _OPENMP
-  static u32 filethreads;      // Number of files to process in parallel
-#endif
 };
 
 typedef vector<CommandLine::ExtraFile>::const_iterator ExtraFileIterator;

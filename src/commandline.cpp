@@ -37,9 +37,17 @@ u32 CommandLine::filethreads = _FILE_THREADS;
 
 
 CommandLine::CommandLine(void)
-: operation(opNone)
-, version(verUnknown)
+: version(verUnknown)
 , noiselevel(nlUnknown)
+, memorylimit(0)
+, basepath()
+// NOTE: filethreads is static and set above.
+, parfilename()
+, extrafiles()
+, operation(opNone)  
+, purgefiles(false)
+, skipdata(false)
+, skipleaway(0)
 , blockcount(0)
 , blocksize(0)
 , firstblock(0)
@@ -50,13 +58,7 @@ CommandLine::CommandLine(void)
 , redundancy(0)
 , redundancysize(0)
 , redundancyset(false)
-, parfilename()
-, extrafiles()
-, memorylimit(0)
-, purgefiles(false)
 , recursive(false)
-, skipdata(false)
-, skipleaway(0)
 {
 }
 
@@ -97,8 +99,25 @@ void CommandLine::usage(void)
     "You may also leave out the \"c\", \"v\", and \"r\" commands by using \"par2create\",\n"
     "\"par2verify\", or \"par2repair\" instead.\n"
     "\n"
-    "Options:\n"
-    "\n"
+    "Options: (all uses)\n"
+    "  -B<path> : Set the basepath to use as reference for the datafiles\n"
+    "  -v [-v]  : Be more verbose\n"
+    "  -q [-q]  : Be more quiet (-q -q gives silence)\n"
+    "  -m<n>    : Memory (in MB) to use\n";
+#ifdef _OPENMP
+  cout <<
+    "  -t<n>    : Number of threads used for main processing (" << omp_get_max_threads() << " detected)\n"
+    "  -T<n>    : Number of files hashed in parallel\n"
+    "             (" << filethreads << " are the default)\n";
+#endif
+  cout <<
+    "  --       : Treat all following arguments as filenames\n"
+    "Options: (verify or repair)\n"
+    "  -p       : Purge backup files and par files on successful recovery or\n"
+    "             when no recovery is needed\n"
+    "  -N       : Data skipping (find badly mispositioned data blocks)\n"
+    "  -S<n>    : Skip leaway (distance +/- from expected block position)\n"
+    "Options: (create)\n"
     "  -a<file> : Set the main PAR2 archive name\n"
     "  -b<n>    : Set the Block-Count\n"
     "  -s<n>    : Set the Block-Size (don't use both -b and -s)\n"
@@ -109,23 +128,7 @@ void CommandLine::usage(void)
     "  -u       : Uniform recovery file sizes\n"
     "  -l       : Limit size of recovery files (don't use both -u and -l)\n"
     "  -n<n>    : Number of recovery files (don't use both -n and -l)\n"
-    "  -m<n>    : Memory (in MB) to use\n";
-#ifdef _OPENMP
-  cout <<
-    "  -t<n>    : Number of threads used for main processing (" << omp_get_max_threads() << " detected)\n"
-    "  -T<n>    : Number of files hashed in parallel\n"
-    "             (file verification and creation stages, " << filethreads << " default)\n";
-#endif
-  cout <<
-    "  -v [-v]  : Be more verbose\n"
-    "  -q [-q]  : Be more quiet (-q -q gives silence)\n"
-    "  -p       : Purge backup files and par files on successful recovery or\n"
-    "             when no recovery is needed\n"
-    "  -R       : Recurse into subdirectories (only useful on create)\n"
-    "  -N       : Data skipping (find badly mispositioned data blocks)\n"
-    "  -S<n>    : Skip leaway (distance +/- from expected block position)\n"
-    "  -B<path> : Set the basepath to use as reference for the datafiles\n"
-    "  --       : Treat all following arguments as filenames\n"
+    "  -R       : Recurse into subdirectories\n"
     "\n";
 }
 
