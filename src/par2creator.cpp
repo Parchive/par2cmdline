@@ -211,7 +211,7 @@ bool Par2Creator::ComputeBlockSizeAndBlockCount(const vector<CommandLine::ExtraF
   largestfilesize = 0;
   for (ExtraFileIterator i=extrafiles.begin(); i!=extrafiles.end(); i++)
   {
-    u64 filesize = filesize_cache.get(i->FileName());
+    u64 filesize = filesize_cache.get(*i);
     if (largestfilesize < filesize)
     {
       largestfilesize = filesize;
@@ -225,7 +225,7 @@ bool Par2Creator::ComputeBlockSizeAndBlockCount(const vector<CommandLine::ExtraF
 
     for (ExtraFileIterator i=extrafiles.begin(); i!=extrafiles.end(); i++)
     {
-      count += (filesize_cache.get(i->FileName()) + blocksize-1) / blocksize;
+      count += (filesize_cache.get(*i) + blocksize-1) / blocksize;
     }
 
     if (count > 32768)
@@ -258,7 +258,7 @@ bool Par2Creator::ComputeBlockSizeAndBlockCount(const vector<CommandLine::ExtraF
       u64 totalsize = 0;
       for (ExtraFileIterator i=extrafiles.begin(); i!=extrafiles.end(); i++)
       {
-        totalsize += (filesize_cache.get(i->FileName()) + 3) / 4;
+        totalsize += (filesize_cache.get(*i) + 3) / 4;
       }
 
       if (sourceblockcount > totalsize)
@@ -283,7 +283,7 @@ bool Par2Creator::ComputeBlockSizeAndBlockCount(const vector<CommandLine::ExtraF
           count = 0;
           for (ExtraFileIterator i=extrafiles.begin(); i!=extrafiles.end(); i++)
           {
-            count += ((filesize_cache.get(i->FileName())+3)/4 + size-1) / size;
+            count += ((filesize_cache.get(*i)+3)/4 + size-1) / size;
           }
           if (count > sourceblockcount)
           {
@@ -294,7 +294,7 @@ bool Par2Creator::ComputeBlockSizeAndBlockCount(const vector<CommandLine::ExtraF
               count = 0;
               for (ExtraFileIterator i=extrafiles.begin(); i!=extrafiles.end(); i++)
               {
-                count += ((filesize_cache.get(i->FileName())+3)/4 + size-1) / size;
+                count += ((filesize_cache.get(*i)+3)/4 + size-1) / size;
               }
             }
           }
@@ -511,7 +511,7 @@ bool Par2Creator::OpenSourceFiles(const vector<CommandLine::ExtraFile> &extrafil
 
   //Total size of files for mt-progress line
   for (u64 i=0; i<extrafiles.size(); ++i)
-    mttotalsize += DiskFile::GetFileSize(extrafiles[i].FileName());
+    mttotalsize += DiskFile::GetFileSize(extrafiles[i]);
 #endif
 
   #pragma omp parallel for schedule(dynamic) num_threads(CommandLine::GetFileThreads())
@@ -525,7 +525,7 @@ bool Par2Creator::OpenSourceFiles(const vector<CommandLine::ExtraFile> &extrafil
     Par2CreatorSourceFile *sourcefile = new Par2CreatorSourceFile;
 
     string name;
-    DiskFile::SplitRelativeFilename(extrafiles[i].FileName(), basepath, name);
+    DiskFile::SplitRelativeFilename(extrafiles[i], basepath, name);
 
     if (noiselevel > CommandLine::nlSilent)
     {

@@ -555,7 +555,7 @@ bool Par1Repairer::LoadExtraRecoveryFiles(const vector<CommandLine::ExtraFile> &
 {
   for (ExtraFileIterator i=extrafiles.begin(); i!=extrafiles.end(); i++)
   {
-    string filename = i->FileName();
+    string filename = *i;
 
     // Find the file extension
     string::size_type where = filename.find_last_of('.');
@@ -661,7 +661,7 @@ bool Par1Repairer::VerifyExtraFiles(const vector<CommandLine::ExtraFile> &extraf
        i!=extrafiles.end() && completefilecount<sourcefiles.size(); 
        ++i)
   {
-    string filename = i->FileName();
+    string filename = *i;
 
     bool skip = false;
 

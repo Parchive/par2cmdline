@@ -57,8 +57,8 @@ bool Par2CreatorSourceFile::Open(CommandLine::NoiseLevel noiselevel, std::ostrea
 #endif
 {
   // Get the filename and filesize
-  diskfilename = extrafile.FileName();
-  filesize = DiskFile::GetFileSize(extrafile.FileName());
+  diskfilename = extrafile;
+  filesize = DiskFile::GetFileSize(extrafile);
 
   // Work out how many blocks the file will be sliced into
   blockcount = (u32)((filesize + blocksize-1) / blocksize);

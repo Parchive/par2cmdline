@@ -71,21 +71,9 @@ public:
     nlDebug         // Extra debugging information
   } NoiseLevel;
 
+
   // Any extra files listed on the command line
-  class ExtraFile
-  {
-  public:
-    ExtraFile(void);
-    ExtraFile(const ExtraFile&);
-    ExtraFile& operator=(const ExtraFile&);
-
-    ExtraFile(const string &name, u64 size);
-
-    string FileName(void) const {return filename;}
-
-  protected:
-    string filename;
-  };
+  typedef string ExtraFile;
 
 public:
   // Accessor functions for the command line parameters

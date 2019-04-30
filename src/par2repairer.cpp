@@ -787,7 +787,7 @@ bool Par2Repairer::LoadPacketsFromExtraFiles(const vector<CommandLine::ExtraFile
 {
   for (ExtraFileIterator i=extrafiles.begin(); i!=extrafiles.end(); i++)
   {
-    string filename = i->FileName();
+    string filename = *i;
 
     // If the filename contains ".par2" anywhere
     if (string::npos != filename.find(".par2") ||
@@ -1189,7 +1189,7 @@ bool Par2Repairer::VerifySourceFiles(const std::string& basepath, std::vector<Co
       for (; it != extrafiles.end(); ++it)
       {
 	const CommandLine::ExtraFile& e = *it;
-	const std::string& extra_pathname = e.FileName();
+	const std::string& extra_pathname = e;
 	if (!extra_pathname.compare(target_pathname))
 	{
 	  extrafiles.erase(it);
@@ -1270,13 +1270,13 @@ bool Par2Repairer::VerifyExtraFiles(const vector<CommandLine::ExtraFile> &extraf
     mttotalextrasize = 0;
 
     for (u64 i=0; i<extrafiles.size(); ++i)
-      mttotalextrasize += DiskFile::GetFileSize(extrafiles[i].FileName());
+      mttotalextrasize += DiskFile::GetFileSize(extrafiles[i]);
 #endif
 
     #pragma omp parallel for schedule(dynamic) num_threads(CommandLine::GetFileThreads())
     for (i64 i=0; i<(i64)extrafiles.size(); ++i)
     {
-      string filename = extrafiles[i].FileName();
+      string filename = extrafiles[i];
 
       // If the filename does not include ".par2" we are interested in it.
       if (string::npos == filename.find(".par2") &&

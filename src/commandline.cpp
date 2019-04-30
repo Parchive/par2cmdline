@@ -35,28 +35,6 @@ static char THIS_FILE[]=__FILE__;
 u32 CommandLine::filethreads = _FILE_THREADS;
 #endif
 
-CommandLine::ExtraFile::ExtraFile(void)
-: filename()
-{
-}
-
-CommandLine::ExtraFile::ExtraFile(const CommandLine::ExtraFile &other)
-: filename(other.filename)
-{
-}
-
-CommandLine::ExtraFile& CommandLine::ExtraFile::operator=(const CommandLine::ExtraFile &other)
-{
-  filename = other.filename;
-
-  return *this;
-}
-
-CommandLine::ExtraFile::ExtraFile(const string &name, u64 size)
-: filename(name)
-{
-}
-
 
 CommandLine::CommandLine(void)
 : operation(opNone)
@@ -899,7 +877,7 @@ bool CommandLine::Parse(int argc, char *argv[])
       else
       {
         b_filenames.push_back(filename);
-        extrafiles.push_back(ExtraFile(filename, filesize));
+        extrafiles.push_back(filename);
       }
     } //end file exists
   }
@@ -957,7 +935,7 @@ bool CommandLine::Parse(int argc, char *argv[])
         if (DiskFile::FileExists(parfilename) &&
             (filesize = DiskFile::GetFileSize(parfilename)) > 0)
         {
-          extrafiles.push_back(ExtraFile(parfilename, filesize));
+          extrafiles.push_back(parfilename);
         }
         else
         {
