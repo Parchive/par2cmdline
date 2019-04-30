@@ -131,6 +131,10 @@ void CommandLine::usage(void)
     "  -n<n>    : Number of recovery files (don't use both -n and -l)\n"
     "  -R       : Recurse into subdirectories\n"
     "\n";
+  cout <<
+    "Example:\n"
+    "   par2 repair *.par2\n"
+    "\n";
 }
 
 bool CommandLine::Parse(int argc, char *argv[])
