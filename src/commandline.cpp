@@ -37,27 +37,23 @@ u32 CommandLine::filethreads = _FILE_THREADS;
 
 CommandLine::ExtraFile::ExtraFile(void)
 : filename()
-, filesize(0)
 {
 }
 
 CommandLine::ExtraFile::ExtraFile(const CommandLine::ExtraFile &other)
 : filename(other.filename)
-, filesize(other.filesize)
 {
 }
 
 CommandLine::ExtraFile& CommandLine::ExtraFile::operator=(const CommandLine::ExtraFile &other)
 {
   filename = other.filename;
-  filesize = other.filesize;
 
   return *this;
 }
 
 CommandLine::ExtraFile::ExtraFile(const string &name, u64 size)
 : filename(name)
-, filesize(size)
 {
 }
 

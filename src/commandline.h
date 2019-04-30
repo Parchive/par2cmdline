@@ -82,11 +82,9 @@ public:
     ExtraFile(const string &name, u64 size);
 
     string FileName(void) const {return filename;}
-    u64 FileSize(void) const {return filesize;}
 
   protected:
     string filename;
-    u64    filesize;
   };
 
 public:

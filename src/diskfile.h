@@ -138,4 +138,13 @@ protected:
   map<string, DiskFile*>    diskfilemap;             // Map from filename to DiskFile
 };
 
+class FileSizeCache
+{
+public:  
+  FileSizeCache();
+  u64 get(const string &filename);
+protected:
+  map<string, u64> cache; 
+};
+
 #endif // __DISKFILE_H__

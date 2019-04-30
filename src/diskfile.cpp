@@ -1131,3 +1131,24 @@ DiskFile* DiskFileMap::Find(string filename) const
 
   return (f != diskfilemap.end()) ?  f->second : 0;
 }
+
+
+FileSizeCache::FileSizeCache()
+{
+}
+
+u64 FileSizeCache::get(const string &filename) {
+  map<string, u64>::const_iterator f = cache.find(filename);
+  if (f != cache.end())
+    f->second;
+
+  // go to disk
+  u64 filesize = DiskFile::GetFileSize(filename);
+
+  cache.insert(pair<string,u64>(filename, filesize));
+  //  pair<map<string,u64>::const_iterator,bool> location = cache.insert(pair<string,u64>(filename, filesize));
+  //  if (!location.second) {
+  //    throw exception?
+  //  }
+  return filesize;
+}

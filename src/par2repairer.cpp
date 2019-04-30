@@ -1270,7 +1270,7 @@ bool Par2Repairer::VerifyExtraFiles(const vector<CommandLine::ExtraFile> &extraf
     mttotalextrasize = 0;
 
     for (u64 i=0; i<extrafiles.size(); ++i)
-      mttotalextrasize += extrafiles[i].FileSize();
+      mttotalextrasize += DiskFile::GetFileSize(extrafiles[i].FileName());
 #endif
 
     #pragma omp parallel for schedule(dynamic) num_threads(CommandLine::GetFileThreads())
