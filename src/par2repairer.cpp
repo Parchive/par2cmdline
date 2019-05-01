@@ -107,7 +107,8 @@ Result Par2Repairer::Process(const CommandLine &commandline, bool dorepair)
   std::string par2filename = commandline.GetParFilename();
   basepath = commandline.GetBasePath();
   std::vector<CommandLine::ExtraFile> extrafiles = commandline.GetExtraFiles();
-
+  size_t memorylimit = commandline.GetMemoryLimit();
+  
   // Determine the searchpath from the location of the main PAR2 file
   string name;
   DiskFile::SplitFilename(par2filename, searchpath, name);
@@ -209,7 +210,7 @@ Result Par2Repairer::Process(const CommandLine &commandline, bool dorepair)
           sout << endl;
 
         // Allocate memory buffers for reading and writing data to disk.
-        if (!AllocateBuffers(commandline.GetMemoryLimit()))
+        if (!AllocateBuffers(memorylimit))
         {
           // Delete all of the partly reconstructed files
           DeleteIncompleteTargetFiles();

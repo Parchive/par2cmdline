@@ -93,7 +93,8 @@ Result Par1Repairer::Process(const CommandLine &commandline, bool dorepair)
   // Get filesnames from the command line
   string par1filename = commandline.GetParFilename();
   const vector<CommandLine::ExtraFile> &extrafiles = commandline.GetExtraFiles();
-
+  size_t memorylimit = commandline.GetMemoryLimit();
+  
   // Determine the searchpath from the location of the main PAR file
   string name;
   DiskFile::SplitFilename(par1filename, searchpath, name);
@@ -169,7 +170,7 @@ Result Par1Repairer::Process(const CommandLine &commandline, bool dorepair)
         }
 
         // Allocate memory buffers for reading and writing data to disk.
-        if (!AllocateBuffers(commandline.GetMemoryLimit()))
+        if (!AllocateBuffers(memorylimit))
         {
           // Delete all of the partly reconstructed files
           DeleteIncompleteTargetFiles();
