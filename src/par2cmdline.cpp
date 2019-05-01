@@ -57,45 +57,24 @@ int main(int argc, char *argv[])
         }
         break;
       case CommandLine::opVerify:
-        {
-          // Verify damaged files
-          switch (commandline->GetVersion())
-          {
-            case CommandLine::verPar1:
-              {
-                Par1Repairer *repairer = new Par1Repairer(cout, cerr);
-                result = repairer->Process(*commandline, false);
-                delete repairer;
-              }
-              break;
-            case CommandLine::verPar2:
-              {
-                Par2Repairer *repairer = new Par2Repairer(cout, cerr);
-                result = repairer->Process(*commandline, false);
-                delete repairer;
-              }
-              break;
-            case CommandLine::opNone:
-              break;
-          }
-        }
-        break;
       case CommandLine::opRepair:
         {
-          // Repair damaged files
+          // Verify or Repair damaged files
           switch (commandline->GetVersion())
           {
             case CommandLine::verPar1:
               {
                 Par1Repairer *repairer = new Par1Repairer(cout, cerr);
-                result = repairer->Process(*commandline, true);
+                result = repairer->Process(*commandline,
+					   commandline->GetOperation() == CommandLine::opRepair);
                 delete repairer;
               }
               break;
             case CommandLine::verPar2:
               {
                 Par2Repairer *repairer = new Par2Repairer(cout, cerr);
-                result = repairer->Process(*commandline, true);
+                result = repairer->Process(*commandline,
+					   commandline->GetOperation() == CommandLine::opRepair);
                 delete repairer;
               }
               break;
