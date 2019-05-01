@@ -30,7 +30,7 @@ Result par1repair(std::ostream &sout,
 		  // filethreads is not used by Par1
 #endif
 		  string parfilename,
-		  const vector<CommandLine::ExtraFile> &extrafiles,
+		  const vector<string> &extrafiles,
 		  const bool dorepair,   // derived from operation
 		  const bool purgefiles
 		  // skipdata is not used by Par1
@@ -51,7 +51,7 @@ public:
 		 // filethreads is not used by Par1
 #endif
 		 string parfilename,
-		 const vector<CommandLine::ExtraFile> &extrafiles,
+		 const vector<string> &extrafiles,
 		 const bool dorepair,   // derived from operation
 		 const bool purgefiles
 		 // skipdata is not used by Par1
@@ -66,14 +66,14 @@ protected:
   bool LoadOtherRecoveryFiles(string filename);
 
   // Load any extra PAR files specified on the command line
-  bool LoadExtraRecoveryFiles(const vector<CommandLine::ExtraFile> &extrafiles);
+  bool LoadExtraRecoveryFiles(const vector<string> &extrafiles);
 
   // Check for the existence of and verify each of the source files
   bool VerifySourceFiles(void);
 
   // Check any other files specified on the command line to see if they are
   // actually copies of the source files that have the wrong filename
-  bool VerifyExtraFiles(const vector<CommandLine::ExtraFile> &extrafiles);
+  bool VerifyExtraFiles(const vector<string> &extrafiles);
 
   // Attempt to match the data in the DiskFile with the source file
   bool VerifyDataFile(DiskFile *diskfile, Par1RepairerSourceFile *sourcefile);

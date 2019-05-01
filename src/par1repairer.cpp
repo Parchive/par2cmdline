@@ -41,7 +41,7 @@ Result par1repair(std::ostream &sout,
 		  // filethreads is not used by Par1
 #endif
 		  string parfilename,
-		  const vector<CommandLine::ExtraFile> &extrafiles,
+		  const vector<string> &extrafiles,
 		  const bool dorepair,   // derived from operation
 		  const bool purgefiles
 		  // skipdata is not used by Par1
@@ -120,7 +120,7 @@ Result Par1Repairer::Process(const size_t memorylimit,
 			     // filethreads is not used by Par1
 #endif
 			     string parfilename,
-			     const vector<CommandLine::ExtraFile> &extrafiles,
+			     const vector<string> &extrafiles,
 			     const bool dorepair,   // derived from operation
 			     const bool purgefiles
 			     // skipdata is not used by Par1
@@ -589,7 +589,7 @@ bool Par1Repairer::LoadOtherRecoveryFiles(string filename)
 }
 
 // Load packets from any other PAR files whose names are given on the command line
-bool Par1Repairer::LoadExtraRecoveryFiles(const vector<CommandLine::ExtraFile> &extrafiles)
+bool Par1Repairer::LoadExtraRecoveryFiles(const vector<string> &extrafiles)
 {
   for (ExtraFileIterator i=extrafiles.begin(); i!=extrafiles.end(); i++)
   {
@@ -693,7 +693,7 @@ bool Par1Repairer::VerifySourceFiles(void)
 }
 
 // Scan any extra files specified on the command line
-bool Par1Repairer::VerifyExtraFiles(const vector<CommandLine::ExtraFile> &extrafiles)
+bool Par1Repairer::VerifyExtraFiles(const vector<string> &extrafiles)
 {
   for (ExtraFileIterator i=extrafiles.begin(); 
        i!=extrafiles.end() && completefilecount<sourcefiles.size(); 

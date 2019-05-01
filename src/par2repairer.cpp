@@ -39,7 +39,7 @@ Result par2repair(std::ostream &sout,
 		  const u32 filethreads,
 #endif
 		  string parfilename,
-		  const vector<CommandLine::ExtraFile> &extrafiles,
+		  const vector<string> &extrafiles,
 		  const bool dorepair,   // derived from operation
 		  const bool purgefiles,
 		  const bool skipdata,
@@ -140,7 +140,7 @@ Result Par2Repairer::Process(
 			     const u32 _filethreads,
 #endif
 			     string parfilename,
-			     const vector<CommandLine::ExtraFile> &_extrafiles,
+			     const vector<string> &_extrafiles,
 			     const bool dorepair,   // derived from operation
 			     const bool purgefiles,
 			     const bool _skipdata,
@@ -157,7 +157,7 @@ Result Par2Repairer::Process(
 
   // Get filenames from the command line
   basepath = _basepath;
-  std::vector<CommandLine::ExtraFile> extrafiles = _extrafiles;
+  std::vector<string> extrafiles = _extrafiles;
     
 #ifdef _OPENMP
   // Set the number of threads
@@ -839,7 +839,7 @@ bool Par2Repairer::LoadPacketsFromOtherFiles(string filename)
 }
 
 // Load packets from any other PAR2 files whose names are given on the command line
-bool Par2Repairer::LoadPacketsFromExtraFiles(const vector<CommandLine::ExtraFile> &extrafiles)
+bool Par2Repairer::LoadPacketsFromExtraFiles(const vector<string> &extrafiles)
 {
   for (ExtraFileIterator i=extrafiles.begin(); i!=extrafiles.end(); i++)
   {
@@ -1162,7 +1162,7 @@ static bool SortSourceFilesByFileName(Par2RepairerSourceFile *low,
 }
 
 // Attempt to verify all of the source files
-bool Par2Repairer::VerifySourceFiles(const std::string& basepath, std::vector<CommandLine::ExtraFile>& extrafiles)
+bool Par2Repairer::VerifySourceFiles(const std::string& basepath, std::vector<string>& extrafiles)
 {
   if (noiselevel > nlQuiet)
     sout << endl << "Verifying source files:" << endl << endl;
@@ -1241,10 +1241,10 @@ bool Par2Repairer::VerifySourceFiles(const std::string& basepath, std::vector<Co
     // from the extra files.
     #pragma omp critical
     {
-      vector<CommandLine::ExtraFile>::iterator it = extrafiles.begin();
+      vector<string>::iterator it = extrafiles.begin();
       for (; it != extrafiles.end(); ++it)
       {
-	const CommandLine::ExtraFile& e = *it;
+	const string& e = *it;
 	const std::string& extra_pathname = e;
 	if (!extra_pathname.compare(target_pathname))
 	{
@@ -1312,7 +1312,7 @@ bool Par2Repairer::VerifySourceFiles(const std::string& basepath, std::vector<Co
 }
 
 // Scan any extra files specified on the command line
-bool Par2Repairer::VerifyExtraFiles(const vector<CommandLine::ExtraFile> &extrafiles, string basepath)
+bool Par2Repairer::VerifyExtraFiles(const vector<string> &extrafiles, string basepath)
 {
   if (noiselevel > nlQuiet)
     sout << endl << "Scanning extra files:" << endl << endl;

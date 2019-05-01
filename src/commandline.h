@@ -62,9 +62,6 @@ public:
   } Scheme;
 
 
-  // Any extra files listed on the command line
-  typedef string ExtraFile;
-
 public:
   // Accessor functions for the command line parameters
   CommandLine::Operation GetOperation(void) const          {return operation;}
@@ -82,7 +79,7 @@ public:
 
   string                              GetParFilename(void) const {return parfilename;}
   string                              GetBasePath(void) const    {return basepath;}
-  const vector<CommandLine::ExtraFile>& GetExtraFiles(void) const  {return extrafiles;}
+  const vector<string>& GetExtraFiles(void) const  {return extrafiles;}
   bool                                GetPurgeFiles(void) const  {return purgefiles;}
   bool                                GetRecursive(void) const   {return recursive;}
   bool                                GetSkipData(void) const    {return skipdata;}
@@ -114,7 +111,7 @@ protected:
                                // when verifying or repairing.
 
 
-  vector<ExtraFile> extrafiles;  // The list of other files specified on the
+  vector<string> extrafiles;  // The list of other files specified on the
                                // command line. When creating, this will be
                                // the source files, and when verifying or
                                // repairing, this will be additional PAR2
@@ -160,6 +157,6 @@ protected:
 
 };
 
-typedef vector<CommandLine::ExtraFile>::const_iterator ExtraFileIterator;
+typedef vector<string>::const_iterator ExtraFileIterator;
 
 #endif // __COMMANDLINE_H__

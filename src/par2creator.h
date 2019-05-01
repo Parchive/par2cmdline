@@ -35,7 +35,7 @@ Result par2create(std::ostream &sout,
 		  const u32 filethreads,
 #endif
 		  string parfilename,
-		  const vector<CommandLine::ExtraFile> &extrafiles,
+		  const vector<string> &extrafiles,
 		  const u32 blockcount,
 		  const u64 blocksize,
 		  const u32 firstblock,
@@ -60,7 +60,7 @@ public:
 		 const u32 filethreads,
 #endif
 		 string parfilename,
-		 const vector<CommandLine::ExtraFile> &extrafiles,
+		 const vector<string> &extrafiles,
 		 const u32 blockcount,
 		 const u64 blocksize,
 		 const u32 firstblock,
@@ -76,7 +76,7 @@ protected:
 
   // Compute block size from block count or vice versa depending on which was
   // specified on the command line
-  bool ComputeBlockSizeAndBlockCount(const vector<CommandLine::ExtraFile> &extrafiles);
+  bool ComputeBlockSizeAndBlockCount(const vector<string> &extrafiles);
 
   // Determine how many recovery blocks to create based on the source block
   // count and the requested level of redundancy.
@@ -90,7 +90,7 @@ protected:
 
   // Open all of the source files, compute the Hashes and CRC values, and store
   // the results in the file verification and file description packets.
-  bool OpenSourceFiles(const vector<CommandLine::ExtraFile> &extrafiles, string basepath);
+  bool OpenSourceFiles(const vector<string> &extrafiles, string basepath);
 
   // Create the main packet and determine the set_id_hash to use with all packets
   bool CreateMainPacket(void);

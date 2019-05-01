@@ -31,7 +31,7 @@ Result par2repair(std::ostream &sout,
 		  const u32 filethreads,
 #endif
 		  string parfilename,
-		  const vector<CommandLine::ExtraFile> &extrafiles,
+		  const vector<string> &extrafiles,
 		  const bool dorepair,   // derived from operation
 		  const bool purgefiles,
 		  const bool skipdata,
@@ -53,7 +53,7 @@ public:
 		 const u32 filethreads,
 #endif
 		 string parfilename,
-		 const vector<CommandLine::ExtraFile> &extrafiles,
+		 const vector<string> &extrafiles,
 		 const bool dorepair,   // derived from operation
 		 const bool purgefiles,
 		 const bool skipdata,
@@ -80,7 +80,7 @@ protected:
   bool LoadPacketsFromOtherFiles(string filename);
 
   // Load packets from any other PAR2 files whose names are given on the command line
-  bool LoadPacketsFromExtraFiles(const vector<CommandLine::ExtraFile> &extrafiles);
+  bool LoadPacketsFromExtraFiles(const vector<string> &extrafiles);
 
   // Check that the packets are consistent and discard any that are not
   bool CheckPacketConsistency(void);
@@ -102,10 +102,10 @@ protected:
   bool ComputeWindowTable(void);
 
   // Attempt to verify all of the source files
-  bool VerifySourceFiles(const std::string& basepath, std::vector<CommandLine::ExtraFile>& extrafiles);
+  bool VerifySourceFiles(const std::string& basepath, std::vector<string>& extrafiles);
 
   // Scan any extra files specified on the command line
-  bool VerifyExtraFiles(const vector<CommandLine::ExtraFile> &extrafiles, string basepath);
+  bool VerifyExtraFiles(const vector<string> &extrafiles, string basepath);
 
   // Attempt to match the data in the DiskFile with the source file
   bool VerifyDataFile(DiskFile *diskfile, Par2RepairerSourceFile *sourcefile, string basepath);

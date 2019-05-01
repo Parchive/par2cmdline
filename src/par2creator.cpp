@@ -38,7 +38,7 @@ Result par2create(std::ostream &sout,
 		  const u32 filethreads,
 #endif
 		  string parfilename,
-		  const vector<CommandLine::ExtraFile> &extrafiles,
+		  const vector<string> &extrafiles,
 		  const u32 blockcount,
 		  const u64 blocksize,
 		  const u32 firstblock,
@@ -130,7 +130,7 @@ Result Par2Creator::Process(
 			    const u32 _filethreads,
 #endif
 			    string parfilename,
-			    const vector<CommandLine::ExtraFile> &_extrafiles,
+			    const vector<string> &_extrafiles,
 			    const u32 _blockcount,
 			    const u64 _blocksize,
 			    const u32 _firstblock,
@@ -145,7 +145,7 @@ Result Par2Creator::Process(
   // Get information from commandline
   blocksize = _blocksize;
   sourceblockcount = _blockcount;
-  const vector<CommandLine::ExtraFile> extrafiles = _extrafiles;
+  const vector<string> extrafiles = _extrafiles;
   sourcefilecount = (u32)extrafiles.size();
   recoveryblockcount = _recoveryblockcount;
   recoveryfilecount = _recoveryfilecount;
@@ -273,7 +273,7 @@ Result Par2Creator::Process(
 
 // Compute block size from block count or vice versa depending on which was
 // specified on the command line
-bool Par2Creator::ComputeBlockSizeAndBlockCount(const vector<CommandLine::ExtraFile> &extrafiles)
+bool Par2Creator::ComputeBlockSizeAndBlockCount(const vector<string> &extrafiles)
 {
   FileSizeCache filesize_cache;
   
@@ -572,7 +572,7 @@ bool Par2Creator::ComputeRecoveryFileCount(void)
 
 // Open all of the source files, compute the Hashes and CRC values, and store
 // the results in the file verification and file description packets.
-bool Par2Creator::OpenSourceFiles(const vector<CommandLine::ExtraFile> &extrafiles, string basepath)
+bool Par2Creator::OpenSourceFiles(const vector<string> &extrafiles, string basepath)
 {
 #ifdef _OPENMP
   bool openfailed = false;
