@@ -128,11 +128,19 @@ protected:
   // Close all files.
   bool CloseFiles(void);
 
+#ifdef _OPENMP
+  static u32                          GetFileThreads(void) {return filethreads;}
+#endif
+  
 protected:
   std::ostream &sout; // stream for output (for commandline, this is cout)
   std::ostream &serr; // stream for errors (for commandline, this is cerr)
   
   const NoiseLevel noiselevel; // How noisy we should be
+
+#ifdef _OPENMP
+  static u32 filethreads;      // Number of threads for file processing
+#endif
 
   u64 blocksize;      // The size of each block.
   size_t chunksize;   // How much of each block will be processed at a 

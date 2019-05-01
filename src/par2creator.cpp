@@ -72,6 +72,12 @@ Result par2create(std::ostream &sout,
 }
 
 
+// static variable 
+#ifdef _OPENMP
+u32 Par2Creator::filethreads = _FILE_THREADS;
+#endif
+
+
 Par2Creator::Par2Creator(std::ostream &sout, std::ostream &serr, const NoiseLevel noiselevel)
 : sout(sout)
 , serr(serr)
@@ -121,7 +127,7 @@ Result Par2Creator::Process(
 			    const string &basepath,
 #ifdef _OPENMP
 			    const u32 nthreads,
-			    const u32 filethreads,
+			    const u32 _filethreads,
 #endif
 			    string parfilename,
 			    const vector<CommandLine::ExtraFile> &_extrafiles,
@@ -134,6 +140,8 @@ Result Par2Creator::Process(
 			    const u32 redundancy,
 			    const u64 redundancysize)
 {
+  filethreads = _filethreads;
+  
   // Get information from commandline
   blocksize = _blocksize;
   sourceblockcount = _blockcount;
@@ -575,7 +583,7 @@ bool Par2Creator::OpenSourceFiles(const vector<CommandLine::ExtraFile> &extrafil
     mttotalsize += DiskFile::GetFileSize(extrafiles[i]);
 #endif
 
-  #pragma omp parallel for schedule(dynamic) num_threads(CommandLine::GetFileThreads())
+  #pragma omp parallel for schedule(dynamic) num_threads(Par2Creator::GetFileThreads())
   for (i64 i=0; i<(i64)extrafiles.size(); ++i)
   {
 #ifdef _OPENMP

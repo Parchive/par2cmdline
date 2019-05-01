@@ -28,6 +28,7 @@ static char THIS_FILE[]=__FILE__;
 #endif
 
 
+
 Result par2repair(std::ostream &sout,
 		  std::ostream &serr,
 		  const NoiseLevel noiselevel,
@@ -63,6 +64,11 @@ Result par2repair(std::ostream &sout,
   return result;
 }
 
+
+// static variable 
+#ifdef _OPENMP
+u32 Par2Repairer::filethreads = _FILE_THREADS;
+#endif
 
 
 Par2Repairer::Par2Repairer(std::ostream &sout, std::ostream &serr, const NoiseLevel noiselevel)
@@ -131,7 +137,7 @@ Result Par2Repairer::Process(
 			     const string &_basepath,
 #ifdef _OPENMP
 			     const u32 nthreads,
-			     const u32 filethreads,
+			     const u32 _filethreads,
 #endif
 			     string parfilename,
 			     const vector<CommandLine::ExtraFile> &_extrafiles,
@@ -141,6 +147,8 @@ Result Par2Repairer::Process(
 			     const u64 _skipleaway
 			     )
 {
+  filethreads = _filethreads;
+  
   // Should we skip data whilst scanning files
   skipdata = _skipdata;
   
@@ -1207,7 +1215,7 @@ bool Par2Repairer::VerifySourceFiles(const std::string& basepath, std::vector<Co
   sort(sortedfiles.begin(), sortedfiles.end(), SortSourceFilesByFileName);
 
   // Start verifying the files
-  #pragma omp parallel for schedule(dynamic) num_threads(CommandLine::GetFileThreads())
+  #pragma omp parallel for schedule(dynamic) num_threads(Par2Repairer::GetFileThreads())
   for (i64 i=0; i<(i64)sortedfiles.size(); ++i)
   {
     // Do we have a source file
@@ -1321,7 +1329,7 @@ bool Par2Repairer::VerifyExtraFiles(const vector<CommandLine::ExtraFile> &extraf
       mttotalextrasize += DiskFile::GetFileSize(extrafiles[i]);
 #endif
 
-    #pragma omp parallel for schedule(dynamic) num_threads(CommandLine::GetFileThreads())
+    #pragma omp parallel for schedule(dynamic) num_threads(Par2Repairer::GetFileThreads())
     for (i64 i=0; i<(i64)extrafiles.size(); ++i)
     {
       string filename = extrafiles[i];
@@ -2646,7 +2654,7 @@ bool Par2Repairer::VerifyTargetFiles(string basepath)
 #endif
 
   // Iterate through each file in the verification list
-  #pragma omp parallel for schedule(dynamic) num_threads(CommandLine::GetFileThreads())
+  #pragma omp parallel for schedule(dynamic) num_threads(Par2Repairer::GetFileThreads())
   for (i64 i=0; i<(i64)verifylist.size(); ++i)
   {
     Par2RepairerSourceFile *sourcefile = verifylist[i];

@@ -30,20 +30,14 @@ static char THIS_FILE[]=__FILE__;
 #endif
 #endif
 
-// Set default for filethreads
-#ifdef _OPENMP
-u32 CommandLine::nthreads = 0; // use default number
-u32 CommandLine::filethreads = _FILE_THREADS;
-#endif
-
 
 CommandLine::CommandLine(void)
 : version(verUnknown)
 , noiselevel(nlUnknown)
 , memorylimit(0)
 , basepath()
-// NOTE: nthreads is static and set above.
-// NOTE: filethreads is static and set above.
+, nthreads(0) // 0 means use default number
+, filethreads( _FILE_THREADS ) // default from header file
 , parfilename()
 , extrafiles()
 , operation(opNone)  
@@ -111,7 +105,7 @@ void CommandLine::usage(void)
   cout <<
     "  -t<n>    : Number of threads used for main processing (" << omp_get_max_threads() << " detected)\n"
     "  -T<n>    : Number of files hashed in parallel\n"
-    "             (" << filethreads << " are the default)\n";
+    "             (" << _FILE_THREADS << " are the default)\n";
 #endif
   cout <<
     "  --       : Treat all following arguments as filenames\n"

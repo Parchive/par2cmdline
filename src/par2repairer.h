@@ -157,6 +157,10 @@ protected:
   bool RemoveBackupFiles(void);
   bool RemoveParFiles(void);
 
+#ifdef _OPENMP
+  static u32                          GetFileThreads(void) {return filethreads;}
+#endif
+  
 protected:
   std::ostream &sout; // stream for output (for commandline, this is cout)
   std::ostream &serr; // stream for errors (for commandline, this is cerr)
@@ -167,6 +171,10 @@ protected:
 
   std::string               basepath;
 
+#ifdef _OPENMP
+  static u32 filethreads;      // Number of threads for file processing
+#endif
+  
   bool                      skipdata;                // Should we skip data whilst scanning
   u64                       skipleaway;              // The leaway +/- we should allow whilst scanning
 
