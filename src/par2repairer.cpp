@@ -841,7 +841,7 @@ bool Par2Repairer::LoadPacketsFromOtherFiles(string filename)
 // Load packets from any other PAR2 files whose names are given on the command line
 bool Par2Repairer::LoadPacketsFromExtraFiles(const vector<string> &extrafiles)
 {
-  for (ExtraFileIterator i=extrafiles.begin(); i!=extrafiles.end(); i++)
+  for (vector<string>::const_iterator i=extrafiles.begin(); i!=extrafiles.end(); i++)
   {
     string filename = *i;
 

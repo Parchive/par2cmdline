@@ -278,7 +278,7 @@ bool Par2Creator::ComputeBlockSizeAndBlockCount(const vector<string> &extrafiles
   FileSizeCache filesize_cache;
   
   largestfilesize = 0;
-  for (ExtraFileIterator i=extrafiles.begin(); i!=extrafiles.end(); i++)
+  for (vector<string>::const_iterator i=extrafiles.begin(); i!=extrafiles.end(); i++)
   {
     u64 filesize = filesize_cache.get(*i);
     if (largestfilesize < filesize)
@@ -292,7 +292,7 @@ bool Par2Creator::ComputeBlockSizeAndBlockCount(const vector<string> &extrafiles
   {
     u64 count = 0;
 
-    for (ExtraFileIterator i=extrafiles.begin(); i!=extrafiles.end(); i++)
+    for (vector<string>::const_iterator i=extrafiles.begin(); i!=extrafiles.end(); i++)
     {
       count += (filesize_cache.get(*i) + blocksize-1) / blocksize;
     }
@@ -325,7 +325,7 @@ bool Par2Creator::ComputeBlockSizeAndBlockCount(const vector<string> &extrafiles
     else
     {
       u64 totalsize = 0;
-      for (ExtraFileIterator i=extrafiles.begin(); i!=extrafiles.end(); i++)
+      for (vector<string>::const_iterator i=extrafiles.begin(); i!=extrafiles.end(); i++)
       {
         totalsize += (filesize_cache.get(*i) + 3) / 4;
       }
@@ -350,7 +350,7 @@ bool Par2Creator::ComputeBlockSizeAndBlockCount(const vector<string> &extrafiles
           size = (lowerBound + upperBound)/2;
 
           count = 0;
-          for (ExtraFileIterator i=extrafiles.begin(); i!=extrafiles.end(); i++)
+          for (vector<string>::const_iterator i=extrafiles.begin(); i!=extrafiles.end(); i++)
           {
             count += ((filesize_cache.get(*i)+3)/4 + size-1) / size;
           }
@@ -361,7 +361,7 @@ bool Par2Creator::ComputeBlockSizeAndBlockCount(const vector<string> &extrafiles
             {
               size = lowerBound;
               count = 0;
-              for (ExtraFileIterator i=extrafiles.begin(); i!=extrafiles.end(); i++)
+              for (vector<string>::const_iterator i=extrafiles.begin(); i!=extrafiles.end(); i++)
               {
                 count += ((filesize_cache.get(*i)+3)/4 + size-1) / size;
               }

@@ -591,7 +591,7 @@ bool Par1Repairer::LoadOtherRecoveryFiles(string filename)
 // Load packets from any other PAR files whose names are given on the command line
 bool Par1Repairer::LoadExtraRecoveryFiles(const vector<string> &extrafiles)
 {
-  for (ExtraFileIterator i=extrafiles.begin(); i!=extrafiles.end(); i++)
+  for (vector<string>::const_iterator i=extrafiles.begin(); i!=extrafiles.end(); i++)
   {
     string filename = *i;
 
@@ -695,7 +695,7 @@ bool Par1Repairer::VerifySourceFiles(void)
 // Scan any extra files specified on the command line
 bool Par1Repairer::VerifyExtraFiles(const vector<string> &extrafiles)
 {
-  for (ExtraFileIterator i=extrafiles.begin(); 
+  for (vector<string>::const_iterator i=extrafiles.begin(); 
        i!=extrafiles.end() && completefilecount<sourcefiles.size(); 
        ++i)
   {

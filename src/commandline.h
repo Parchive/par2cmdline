@@ -157,6 +157,4 @@ protected:
 
 };
 
-typedef vector<string>::const_iterator ExtraFileIterator;
-
 #endif // __COMMANDLINE_H__
