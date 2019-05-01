@@ -24,14 +24,52 @@ class MainPacket;
 class CreatorPacket;
 class CriticalPacket;
 
+
+Result par2create(std::ostream &sout,
+		  std::ostream &serr,
+		  const NoiseLevel noiselevel,
+		  const size_t memorylimit,
+		  const string &basepath,
+#ifdef _OPENMP
+		  const u32 nthreads,
+		  const u32 filethreads,
+#endif
+		  string parfilename,
+		  const vector<CommandLine::ExtraFile> &extrafiles,
+		  const u32 blockcount,
+		  const u64 blocksize,
+		  const u32 firstblock,
+		  const CommandLine::Scheme recoveryfilescheme,
+		  const u32 recoveryfilecount,
+		  const u32 recoveryblockcount,
+		  const u32 redundancy,
+		  const u64 redundancysize
+		  );
+
 class Par2Creator
 {
 public:
-  Par2Creator(std::ostream &sout, std::ostream &serr);
+  Par2Creator(std::ostream &sout, std::ostream &serr, const NoiseLevel noiselevel);
   ~Par2Creator(void);
 
   // Create recovery files from the source files specified on the command line
-  Result Process(const CommandLine &commandline);
+  Result Process(const size_t memorylimit,
+		 const string &basepath,
+#ifdef _OPENMP
+		 const u32 nthreads,
+		 const u32 filethreads,
+#endif
+		 string parfilename,
+		 const vector<CommandLine::ExtraFile> &extrafiles,
+		 const u32 blockcount,
+		 const u64 blocksize,
+		 const u32 firstblock,
+		 const CommandLine::Scheme recoveryfilescheme,
+		 const u32 recoveryfilecount,
+		 const u32 recoveryblockcount,
+		 const u32 redundancy,
+		 const u64 redundancysize
+		 );
 
 protected:
   // Steps in the creation process:
@@ -94,7 +132,7 @@ protected:
   std::ostream &sout; // stream for output (for commandline, this is cout)
   std::ostream &serr; // stream for errors (for commandline, this is cerr)
   
-  NoiseLevel noiselevel; // How noisy we should be
+  const NoiseLevel noiselevel; // How noisy we should be
 
   u64 blocksize;      // The size of each block.
   size_t chunksize;   // How much of each block will be processed at a 

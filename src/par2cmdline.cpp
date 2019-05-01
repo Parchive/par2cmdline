@@ -48,13 +48,31 @@ int main(int argc, char *argv[])
     switch (commandline->GetOperation())
     {
       case CommandLine::opCreate:
-        {
-          // Create recovery data
+	// Create recovery data
+	result = par2create(cout,
+			    cerr,
+			    commandline->GetNoiseLevel(),
+			    commandline->GetMemoryLimit(),
+			    commandline->GetBasePath(),
+#ifdef _OPENMP
+			    commandline->GetNumThreads(),
+			    commandline->GetFileThreads(),
+#endif
+			    commandline->GetParFilename(),
+			    commandline->GetExtraFiles(),
 
-          Par2Creator *creator = new Par2Creator(cout, cerr);
-          result = creator->Process(*commandline);
-          delete creator;
-        }
+			    commandline->GetBlockCount(),
+			    commandline->GetBlockSize(),
+			    
+			    commandline->GetFirstRecoveryBlock(),
+			    commandline->GetRecoveryFileScheme(),
+			    commandline->GetRecoveryFileCount(),
+			    commandline->GetRecoveryBlockCount(),
+			    
+			    commandline->GetRedundancy(),			    
+			    commandline->GetRedundancySize()
+			    );
+
         break;
       case CommandLine::opVerify:
       case CommandLine::opRepair:

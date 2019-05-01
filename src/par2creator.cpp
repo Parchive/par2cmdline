@@ -27,10 +27,55 @@ static char THIS_FILE[]=__FILE__;
 #endif
 #endif
 
-Par2Creator::Par2Creator(std::ostream &sout, std::ostream &serr)
+
+Result par2create(std::ostream &sout,
+		  std::ostream &serr,
+		  const NoiseLevel noiselevel,
+		  const size_t memorylimit,
+		  const string &basepath,
+#ifdef _OPENMP
+		  const u32 nthreads,
+		  const u32 filethreads,
+#endif
+		  string parfilename,
+		  const vector<CommandLine::ExtraFile> &extrafiles,
+		  const u32 blockcount,
+		  const u64 blocksize,
+		  const u32 firstblock,
+		  const CommandLine::Scheme recoveryfilescheme,
+		  const u32 recoveryfilecount,
+		  const u32 recoveryblockcount,
+		  const u32 redundancy,
+		  const u64 redundancysize
+		  )
+{
+  Par2Creator creator(sout, serr, noiselevel);
+  Result result = creator.Process(
+				  memorylimit,
+				  basepath,
+#ifdef _OPENMP
+				  nthreads,
+				  filethreads,
+#endif
+				  parfilename,
+				  extrafiles,
+				  blockcount,
+				  blocksize,
+				  firstblock,
+				  recoveryfilescheme,
+				  recoveryfilecount,
+				  recoveryblockcount,
+				  redundancy,
+				  redundancysize
+				  );
+  return result;
+}
+
+
+Par2Creator::Par2Creator(std::ostream &sout, std::ostream &serr, const NoiseLevel noiselevel)
 : sout(sout)
 , serr(serr)
-, noiselevel(nlUnknown)
+, noiselevel(noiselevel)
 , blocksize(0)
 , chunksize(0)
 , inputbuffer(0)
@@ -71,28 +116,38 @@ Par2Creator::~Par2Creator(void)
   }
 }
 
-Result Par2Creator::Process(const CommandLine &commandline)
+Result Par2Creator::Process(
+			    const size_t memorylimit,
+			    const string &basepath,
+#ifdef _OPENMP
+			    const u32 nthreads,
+			    const u32 filethreads,
+#endif
+			    string parfilename,
+			    const vector<CommandLine::ExtraFile> &_extrafiles,
+			    const u32 _blockcount,
+			    const u64 _blocksize,
+			    const u32 _firstblock,
+			    const CommandLine::Scheme _recoveryfilescheme,
+			    const u32 _recoveryfilecount,
+			    const u32 _recoveryblockcount,
+			    const u32 redundancy,
+			    const u64 redundancysize)
 {
   // Get information from commandline
-  noiselevel = commandline.GetNoiseLevel();
-  blocksize = commandline.GetBlockSize();
-  sourceblockcount = commandline.GetBlockCount();
-  const vector<CommandLine::ExtraFile> extrafiles = commandline.GetExtraFiles();
+  blocksize = _blocksize;
+  sourceblockcount = _blockcount;
+  const vector<CommandLine::ExtraFile> extrafiles = _extrafiles;
   sourcefilecount = (u32)extrafiles.size();
-  u32 redundancy = commandline.GetRedundancy();
-  u64 redundancysize = commandline.GetRedundancySize();
-  recoveryblockcount = commandline.GetRecoveryBlockCount();
-  recoveryfilecount = commandline.GetRecoveryFileCount();
-  firstrecoveryblock = commandline.GetFirstRecoveryBlock();
-  recoveryfilescheme = commandline.GetRecoveryFileScheme();
-  string par2filename = commandline.GetParFilename();
-  string basepath = commandline.GetBasePath();
-  size_t memorylimit = commandline.GetMemoryLimit();
+  recoveryblockcount = _recoveryblockcount;
+  recoveryfilecount = _recoveryfilecount;
+  firstrecoveryblock = _firstblock;
+  recoveryfilescheme = _recoveryfilescheme;
 
 #ifdef _OPENMP
   // Set the number of threads
-  if (commandline.GetNumThreads() != 0)
-    omp_set_num_threads(commandline.GetNumThreads());
+  if (nthreads != 0)
+    omp_set_num_threads(nthreads);
 #endif
 
   // Compute block size from block count or vice versa depending on which was
@@ -144,7 +199,7 @@ Result Par2Creator::Process(const CommandLine &commandline)
     return eLogicError;
 
   // Create all of the output files and allocate all packets to appropriate file offets.
-  if (!InitialiseOutputFiles(par2filename))
+  if (!InitialiseOutputFiles(parfilename))
     return eFileIOError;
 
   if (recoveryblockcount > 0)
@@ -637,7 +692,7 @@ public:
 };
 
 // Create all of the output files and allocate all packets to appropriate file offets.
-bool Par2Creator::InitialiseOutputFiles(string par2filename)
+bool Par2Creator::InitialiseOutputFiles(string parfilename)
 {
   // Allocate the recovery packets
   recoverypackets.resize(recoveryblockcount);
@@ -784,10 +839,10 @@ bool Par2Creator::InitialiseOutputFiles(string par2filename)
     for (u32 filenumber=0; filenumber<recoveryfilecount; filenumber++)
     {
       char filename[_MAX_PATH];
-      snprintf(filename, sizeof(filename), filenameformat, par2filename.c_str(), fileallocations[filenumber].exponent, fileallocations[filenumber].count);
+      snprintf(filename, sizeof(filename), filenameformat, parfilename.c_str(), fileallocations[filenumber].exponent, fileallocations[filenumber].count);
       fileallocations[filenumber].filename = filename;
     }
-    fileallocations[recoveryfilecount].filename = par2filename + ".par2";
+    fileallocations[recoveryfilecount].filename = parfilename + ".par2";
   }
 
   // Allocate the recovery files
