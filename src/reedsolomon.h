@@ -58,7 +58,7 @@ public:
   bool SetOutput(bool present, u16 lowexponent, u16 highexponent);
 
   // Compute the RS Matrix
-  bool Compute(CommandLine::NoiseLevel noiselevel, std::ostream &sout, std::ostream &serr);
+  bool Compute(NoiseLevel noiselevel, std::ostream &sout, std::ostream &serr);
 
   // Process a block of data
   bool Process(size_t size,             // The size of the block of data
@@ -71,7 +71,7 @@ private:
 
 protected:
   // Perform Gaussian Elimination
-  bool GaussElim(CommandLine::NoiseLevel noiselevel,
+  bool GaussElim(NoiseLevel noiselevel,
 		 std::ostream &sout,
 		 std::ostream &serr,
 		 unsigned int rows,
@@ -207,7 +207,7 @@ inline bool ReedSolomon<g>::SetOutput(bool present, u16 lowexponent, u16 highexp
 
 // Construct the Vandermonde matrix and solve it if necessary
 template<class g>
-inline bool ReedSolomon<g>::Compute(CommandLine::NoiseLevel noiselevel, std::ostream &sout, std::ostream &serr)
+inline bool ReedSolomon<g>::Compute(NoiseLevel noiselevel, std::ostream &sout, std::ostream &serr)
 {
   u32 outcount = datamissing + parmissing;
   u32 incount = datapresent + datamissing;
@@ -223,7 +223,7 @@ inline bool ReedSolomon<g>::Compute(CommandLine::NoiseLevel noiselevel, std::ost
     return false;
   }
 
-  if (noiselevel > CommandLine::nlQuiet)
+  if (noiselevel > nlQuiet)
     sout << "Computing Reed Solomon matrix." << endl;
 
   /*  Layout of RS Matrix:
@@ -266,7 +266,7 @@ inline bool ReedSolomon<g>::Compute(CommandLine::NoiseLevel noiselevel, std::ost
   {
     // Define MPDL to skip reporting and speed things up
 #ifndef MPDL
-    if (noiselevel > CommandLine::nlQuiet)
+    if (noiselevel > nlQuiet)
     {
       int progress = row * 1000 / (datamissing+parmissing);
       sout << "Constructing: " << progress/10 << '.' << progress%10 << "%\r" << flush;
@@ -313,7 +313,7 @@ inline bool ReedSolomon<g>::Compute(CommandLine::NoiseLevel noiselevel, std::ost
   {
     // Define MPDL to skip reporting and speed things up
 #ifndef MPDL
-    if (noiselevel > CommandLine::nlQuiet)
+    if (noiselevel > nlQuiet)
     {
       int progress = (row+datamissing) * 1000 / (datamissing+parmissing);
       sout << "Constructing: " << progress/10 << '.' << progress%10 << "%\r" << flush;
@@ -354,7 +354,7 @@ inline bool ReedSolomon<g>::Compute(CommandLine::NoiseLevel noiselevel, std::ost
 
     outputrow++;
   }
-  if (noiselevel > CommandLine::nlQuiet)
+  if (noiselevel > nlQuiet)
     sout << "Constructing: done." << endl;
 
   // Solve the matrices only if recovering data
@@ -372,9 +372,9 @@ inline bool ReedSolomon<g>::Compute(CommandLine::NoiseLevel noiselevel, std::ost
 
 // Use Gaussian Elimination to solve the matrices
 template<class g>
-inline bool ReedSolomon<g>::GaussElim(CommandLine::NoiseLevel noiselevel, std::ostream &sout, std::ostream &serr, unsigned int rows, unsigned int leftcols, G *leftmatrix, G *rightmatrix, unsigned int datamissing)
+inline bool ReedSolomon<g>::GaussElim(NoiseLevel noiselevel, std::ostream &sout, std::ostream &serr, unsigned int rows, unsigned int leftcols, G *leftmatrix, G *rightmatrix, unsigned int datamissing)
 {
-  if (noiselevel >= CommandLine::nlDebug)
+  if (noiselevel >= nlDebug)
   {
     for (unsigned int row=0; row<rows; row++)
     {
@@ -450,7 +450,7 @@ inline bool ReedSolomon<g>::GaussElim(CommandLine::NoiseLevel noiselevel, std::o
     {
       // Define MPDL to skip reporting and speed things up
 #ifndef MPDL
-      if (noiselevel > CommandLine::nlQuiet)
+      if (noiselevel > nlQuiet)
       {
         int newprogress = (row*rows+row2) * 1000 / (datamissing*rows);
         if (progress != newprogress)
@@ -507,9 +507,9 @@ inline bool ReedSolomon<g>::GaussElim(CommandLine::NoiseLevel noiselevel, std::o
       }
     }
   }
-  if (noiselevel > CommandLine::nlQuiet)
+  if (noiselevel > nlQuiet)
     sout << "Solving: done." << endl;
-  if (noiselevel >= CommandLine::nlDebug)
+  if (noiselevel >= nlDebug)
   {
     for (unsigned int row=0; row<rows; row++)
     {

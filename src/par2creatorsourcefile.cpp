@@ -51,9 +51,9 @@ Par2CreatorSourceFile::~Par2CreatorSourceFile(void)
 // in a file description packet and a file verification packet.
 
 #ifdef _OPENMP
-bool Par2CreatorSourceFile::Open(CommandLine::NoiseLevel noiselevel, std::ostream &sout, std::ostream &serr, const CommandLine::ExtraFile &extrafile, u64 blocksize, bool deferhashcomputation, string basepath, u64 totalsize, u64 &totalprogress)
+bool Par2CreatorSourceFile::Open(NoiseLevel noiselevel, std::ostream &sout, std::ostream &serr, const CommandLine::ExtraFile &extrafile, u64 blocksize, bool deferhashcomputation, string basepath, u64 totalsize, u64 &totalprogress)
 #else
-bool Par2CreatorSourceFile::Open(CommandLine::NoiseLevel noiselevel, std::ostream &sout, std::ostream &serr, const CommandLine::ExtraFile &extrafile, u64 blocksize, bool deferhashcomputation, string basepath)
+bool Par2CreatorSourceFile::Open(NoiseLevel noiselevel, std::ostream &sout, std::ostream &serr, const CommandLine::ExtraFile &extrafile, u64 blocksize, bool deferhashcomputation, string basepath)
 #endif
 {
   // Get the filename and filesize
@@ -209,7 +209,7 @@ bool Par2CreatorSourceFile::Open(CommandLine::NoiseLevel noiselevel, std::ostrea
         }
       }
 
-      if (noiselevel > CommandLine::nlQuiet)
+      if (noiselevel > nlQuiet)
       {
         // Display progress
 #ifdef _OPENMP

@@ -61,16 +61,6 @@ public:
     scUniform        // All PAR2 files the same size
   } Scheme;
 
-  typedef enum
-  {
-    nlUnknown = 0,
-    nlSilent,       // Absolutely no output (other than errors)
-    nlQuiet,        // Bare minimum of output
-    nlNormal,       // Normal level of output
-    nlNoisy,        // Lots of output
-    nlDebug         // Extra debugging information
-  } NoiseLevel;
-
 
   // Any extra files listed on the command line
   typedef string ExtraFile;
@@ -88,7 +78,7 @@ public:
   u32                    GetRecoveryBlockCount(void) const {return recoveryblockcount;}
   CommandLine::Scheme    GetRecoveryFileScheme(void) const {return recoveryfilescheme;}
   size_t                 GetMemoryLimit(void) const        {return memorylimit;}
-  CommandLine::NoiseLevel GetNoiseLevel(void) const        {return noiselevel;}
+  NoiseLevel GetNoiseLevel(void) const        {return noiselevel;}
 
   string                              GetParFilename(void) const {return parfilename;}
   string                              GetBasePath(void) const    {return basepath;}

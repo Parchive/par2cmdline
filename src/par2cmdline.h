@@ -229,6 +229,20 @@ typedef   unsigned long long   u64;
 
 #define _FILE_THREADS 2
 
+
+// How much logging/status information to write
+// to output or error stream
+typedef enum
+{
+  nlUnknown = 0,
+  nlSilent,       // Absolutely no output (other than errors)
+  nlQuiet,        // Bare minimum of output
+  nlNormal,       // Normal level of output
+  nlNoisy,        // Lots of output
+  nlDebug         // Extra debugging information
+} NoiseLevel;
+
+
 // Return type of par2cmdline
 typedef enum Result
 {

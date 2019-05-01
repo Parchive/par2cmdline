@@ -129,7 +129,7 @@ protected:
   std::ostream &sout; // stream for output (for commandline, this is cout)
   std::ostream &serr; // stream for errors (for commandline, this is cerr)
 
-  CommandLine::NoiseLevel   noiselevel;              // OnScreen display
+  NoiseLevel   noiselevel;              // OnScreen display
 
   string                    searchpath;              // Where to find files on disk
 

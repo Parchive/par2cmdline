@@ -46,7 +46,7 @@ Par1Repairer::Par1Repairer(std::ostream &sout, std::ostream &serr)
   inputbuffer = 0;
   outputbuffer = 0;
 
-  noiselevel = CommandLine::nlNormal;
+  noiselevel = nlNormal;
 }
 
 Par1Repairer::~Par1Repairer(void)
@@ -117,7 +117,7 @@ Result Par1Repairer::Process(const CommandLine &commandline, bool dorepair)
   if (!LoadExtraRecoveryFiles(extrafiles))
     return eLogicError;
 
-  if (noiselevel > CommandLine::nlQuiet)
+  if (noiselevel > nlQuiet)
     sout << endl << "Verifying source files:" << endl << endl;
 
   // Check for the existence of and verify each of the source files
@@ -126,7 +126,7 @@ Result Par1Repairer::Process(const CommandLine &commandline, bool dorepair)
 
   if (completefilecount<sourcefiles.size())
   {
-    if (noiselevel > CommandLine::nlQuiet)
+    if (noiselevel > nlQuiet)
       sout << endl << "Scanning extra files:" << endl << endl;
 
     // Check any other files specified on the command line to see if they are
@@ -138,7 +138,7 @@ Result Par1Repairer::Process(const CommandLine &commandline, bool dorepair)
   // Find out how much data we have found
   UpdateVerificationResults();
 
-  if (noiselevel > CommandLine::nlSilent)
+  if (noiselevel > nlSilent)
     sout << endl;
 
   // Check the verification results and report the details
@@ -151,7 +151,7 @@ Result Par1Repairer::Process(const CommandLine &commandline, bool dorepair)
     // Do we want to carry out a repair
     if (dorepair)
     {
-      if (noiselevel > CommandLine::nlSilent)
+      if (noiselevel > nlSilent)
         sout << endl;
 
       // Rename any damaged or missnamed target files.
@@ -182,7 +182,7 @@ Result Par1Repairer::Process(const CommandLine &commandline, bool dorepair)
           DeleteIncompleteTargetFiles();
           return eMemoryError;
         }
-        if (noiselevel > CommandLine::nlSilent)
+        if (noiselevel > nlSilent)
           sout << endl;
 
         // Set the total amount of data to be processed.
@@ -208,7 +208,7 @@ Result Par1Repairer::Process(const CommandLine &commandline, bool dorepair)
           blockoffset += blocklength;
         }
 
-        if (noiselevel > CommandLine::nlSilent)
+        if (noiselevel > nlSilent)
           sout << endl << "Verifying repaired files:" << endl << endl;
 
         // Verify that all of the reconstructed target files are now correct
@@ -228,7 +228,7 @@ Result Par1Repairer::Process(const CommandLine &commandline, bool dorepair)
       }
       else
       {
-        if (noiselevel > CommandLine::nlSilent)
+        if (noiselevel > nlSilent)
           sout << endl << "Repair complete." << endl;
       }
     }
@@ -266,7 +266,7 @@ bool Par1Repairer::LoadRecoveryFile(string filename)
     return true;
   }
 
-  if (noiselevel > CommandLine::nlSilent)
+  if (noiselevel > nlSilent)
   {
     string path;
     string name;
@@ -490,7 +490,7 @@ bool Par1Repairer::LoadRecoveryFile(string filename)
   // We have finished with the file for now
   diskfile->Close();
 
-  if (noiselevel > CommandLine::nlQuiet)
+  if (noiselevel > nlQuiet)
   {
     if (havevolume)
     {
@@ -642,7 +642,7 @@ bool Par1Repairer::VerifySourceFiles(void)
         // The file does not exist.
         delete diskfile;
 
-        if (noiselevel > CommandLine::nlSilent)
+        if (noiselevel > nlSilent)
         {
           string path;
           string name;
@@ -739,7 +739,7 @@ bool Par1Repairer::VerifyDataFile(DiskFile *diskfile, Par1RepairerSourceFile *so
 
   if (filesize == 0)
   {
-    if (noiselevel > CommandLine::nlSilent)
+    if (noiselevel > nlSilent)
     {
       sout << "Target: \"" << name << "\" - empty." << endl;
     }
@@ -797,7 +797,7 @@ bool Par1Repairer::VerifyDataFile(DiskFile *diskfile, Par1RepairerSourceFile *so
         u64 offset = 16384;
         while (offset < filesize)
         {
-          if (noiselevel > CommandLine::nlQuiet)
+          if (noiselevel > nlQuiet)
           {
             // Update a progress indicator
             u32 oldfraction = (u32)(1000 * (progress) / filesize);
@@ -874,7 +874,7 @@ bool Par1Repairer::VerifyDataFile(DiskFile *diskfile, Par1RepairerSourceFile *so
   {
     match->SetCompleteFile(diskfile);
 
-    if (noiselevel > CommandLine::nlSilent)
+    if (noiselevel > nlSilent)
     {
       // Was the match the file we were originally looking for
       if (match == sourcefile)
@@ -897,7 +897,7 @@ bool Par1Repairer::VerifyDataFile(DiskFile *diskfile, Par1RepairerSourceFile *so
     }
     else
     {
-      if (noiselevel > CommandLine::nlSilent)
+      if (noiselevel > nlSilent)
       {
         string targetname;
         DiskFile::SplitFilename(match->FileName(), path, targetname);
@@ -913,7 +913,7 @@ bool Par1Repairer::VerifyDataFile(DiskFile *diskfile, Par1RepairerSourceFile *so
   }
   else
   {
-    if (noiselevel > CommandLine:: nlSilent)
+    if (noiselevel > nlSilent)
       sout << "File: \"" 
             << name 
             << "\" - no data found." 
@@ -975,9 +975,9 @@ bool Par1Repairer::CheckVerificationResults(void)
       damagedfilecount > 0 ||
       missingfilecount > 0)
   {
-    if (noiselevel > CommandLine::nlSilent)
+    if (noiselevel > nlSilent)
       sout << "Repair is required." << endl;
-    if (noiselevel > CommandLine::nlQuiet)
+    if (noiselevel > nlQuiet)
     {
       if (renamedfilecount > 0) sout << renamedfilecount << " file(s) have the wrong name." << endl;
       if (missingfilecount > 0) sout << missingfilecount << " file(s) are missing." << endl;
@@ -988,10 +988,10 @@ bool Par1Repairer::CheckVerificationResults(void)
     // Is repair possible
     if (recoveryblocks.size() >= damagedfilecount+missingfilecount)
     {
-      if (noiselevel > CommandLine::nlSilent)
+      if (noiselevel > nlSilent)
         sout << "Repair is possible." << endl;
 
-      if (noiselevel > CommandLine::nlQuiet)
+      if (noiselevel > nlQuiet)
       {
         if (recoveryblocks.size() > damagedfilecount+missingfilecount)
           sout << "You have an excess of " 
@@ -1009,7 +1009,7 @@ bool Par1Repairer::CheckVerificationResults(void)
     }
     else
     {
-      if (noiselevel > CommandLine::nlSilent)
+      if (noiselevel > nlSilent)
       {
         sout << "Repair is not possible." << endl;
         sout << "You need " << damagedfilecount+missingfilecount - recoveryblocks.size()
@@ -1021,7 +1021,7 @@ bool Par1Repairer::CheckVerificationResults(void)
   }
   else
   {
-    if (noiselevel > CommandLine::nlSilent)
+    if (noiselevel > nlSilent)
       sout << "All files are correct, repair is not required." << endl;
 
     return true;
@@ -1303,7 +1303,7 @@ bool Par1Repairer::ProcessData(u64 blockoffset, size_t blocklength)
         // Process the data
         rs.Process(blocklength, inputindex, inputbuffer, outputindex, outbuf);
 
-        if (noiselevel > CommandLine::nlQuiet)
+        if (noiselevel > nlQuiet)
         {
           // Update a progress indicator
           u32 oldfraction = (u32)(1000 * progress / totaldata);
@@ -1322,7 +1322,7 @@ bool Par1Repairer::ProcessData(u64 blockoffset, size_t blocklength)
     }
   }
 
-  if (noiselevel > CommandLine::nlQuiet)
+  if (noiselevel > nlQuiet)
     sout << "Writing recovered data\r";
 
   // For each output block that has been recomputed
@@ -1341,7 +1341,7 @@ bool Par1Repairer::ProcessData(u64 blockoffset, size_t blocklength)
     ++outputblock;
   }
 
-  if (noiselevel > CommandLine::nlQuiet)
+  if (noiselevel > nlQuiet)
     sout << "Wrote " << totalwritten << " bytes to disk" << endl;
 
   return true;
@@ -1429,7 +1429,7 @@ bool Par1Repairer::RemoveBackupFiles(void)
 {
   vector<DiskFile*>::iterator bf = backuplist.begin();
 
-  if (noiselevel > CommandLine::nlSilent
+  if (noiselevel > nlSilent
       && bf != backuplist.end())
   {
     sout << endl << "Purge backup files." << endl;
@@ -1438,7 +1438,7 @@ bool Par1Repairer::RemoveBackupFiles(void)
   // Iterate through each file in the backuplist
   while (bf != backuplist.end())
   {
-    if (noiselevel > CommandLine::nlSilent)
+    if (noiselevel > nlSilent)
     {
       string name;
       string path;
@@ -1458,7 +1458,7 @@ bool Par1Repairer::RemoveBackupFiles(void)
 
 bool Par1Repairer::RemoveParFiles(void)
 {
-  if (noiselevel > CommandLine::nlSilent
+  if (noiselevel > nlSilent
       && parlist.size() > 0)
   {
       sout << endl << "Purge par files." << endl;
@@ -1470,7 +1470,7 @@ bool Par1Repairer::RemoveParFiles(void)
 
     if (diskfile->Open(*s))
     {
-      if (noiselevel > CommandLine::nlSilent)
+      if (noiselevel > nlSilent)
       {
         string name;
         string path;

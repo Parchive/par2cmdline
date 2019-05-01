@@ -85,7 +85,7 @@ protected:
   std::ostream &sout; // stream for output (for commandline, this is cout)
   std::ostream &serr; // stream for errors (for commandline, this is cerr)
 
-  CommandLine::NoiseLevel   noiselevel;              // How noisy we should be
+  NoiseLevel   noiselevel;              // How noisy we should be
   string                    searchpath;              // Where to find files on disk
   DiskFileMap               diskfilemap;             // Map from filename to DiskFile
 

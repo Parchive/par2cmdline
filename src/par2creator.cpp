@@ -30,7 +30,7 @@ static char THIS_FILE[]=__FILE__;
 Par2Creator::Par2Creator(std::ostream &sout, std::ostream &serr)
 : sout(sout)
 , serr(serr)
-, noiselevel(CommandLine::nlUnknown)
+, noiselevel(nlUnknown)
 , blocksize(0)
 , chunksize(0)
 , inputbuffer(0)
@@ -113,7 +113,7 @@ Result Par2Creator::Process(const CommandLine &commandline)
   if (!CalculateProcessBlockSize(memorylimit))
     return eLogicError;
 
-  if (noiselevel > CommandLine::nlQuiet)
+  if (noiselevel > nlQuiet)
   {
     // Display information.
     sout << "Block size: " << blocksize << endl;
@@ -175,7 +175,7 @@ Result Par2Creator::Process(const CommandLine &commandline)
       blockoffset += blocklength;
     }
 
-    if (noiselevel > CommandLine::nlQuiet)
+    if (noiselevel > nlQuiet)
       sout << "Writing recovery packets" << endl;
 
     // Finish computation of the recovery packets and write the headers to disk.
@@ -191,7 +191,7 @@ Result Par2Creator::Process(const CommandLine &commandline)
   if (!FinishCriticalPackets())
     return eLogicError;
 
-  if (noiselevel > CommandLine::nlQuiet)
+  if (noiselevel > nlQuiet)
     sout << "Writing verification packets" << endl;
 
   // Write all other critical packets to disk.
@@ -202,7 +202,7 @@ Result Par2Creator::Process(const CommandLine &commandline)
   if (!CloseFiles())
     return eFileIOError;
 
-  if (noiselevel > CommandLine::nlSilent)
+  if (noiselevel > nlSilent)
     sout << "Done" << endl;
 
   return eSuccess;
@@ -533,7 +533,7 @@ bool Par2Creator::OpenSourceFiles(const vector<CommandLine::ExtraFile> &extrafil
     string name;
     DiskFile::SplitRelativeFilename(extrafiles[i], basepath, name);
 
-    if (noiselevel > CommandLine::nlSilent)
+    if (noiselevel > nlSilent)
     {
       #pragma omp critical
       sout << "Opening: " << name << endl;
@@ -986,7 +986,7 @@ bool Par2Creator::ProcessData(u64 blockoffset, size_t blocklength)
       // Process the data through the RS matrix
       rs.Process(blocklength, inputblock, inputbuffer, internalOutputblock, outbuf);
 
-      if (noiselevel > CommandLine::nlQuiet)
+      if (noiselevel > nlQuiet)
       {
         // Update a progress indicator
         u32 oldfraction = (u32)(1000 * progress / totaldata);
@@ -1016,7 +1016,7 @@ bool Par2Creator::ProcessData(u64 blockoffset, size_t blocklength)
     lastopenfile->Close();
   }
 
-  if (noiselevel > CommandLine::nlQuiet)
+  if (noiselevel > nlQuiet)
     sout << "Writing recovery packets\r";
 
   // For each output block
@@ -1030,7 +1030,7 @@ bool Par2Creator::ProcessData(u64 blockoffset, size_t blocklength)
       return false;
   }
 
-  if (noiselevel > CommandLine::nlQuiet)
+  if (noiselevel > nlQuiet)
     sout << "Wrote " << recoveryblockcount * blocklength << " bytes to disk" << endl;
 
   return true;

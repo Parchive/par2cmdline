@@ -215,7 +215,7 @@ int generate_data(unsigned int seed, u8 data[][BUF_SIZE], int in_count, int reco
     return 1;
   }
   //cout << "creator.compute" << endl;
-  if (!rs_creator.Compute(CommandLine::nlSilent, cout, cerr)) {
+  if (!rs_creator.Compute(nlSilent, cout, cerr)) {
     cerr << "rs_creator.Compute returned false";
     return 1;
   }
@@ -254,7 +254,7 @@ int init_repair_rs(ReedSolomon<gtype> &rs_repair, vector<bool> &in_present, vect
   }
   
   //cout << "Repair.compute" << endl;
-  if (!rs_repair.Compute(CommandLine::nlSilent, cout, cerr)) {
+  if (!rs_repair.Compute(nlSilent, cout, cerr)) {
     cerr << "rs_repair.Compute returned false";
     return 1;
   }
@@ -472,7 +472,7 @@ int test4(int NUM_IN, int *expected_bases) {
     return 1;
   }
   //cout << "creator.compute" << endl;
-  if (!rs_creator.Compute(CommandLine::nlSilent, cout, cerr)) {
+  if (!rs_creator.Compute(nlSilent, cout, cerr)) {
     cerr << "rs_creator.Compute returned false";
     return 1;
   }
