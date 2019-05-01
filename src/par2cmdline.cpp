@@ -63,12 +63,18 @@ int main(int argc, char *argv[])
           switch (commandline->GetVersion())
           {
             case CommandLine::verPar1:
-              {
-                Par1Repairer *repairer = new Par1Repairer(cout, cerr);
-                result = repairer->Process(*commandline,
-					   commandline->GetOperation() == CommandLine::opRepair);
-                delete repairer;
-              }
+	      result = par1repair(cout,
+				  cerr,
+				  commandline->GetNoiseLevel(),
+				  commandline->GetMemoryLimit(),
+#ifdef _OPENMP
+				  commandline->GetNumThreads(),
+#endif
+				  commandline->GetParFilename(),
+				  commandline->GetExtraFiles(),
+				  commandline->GetOperation() == CommandLine::opRepair,
+				  commandline->GetPurgeFiles());
+	      
               break;
             case CommandLine::verPar2:
               {

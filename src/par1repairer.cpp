@@ -29,9 +29,42 @@ static char THIS_FILE[]=__FILE__;
 
 static u32 smartpar11 = 0x03000101;
 
-Par1Repairer::Par1Repairer(std::ostream &sout, std::ostream &serr)
+
+
+Result par1repair(std::ostream &sout,
+		  std::ostream &serr,
+		  const NoiseLevel noiselevel,
+		  const size_t memorylimit,
+		  // basepath is not used by Par1
+#ifdef _OPENMP
+		  const u32 nthreads,
+		  // filethreads is not used by Par1
+#endif
+		  string parfilename,
+		  const vector<CommandLine::ExtraFile> &extrafiles,
+		  const bool dorepair,   // derived from operation
+		  const bool purgefiles
+		  // skipdata is not used by Par1
+		  // skipleaway is not used by Par1
+		  )
+{
+  Par1Repairer repairer(sout, serr, noiselevel);
+  Result result = repairer.Process(memorylimit,
+#ifdef _OPENMP
+				   nthreads,
+#endif
+				   parfilename,
+				   extrafiles,
+				   dorepair,
+				   purgefiles);
+  return result;
+}
+
+
+Par1Repairer::Par1Repairer(std::ostream &sout, std::ostream &serr, const NoiseLevel noiselevel)
 : sout(sout)
 , serr(serr)
+, noiselevel(noiselevel)
 {
   filelist = 0;
   filelistsize = 0;
@@ -45,8 +78,6 @@ Par1Repairer::Par1Repairer(std::ostream &sout, std::ostream &serr)
 
   inputbuffer = 0;
   outputbuffer = 0;
-
-  noiselevel = nlNormal;
 }
 
 Par1Repairer::~Par1Repairer(void)
@@ -82,35 +113,36 @@ Par1Repairer::~Par1Repairer(void)
   delete [] filelist;
 }
 
-Result Par1Repairer::Process(const CommandLine &commandline, bool dorepair)
+Result Par1Repairer::Process(const size_t memorylimit,
+			     // basepath is not used by Par1
+#ifdef _OPENMP
+			     const u32 nthreads,
+			     // filethreads is not used by Par1
+#endif
+			     string parfilename,
+			     const vector<CommandLine::ExtraFile> &extrafiles,
+			     const bool dorepair,   // derived from operation
+			     const bool purgefiles
+			     // skipdata is not used by Par1
+			     // skipleaway is not used by Par1
+			     )
 {
-  // How noisy should we be
-  noiselevel = commandline.GetNoiseLevel();
-
-  // do we want to purge par files on success ?
-  bool purgefiles = commandline.GetPurgeFiles();
-
-  // Get filesnames from the command line
-  string par1filename = commandline.GetParFilename();
-  const vector<CommandLine::ExtraFile> &extrafiles = commandline.GetExtraFiles();
-  size_t memorylimit = commandline.GetMemoryLimit();
-  
 #ifdef _OPENMP
   // Set the number of threads
-  if (commandline.GetNumThreads() != 0)
-    omp_set_num_threads(commandline.GetNumThreads());
+  if (nthreads != 0)
+    omp_set_num_threads(nthreads);
 #endif
 
   // Determine the searchpath from the location of the main PAR file
   string name;
-  DiskFile::SplitFilename(par1filename, searchpath, name);
+  DiskFile::SplitFilename(parfilename, searchpath, name);
 
   // Load the main PAR file
   if (!LoadRecoveryFile(searchpath + name))
     return eLogicError;
 
   // Load other PAR files related to the main PAR file
-  if (!LoadOtherRecoveryFiles(par1filename))
+  if (!LoadOtherRecoveryFiles(parfilename))
     return eLogicError;
 
   // Load any extra PAR files specified on the command line

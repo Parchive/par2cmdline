@@ -20,13 +20,43 @@
 #ifndef __PAR1REPAIRER_H__
 #define __PAR1REPAIRER_H__
 
+Result par1repair(std::ostream &sout,
+		  std::ostream &serr,
+		  const NoiseLevel noiselevel,
+		  const size_t memorylimit,
+		  // basepath is not used by Par1
+#ifdef _OPENMP
+		  const u32 nthreads,
+		  // filethreads is not used by Par1
+#endif
+		  string parfilename,
+		  const vector<CommandLine::ExtraFile> &extrafiles,
+		  const bool dorepair,   // derived from operation
+		  const bool purgefiles
+		  // skipdata is not used by Par1
+		  // skipleaway is not used by Par1
+		  );
+
+
 class Par1Repairer
 {
 public:
-  Par1Repairer(std::ostream &sout, std::ostream &serr);
+  Par1Repairer(std::ostream &sout, std::ostream &serr, const NoiseLevel noiselevel);
   ~Par1Repairer(void);
 
-  Result Process(const CommandLine &commandline, bool dorepair);
+  Result Process(const size_t memorylimit,
+		 // basepath is not used by Par1
+#ifdef _OPENMP
+		 const u32 nthreads,
+		 // filethreads is not used by Par1
+#endif
+		 string parfilename,
+		 const vector<CommandLine::ExtraFile> &extrafiles,
+		 const bool dorepair,   // derived from operation
+		 const bool purgefiles
+		 // skipdata is not used by Par1
+		 // skipleaway is not used by Par1
+		 );
 
 protected:
   // Load the main PAR file
@@ -84,8 +114,8 @@ protected:
 protected:
   std::ostream &sout; // stream for output (for commandline, this is cout)
   std::ostream &serr; // stream for errors (for commandline, this is cerr)
-
-  NoiseLevel   noiselevel;              // How noisy we should be
+  const NoiseLevel   noiselevel;              // How noisy we should be
+  
   string                    searchpath;              // Where to find files on disk
   DiskFileMap               diskfilemap;             // Map from filename to DiskFile
 
