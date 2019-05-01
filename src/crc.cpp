@@ -28,9 +28,16 @@ static char THIS_FILE[]=__FILE__;
 #endif
 
 // The one and only CCITT CRC32 lookup table
+//
+// NOTE: the constant is the reversed polynomial for CRC-32
+// as listed on Wikipedia's page:
+// https://en.wikipedia.org/wiki/Cyclic_redundancy_check
 crc32table ccitttable(0xEDB88320L);
 
 // Construct the CRC32 lookup table from the specified polynomial
+//
+// This seems to follow:
+// http://www.efg2.com/Lab/Library/UseNet/1999/0117.txt
 void GenerateCRC32Table(u32 polynomial, u32 (&table)[256])
 {
   for (u32 i = 0; i <= 255 ; i++)

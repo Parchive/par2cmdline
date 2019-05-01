@@ -49,6 +49,9 @@ struct crc32table
 extern crc32table ccitttable;
 
 // Update the CRC using one character
+//
+// This seems to follow:
+// http://www.efg2.com/Lab/Mathematics/CRC.htm
 inline u32 CRCUpdateChar(u32 crc, u8 ch)
 {
   return ((crc >> 8) & 0x00ffffffL) ^ ccitttable.table[(u8)crc ^ ch];
