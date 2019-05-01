@@ -77,12 +77,21 @@ int main(int argc, char *argv[])
 	      
               break;
             case CommandLine::verPar2:
-              {
-                Par2Repairer *repairer = new Par2Repairer(cout, cerr);
-                result = repairer->Process(*commandline,
-					   commandline->GetOperation() == CommandLine::opRepair);
-                delete repairer;
-              }
+	      result = par2repair(cout,
+				  cerr,
+				  commandline->GetNoiseLevel(),
+				  commandline->GetMemoryLimit(),
+				  commandline->GetBasePath(),
+#ifdef _OPENMP
+				  commandline->GetNumThreads(),
+				  commandline->GetFileThreads(),
+#endif
+				  commandline->GetParFilename(),
+				  commandline->GetExtraFiles(),
+				  commandline->GetOperation() == CommandLine::opRepair,
+				  commandline->GetPurgeFiles(),
+				  commandline->GetSkipData(),
+				  commandline->GetSkipLeaway());
               break;
             case CommandLine::opNone:
               break;

@@ -20,13 +20,45 @@
 #ifndef __PAR2REPAIRER_H__
 #define __PAR2REPAIRER_H__
 
+
+Result par2repair(std::ostream &sout,
+		  std::ostream &serr,
+		  const NoiseLevel noiselevel,
+		  const size_t memorylimit,
+		  const string &basepath,
+#ifdef _OPENMP
+		  const u32 nthreads,
+		  const u32 filethreads,
+#endif
+		  string parfilename,
+		  const vector<CommandLine::ExtraFile> &extrafiles,
+		  const bool dorepair,   // derived from operation
+		  const bool purgefiles,
+		  const bool skipdata,
+		  const u64 skipleaway
+		  );
+
+
+
 class Par2Repairer
 {
 public:
-  Par2Repairer(std::ostream &sout, std::ostream &serr);
+  Par2Repairer(std::ostream &sout, std::ostream &serr, const NoiseLevel noiselevel);
   ~Par2Repairer(void);
 
-  Result Process(const CommandLine &commandline, bool dorepair);
+  Result Process(const size_t memorylimit,
+		 const string &basepath,
+#ifdef _OPENMP
+		 const u32 nthreads,
+		 const u32 filethreads,
+#endif
+		 string parfilename,
+		 const vector<CommandLine::ExtraFile> &extrafiles,
+		 const bool dorepair,   // derived from operation
+		 const bool purgefiles,
+		 const bool skipdata,
+		 const u64 skipleaway
+		 );
 
 protected:
   // Steps in verifying and repairing files:
@@ -129,7 +161,7 @@ protected:
   std::ostream &sout; // stream for output (for commandline, this is cout)
   std::ostream &serr; // stream for errors (for commandline, this is cerr)
 
-  NoiseLevel   noiselevel;              // OnScreen display
+  const NoiseLevel noiselevel;              // OnScreen display
 
   string                    searchpath;              // Where to find files on disk
 

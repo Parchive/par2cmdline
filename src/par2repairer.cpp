@@ -27,9 +27,48 @@ static char THIS_FILE[]=__FILE__;
 #endif
 #endif
 
-Par2Repairer::Par2Repairer(std::ostream &sout, std::ostream &serr)
+
+Result par2repair(std::ostream &sout,
+		  std::ostream &serr,
+		  const NoiseLevel noiselevel,
+		  const size_t memorylimit,
+		  const string &basepath,
+#ifdef _OPENMP
+		  const u32 nthreads,
+		  const u32 filethreads,
+#endif
+		  string parfilename,
+		  const vector<CommandLine::ExtraFile> &extrafiles,
+		  const bool dorepair,   // derived from operation
+		  const bool purgefiles,
+		  const bool skipdata,
+		  const u64 skipleaway
+		  )
+{
+  Par2Repairer repairer(sout, serr, noiselevel);
+  Result result = repairer.Process(
+				   memorylimit,
+				   basepath,
+#ifdef _OPENMP
+				   nthreads,
+				   filethreads,
+#endif
+				   parfilename,
+				   extrafiles,
+				   dorepair,
+				   purgefiles,
+				   skipdata,
+				   skipleaway);
+
+  return result;
+}
+
+
+
+Par2Repairer::Par2Repairer(std::ostream &sout, std::ostream &serr, const NoiseLevel noiselevel)
 : sout(sout)
 , serr(serr)
+, noiselevel(noiselevel)
 {
   firstpacket = true;
   mainpacket = 0;
@@ -50,8 +89,6 @@ Par2Repairer::Par2Repairer(std::ostream &sout, std::ostream &serr)
 
   inputbuffer = 0;
   outputbuffer = 0;
-
-  noiselevel = nlNormal;
 
   skipdata = false;
   skipleaway = 0;
@@ -89,44 +126,49 @@ Par2Repairer::~Par2Repairer(void)
   delete creatorpacket;
 }
 
-Result Par2Repairer::Process(const CommandLine &commandline, bool dorepair)
+Result Par2Repairer::Process(
+			     const size_t memorylimit,
+			     const string &_basepath,
+#ifdef _OPENMP
+			     const u32 nthreads,
+			     const u32 filethreads,
+#endif
+			     string parfilename,
+			     const vector<CommandLine::ExtraFile> &_extrafiles,
+			     const bool dorepair,   // derived from operation
+			     const bool purgefiles,
+			     const bool _skipdata,
+			     const u64 _skipleaway
+			     )
 {
-  // What noiselevel are we using
-  noiselevel = commandline.GetNoiseLevel();
-
   // Should we skip data whilst scanning files
-  skipdata = commandline.GetSkipData();
-
+  skipdata = _skipdata;
+  
   // How much leaway should we allow when scanning files
-  skipleaway = commandline.GetSkipLeaway();
-
-  // do we want to purge par files on success ?
-  bool purgefiles = commandline.GetPurgeFiles();
+  skipleaway = _skipleaway;
 
   // Get filenames from the command line
-  std::string par2filename = commandline.GetParFilename();
-  basepath = commandline.GetBasePath();
-  std::vector<CommandLine::ExtraFile> extrafiles = commandline.GetExtraFiles();
-  size_t memorylimit = commandline.GetMemoryLimit();
-  
+  basepath = _basepath;
+  std::vector<CommandLine::ExtraFile> extrafiles = _extrafiles;
+    
 #ifdef _OPENMP
   // Set the number of threads
-  if (commandline.GetNumThreads() != 0)
-    omp_set_num_threads(commandline.GetNumThreads());
+  if (nthreads != 0)
+    omp_set_num_threads(nthreads);
 #endif
 
   // Determine the searchpath from the location of the main PAR2 file
   string name;
-  DiskFile::SplitFilename(par2filename, searchpath, name);
+  DiskFile::SplitFilename(parfilename, searchpath, name);
 
-  par2list.push_back(par2filename);
+  par2list.push_back(parfilename);
 
   // Load packets from the main PAR2 file
   if (!LoadPacketsFromFile(searchpath + name))
     return eLogicError;
 
   // Load packets from other PAR2 files with names based on the original PAR2 file
-  if (!LoadPacketsFromOtherFiles(par2filename))
+  if (!LoadPacketsFromOtherFiles(parfilename))
     return eLogicError;
 
   // Load packets from any other PAR2 files whose names are given on the command line
