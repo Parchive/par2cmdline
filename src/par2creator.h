@@ -36,7 +36,6 @@ Result par2create(std::ostream &sout,
 #endif
 		  string parfilename,
 		  const vector<string> &extrafiles,
-		  const u32 blockcount,
 		  const u64 blocksize,
 		  const u32 firstblock,
 		  const CommandLine::Scheme recoveryfilescheme,
@@ -61,7 +60,6 @@ public:
 #endif
 		 string parfilename,
 		 const vector<string> &extrafiles,
-		 const u32 blockcount,
 		 const u64 blocksize,
 		 const u32 firstblock,
 		 const CommandLine::Scheme recoveryfilescheme,
@@ -76,7 +74,7 @@ protected:
 
   // Compute block size from block count or vice versa depending on which was
   // specified on the command line
-  bool ComputeBlockSizeAndBlockCount(const vector<string> &extrafiles);
+  bool ComputeBlockCount(const vector<string> &extrafiles);
 
   // Determine how many recovery blocks to create based on the source block
   // count and the requested level of redundancy.

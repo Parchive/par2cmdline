@@ -301,11 +301,12 @@ using namespace std;
 #include "crc.h"
 #include "md5.h"
 #include "par2fileformat.h"
-#include "commandline.h"
 #include "reedsolomon.h"
 
 #include "diskfile.h"
 #include "datablock.h"
+
+#include "commandline.h"
 
 #include "criticalpacket.h"
 #include "par2creatorsourcefile.h"

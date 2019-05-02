@@ -61,7 +61,6 @@ int main(int argc, char *argv[])
 			    commandline->GetParFilename(),
 			    commandline->GetExtraFiles(),
 
-			    commandline->GetBlockCount(),
 			    commandline->GetBlockSize(),
 			    
 			    commandline->GetFirstRecoveryBlock(),

@@ -39,7 +39,6 @@ Result par2create(std::ostream &sout,
 #endif
 		  string parfilename,
 		  const vector<string> &extrafiles,
-		  const u32 blockcount,
 		  const u64 blocksize,
 		  const u32 firstblock,
 		  const CommandLine::Scheme recoveryfilescheme,
@@ -59,7 +58,6 @@ Result par2create(std::ostream &sout,
 #endif
 				  parfilename,
 				  extrafiles,
-				  blockcount,
 				  blocksize,
 				  firstblock,
 				  recoveryfilescheme,
@@ -131,7 +129,6 @@ Result Par2Creator::Process(
 #endif
 			    string parfilename,
 			    const vector<string> &_extrafiles,
-			    const u32 _blockcount,
 			    const u64 _blocksize,
 			    const u32 _firstblock,
 			    const CommandLine::Scheme _recoveryfilescheme,
@@ -144,7 +141,6 @@ Result Par2Creator::Process(
   
   // Get information from commandline
   blocksize = _blocksize;
-  sourceblockcount = _blockcount;
   const vector<string> extrafiles = _extrafiles;
   sourcefilecount = (u32)extrafiles.size();
   recoveryblockcount = _recoveryblockcount;
@@ -160,7 +156,7 @@ Result Par2Creator::Process(
 
   // Compute block size from block count or vice versa depending on which was
   // specified on the command line
-  if (!ComputeBlockSizeAndBlockCount(extrafiles))
+  if (!ComputeBlockCount(extrafiles))
     return eInvalidCommandLineArguments;
 
   // Determine how many recovery blocks to create based on the source block
@@ -273,7 +269,7 @@ Result Par2Creator::Process(
 
 // Compute block size from block count or vice versa depending on which was
 // specified on the command line
-bool Par2Creator::ComputeBlockSizeAndBlockCount(const vector<string> &extrafiles)
+bool Par2Creator::ComputeBlockCount(const vector<string> &extrafiles)
 {
   FileSizeCache filesize_cache;
   
@@ -287,109 +283,34 @@ bool Par2Creator::ComputeBlockSizeAndBlockCount(const vector<string> &extrafiles
     }
   }
   
-  // Determine blocksize from sourceblockcount or vice-versa
-  if (blocksize > 0)
+
+  if (blocksize == 0)
   {
-    u64 count = 0;
-
-    for (vector<string>::const_iterator i=extrafiles.begin(); i!=extrafiles.end(); i++)
-    {
-      count += (filesize_cache.get(*i) + blocksize-1) / blocksize;
-    }
-
-    if (count > 32768)
-    {
-      serr << "Block size is too small. It would require " << count << "blocks." << endl;
-      return false;
-    }
-
-    sourceblockcount = (u32)count;
+    serr << "ERROR: Block size was zero!" << endl;
+    return false;
   }
-  else if (sourceblockcount > 0)
+
+  if (blocksize % 4 != 0)
   {
-    if (sourceblockcount < extrafiles.size())
-    {
-      // The block count cannot be less than the number of files.
-
-      serr << "Block count (" << sourceblockcount <<
-              ") cannot be smaller than the number of files(" << extrafiles.size() << "). " << endl;
-      return false;
-    }
-    else if (sourceblockcount == extrafiles.size())
-    {
-      // If the block count is the same as the number of files, then the block
-      // size is the size of the largest file (rounded up to a multiple of 4).
-
-      blocksize = (largestfilesize + 3) & ~3;
-    }
-    else
-    {
-      u64 totalsize = 0;
-      for (vector<string>::const_iterator i=extrafiles.begin(); i!=extrafiles.end(); i++)
-      {
-        totalsize += (filesize_cache.get(*i) + 3) / 4;
-      }
-
-      if (sourceblockcount > totalsize)
-      {
-        sourceblockcount = (u32)totalsize;
-        blocksize = 4;
-      }
-      else
-      {
-        // Absolute lower bound and upper bound on the source block size that will
-        // result in the requested source block count.
-        u64 lowerBound = totalsize / sourceblockcount;
-        u64 upperBound = (totalsize + sourceblockcount - extrafiles.size() - 1) / (sourceblockcount - extrafiles.size());
-
-        u64 count = 0;
-        u64 size;
-
-        do
-        {
-          size = (lowerBound + upperBound)/2;
-
-          count = 0;
-          for (vector<string>::const_iterator i=extrafiles.begin(); i!=extrafiles.end(); i++)
-          {
-            count += ((filesize_cache.get(*i)+3)/4 + size-1) / size;
-          }
-          if (count > sourceblockcount)
-          {
-            lowerBound = size+1;
-            if (lowerBound >= upperBound)
-            {
-              size = lowerBound;
-              count = 0;
-              for (vector<string>::const_iterator i=extrafiles.begin(); i!=extrafiles.end(); i++)
-              {
-                count += ((filesize_cache.get(*i)+3)/4 + size-1) / size;
-              }
-            }
-          }
-          else
-          {
-            upperBound = size;
-          }
-        }
-        while (lowerBound < upperBound);
-
-        if (count > 32768)
-        {
-          serr << "Error calculating block size. cannot be higher than 32768." << endl;
-          return false;
-        }
-        else if (count == 0)
-        {
-          serr << "Error calculating block size. cannot be 0." << endl;
-          return false;
-        }
-
-        sourceblockcount = (u32)count;
-        blocksize = size*4;
-      }
-    }
+    serr << "ERROR: Block size was not a multiple of 4 bytes!" << endl;
+    return false;
   }
+
+
+  u64 count = 0;
+
+  for (vector<string>::const_iterator i=extrafiles.begin(); i!=extrafiles.end(); i++)
+  {
+    count += (filesize_cache.get(*i) + blocksize-1) / blocksize;
+  }
+
+  if (count > 32768)
+  {
+    serr << "Block size is too small. It would require " << count << "blocks." << endl;
+    return false;
+  }
+
+  sourceblockcount = (u32)count;
 
   return true;
 }

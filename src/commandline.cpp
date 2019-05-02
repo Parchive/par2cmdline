@@ -32,7 +32,8 @@ static char THIS_FILE[]=__FILE__;
 
 
 CommandLine::CommandLine(void)
-: version(verUnknown)
+: filesize_cache()
+, version(verUnknown)
 , noiselevel(nlUnknown)
 , memorylimit(0)
 , basepath()
@@ -144,11 +145,13 @@ bool CommandLine::Parse(int argc, char *argv[])
       return false;
   }
 
-  //if (!ComputeBlockSize())
-  //  return false;
+  if (operation == opCreate) {
+    if (!ComputeBlockSize())
+      return false;
 
-  //if (!ComputeRecoveryBlockCount())
-  //  return false;
+    //if (!ComputeRecoveryBlockCount())
+    //  return false;
+  }
   
   return true;
 }
@@ -946,7 +949,7 @@ bool CommandLine::CheckValuesAndSetDefaults() {
     }
     else
     {
-      u64 filesize = DiskFile::GetFileSize(filename);
+      u64 filesize = filesize_cache.get(filename);
 
       // Ignore all 0 byte files
       if (filesize == 0)
@@ -1049,6 +1052,109 @@ bool CommandLine::CheckValuesAndSetDefaults() {
 
   return true;
 }
+
+
+bool CommandLine::ComputeBlockSize() {
+
+  if (blocksize == 0) {
+    // compute value from blockcount
+
+    if (blockcount < extrafiles.size())
+    {
+      // The block count cannot be less than the number of files.
+
+      cerr << "Block count (" << blockcount <<
+              ") cannot be smaller than the number of files(" << extrafiles.size() << "). " << endl;
+      return false;
+    }
+    else if (blockcount == extrafiles.size())
+    {
+      // If the block count is the same as the number of files, then the block
+      // size is the size of the largest file (rounded up to a multiple of 4).
+
+      u64 largestfilesize = 0;
+      for (vector<string>::const_iterator i=extrafiles.begin(); i!=extrafiles.end(); i++)
+      {
+	u64 filesize = filesize_cache.get(*i);
+	if (largestfilesize < filesize)
+	{
+	  largestfilesize = filesize;
+	}
+      }
+
+      blocksize = (largestfilesize + 3) & ~3;
+    }
+    else
+    {
+      u64 totalsize = 0;
+      for (vector<string>::const_iterator i=extrafiles.begin(); i!=extrafiles.end(); i++)
+      {
+        totalsize += (filesize_cache.get(*i) + 3) / 4;
+      }
+
+      if (blockcount > totalsize)
+      {
+        blocksize = 4;
+      }
+      else
+      {
+        // Absolute lower bound and upper bound on the source block size that will
+        // result in the requested source block count.
+        u64 lowerBound = totalsize / blockcount;
+        u64 upperBound = (totalsize + blockcount - extrafiles.size() - 1) / (blockcount - extrafiles.size());
+
+        u64 count = 0;
+        u64 size;
+
+        do
+        {
+          size = (lowerBound + upperBound)/2;
+
+          count = 0;
+          for (vector<string>::const_iterator i=extrafiles.begin(); i!=extrafiles.end(); i++)
+          {
+            count += ((filesize_cache.get(*i)+3)/4 + size-1) / size;
+          }
+          if (count > blockcount)
+          {
+            lowerBound = size+1;
+            if (lowerBound >= upperBound)
+            {
+              size = lowerBound;
+              count = 0;
+              for (vector<string>::const_iterator i=extrafiles.begin(); i!=extrafiles.end(); i++)
+              {
+                count += ((filesize_cache.get(*i)+3)/4 + size-1) / size;
+              }
+            }
+          }
+          else
+          {
+            upperBound = size;
+          }
+        }
+        while (lowerBound < upperBound);
+
+        if (count > 32768)
+        {
+          cerr << "Error calculating block size. cannot be higher than 32768." << endl;
+          return false;
+        }
+        else if (count == 0)
+        {
+          cerr << "Error calculating block size. cannot be 0." << endl;
+          return false;
+        }
+
+        blocksize = size*4;
+      }
+    }
+  }
+  
+  return true;
+}
+
+
 
 bool CommandLine::SetParFilename(string filename)
 {
