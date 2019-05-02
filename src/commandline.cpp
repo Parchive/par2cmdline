@@ -831,159 +831,14 @@ bool CommandLine::CheckValuesAndSetDefaults() {
     return false;
   }
 
-  if ("" == basepath)
-  {
-    if (noiselevel >= nlDebug)
-    {
-      cout << "[DEBUG] parfilename: " << parfilename << endl;
-    }
-
-    string dummy;
-    string path;
-    DiskFile::SplitFilename(parfilename, path, dummy);
-    basepath = DiskFile::GetCanonicalPathname(path);
-
-    // fallback
-    if ("" == basepath)
-    {
-      basepath = DiskFile::GetCanonicalPathname("./");
-    }
-  }
-
-  string lastchar = basepath.substr(basepath.length() -1);
-  if ("/" != lastchar && "\\" != lastchar)
-  {
-#ifdef WIN32
-    basepath = basepath + "\\";
-#else
-    basepath = basepath + "/";
-#endif
-  }
-
-  if (noiselevel >= nlDebug)
-  {
-    cout << "[DEBUG] basepath: " << basepath << endl;
-  }
-
   
-  // check extrafiles
-  list<string>::iterator rawfilenames_fn;
-  for (rawfilenames_fn = rawfilenames.begin(); rawfilenames_fn != rawfilenames.end(); ++rawfilenames_fn)
-  {
-    string filename = *rawfilenames_fn;
-
-    // Originally, all specified files were supposed to exist, or the program
-    // would stop with an error message. This was not practical, for example in
-    // a directory with files appearing and disappearing (an active download directory).
-    // So the new rule is: when a specified file doesn't exist, it is silently skipped.
-    if (!DiskFile::FileExists(filename))
-    {
-      cout << "Ignoring non-existent source file: " << filename << endl;
-    }
-    // skip files outside basepath
-    else if (filename.find(basepath) == string::npos)
-    {
-      cout << "Ignoring out of basepath source file: " << filename << endl;
-    }
-    else
-    {
-      u64 filesize = DiskFile::GetFileSize(filename);
-
-      // Ignore all 0 byte files
-      if (filesize == 0)
-      {
-        cout << "Skipping 0 byte file: " << filename << endl;
-      }
-      else if (extrafiles.end() != find(extrafiles.begin(), extrafiles.end(), filename))
-      {
-        cout << "Skipping duplicate filename: " << filename << endl;
-      }
-      else
-      {
-        extrafiles.push_back(filename);
-      }
-    } //end file exists
-  }
-
   // Default noise level
   if (noiselevel == nlUnknown)
   {
     noiselevel = nlNormal;
   }
 
-  // Default skip leaway
-  if (operation != opCreate
-      && skipdata
-      && skipleaway == 0)
-  {
-    // Expect to find blocks within +/- 64 bytes of the expected
-    // position relative to the last block that was found.
-    skipleaway = 64;
-  }
-
-  // If we a creating, check the other parameters
-  if (operation == opCreate)
-  {
-    // If no recovery file size scheme is specified then use Variable
-    if (recoveryfilescheme == scUnknown)
-    {
-      recoveryfilescheme = scVariable;
-    }
-
-    // If neither block count not block size is specified
-    if (blockcount == 0 && blocksize == 0)
-    {
-      // Use a block count of 2000
-      blockcount = 2000;
-    }
-
-    // If we are creating, the source files must be given.
-    if (extrafiles.size() == 0)
-    {
-      // Does the par filename include the ".par2" on the end?
-      if (parfilename.length() > 5 && 0 == stricmp(parfilename.substr(parfilename.length()-5, 5).c_str(), ".par2"))
-      {
-        // Yes it does.
-        cerr << "You must specify a list of files when creating." << endl;
-        return false;
-      }
-      else
-      {
-        // No it does not.
-
-        // In that case check to see if the file exists, and if it does
-        // assume that you wish to create par2 files for it.
-
-        u64 filesize = 0;
-        if (DiskFile::FileExists(parfilename) &&
-            (filesize = DiskFile::GetFileSize(parfilename)) > 0)
-        {
-          extrafiles.push_back(parfilename);
-        }
-        else
-        {
-          // The file does not exist or it is empty.
-
-          cerr << "You must specify a list of files when creating." << endl;
-          return false;
-        }
-      }
-    }
-
-    // Strip the ".par2" from the end of the filename of the main PAR2 file.
-    if (parfilename.length() > 5 && 0 == stricmp(parfilename.substr(parfilename.length()-5, 5).c_str(), ".par2"))
-    {
-      parfilename = parfilename.substr(0, parfilename.length()-5);
-    }
-
-    // Assume a redundancy of 5% if neither redundancy or recoveryblockcount were set.
-    if (!redundancyset && !recoveryblockcountset)
-    {
-      redundancy = 5;
-    }
-  }
-
-  // Assume a memory limit of 16MB if not specified.
+  // Default memorylimit of 16MB
   if (memorylimit == 0)
   {
 #ifdef WIN32
@@ -1029,6 +884,168 @@ bool CommandLine::CheckValuesAndSetDefaults() {
 #endif
   }
   memorylimit *= 1048576;
+
+  
+  // Default basepath  (uses parfilename)
+  if ("" == basepath)
+  {
+    if (noiselevel >= nlDebug)
+    {
+      cout << "[DEBUG] parfilename: " << parfilename << endl;
+    }
+
+    string dummy;
+    string path;
+    DiskFile::SplitFilename(parfilename, path, dummy);
+    basepath = DiskFile::GetCanonicalPathname(path);
+
+    // fallback
+    if ("" == basepath)
+    {
+      basepath = DiskFile::GetCanonicalPathname("./");
+    }
+  }
+
+  string lastchar = basepath.substr(basepath.length() -1);
+  if ("/" != lastchar && "\\" != lastchar)
+  {
+#ifdef WIN32
+    basepath = basepath + "\\";
+#else
+    basepath = basepath + "/";
+#endif
+  }
+
+  if (noiselevel >= nlDebug)
+  {
+    cout << "[DEBUG] basepath: " << basepath << endl;
+  }
+
+
+  // parfilename is checked earlier, because it is used by basepath.
+
+
+  // check extrafiles
+  list<string>::iterator rawfilenames_fn;
+  for (rawfilenames_fn = rawfilenames.begin(); rawfilenames_fn != rawfilenames.end(); ++rawfilenames_fn)
+  {
+    string filename = *rawfilenames_fn;
+
+    // Originally, all specified files were supposed to exist, or the program
+    // would stop with an error message. This was not practical, for example in
+    // a directory with files appearing and disappearing (an active download directory).
+    // So the new rule is: when a specified file doesn't exist, it is silently skipped.
+    if (!DiskFile::FileExists(filename))
+    {
+      cout << "Ignoring non-existent source file: " << filename << endl;
+    }
+    // skip files outside basepath
+    else if (filename.find(basepath) == string::npos)
+    {
+      cout << "Ignoring out of basepath source file: " << filename << endl;
+    }
+    else
+    {
+      u64 filesize = DiskFile::GetFileSize(filename);
+
+      // Ignore all 0 byte files
+      if (filesize == 0)
+      {
+        cout << "Skipping 0 byte file: " << filename << endl;
+      }
+      else if (extrafiles.end() != find(extrafiles.begin(), extrafiles.end(), filename))
+      {
+        cout << "Skipping duplicate filename: " << filename << endl;
+      }
+      else
+      {
+        extrafiles.push_back(filename);
+      }
+    } //end file exists
+  }
+
+  
+  // operation should alway be set, but let's be thorough.
+  if (operation == opNone) {
+    cerr << "ERROR: No operation was specified (create, repair, or verify)" << endl;
+    return false;
+  }
+  
+
+  if (operation != opCreate) {
+    // skipdata is bool and either value is valid.
+
+    // Default skip leaway
+    if (skipdata && skipleaway == 0)
+    {
+      // Expect to find blocks within +/- 64 bytes of the expected
+      // position relative to the last block that was found.
+      skipleaway = 64;
+    }
+  }
+
+  // If we a creating, check the other parameters
+  if (operation == opCreate)
+  {
+    // If we are creating, the source files must be given.
+    if (extrafiles.size() == 0)
+    {
+      // Does the par filename include the ".par2" on the end?
+      if (parfilename.length() > 5 && 0 == stricmp(parfilename.substr(parfilename.length()-5, 5).c_str(), ".par2"))
+      {
+        // Yes it does.
+        cerr << "You must specify a list of files when creating." << endl;
+        return false;
+      }
+      else
+      {
+        // No it does not.
+
+        // In that case check to see if the file exists, and if it does
+        // assume that you wish to create par2 files for it.
+
+        u64 filesize = 0;
+        if (DiskFile::FileExists(parfilename) &&
+            (filesize = DiskFile::GetFileSize(parfilename)) > 0)
+        {
+          extrafiles.push_back(parfilename);
+        }
+        else
+        {
+          // The file does not exist or it is empty.
+
+          cerr << "You must specify a list of files when creating." << endl;
+          return false;
+        }
+      }
+    }
+
+    // Strip the ".par2" from the end of the filename of the main PAR2 file.
+    if (parfilename.length() > 5 && 0 == stricmp(parfilename.substr(parfilename.length()-5, 5).c_str(), ".par2"))
+    {
+      parfilename = parfilename.substr(0, parfilename.length()-5);
+    }
+
+    // If neither block count not block size is specified
+    if (blockcount == 0 && blocksize == 0)
+    {
+      // Use a block count of 2000
+      blockcount = 2000;
+    }
+
+    // If no recovery file size scheme is specified then use Variable
+    if (recoveryfilescheme == scUnknown)
+    {
+      recoveryfilescheme = scVariable;
+    }
+
+    // Assume a redundancy of 5% if neither redundancy or recoveryblockcount were set.
+    if (!redundancyset && !recoveryblockcountset)
+    {
+      redundancy = 5;
+    }
+  }
+
 
   return true;
 }
