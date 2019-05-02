@@ -32,6 +32,21 @@ public:
   // Parse the supplied command line arguments.
   bool Parse(int argc, char *argv[]);
 
+  // Read the text of arguments into the class's variables
+  bool ReadArgs(int argc, char *argv[]);
+
+  // Check values that were set during ReadArgs.
+  // If values went unset, set them with default values
+  bool CheckValuesAndSetDefaults();
+
+  // Use values like block count to compute the block size
+  //bool ComputeBlockSize();
+
+  // Use values like % recovery data to compute the number of recover blocks
+  //bool ComputeRecoveryBlockCount();
+
+
+  
   static void showversion(void);
   static void banner(void);
   // Display details of the correct format for command line parameters.
@@ -110,9 +125,13 @@ protected:
                                // the name of the first PAR2 file to read
                                // when verifying or repairing.
 
+  list<string> rawfilenames;   // The filenames on command-line
+                               // (after expanding wildcards like '*')
 
-  vector<string> extrafiles;  // The list of other files specified on the
-                               // command line. When creating, this will be
+  vector<string> extrafiles;   // The filenames that will be used by Par.
+                               // These have been verified to exist,
+                               // have a path-name relative to the
+                               // basepath, etc.. When creating, these will be
                                // the source files, and when verifying or
                                // repairing, this will be additional PAR2
                                // files or data files to be examined.

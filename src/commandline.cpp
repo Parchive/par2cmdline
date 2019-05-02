@@ -39,6 +39,7 @@ CommandLine::CommandLine(void)
 , nthreads(0) // 0 means use default number
 , filethreads( _FILE_THREADS ) // default from header file
 , parfilename()
+, rawfilenames()
 , extrafiles()
 , operation(opNone)  
 , purgefiles(false)
@@ -134,6 +135,25 @@ void CommandLine::usage(void)
 }
 
 bool CommandLine::Parse(int argc, char *argv[])
+{
+  if (!ReadArgs(argc, argv))
+    return false;
+
+  if (operation != opNone) {  // user didn't do "par --help", etc.
+    if (!CheckValuesAndSetDefaults())
+      return false;
+  }
+
+  //if (!ComputeBlockSize())
+  //  return false;
+
+  //if (!ComputeRecoveryBlockCount())
+  //  return false;
+  
+  return true;
+}
+
+bool CommandLine::ReadArgs(int argc, char *argv[])
 {
   if (argc<1)
   {
@@ -233,7 +253,6 @@ bool CommandLine::Parse(int argc, char *argv[])
   }
 
   bool options = true;
-  list<string> a_filenames;
   basepath = "";
 
   while (argc>0)
@@ -790,7 +809,7 @@ bool CommandLine::Parse(int argc, char *argv[])
         {
           // Convert filename from command line into a full path + filename
           string filename = DiskFile::GetCanonicalPathname(*fn);
-          a_filenames.push_back(filename);
+          rawfilenames.push_back(filename);
           ++fn;
         }
         delete filenames;
@@ -801,6 +820,11 @@ bool CommandLine::Parse(int argc, char *argv[])
     argv++;
   }
 
+  return true;
+}
+
+
+bool CommandLine::CheckValuesAndSetDefaults() {
   if (parfilename.length() == 0)
   {
     cerr << "You must specify a Recovery file." << endl;
@@ -841,12 +865,12 @@ bool CommandLine::Parse(int argc, char *argv[])
     cout << "[DEBUG] basepath: " << basepath << endl;
   }
 
-  // check correctness of files
-  list<string> b_filenames;
-  list<string>::iterator a_filenames_fn;
-  for (a_filenames_fn = a_filenames.begin(); a_filenames_fn != a_filenames.end(); ++a_filenames_fn)
+  
+  // check extrafiles
+  list<string>::iterator rawfilenames_fn;
+  for (rawfilenames_fn = rawfilenames.begin(); rawfilenames_fn != rawfilenames.end(); ++rawfilenames_fn)
   {
-    string filename = *a_filenames_fn;
+    string filename = *rawfilenames_fn;
 
     // Originally, all specified files were supposed to exist, or the program
     // would stop with an error message. This was not practical, for example in
@@ -870,13 +894,12 @@ bool CommandLine::Parse(int argc, char *argv[])
       {
         cout << "Skipping 0 byte file: " << filename << endl;
       }
-      else if (b_filenames.end() != find(b_filenames.begin(), b_filenames.end(), filename))
+      else if (extrafiles.end() != find(extrafiles.begin(), extrafiles.end(), filename))
       {
         cout << "Skipping duplicate filename: " << filename << endl;
       }
       else
       {
-        b_filenames.push_back(filename);
         extrafiles.push_back(filename);
       }
     } //end file exists
