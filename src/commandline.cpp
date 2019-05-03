@@ -37,8 +37,10 @@ CommandLine::CommandLine(void)
 , noiselevel(nlUnknown)
 , memorylimit(0)
 , basepath()
+#ifdef _OPENMP
 , nthreads(0) // 0 means use default number
 , filethreads( _FILE_THREADS ) // default from header file
+#endif
 , parfilename()
 , rawfilenames()
 , extrafiles()
