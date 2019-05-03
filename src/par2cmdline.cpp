@@ -66,10 +66,7 @@ int main(int argc, char *argv[])
 			    commandline->GetFirstRecoveryBlock(),
 			    commandline->GetRecoveryFileScheme(),
 			    commandline->GetRecoveryFileCount(),
-			    commandline->GetRecoveryBlockCount(),
-			    
-			    commandline->GetRedundancy(),			    
-			    commandline->GetRedundancySize()
+			    commandline->GetRecoveryBlockCount()
 			    );
 
         break;

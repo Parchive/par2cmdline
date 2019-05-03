@@ -43,9 +43,7 @@ Result par2create(std::ostream &sout,
 		  const u32 firstblock,
 		  const CommandLine::Scheme recoveryfilescheme,
 		  const u32 recoveryfilecount,
-		  const u32 recoveryblockcount,
-		  const u32 redundancy,
-		  const u64 redundancysize
+		  const u32 recoveryblockcount
 		  )
 {
   Par2Creator creator(sout, serr, noiselevel);
@@ -62,9 +60,7 @@ Result par2create(std::ostream &sout,
 				  firstblock,
 				  recoveryfilescheme,
 				  recoveryfilecount,
-				  recoveryblockcount,
-				  redundancy,
-				  redundancysize
+				  recoveryblockcount
 				  );
   return result;
 }
@@ -133,9 +129,7 @@ Result Par2Creator::Process(
 			    const u32 _firstblock,
 			    const CommandLine::Scheme _recoveryfilescheme,
 			    const u32 _recoveryfilecount,
-			    const u32 _recoveryblockcount,
-			    const u32 redundancy,
-			    const u64 redundancysize)
+			    const u32 _recoveryblockcount)
 {
   filethreads = _filethreads;
   
@@ -159,11 +153,6 @@ Result Par2Creator::Process(
   if (!ComputeBlockCount(extrafiles))
     return eInvalidCommandLineArguments;
 
-  // Determine how many recovery blocks to create based on the source block
-  // count and the requested level of redundancy.
-  if ((redundancy > 0 || redundancysize >0) && !ComputeRecoveryBlockCount(redundancy, redundancysize))
-    return eInvalidCommandLineArguments;
-
   // Determine how many recovery files to create.
   if (!ComputeRecoveryFileCount())
     return eInvalidCommandLineArguments;
@@ -178,8 +167,6 @@ Result Par2Creator::Process(
     sout << "Block size: " << blocksize << endl;
     sout << "Source file count: " << sourcefilecount << endl;
     sout << "Source block count: " << sourceblockcount << endl;
-    if (redundancy>0 || recoveryblockcount==0)
-      sout << "Redundancy: " << redundancy << '%' << endl;
     sout << "Recovery block count: " << recoveryblockcount << endl;
     sout << "Recovery file count: " << recoveryfilecount << endl;
     sout << endl;
@@ -316,81 +303,6 @@ bool Par2Creator::ComputeBlockCount(const vector<string> &extrafiles)
 }
 
 
-// Determine how many recovery blocks to create based on the source block
-// count and the requested level of redundancy.
-bool Par2Creator::ComputeRecoveryBlockCount(u32 redundancy, u64 redundancysize)
-{
-  if (redundancy > 0)
-  {
-    // Determine recoveryblockcount
-    recoveryblockcount = (sourceblockcount * redundancy + 50) / 100;
-  }
-  else if (redundancysize > 0)
-  {
-    bool closest = false;
-
-    u64 overhead;
-    overhead = sourceblockcount * 21;
-
-    u32 estimatedFileCount;
-    u64 totalOverhead;
-
-    do
-    {
-      if (recoveryfilecount == 0)
-      {
-        estimatedFileCount = 15;
-      }
-      else
-      {
-        closest = true;
-        estimatedFileCount = recoveryfilecount + 1;
-      }
-      totalOverhead = estimatedFileCount * overhead;
-      if (totalOverhead > redundancysize)
-      {
-        recoveryblockcount = 1;
-      }
-      else
-      {
-        recoveryblockcount = (u32)((redundancysize - totalOverhead) / (blocksize + 70));
-      }
-      ComputeRecoveryFileCount();
-    }
-    while(closest == false);
-
-    // ComputeRecoveryFileCount() has been called before, so
-    // NO: recoveryfilecount = 0;
-    // Please note that recoveryfilecount can be set by command line,
-    // resetting it here would not be expected, see
-    // https://github.com/Parchive/par2cmdline/issues/80
-  }
-  else
-  {
-    serr << "Redundancy and Redundancysize not set." << endl;
-    return false;
-  }
-
-  // Force valid values if necessary
-  if (recoveryblockcount == 0 && redundancy > 0)
-    recoveryblockcount = 1;
-
-  if (recoveryblockcount > 65536)
-  {
-    serr << "Too many recovery blocks requested." << endl;
-    return false;
-  }
-
-  // Check that the last recovery block number would not be too large
-  if (firstrecoveryblock + recoveryblockcount >= 65536)
-  {
-    serr << "First recovery block number is too high." << endl;
-    return false;
-  }
-
-      sout << endl;
-  return true;
-}
 
 // Determine how much recovery data can be computed on one pass
 bool Par2Creator::CalculateProcessBlockSize(size_t memorylimit)

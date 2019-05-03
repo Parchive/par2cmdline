@@ -151,8 +151,31 @@ bool CommandLine::Parse(int argc, char *argv[])
     if (!ComputeBlockSize())
       return false;
 
-    //if (!ComputeRecoveryBlockCount())
-    //  return false;
+    u64 sourceblockcount = 0;
+    u64 largestfilesize = 0;
+    for (vector<string>::const_iterator i=extrafiles.begin(); i!=extrafiles.end(); i++)
+    {
+      u64 filesize = filesize_cache.get(*i);
+      sourceblockcount += (filesize + blocksize-1) / blocksize;
+      if (filesize > largestfilesize)
+      {
+	largestfilesize = filesize;
+      }
+    }
+
+    if (!ComputeRecoveryBlockCount(&recoveryblockcount,
+				   sourceblockcount,
+				   blocksize,
+				   firstblock,
+				   recoveryfilescheme,
+				   recoveryfilecount,
+				   recoveryblockcountset,
+				   redundancy,
+				   redundancysize,
+				   largestfilesize))
+    {
+      return false;
+    }
   }
   
   return true;
@@ -1048,6 +1071,7 @@ bool CommandLine::CheckValuesAndSetDefaults() {
     if (!redundancyset && !recoveryblockcountset)
     {
       redundancy = 5;
+      redundancyset = true;
     }
   }
 
@@ -1078,12 +1102,11 @@ bool CommandLine::ComputeBlockSize() {
       for (vector<string>::const_iterator i=extrafiles.begin(); i!=extrafiles.end(); i++)
       {
 	u64 filesize = filesize_cache.get(*i);
-	if (largestfilesize < filesize)
+	if (filesize > largestfilesize)
 	{
 	  largestfilesize = filesize;
 	}
       }
-
       blocksize = (largestfilesize + 3) & ~3;
     }
     else
@@ -1155,6 +1178,174 @@ bool CommandLine::ComputeBlockSize() {
   
   return true;
 }
+
+
+// Determine how many recovery files to create.
+bool CommandLine::ComputeRecoveryFileCount(u32 *recoveryfilecount,
+					  Scheme recoveryfilescheme,
+					  u32 recoveryblockcount,
+					  u64 largestfilesize,
+					  u64 blocksize)
+{
+  // Are we computing any recovery blocks
+  if (recoveryblockcount == 0)
+  {
+    *recoveryfilecount = 0;
+    return true;
+  }
+
+  switch (recoveryfilescheme)
+  {
+  case CommandLine::scUnknown:
+    {
+      //assert(false);
+      cerr << "Scheme unspecified (create, verify, or repair)." << endl;
+      return false;
+    }
+    break;
+  case CommandLine::scVariable:
+  case CommandLine::scUniform:
+    {
+      if (*recoveryfilecount == 0)
+      {
+        // If none specified then then filecount is roughly log2(blockcount)
+        // This prevents you getting excessively large numbers of files
+        // when the block count is high and also allows the files to have
+        // sizes which vary exponentially.
+
+        for (u32 blocks=recoveryblockcount; blocks>0; blocks>>=1)
+        {
+          (*recoveryfilecount)++;
+        }
+      }
+
+      if (*recoveryfilecount > recoveryblockcount)
+      {
+        // You cannot have move recovery files that there are recovery blocks
+        // to put in them.
+        cerr << "Too many recovery files specified." << endl;
+        return false;
+      }
+    }
+    break;
+
+  case CommandLine::scLimited:
+    {
+      // No recovery file will contain more recovery blocks than would
+      // be required to reconstruct the largest source file if it
+      // were missing. Other recovery files will have recovery blocks
+      // distributed in an exponential scheme.
+
+      u32 largest = (u32)((largestfilesize + blocksize-1) / blocksize);
+      u32 whole = recoveryblockcount / largest;
+      whole = (whole >= 1) ? whole-1 : 0;
+
+      u32 extra = recoveryblockcount - whole * largest;
+      *recoveryfilecount = whole;
+      for (u32 blocks=extra; blocks>0; blocks>>=1)
+      {
+        (*recoveryfilecount)++;
+      }
+    }
+    break;
+  }
+
+  return true;
+}
+
+
+
+// Determine how many recovery blocks to create based on the source block
+// count and the requested level of redundancy.
+bool CommandLine::ComputeRecoveryBlockCount(u32 *recoveryblockcount,
+					    u32 sourceblockcount,
+					    u64 blocksize,
+					    u32 firstblock,
+					    Scheme recoveryfilescheme,
+					    u32 recoveryfilecount,
+					    bool recoveryblockcountset,
+					    u32 redundancy,
+					    u64 redundancysize,
+					    u64 largestfilesize)
+{
+  if (recoveryblockcountset) {
+    // no need to assign value.
+    // pass through, so that value can be checked below.
+  }
+  else if (redundancy > 0)
+  {
+    // count is the number of input blocks
+
+    // Determine recoveryblockcount
+    *recoveryblockcount = (sourceblockcount * redundancy + 50) / 100;
+  }
+  else if (redundancysize > 0)
+  {
+    const u64 overhead_per_recovery_file = sourceblockcount * 21;
+    const u64 recovery_packet_size = blocksize + 70;
+    if (recoveryfilecount == 0)
+    {
+      u32 estimatedFileCount = 15;
+      u64 overhead = estimatedFileCount * overhead_per_recovery_file;
+      u64 estimatedrecoveryblockcount;
+      if (overhead > redundancysize)
+      {
+        estimatedrecoveryblockcount = 1;  // at least 1
+      }
+      else
+      {
+	estimatedrecoveryblockcount = (u32)((redundancysize - overhead) / recovery_packet_size);
+      }
+
+      // recoveryfilecount assigned below.
+      bool success = ComputeRecoveryFileCount(&recoveryfilecount,
+					      recoveryfilescheme,
+					      estimatedrecoveryblockcount,
+					      largestfilesize,
+					      blocksize);
+      if (!success) {
+	return false;
+      }
+    }
+
+    const u64 overhead = recoveryfilecount * overhead_per_recovery_file;
+    if (overhead > redundancysize)
+    {
+      *recoveryblockcount = 1;  // at least 1
+    }
+    else
+    {
+      *recoveryblockcount = (u32)((redundancysize - overhead) / recovery_packet_size);
+    }
+  }
+  else
+  {
+    cerr << "Redundancy and Redundancysize not set." << endl;
+    return false;
+  }
+
+  // Force valid values if necessary
+  if (*recoveryblockcount == 0 && redundancy > 0)
+    *recoveryblockcount = 1;
+
+  if (*recoveryblockcount > 65536)
+  {
+    cerr << "Too many recovery blocks requested." << endl;
+    return false;
+  }
+
+  // Check that the last recovery block number would not be too large
+  if (firstblock + *recoveryblockcount >= 65536)
+  {
+    cerr << "First recovery block number is too high." << endl;
+    return false;
+  }
+
+  cout << endl;
+  return true;
+}
+
+
 
 
 

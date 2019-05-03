@@ -32,21 +32,7 @@ public:
   // Parse the supplied command line arguments.
   bool Parse(int argc, char *argv[]);
 
-  // Read the text of arguments into the class's variables
-  bool ReadArgs(int argc, char *argv[]);
 
-  // Check values that were set during ReadArgs.
-  // If values went unset, set them with default values
-  bool CheckValuesAndSetDefaults();
-
-  // Use values like block count to compute the block size
-  bool ComputeBlockSize();
-
-  // Use values like % recovery data to compute the number of recover blocks
-  //bool ComputeRecoveryBlockCount();
-
-
-  
   static void showversion(void);
   static void banner(void);
   // Display details of the correct format for command line parameters.
@@ -82,8 +68,6 @@ public:
   CommandLine::Operation GetOperation(void) const          {return operation;}
   CommandLine::Version   GetVersion(void) const            {return version;}
   u64                    GetBlockSize(void) const          {return blocksize;}
-  u32                    GetRedundancy(void) const         {return redundancy;}
-  u64                    GetRedundancySize(void) const     {return redundancysize;}
   u32                    GetFirstRecoveryBlock(void) const {return firstblock;}
   u32                    GetRecoveryFileCount(void) const  {return recoveryfilecount;}
   u32                    GetRecoveryBlockCount(void) const {return recoveryblockcount;}
@@ -103,7 +87,38 @@ public:
   u32                          GetFileThreads(void) {return filethreads;}
 #endif
 
+
+  static bool ComputeRecoveryFileCount(u32 *recoveryfilecount,
+				       Scheme recoveryfilescheme,
+				       u32 recoveryblockcount,
+				       u64 largestfilesize,
+				       u64 blocksize);
+
+  static bool ComputeRecoveryBlockCount(u32 *recoveryblockcount,
+					u32 sourceblockcount,
+					u64 blocksize,
+					u32 firstblock,
+					Scheme recoveryfilescheme,
+					u32 recoveryfilecount,
+					bool recoveryblockcountset,
+					u32 redundancy,
+					u64 redundancysize,
+					u64 largestfilesize);
+
 protected:
+  // Read the text of arguments into the class's variables
+  bool ReadArgs(int argc, char *argv[]);
+
+  // Check values that were set during ReadArgs.
+  // If values went unset, set them with default values
+  bool CheckValuesAndSetDefaults();
+
+  // Use values like block count to compute the block size
+  bool ComputeBlockSize();
+
+  // Use values like % recovery data to compute the number of recover blocks
+  bool ComputeRecoveryBlockCount();
+  
   bool                         SetParFilename(string filename);
 
   FileSizeCache filesize_cache;// Caches the size of each file,
@@ -137,7 +152,7 @@ protected:
                                // the source files, and when verifying or
                                // repairing, this will be additional PAR2
                                // files or data files to be examined.
-  
+
   // which operation
   Operation operation;         // The operation to be carried out.
 

@@ -40,9 +40,7 @@ Result par2create(std::ostream &sout,
 		  const u32 firstblock,
 		  const CommandLine::Scheme recoveryfilescheme,
 		  const u32 recoveryfilecount,
-		  const u32 recoveryblockcount,
-		  const u32 redundancy,
-		  const u64 redundancysize
+		  const u32 recoveryblockcount
 		  );
 
 class Par2Creator
@@ -64,9 +62,7 @@ public:
 		 const u32 firstblock,
 		 const CommandLine::Scheme recoveryfilescheme,
 		 const u32 recoveryfilecount,
-		 const u32 recoveryblockcount,
-		 const u32 redundancy,
-		 const u64 redundancysize
+		 const u32 recoveryblockcount
 		 );
 
 protected:
