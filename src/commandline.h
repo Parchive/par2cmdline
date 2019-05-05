@@ -30,7 +30,7 @@ public:
   CommandLine(void);
 
   // Parse the supplied command line arguments.
-  bool Parse(int argc, char *argv[]);
+  bool Parse(int argc, const char * const *argv);
 
 
   static void showversion(void);
@@ -107,7 +107,7 @@ public:
 
 protected:
   // Read the text of arguments into the class's variables
-  bool ReadArgs(int argc, char *argv[]);
+  bool ReadArgs(int argc, const char * const *argv);
 
   // Returns the memory on the system in BYTES
   // (or 0 if it cannot be determined)

@@ -137,7 +137,7 @@ void CommandLine::usage(void)
     "\n";
 }
 
-bool CommandLine::Parse(int argc, char *argv[])
+bool CommandLine::Parse(int argc, const char * const *argv)
 {
   if (!ReadArgs(argc, argv))
     return false;
@@ -181,7 +181,7 @@ bool CommandLine::Parse(int argc, char *argv[])
   return true;
 }
 
-bool CommandLine::ReadArgs(int argc, char *argv[])
+bool CommandLine::ReadArgs(int argc, const char * const *argv)
 {
   if (argc<1)
   {
@@ -337,7 +337,7 @@ bool CommandLine::ReadArgs(int argc, char *argv[])
               return false;
             }
 
-            char *p = &argv[0][2];
+            const char *p = &argv[0][2];
             while (blockcount <= 3276 && *p && isdigit(*p))
             {
               blockcount = blockcount * 10 + (*p - '0');
@@ -369,7 +369,7 @@ bool CommandLine::ReadArgs(int argc, char *argv[])
               return false;
             }
 
-            char *p = &argv[0][2];
+            const char *p = &argv[0][2];
             while (blocksize <= 429496729 && *p && isdigit(*p))
             {
               blocksize = blocksize * 10 + (*p - '0');
@@ -392,7 +392,7 @@ bool CommandLine::ReadArgs(int argc, char *argv[])
         case 't':  // Set amount of threads
           {
             nthreads = 0;
-            char *p = &argv[0][2];
+            const char *p = &argv[0][2];
 
             while (*p && isdigit(*p))
             {
@@ -411,7 +411,7 @@ bool CommandLine::ReadArgs(int argc, char *argv[])
         case 'T':  // Set amount of file threads
           {
             filethreads = 0;
-            char *p = &argv[0][2];
+            const char *p = &argv[0][2];
 
             while (*p && isdigit(*p))
             {
@@ -451,7 +451,7 @@ bool CommandLine::ReadArgs(int argc, char *argv[])
                 || argv[0][2] == 'g'
             )
             {
-              char *p = &argv[0][3];
+              const char *p = &argv[0][3];
               while (*p && isdigit(*p))
               {
                 redundancysize = redundancysize * 10 + (*p - '0');
@@ -470,7 +470,7 @@ bool CommandLine::ReadArgs(int argc, char *argv[])
             }
             else
             {
-              char *p = &argv[0][2];
+              const char *p = &argv[0][2];
               while (redundancy <= 10 && *p && isdigit(*p))
               {
                 redundancy = redundancy * 10 + (*p - '0');
@@ -509,7 +509,7 @@ bool CommandLine::ReadArgs(int argc, char *argv[])
               return false;
             }
 
-            char *p = &argv[0][2];
+            const char *p = &argv[0][2];
             while (recoveryblockcount <= 32768 && *p && isdigit(*p))
             {
               recoveryblockcount = recoveryblockcount * 10 + (*p - '0');
@@ -542,7 +542,7 @@ bool CommandLine::ReadArgs(int argc, char *argv[])
               return false;
             }
 
-            char *p = &argv[0][2];
+            const char *p = &argv[0][2];
             while (firstblock <= 3276 && *p && isdigit(*p))
             {
               firstblock = firstblock * 10 + (*p - '0');
@@ -629,7 +629,7 @@ bool CommandLine::ReadArgs(int argc, char *argv[])
               return false;
             }
 
-            char *p = &argv[0][2];
+            const char *p = &argv[0][2];
             while (*p && isdigit(*p))
             {
               recoveryfilecount = recoveryfilecount * 10 + (*p - '0');
@@ -651,7 +651,7 @@ bool CommandLine::ReadArgs(int argc, char *argv[])
               return false;
             }
 
-            char *p = &argv[0][2];
+            const char *p = &argv[0][2];
             while (*p && isdigit(*p))
             {
               memorylimit = memorylimit * 10 + (*p - '0');
@@ -768,7 +768,7 @@ bool CommandLine::ReadArgs(int argc, char *argv[])
               return false;
             }
 
-            char *p = &argv[0][2];
+            const char *p = &argv[0][2];
             while (skipleaway <= 429496729 && *p && isdigit(*p))
             {
               skipleaway = skipleaway * 10 + (*p - '0');
@@ -919,7 +919,7 @@ bool CommandLine::CheckValuesAndSetDefaults() {
     noiselevel = nlNormal;
   }
 
-  // Default memorylimit of 16MB
+  // Default memorylimit of 128MB
   if (memorylimit == 0)
   {
     u64 TotalPhysicalMemory = GetTotalPhysicalMemory();
