@@ -21,12 +21,8 @@ AUTOMAKE_OPTIONS = subdir-objects
 
 .DELETE_ON_ERROR:
 
-bin_PROGRAMS = par2
-man_MANS = man/par2.1
-
-par2_SOURCES = src/par2cmdline.cpp src/par2cmdline.h \
-	src/commandline.cpp src/commandline.h \
-	src/crc.cpp src/crc.h \
+noinst_LIBRARIES = libpar2.a
+libpar2_a_SOURCES = src/crc.cpp src/crc.h \
 	src/creatorpacket.cpp src/creatorpacket.h \
 	src/criticalpacket.cpp src/criticalpacket.h \
 	src/datablock.cpp src/datablock.h \
@@ -49,7 +45,15 @@ par2_SOURCES = src/par2cmdline.cpp src/par2cmdline.h \
 	src/reedsolomon.cpp src/reedsolomon.h \
 	src/verificationhashtable.cpp src/verificationhashtable.h \
 	src/verificationpacket.cpp src/verificationpacket.h \
-	src/par2lib.cpp src/par2lib.h
+	src/libpar2.cpp src/libpar2.h
+
+
+bin_PROGRAMS = par2
+man_MANS = man/par2.1
+
+par2_SOURCES = src/par2cmdline.cpp src/par2cmdline.h \
+	src/commandline.cpp src/commandline.h
+par2_LDADD = libpar2.a
 
 LDADD = -lstdc++
 AM_CXXFLAGS = -Wall $(OPENMP_CXXFLAGS)

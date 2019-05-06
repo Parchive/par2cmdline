@@ -23,7 +23,7 @@
 #include <string>
 using std::string;
 
-#include "par2lib.h"
+#include "libpar2.h"
 #include "diskfile.h"
 
 // The CommandLine object is responsible for understanding the format

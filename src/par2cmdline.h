@@ -210,7 +210,7 @@ using namespace std;
 #define offsetof(TYPE, MEMBER) ((size_t) ((char*)(&((TYPE *)1)->MEMBER) - (char*)1))
 
 // par2cmdline includes
-#include "par2lib.h"
+#include "libpar2.h"
 
 #include "letype.h"
 

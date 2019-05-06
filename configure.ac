@@ -35,6 +35,12 @@ dnl Checks for programs.
 AC_PROG_CXX
 AC_PROG_INSTALL
 
+dnl Need to define RANLIB used in making static library.
+AC_PROG_RANLIB
+dnl gnu.org says the following may be needed for Microsoft libraries.
+dnl AM_PROG_AR
+
+
 dnl Set language to C++
 AC_LANG(C++)
 

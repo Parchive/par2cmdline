@@ -4,6 +4,7 @@
 
 # compilation output
 par2
+libpar2.a
 *.o
 .deps/
 

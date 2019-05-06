@@ -17,8 +17,8 @@
 //  along with this program; if not, write to the Free Software
 //  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-#ifndef __PAR2LIB_H__
-#define __PAR2LIB_H__
+#ifndef __LIBPAR2_H__
+#define __LIBPAR2_H__
 
 #ifdef WIN32
 typedef unsigned char    u8;
@@ -184,4 +184,4 @@ Result par1repair(std::ostream &sout,
 		  );
 
 
-#endif // __PAR2LIB_H__
+#endif // __LIBPAR2_H__

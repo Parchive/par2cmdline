@@ -17,7 +17,7 @@
 //  along with this program; if not, write to the Free Software
 //  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-#include "par2lib.h"
+#include "libpar2.h"
 #include "commandline.h"
 
 // This is included here, so that cout and cerr are not used elsewhere.
