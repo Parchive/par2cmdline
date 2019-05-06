@@ -199,29 +199,22 @@ bool CommandLine::ReadArgs(int argc, const char * const *argv)
     if (argv[0][0] != 0 &&
         argv[0][0] == '-')
     {
-      if (argv[0][1] != 0)
+      if (argv[0] == string("-h") || argv[0] == string("--help"))
       {
-        switch (argv[0][1])
-        {
-        case 'h':
-          usage();
-          return true;
-        case 'V':
-          showversion();
-          if (argv[0][2] != 0 &&
-              argv[0][2] == 'V')
-          {
-            cout << endl;
-            banner();
-          }
-          return true;
-        case '-':
-          if (0 == stricmp(argv[0], "--help"))
-          {
-            usage();
-            return true;
-          }
-        }
+	usage();
+	return true;
+      }
+      else if (argv[0] == string("-V") || argv[0] == string("--version"))
+      {
+	showversion();
+	return true;
+      }
+      else if (argv[0] == string("-VV"))
+      {
+	showversion();
+	cout << endl;
+	banner();
+	return true;
       }
     }
   }
@@ -739,7 +732,8 @@ bool CommandLine::ReadArgs(int argc, const char * const *argv)
             }
             else
             {
-              cerr << "Recursive has no impact except on creating." << endl;
+              cerr << "Cannot specific Recursive unless creating." << endl;
+              return false;
             }
           }
           break;
@@ -800,6 +794,13 @@ bool CommandLine::ReadArgs(int argc, const char * const *argv)
 
         case '-':
           {
+	    if (argv[0] != string("--")) {
+              cerr << "Unknown option: " << argv[0] << endl;
+	      cerr << "  (Options must appear after create, repair or verify.)" << endl;
+	      cerr << "  (Run \"" << path << name << " --help\" for supported options.)" << endl;
+              return false;
+            }
+	      
             argc--;
             argv++;
             options = false;
