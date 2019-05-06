@@ -48,15 +48,6 @@
 
 #define __BYTE_ORDER __LITTLE_ENDIAN
 
-typedef unsigned char    u8;
-typedef signed char      i8;
-typedef unsigned short   u16;
-typedef signed short     i16;
-typedef unsigned int     u32;
-typedef signed int       i32;
-typedef unsigned __int64 u64;
-typedef signed __int64   i64;
-
 #ifndef _SIZE_T_DEFINED
 #  ifdef _WIN64
 typedef unsigned __int64 size_t;
@@ -124,31 +115,6 @@ char *strchr(), *strrchr();
 #  endif
 #endif
 
-#if HAVE_INTTYPES_H
-#  include <inttypes.h>
-#endif
-
-#if HAVE_STDINT_H
-#  include <stdint.h>
-typedef uint8_t            u8;
-typedef int8_t             i8;
-typedef uint16_t           u16;
-typedef int16_t            i16;
-typedef uint32_t           u32;
-typedef int32_t            i32;
-typedef uint64_t           u64;
-typedef int64_t            i64;
-#else
-typedef unsigned char      u8;
-typedef signed char        i8;
-typedef unsigned short     u16;
-typedef signed short       i16;
-typedef unsigned int       u32;
-typedef signed int         i32;
-typedef unsigned long long u64;
-typedef signed long long   i64;
-#endif
-
 #if HAVE_SYS_STAT_H
 #  include <sys/stat.h>
 #endif
@@ -211,11 +177,6 @@ typedef signed long long   i64;
 #define stricmp strcasecmp
 #define _stat stat
 
-typedef   unsigned char        u8;
-typedef   unsigned short       u16;
-typedef   unsigned int         u32;
-typedef   unsigned long long   u64;
-
 #endif
 #endif
 
@@ -261,8 +222,6 @@ using namespace std;
 
 #include "diskfile.h"
 #include "datablock.h"
-
-#include "commandline.h"
 
 #include "criticalpacket.h"
 #include "par2creatorsourcefile.h"

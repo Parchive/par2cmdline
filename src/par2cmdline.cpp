@@ -17,7 +17,8 @@
 //  along with this program; if not, write to the Free Software
 //  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-#include "par2cmdline.h"
+#include "par2lib.h"
+#include "commandline.h"
 
 // This is included here, so that cout and cerr are not used elsewhere.
 #include <iostream>
@@ -37,6 +38,14 @@ int main(int argc, char *argv[])
   _CrtSetDbgFlag(_CrtSetDbgFlag(_CRTDBG_REPORT_FLAG) | _CRTDBG_ALLOC_MEM_DF | /*_CRTDBG_CHECK_CRT_DF | */_CRTDBG_DELAY_FREE_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 #endif
 
+  // check sizeof integers
+  static_assert(sizeof(u8) == 1 || sizeof(i8) == 1
+		|| sizeof(u16) == 2 || sizeof(i16) == 1
+		|| sizeof(u32) == 4 || sizeof(i32) == 1
+		|| sizeof(u64) == 8 || sizeof(i64) == 1,
+		"Error: the assumed sizes of integers is wrong!");
+
+  
   // Parse the command line
   CommandLine *commandline = new CommandLine;
 
@@ -49,8 +58,8 @@ int main(int argc, char *argv[])
     {
       case CommandLine::opCreate:
 	// Create recovery data
-	result = par2create(cout,
-			    cerr,
+	result = par2create(std::cout,
+			    std::cerr,
 			    commandline->GetNoiseLevel(),
 			    commandline->GetMemoryLimit(),
 			    commandline->GetBasePath(),
@@ -77,8 +86,8 @@ int main(int argc, char *argv[])
           switch (commandline->GetVersion())
           {
             case CommandLine::verPar1:
-	      result = par1repair(cout,
-				  cerr,
+	      result = par1repair(std::cout,
+				  std::cerr,
 				  commandline->GetNoiseLevel(),
 				  commandline->GetMemoryLimit(),
 #ifdef _OPENMP
@@ -91,8 +100,8 @@ int main(int argc, char *argv[])
 	      
               break;
             case CommandLine::verPar2:
-	      result = par2repair(cout,
-				  cerr,
+	      result = par2repair(std::cout,
+				  std::cerr,
 				  commandline->GetNoiseLevel(),
 				  commandline->GetMemoryLimit(),
 				  commandline->GetBasePath(),

@@ -20,7 +20,12 @@
 #include "par2cmdline.h"
 
 // This is included here, so that cout and cerr are not used elsewhere.
-#include <iostream>
+#include<iostream>
+
+#include "commandline.h"
+
+
+
 
 #ifdef _MSC_VER
 #ifdef _DEBUG

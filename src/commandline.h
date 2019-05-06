@@ -20,6 +20,12 @@
 #ifndef __COMMANDLINE_H__
 #define __COMMANDLINE_H__
 
+#include <string>
+using std::string;
+
+#include "par2lib.h"
+#include "diskfile.h"
+
 // The CommandLine object is responsible for understanding the format
 // of the command line parameters are parsing the command line to
 // extract details as to what the user wants to do.

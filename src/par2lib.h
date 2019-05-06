@@ -20,6 +20,57 @@
 #ifndef __PAR2LIB_H__
 #define __PAR2LIB_H__
 
+#ifdef WIN32
+typedef unsigned char    u8;
+typedef signed char      i8;
+typedef unsigned short   u16;
+typedef signed short     i16;
+typedef unsigned int     u32;
+typedef signed int       i32;
+typedef unsigned __int64 u64;
+typedef signed __int64   i64;
+
+#else // WIN32
+#ifdef HAVE_CONFIG_H
+
+#include <config.h>
+
+#if HAVE_INTTYPES_H
+#  include <inttypes.h>
+#endif
+
+#if HAVE_STDINT_H
+#  include <stdint.h>
+typedef uint8_t            u8;
+typedef int8_t             i8;
+typedef uint16_t           u16;
+typedef int16_t            i16;
+typedef uint32_t           u32;
+typedef int32_t            i32;
+typedef uint64_t           u64;
+typedef int64_t            i64;
+#else
+typedef unsigned char      u8;
+typedef signed char        i8;
+typedef unsigned short     u16;
+typedef signed short       i16;
+typedef unsigned int       u32;
+typedef signed int         i32;
+typedef unsigned long long u64;
+typedef signed long long   i64;
+#endif
+
+#else // HAVE_CONFIG_H
+
+typedef   unsigned char        u8;
+typedef   unsigned short       u16;
+typedef   unsigned int         u32;
+typedef   unsigned long long   u64;
+
+#endif
+#endif
+
+
 #include <ostream>
 #include <vector>
 #include <string>

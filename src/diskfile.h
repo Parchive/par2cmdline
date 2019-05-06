@@ -20,6 +20,13 @@
 #ifndef __DISKFILE_H__
 #define __DISKFILE_H__
 
+#include <list>
+using std::list;
+#include <map>
+using std::map;
+#include <vector>
+using std::vector;
+
 // A disk file can be any type of file that par2cmdline needs
 // to read or write data from or to.
 
