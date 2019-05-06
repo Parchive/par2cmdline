@@ -48,7 +48,8 @@ par2_SOURCES = src/par2cmdline.cpp src/par2cmdline.h \
 	src/recoverypacket.cpp src/recoverypacket.h \
 	src/reedsolomon.cpp src/reedsolomon.h \
 	src/verificationhashtable.cpp src/verificationhashtable.h \
-	src/verificationpacket.cpp src/verificationpacket.h
+	src/verificationpacket.cpp src/verificationpacket.h \
+	src/par2lib.cpp src/par2lib.h
 
 LDADD = -lstdc++
 AM_CXXFLAGS = -Wall $(OPENMP_CXXFLAGS)

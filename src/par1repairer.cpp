@@ -30,37 +30,6 @@ static char THIS_FILE[]=__FILE__;
 static u32 smartpar11 = 0x03000101;
 
 
-
-Result par1repair(std::ostream &sout,
-		  std::ostream &serr,
-		  const NoiseLevel noiselevel,
-		  const size_t memorylimit,
-		  // basepath is not used by Par1
-#ifdef _OPENMP
-		  const u32 nthreads,
-		  // filethreads is not used by Par1
-#endif
-		  string parfilename,
-		  const vector<string> &extrafiles,
-		  const bool dorepair,   // derived from operation
-		  const bool purgefiles
-		  // skipdata is not used by Par1
-		  // skipleaway is not used by Par1
-		  )
-{
-  Par1Repairer repairer(sout, serr, noiselevel);
-  Result result = repairer.Process(memorylimit,
-#ifdef _OPENMP
-				   nthreads,
-#endif
-				   parfilename,
-				   extrafiles,
-				   dorepair,
-				   purgefiles);
-  return result;
-}
-
-
 Par1Repairer::Par1Repairer(std::ostream &sout, std::ostream &serr, const NoiseLevel noiselevel)
 : sout(sout)
 , serr(serr)

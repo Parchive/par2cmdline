@@ -229,56 +229,10 @@ typedef   unsigned long long   u64;
 
 #define _FILE_THREADS 2
 
-
-// How much logging/status information to write
-// to output or error stream
-typedef enum
-{
-  nlUnknown = 0,
-  nlSilent,       // Absolutely no output (other than errors)
-  nlQuiet,        // Bare minimum of output
-  nlNormal,       // Normal level of output
-  nlNoisy,        // Lots of output
-  nlDebug         // Extra debugging information
-} NoiseLevel;
-
-
-// Return type of par2cmdline
-typedef enum Result
-{
-  eSuccess                     = 0,
-
-  eRepairPossible              = 1,  // Data files are damaged and there is
-                                     // enough recovery data available to
-                                     // repair them.
-
-  eRepairNotPossible           = 2,  // Data files are damaged and there is
-                                     // insufficient recovery data available
-                                     // to be able to repair them.
-
-  eInvalidCommandLineArguments = 3,  // There was something wrong with the
-                                     // command line arguments
-
-  eInsufficientCriticalData    = 4,  // The PAR2 files did not contain sufficient
-                                     // information about the data files to be able
-                                     // to verify them.
-
-  eRepairFailed                = 5,  // Repair completed but the data files
-                                     // still appear to be damaged.
-
-
-  eFileIOError                 = 6,  // An error occurred when accessing files
-  eLogicError                  = 7,  // In internal error occurred
-  eMemoryError                 = 8,  // Out of memory
-
-} Result;
-
 #define LONGMULTIPLY
 
 // STL includes
-#include <string>
 #include <list>
-#include <vector>
 #include <map>
 #include <algorithm>
 
@@ -294,8 +248,10 @@ using namespace std;
 #endif
 #define offsetof(TYPE, MEMBER) ((size_t) ((char*)(&((TYPE *)1)->MEMBER) - (char*)1))
 
-#include "letype.h"
 // par2cmdline includes
+#include "par2lib.h"
+
+#include "letype.h"
 
 #include "galois.h"
 #include "crc.h"

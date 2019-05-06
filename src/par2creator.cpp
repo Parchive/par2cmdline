@@ -28,44 +28,6 @@ static char THIS_FILE[]=__FILE__;
 #endif
 
 
-Result par2create(std::ostream &sout,
-		  std::ostream &serr,
-		  const NoiseLevel noiselevel,
-		  const size_t memorylimit,
-		  const string &basepath,
-#ifdef _OPENMP
-		  const u32 nthreads,
-		  const u32 filethreads,
-#endif
-		  string parfilename,
-		  const vector<string> &extrafiles,
-		  const u64 blocksize,
-		  const u32 firstblock,
-		  const CommandLine::Scheme recoveryfilescheme,
-		  const u32 recoveryfilecount,
-		  const u32 recoveryblockcount
-		  )
-{
-  Par2Creator creator(sout, serr, noiselevel);
-  Result result = creator.Process(
-				  memorylimit,
-				  basepath,
-#ifdef _OPENMP
-				  nthreads,
-				  filethreads,
-#endif
-				  parfilename,
-				  extrafiles,
-				  blocksize,
-				  firstblock,
-				  recoveryfilescheme,
-				  recoveryfilecount,
-				  recoveryblockcount
-				  );
-  return result;
-}
-
-
 // static variable 
 #ifdef _OPENMP
 u32 Par2Creator::filethreads = _FILE_THREADS;
@@ -85,7 +47,7 @@ Par2Creator::Par2Creator(std::ostream &sout, std::ostream &serr, const NoiseLeve
 , sourceblockcount(0)
 
 , largestfilesize(0)
-, recoveryfilescheme(CommandLine::scUnknown)
+, recoveryfilescheme(scUnknown)
 , recoveryfilecount(0)
 , recoveryblockcount(0)
 , firstrecoveryblock(0)
@@ -127,7 +89,7 @@ Result Par2Creator::Process(
 			    const vector<string> &_extrafiles,
 			    const u64 _blocksize,
 			    const u32 _firstblock,
-			    const CommandLine::Scheme _recoveryfilescheme,
+			    const Scheme _recoveryfilescheme,
 			    const u32 _recoveryfilecount,
 			    const u32 _recoveryblockcount)
 {
@@ -347,14 +309,14 @@ bool Par2Creator::ComputeRecoveryFileCount(void)
 
   switch (recoveryfilescheme)
   {
-  case CommandLine::scUnknown:
+  case scUnknown:
     {
       assert(false);
       return false;
     }
     break;
-  case CommandLine::scVariable:
-  case CommandLine::scUniform:
+  case scVariable:
+  case scUniform:
     {
       if (recoveryfilecount == 0)
       {
@@ -379,7 +341,7 @@ bool Par2Creator::ComputeRecoveryFileCount(void)
     }
     break;
 
-  case CommandLine::scLimited:
+  case scLimited:
     {
       // No recovery file will contain more recovery blocks than would
       // be required to reconstruct the largest source file if it
@@ -548,13 +510,13 @@ bool Par2Creator::InitialiseOutputFiles(string parfilename)
     {
       switch (recoveryfilescheme)
       {
-      case CommandLine::scUnknown:
+      case scUnknown:
         {
           assert(false);
           return false;
         }
         break;
-      case CommandLine::scUniform:
+      case scUniform:
         {
           // Files will have roughly the same number of recovery blocks each.
 
@@ -570,7 +532,7 @@ bool Par2Creator::InitialiseOutputFiles(string parfilename)
         }
         break;
 
-      case CommandLine::scVariable:
+      case scVariable:
         {
           // Files will have recovery blocks allocated in an exponential fashion.
 
@@ -597,7 +559,7 @@ bool Par2Creator::InitialiseOutputFiles(string parfilename)
         }
         break;
 
-      case CommandLine::scLimited:
+      case scLimited:
         {
           // Files will be allocated in an exponential fashion but the
           // Maximum file size will be limited.

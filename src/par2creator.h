@@ -25,24 +25,6 @@ class CreatorPacket;
 class CriticalPacket;
 
 
-Result par2create(std::ostream &sout,
-		  std::ostream &serr,
-		  const NoiseLevel noiselevel,
-		  const size_t memorylimit,
-		  const string &basepath,
-#ifdef _OPENMP
-		  const u32 nthreads,
-		  const u32 filethreads,
-#endif
-		  string parfilename,
-		  const vector<string> &extrafiles,
-		  const u64 blocksize,
-		  const u32 firstblock,
-		  const CommandLine::Scheme recoveryfilescheme,
-		  const u32 recoveryfilecount,
-		  const u32 recoveryblockcount
-		  );
-
 class Par2Creator
 {
 public:
@@ -60,7 +42,7 @@ public:
 		 const vector<string> &extrafiles,
 		 const u64 blocksize,
 		 const u32 firstblock,
-		 const CommandLine::Scheme recoveryfilescheme,
+		 const Scheme recoveryfilescheme,
 		 const u32 recoveryfilecount,
 		 const u32 recoveryblockcount
 		 );
@@ -149,7 +131,7 @@ protected:
 
   u64 largestfilesize;   // The size of the largest source file
 
-  CommandLine::Scheme recoveryfilescheme;  // What scheme will be used to select the
+  Scheme recoveryfilescheme;  // What scheme will be used to select the
                                            // sizes for the recovery files.
   
   u32 recoveryfilecount;  // The number of recovery files that will be created

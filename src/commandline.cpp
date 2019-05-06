@@ -1226,15 +1226,15 @@ bool CommandLine::ComputeRecoveryFileCount(u32 *recoveryfilecount,
 
   switch (recoveryfilescheme)
   {
-  case CommandLine::scUnknown:
+  case scUnknown:
     {
       //assert(false);
       cerr << "Scheme unspecified (create, verify, or repair)." << endl;
       return false;
     }
     break;
-  case CommandLine::scVariable:
-  case CommandLine::scUniform:
+  case scVariable:
+  case scUniform:
     {
       if (*recoveryfilecount == 0)
       {
@@ -1259,7 +1259,7 @@ bool CommandLine::ComputeRecoveryFileCount(u32 *recoveryfilecount,
     }
     break;
 
-  case CommandLine::scLimited:
+  case scLimited:
     {
       // No recovery file will contain more recovery blocks than would
       // be required to reconstruct the largest source file if it

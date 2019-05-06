@@ -30,7 +30,7 @@
 int test1() {
   u32 recoveryfilecount = 0;
   bool success = CommandLine::ComputeRecoveryFileCount(&recoveryfilecount,
-						       CommandLine::scUnknown,
+						       scUnknown,
 						       1,
 						       1,
 						       1);
@@ -41,7 +41,7 @@ int test1() {
 
   recoveryfilecount = 10;
   success = CommandLine::ComputeRecoveryFileCount(&recoveryfilecount,
-						       CommandLine::scVariable,
+						       scVariable,
 						       4,
 						       4,
 						       4);
@@ -59,7 +59,7 @@ int test1() {
 int test2() {
   u32 recoveryfilecount = 0;
   bool success = CommandLine::ComputeRecoveryFileCount(&recoveryfilecount,
-						       CommandLine::scVariable,
+						       scVariable,
 						       0,
 						       4,
 						       4);
@@ -75,7 +75,7 @@ int test2() {
 
   recoveryfilecount = 0;
   success = CommandLine::ComputeRecoveryFileCount(&recoveryfilecount,
-						       CommandLine::scVariable,
+						       scVariable,
 						       8,
 						       4,
 						       4);
@@ -92,7 +92,7 @@ int test2() {
 
   recoveryfilecount = 0;
   success = CommandLine::ComputeRecoveryFileCount(&recoveryfilecount,
-						       CommandLine::scVariable,
+						       scVariable,
 						       15,
 						       4,
 						       4);
@@ -110,7 +110,7 @@ int test2() {
 
   recoveryfilecount = 0;
   success = CommandLine::ComputeRecoveryFileCount(&recoveryfilecount,
-						       CommandLine::scVariable,
+						       scVariable,
 						       64,
 						       4,
 						       4);
@@ -127,7 +127,7 @@ int test2() {
 
   recoveryfilecount = 0;
   success = CommandLine::ComputeRecoveryFileCount(&recoveryfilecount,
-						       CommandLine::scVariable,
+						       scVariable,
 						       127,
 						       4,
 						       4);
@@ -151,7 +151,7 @@ int test2() {
 int test3() {
   u32 recoveryfilecount = 0;
   bool success = CommandLine::ComputeRecoveryFileCount(&recoveryfilecount,
-						       CommandLine::scUniform,
+						       scUniform,
 						       0,
 						       4,
 						       4);
@@ -167,7 +167,7 @@ int test3() {
 
   recoveryfilecount = 0;
   success = CommandLine::ComputeRecoveryFileCount(&recoveryfilecount,
-						       CommandLine::scUniform,
+						       scUniform,
 						       1,
 						       4,
 						       4);
@@ -185,7 +185,7 @@ int test3() {
 
   recoveryfilecount = 0;
   success = CommandLine::ComputeRecoveryFileCount(&recoveryfilecount,
-						       CommandLine::scUniform,
+						       scUniform,
 						       8,
 						       4,
 						       4);
@@ -211,7 +211,7 @@ int test3() {
 int test4() {
   u32 recoveryfilecount = 0;
   bool success = CommandLine::ComputeRecoveryFileCount(&recoveryfilecount,
-						       CommandLine::scLimited,
+						       scLimited,
 						       0,
 						       4096,
 						       4);
@@ -227,7 +227,7 @@ int test4() {
 
   recoveryfilecount = 0;
   success = CommandLine::ComputeRecoveryFileCount(&recoveryfilecount,
-						       CommandLine::scLimited,
+						       scLimited,
 						       8,
 						       4096,
 						       4);
@@ -244,7 +244,7 @@ int test4() {
 
   recoveryfilecount = 0;
   success = CommandLine::ComputeRecoveryFileCount(&recoveryfilecount,
-						       CommandLine::scLimited,
+						       scLimited,
 						       15,
 						       4096,
 						       4);
@@ -262,7 +262,7 @@ int test4() {
 
   recoveryfilecount = 0;
   success = CommandLine::ComputeRecoveryFileCount(&recoveryfilecount,
-						       CommandLine::scLimited,
+						       scLimited,
 						       64,
 						       4096,
 						       4);
@@ -279,7 +279,7 @@ int test4() {
 
   recoveryfilecount = 0;
   success = CommandLine::ComputeRecoveryFileCount(&recoveryfilecount,
-						       CommandLine::scLimited,
+						       scLimited,
 						       127,
 						       4096,
 						       4);
@@ -299,7 +299,7 @@ int test4() {
   // 1 2 4 8 10 10 10...
   recoveryfilecount = 0;
   success = CommandLine::ComputeRecoveryFileCount(&recoveryfilecount,
-						       CommandLine::scLimited,
+						       scLimited,
 						       8,
 						       40,
 						       4);
@@ -316,7 +316,7 @@ int test4() {
 
   recoveryfilecount = 0;
   success = CommandLine::ComputeRecoveryFileCount(&recoveryfilecount,
-						       CommandLine::scLimited,
+						       scLimited,
 						       15,
 						       40,
 						       4);
@@ -333,7 +333,7 @@ int test4() {
 
   recoveryfilecount = 0;
   success = CommandLine::ComputeRecoveryFileCount(&recoveryfilecount,
-						       CommandLine::scLimited,
+						       scLimited,
 						       16,
 						       40,
 						       4);
@@ -350,7 +350,7 @@ int test4() {
 
   recoveryfilecount = 0;
   success = CommandLine::ComputeRecoveryFileCount(&recoveryfilecount,
-						       CommandLine::scLimited,
+						       scLimited,
 						       25,
 						       40,
 						       4);
@@ -367,7 +367,7 @@ int test4() {
   
   recoveryfilecount = 0;
   success = CommandLine::ComputeRecoveryFileCount(&recoveryfilecount,
-						       CommandLine::scLimited,
+						       scLimited,
 						       26,
 						       40,
 						       4);
@@ -384,7 +384,7 @@ int test4() {
 
   recoveryfilecount = 0;
   success = CommandLine::ComputeRecoveryFileCount(&recoveryfilecount,
-						       CommandLine::scLimited,
+						       scLimited,
 						       35,
 						       40,
 						       4);
@@ -402,7 +402,7 @@ int test4() {
 
   recoveryfilecount = 0;
   success = CommandLine::ComputeRecoveryFileCount(&recoveryfilecount,
-						       CommandLine::scLimited,
+						       scLimited,
 						       35 + 100,
 						       40,
 						       4);
@@ -430,7 +430,7 @@ int test5() {
 							100,
 							4,
 							0,
-							CommandLine::scVariable,
+							scVariable,
 							0,
 							true,
 							0,
@@ -452,7 +452,7 @@ int test5() {
 							100,
 							4,
 							0,
-							CommandLine::scVariable,
+							scVariable,
 							0,
 							true,
 							0,
@@ -470,7 +470,7 @@ int test5() {
 							100,
 							4,
 							60000,
-							CommandLine::scVariable,
+							scVariable,
 							0,
 							true,
 							0,
@@ -492,7 +492,7 @@ int test6() {
 							100,
 							4,
 							0,
-							CommandLine::scVariable,
+							scVariable,
 							0,
 							false,
 							1,
@@ -513,7 +513,7 @@ int test6() {
 							1000,
 							4,
 							0,
-							CommandLine::scVariable,
+							scVariable,
 							0,
 							false,
 							5,
@@ -535,7 +535,7 @@ int test6() {
 							10,
 							4,
 							0,
-							CommandLine::scVariable,
+							scVariable,
 							0,
 							false,
 							1,
@@ -577,7 +577,7 @@ int test7_helper(int sourcefilecount, // not used by ComputeRecoveryBlockCount!
 							sourceblockcount,
 							blocksize,
 							0,
-							CommandLine::scUniform,
+							scUniform,
 							recoveryfilecount,
 							false,
 							0,
@@ -646,7 +646,7 @@ int test7() {
 							1000, 
 							1024,
 							0,
-							CommandLine::scUniform,
+							scUniform,
 							1,
 							false,
 							0,
@@ -689,7 +689,7 @@ int test8_helper(int sourcefilecount, // not used by ComputeRecoveryBlockCount!
 							sourceblockcount,
 							blocksize,
 							0,
-							CommandLine::scVariable,
+							scVariable,
 							0, // =recoveryfilecount
 							false,
 							0,
@@ -702,7 +702,7 @@ int test8_helper(int sourcefilecount, // not used by ComputeRecoveryBlockCount!
 
   u32 recoveryfilecount = 0;
   success = CommandLine::ComputeRecoveryFileCount(&recoveryfilecount,
-						  CommandLine::scVariable,
+						  scVariable,
 						  recoveryblockcount,
 						  blocksize,
 						  blocksize);
@@ -955,7 +955,7 @@ int test10_helper(const char *arg,
 		  const vector<string> &extrafiles,
 		  const u64 blocksize,
 		  const u32 firstblock,
-		  const CommandLine::Scheme recoveryfilescheme,
+		  const Scheme recoveryfilescheme,
 		  const u32 recoveryfilecount,
 		  const u32 recoveryblockcount
 		  )
@@ -1110,7 +1110,7 @@ int test10() {
   default_extrafiles.push_back(default_basepath + "input2.txt");
   const u64 default_blocksize = 4;  // tries to make 2000 blocks ... this is closest blocksize
   const u32 default_firstblock = 0;
-  const CommandLine::Scheme default_recoveryfilescheme = CommandLine::scVariable;
+  const Scheme default_recoveryfilescheme = scVariable;
   const u32 default_recoveryfilecount = 0;
   const u32 default_recoveryblockcount = 1; // tries to do 5% recovery data ... this is minimum value
   
@@ -1494,7 +1494,7 @@ int test10() {
 		    default_extrafiles,
 		    default_blocksize,
 		    default_firstblock,
-		    CommandLine::scUniform,
+		    scUniform,
 		    default_recoveryfilecount,
 		    default_recoveryblockcount)) { 
     return 1;
@@ -1511,7 +1511,7 @@ int test10() {
 		    default_extrafiles,
 		    default_blocksize,
 		    default_firstblock,
-		    CommandLine::scLimited,
+		    scLimited,
 		    default_recoveryfilecount,
 		    default_recoveryblockcount)) { 
     return 1;

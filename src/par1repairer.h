@@ -20,24 +20,6 @@
 #ifndef __PAR1REPAIRER_H__
 #define __PAR1REPAIRER_H__
 
-Result par1repair(std::ostream &sout,
-		  std::ostream &serr,
-		  const NoiseLevel noiselevel,
-		  const size_t memorylimit,
-		  // basepath is not used by Par1
-#ifdef _OPENMP
-		  const u32 nthreads,
-		  // filethreads is not used by Par1
-#endif
-		  string parfilename,
-		  const vector<string> &extrafiles,
-		  const bool dorepair,   // derived from operation
-		  const bool purgefiles
-		  // skipdata is not used by Par1
-		  // skipleaway is not used by Par1
-		  );
-
-
 class Par1Repairer
 {
 public:

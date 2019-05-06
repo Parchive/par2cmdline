@@ -54,15 +54,6 @@ public:
     verPar2          // Processing PAR 2.0 files
   } Version;
 
-  typedef enum
-  {
-    scUnknown = 0,
-    scVariable,      // Each PAR2 file will have 2x as many blocks as previous
-    scLimited,       // Limit PAR2 file size
-    scUniform        // All PAR2 files the same size
-  } Scheme;
-
-
 public:
   // Accessor functions for the command line parameters
   CommandLine::Operation GetOperation(void) const          {return operation;}
@@ -71,7 +62,7 @@ public:
   u32                    GetFirstRecoveryBlock(void) const {return firstblock;}
   u32                    GetRecoveryFileCount(void) const  {return recoveryfilecount;}
   u32                    GetRecoveryBlockCount(void) const {return recoveryblockcount;}
-  CommandLine::Scheme    GetRecoveryFileScheme(void) const {return recoveryfilescheme;}
+  Scheme    GetRecoveryFileScheme(void) const {return recoveryfilescheme;}
   size_t                 GetMemoryLimit(void) const        {return memorylimit;}
   NoiseLevel GetNoiseLevel(void) const        {return noiselevel;}
 

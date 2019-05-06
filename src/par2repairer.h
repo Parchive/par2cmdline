@@ -21,25 +21,6 @@
 #define __PAR2REPAIRER_H__
 
 
-Result par2repair(std::ostream &sout,
-		  std::ostream &serr,
-		  const NoiseLevel noiselevel,
-		  const size_t memorylimit,
-		  const string &basepath,
-#ifdef _OPENMP
-		  const u32 nthreads,
-		  const u32 filethreads,
-#endif
-		  string parfilename,
-		  const vector<string> &extrafiles,
-		  const bool dorepair,   // derived from operation
-		  const bool purgefiles,
-		  const bool skipdata,
-		  const u64 skipleaway
-		  );
-
-
-
 class Par2Repairer
 {
 public:

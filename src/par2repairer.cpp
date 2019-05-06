@@ -28,43 +28,6 @@ static char THIS_FILE[]=__FILE__;
 #endif
 
 
-
-Result par2repair(std::ostream &sout,
-		  std::ostream &serr,
-		  const NoiseLevel noiselevel,
-		  const size_t memorylimit,
-		  const string &basepath,
-#ifdef _OPENMP
-		  const u32 nthreads,
-		  const u32 filethreads,
-#endif
-		  string parfilename,
-		  const vector<string> &extrafiles,
-		  const bool dorepair,   // derived from operation
-		  const bool purgefiles,
-		  const bool skipdata,
-		  const u64 skipleaway
-		  )
-{
-  Par2Repairer repairer(sout, serr, noiselevel);
-  Result result = repairer.Process(
-				   memorylimit,
-				   basepath,
-#ifdef _OPENMP
-				   nthreads,
-				   filethreads,
-#endif
-				   parfilename,
-				   extrafiles,
-				   dorepair,
-				   purgefiles,
-				   skipdata,
-				   skipleaway);
-
-  return result;
-}
-
-
 // static variable 
 #ifdef _OPENMP
 u32 Par2Repairer::filethreads = _FILE_THREADS;
