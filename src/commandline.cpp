@@ -643,6 +643,19 @@ bool CommandLine::ReadArgs(int argc, const char * const *argv)
               cerr << "Invalid recovery file count option: " << argv[0] << endl;
               return false;
             }
+
+            // cap the maximum number of recovery files
+            // because the number of recovery blocks will be
+            // (2 ^ recoveryfilecount) - 1
+            // the number 32 will overflow the u32 resulting in 1
+            if (recoveryfilecount > 31)
+            {
+              cerr << "Invalid recovery file count option: " << recoveryfilecount << endl;
+              cerr << "  the maximum allowed recovery file count is 31" << endl;
+
+              return false;
+            }
+
           }
           break;
 
