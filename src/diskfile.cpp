@@ -893,6 +893,7 @@ bool DiskFile::Delete(void)
 
   if (filename.size() > 0 && 0 == unlink(filename.c_str()))
   {
+    exists = false;
     return true;
   }
   else
