@@ -12,6 +12,10 @@ par2
 *.log
 tests/runtest*
 
+# unit test binaries
+tests/*_test
+tests/.dirstamp
+
 # autotools output
 aclocal.m4
 autom4te.cache/
@@ -46,3 +50,9 @@ perf.*
 .cproject
 .project
 .settings
+
+# emacs files
+*~
+.#*
+\#*#
+.~lock.*#
