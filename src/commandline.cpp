@@ -134,7 +134,7 @@ void CommandLine::usage(void)
     "  -f<n>    : First Recovery-Block-Number\n"
     "  -u       : Uniform recovery file sizes\n"
     "  -l       : Limit size of recovery files (don't use both -u and -l)\n"
-    "  -n<n>    : Number of recovery files (don't use both -n and -l)\n"
+    "  -n<n>    : Number of recovery files (max 31) (don't use both -n and -l)\n"
     "  -R       : Recurse into subdirectories\n"
     "             (Be aware of wildcard shell expansion)\n"
     "\n";
