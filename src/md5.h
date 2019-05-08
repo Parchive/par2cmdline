@@ -20,7 +20,7 @@
 #ifndef __MD5_H__
 #define __MD5_H__
 
-#ifdef WIN32
+#ifdef _WIN32
 #pragma pack(push, 1)
 #define PACKED
 #else
@@ -145,7 +145,7 @@ inline bool MD5Hash::operator<=(const MD5Hash &other) const
   return !other.operator<(*this);
 }
 
-#ifdef WIN32
+#ifdef _WIN32
 #pragma pack(pop)
 #endif
 #undef PACKED

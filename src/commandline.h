@@ -23,6 +23,11 @@
 #include <string>
 using std::string;
 
+// This is needed by diskfile.h
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
 #include "libpar2.h"
 #include "diskfile.h"
 

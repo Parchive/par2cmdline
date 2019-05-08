@@ -51,7 +51,7 @@ public:
   bool Open(string filename, u64 filesize);
 
   // Check to see if the file is open
-#ifdef WIN32
+#ifdef _WIN32
   bool IsOpen(void) const {return hFile != INVALID_HANDLE_VALUE;}
 #else
   bool IsOpen(void) const {return file != 0;}
@@ -110,7 +110,7 @@ protected:
   u64    filesize;
 
   // OS file handle
-#ifdef WIN32
+#ifdef _WIN32
   HANDLE hFile;
 #else
   FILE *file;
@@ -123,7 +123,7 @@ protected:
   bool   exists;
 
 protected:
-#ifdef WIN32
+#ifdef _WIN32
   static string ErrorMessage(DWORD error);
 #endif
 };

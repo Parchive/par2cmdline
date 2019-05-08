@@ -39,7 +39,7 @@
 //  Creator Packet                     struct CREATORPACKET
 
 
-#ifdef WIN32
+#ifdef _WIN32
 #pragma pack(push, 1)
 #define PACKED
 #else
@@ -159,7 +159,7 @@ struct RECOVERYBLOCKPACKET
 #pragma warning(default:4200)
 #endif
 
-#ifdef WIN32
+#ifdef _WIN32
 #pragma pack(pop)
 #endif
 #undef PACKED

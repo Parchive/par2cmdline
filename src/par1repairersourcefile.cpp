@@ -62,7 +62,7 @@ Par1RepairerSourceFile::Par1RepairerSourceFile(PAR1FILEENTRY *fileentry, string 
   string::size_type where;
   if (string::npos != (where = filename.find_last_of('\\'))
       || string::npos != (where = filename.find_last_of('/'))
-#ifdef WIN32
+#ifdef _WIN32
       || string::npos != (where = filename.find_last_of(':'))
 #endif
      )

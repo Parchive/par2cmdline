@@ -20,7 +20,7 @@
 #ifndef __PARCMDLINE_H__
 #define __PARCMDLINE_H__
 
-#ifdef WIN32
+#ifdef _WIN32
 // Windows includes
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -61,7 +61,7 @@ typedef unsigned int     size_t;
 #include <config.h>
 #endif
 
-#else // WIN32
+#else // _WIN32
 #ifdef HAVE_CONFIG_H
 
 #include <config.h>
@@ -180,7 +180,7 @@ char *strchr(), *strrchr();
 #endif
 #endif
 
-#ifdef WIN32
+#ifdef _WIN32
 #define PATHSEP "\\"
 #define ALTPATHSEP "/"
 #else

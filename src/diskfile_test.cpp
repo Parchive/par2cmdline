@@ -24,7 +24,7 @@
 
 
 // The file separator
-#ifdef WIN32
+#ifdef _WIN32
 string fs("\\");
 #else
 string fs("/");
@@ -168,7 +168,7 @@ int test1() {
     string path1, name1;
     DiskFile::SplitFilename(path_and_name1, path1, name1);
     if (path_and_name1 != path1 + name1
-#ifdef WIN32
+#ifdef _WIN32
 	|| path1.at(1) != ':' || path1.at(2) != fs.at(0)
 #else
 	|| path1.at(0) != fs.at(0)

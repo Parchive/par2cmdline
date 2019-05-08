@@ -861,7 +861,7 @@ bool CommandLine::ReadArgs(int argc, const char * const *argv)
 // This webpage has code to get physical memory size on many OSes
 // http://nadeausoftware.com/articles/2012/09/c_c_tip_how_get_physical_memory_size_system
 
-#ifdef WIN32
+#ifdef _WIN32
 u64 CommandLine::GetTotalPhysicalMemory()
 {
   u64 TotalPhysicalMemory = 0;
@@ -973,7 +973,7 @@ bool CommandLine::CheckValuesAndSetDefaults() {
   string lastchar = basepath.substr(basepath.length() -1);
   if ("/" != lastchar && "\\" != lastchar)
   {
-#ifdef WIN32
+#ifdef _WIN32
     basepath = basepath + "\\";
 #else
     basepath = basepath + "/";

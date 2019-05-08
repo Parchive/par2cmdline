@@ -33,7 +33,7 @@ static char THIS_FILE[]=__FILE__;
 #endif
 
 
-#ifdef WIN32
+#ifdef _WIN32
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #define OffsetType __int64
@@ -414,7 +414,7 @@ u64 DiskFile::GetFileSize(string filename)
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-#else // !WIN32
+#else // !_WIN32
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #ifdef HAVE_FSEEKO
@@ -885,7 +885,7 @@ bool DiskFile::Open(string _filename)
 
 bool DiskFile::Delete(void)
 {
-#ifdef WIN32
+#ifdef _WIN32
   assert(hFile == INVALID_HANDLE_VALUE);
 #else
   assert(file == 0);
@@ -960,7 +960,7 @@ string DiskFile::TranslateFilename(string filename)
     unsigned char ch = *p;
 
     bool ok = true;
-#ifdef WIN32
+#ifdef _WIN32
     if (ch < 32)
     {
       ok = false;
@@ -987,7 +987,7 @@ string DiskFile::TranslateFilename(string filename)
 #endif
 
     // replace unix / to windows \ or windows \ to unix /
-#ifdef WIN32
+#ifdef _WIN32
     if (ch == '/') {
       ch = '\\';
     }
@@ -1043,7 +1043,7 @@ bool DiskFile::Rename(void)
 
 bool DiskFile::Rename(string _filename)
 {
-#ifdef WIN32
+#ifdef _WIN32
   assert(hFile == INVALID_HANDLE_VALUE);
 #else
   assert(file == 0);
@@ -1063,7 +1063,7 @@ bool DiskFile::Rename(string _filename)
   }
 }
 
-#ifdef WIN32
+#ifdef _WIN32
 string DiskFile::ErrorMessage(DWORD error)
 {
   string result;

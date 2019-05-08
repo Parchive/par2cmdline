@@ -20,7 +20,14 @@
 #ifndef __LIBPAR2_H__
 #define __LIBPAR2_H__
 
-#ifdef WIN32
+#ifdef _MSC_VER
+
+// _MSC_VER is for Microsoft Visual C++ Compiler.
+//
+// The ifdef is not for _WIN32, because MinGW (Mingw32)
+// is a port of gcc's compiler that targets Windows
+// and we don't want this code run for MinGW.
+
 typedef unsigned char    u8;
 typedef signed char      i8;
 typedef unsigned short   u16;
@@ -30,7 +37,7 @@ typedef signed int       i32;
 typedef unsigned __int64 u64;
 typedef signed __int64   i64;
 
-#else // WIN32
+#else // _MSC_VER
 #ifdef HAVE_CONFIG_H
 
 #include <config.h>

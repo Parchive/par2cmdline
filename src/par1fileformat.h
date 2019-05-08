@@ -20,7 +20,7 @@
 #ifndef __PAR1FILEFORMAT_H__
 #define __PAR1FILEFORMAT_H__
 
-#ifdef WIN32
+#ifdef _WIN32
 #pragma pack(push, 1)
 #define PACKED
 #else
@@ -68,7 +68,7 @@ enum FILEENTRYSTATUS
 #pragma warning(default:4200)
 #endif
 
-#ifdef WIN32
+#ifdef _WIN32
 #pragma pack(pop)
 #endif
 #undef PACKED
