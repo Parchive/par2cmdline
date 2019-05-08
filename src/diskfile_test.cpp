@@ -35,13 +35,13 @@ string fs("/");
 int test1() {
   // create test file using C++ functions
   ofstream input1;
-  input1.open("input1.txt");
+  input1.open("input1.txt", ofstream::out | ofstream::binary);
   const char *input1_contents = "diskfile_test test1 input1.txt";
   input1 << input1_contents;
   input1.close();
 
   ofstream input2;
-  input2.open("input2.txt");
+  input2.open("input2.txt", ofstream::out | ofstream::binary);
   const char *input2_contents = "diskfile_test test1 input2.txt";
   input2 << input2_contents;
   input2.close();
@@ -282,7 +282,7 @@ TODO: The function needs to be fixed and these tests uncommented.
 int test2() {
   // create test file using C++ functions
   ofstream input1;
-  input1.open("input1.txt");
+  input1.open("input1.txt", ofstream::out | ofstream::binary);
   const char *input1_contents = "diskfile_test test1 input1.txt";
   input1 << input1_contents;
   input1.close();
@@ -574,7 +574,7 @@ int test2() {
 // test DiskFileMap
 int test3() {
   ofstream input1;
-  input1.open("input1.txt");
+  input1.open("input1.txt", ofstream::out | ofstream::binary);
   const char *input1_contents = "diskfile_test test3 input1.txt";
   input1 << input1_contents;
   input1.close();
@@ -627,13 +627,13 @@ int test3() {
 // test FileSizeCache
 int test4() {
   ofstream input1;
-  input1.open("input1.txt");
+  input1.open("input1.txt", ofstream::out | ofstream::binary);
   const char *input1_contents = "diskfile_test test3 input1.txt";
   input1 << input1_contents;
   input1.close();
 
   ofstream input2;
-  input2.open("input2.txt");
+  input2.open("input2.txt", ofstream::out | ofstream::binary);
   const char *input2_contents = "diskfile_test test3 input2.txt is longer";
   input2 << input2_contents;
   input2.close();
@@ -659,6 +659,28 @@ int test4() {
   return 0;
 }
 
+
+// test that we cannot create a file if one already exists.
+int test5() {
+  ofstream input1;
+  input1.open("input1.txt", ofstream::out | ofstream::binary);
+  const char *input1_contents = "diskfile_test test3 input1.txt";
+  input1 << input1_contents;
+  input1.close();
+
+  DiskFile diskfile(cout, cerr);
+  if (diskfile.Create("input1.txt", strlen(input1_contents))) {
+    cout << "Create succeeded when file already existed!" << endl;
+    return 1;
+  }
+  
+  // delete test files using C++ function
+  remove("input1.txt");
+  return 0;
+}
+
+
+
 int main() {
   if (test1())
     return 1;
@@ -675,6 +697,10 @@ int main() {
   if (test4())
     return 1;
   cout << "finished test 4" << endl;
+  
+  if (test5())
+    return 1;
+  cout << "finished test 5" << endl;
   
   return 0;
 }
