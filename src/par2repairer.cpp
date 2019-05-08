@@ -110,7 +110,9 @@ Result Par2Repairer::Process(
 			     const u64 _skipleaway
 			     )
 {
+#ifdef _OPENMP
   filethreads = _filethreads;
+#endif
   
   // Should we skip data whilst scanning files
   skipdata = _skipdata;

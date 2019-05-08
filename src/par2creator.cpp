@@ -93,7 +93,9 @@ Result Par2Creator::Process(
 			    const u32 _recoveryfilecount,
 			    const u32 _recoveryblockcount)
 {
+#ifdef _OPENMP
   filethreads = _filethreads;
+#endif
   
   // Get information from commandline
   blocksize = _blocksize;
