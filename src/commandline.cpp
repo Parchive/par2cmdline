@@ -895,11 +895,12 @@ u64 CommandLine::GetTotalPhysicalMemory()
 
   return TotalPhysicalMemory;
 }
-#elif defined(__linux__)
+#elif defined(_SC_PHYS_PAGES) && defined(_SC_PAGESIZE)
+// POSIX compliant OSes, including OSX/MacOS and Cygwin.  Also works for Linux.
 u64 CommandLine::GetTotalPhysicalMemory()
 {
   long pages = sysconf(_SC_PHYS_PAGES);
-  long page_size = sysconf(_SC_PAGE_SIZE);
+  long page_size = sysconf(_SC_PAGESIZE);  
   return pages*page_size;
 }
 #else
