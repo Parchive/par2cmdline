@@ -105,7 +105,7 @@ EXTRA_DIST = PORTING ROADMAP \
 
 # Programs that need to be compiled for the test suite.
 # These are the unit tests.  
-check_PROGRAMS = tests/letype_test tests/crc_test tests/md5_test tests/diskfile_test tests/commandline_test tests/reedsolomon_test tests/galois_test 
+check_PROGRAMS = tests/letype_test tests/crc_test tests/md5_test tests/diskfile_test tests/libpar2_test tests/commandline_test tests/reedsolomon_test tests/galois_test 
 
 tests_letype_test_SOURCES = src/letype_test.cpp src/letype.h
 
@@ -115,12 +115,15 @@ tests_md5_test_SOURCES = src/md5_test.cpp src/md5.cpp src/md5.h
 
 tests_diskfile_test_SOURCES = src/diskfile_test.cpp src/diskfile.cpp src/diskfile.h
 
-tests_commandline_test_SOURCES = src/commandline_test.cpp src/commandline.cpp src/commandline.h src/diskfile.cpp
+tests_libpar2_test_SOURCES = src/libpar2_test.cpp src/libpar2.h
+tests_libpar2_test_LDADD = libpar2.a
+
+tests_commandline_test_SOURCES = src/commandline_test.cpp src/commandline.cpp src/commandline.h 
+tests_commandline_test_LDADD = libpar2.a
 
 tests_reedsolomon_test_SOURCES = src/reedsolomon_test.cpp src/reedsolomon.cpp src/reedsolomon.h
 
 tests_galois_test_SOURCES = src/galois_test.cpp src/galois.cpp src/galois.h
-
 
 
 # List of all tests.

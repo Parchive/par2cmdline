@@ -90,12 +90,6 @@ public:
 #endif
 
 
-  static bool ComputeRecoveryFileCount(u32 *recoveryfilecount,
-				       Scheme recoveryfilescheme,
-				       u32 recoveryblockcount,
-				       u64 largestfilesize,
-				       u64 blocksize);
-
   static bool ComputeRecoveryBlockCount(u32 *recoveryblockcount,
 					u32 sourceblockcount,
 					u64 blocksize,

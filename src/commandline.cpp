@@ -1216,81 +1216,6 @@ bool CommandLine::ComputeBlockSize() {
 }
 
 
-// Determine how many recovery files to create.
-bool CommandLine::ComputeRecoveryFileCount(u32 *recoveryfilecount,
-					  Scheme recoveryfilescheme,
-					  u32 recoveryblockcount,
-					  u64 largestfilesize,
-					  u64 blocksize)
-{
-  // Are we computing any recovery blocks
-  if (recoveryblockcount == 0)
-  {
-    *recoveryfilecount = 0;
-    return true;
-  }
-
-  switch (recoveryfilescheme)
-  {
-  case scUnknown:
-    {
-      //assert(false);
-      cerr << "Scheme unspecified (create, verify, or repair)." << endl;
-      return false;
-    }
-    break;
-  case scVariable:
-  case scUniform:
-    {
-      if (*recoveryfilecount == 0)
-      {
-        // If none specified then then filecount is roughly log2(blockcount)
-        // This prevents you getting excessively large numbers of files
-        // when the block count is high and also allows the files to have
-        // sizes which vary exponentially.
-
-        for (u32 blocks=recoveryblockcount; blocks>0; blocks>>=1)
-        {
-          (*recoveryfilecount)++;
-        }
-      }
-
-      if (*recoveryfilecount > recoveryblockcount)
-      {
-        // You cannot have move recovery files that there are recovery blocks
-        // to put in them.
-        cerr << "Too many recovery files specified." << endl;
-        return false;
-      }
-    }
-    break;
-
-  case scLimited:
-    {
-      // No recovery file will contain more recovery blocks than would
-      // be required to reconstruct the largest source file if it
-      // were missing. Other recovery files will have recovery blocks
-      // distributed in an exponential scheme.
-
-      u32 largest = (u32)((largestfilesize + blocksize-1) / blocksize);
-      u32 whole = recoveryblockcount / largest;
-      whole = (whole >= 1) ? whole-1 : 0;
-
-      u32 extra = recoveryblockcount - whole * largest;
-      *recoveryfilecount = whole;
-      for (u32 blocks=extra; blocks>0; blocks>>=1)
-      {
-        (*recoveryfilecount)++;
-      }
-    }
-    break;
-  }
-
-  return true;
-}
-
-
-
 // Determine how many recovery blocks to create based on the source block
 // count and the requested level of redundancy.
 bool CommandLine::ComputeRecoveryBlockCount(u32 *recoveryblockcount,
@@ -1334,7 +1259,9 @@ bool CommandLine::ComputeRecoveryBlockCount(u32 *recoveryblockcount,
       }
 
       // recoveryfilecount assigned below.
-      bool success = ComputeRecoveryFileCount(&recoveryfilecount,
+      bool success = ComputeRecoveryFileCount(cout,
+					      cerr,
+					      &recoveryfilecount,
 					      recoveryfilescheme,
 					      estimatedrecoveryblockcount,
 					      largestfilesize,

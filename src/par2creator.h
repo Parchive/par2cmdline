@@ -54,15 +54,8 @@ protected:
   // specified on the command line
   bool ComputeBlockCount(const vector<string> &extrafiles);
 
-  // Determine how many recovery blocks to create based on the source block
-  // count and the requested level of redundancy.
-  bool ComputeRecoveryBlockCount(u32 redundancy, u64 redundancysize);
-
   // Determine how much recovery data can be computed on one pass
   bool CalculateProcessBlockSize(size_t memorylimit);
-
-  // Determine how many recovery files to create.
-  bool ComputeRecoveryFileCount(void);
 
   // Open all of the source files, compute the Hashes and CRC values, and store
   // the results in the file verification and file description packets.

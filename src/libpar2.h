@@ -191,4 +191,12 @@ Result par1repair(std::ostream &sout,
 		  );
 
 
+bool ComputeRecoveryFileCount(std::ostream &sout,
+			      std::ostream &serr,
+			      u32 *recoveryfilecount,
+			      Scheme recoveryfilescheme,
+			      u32 recoveryblockcount,
+			      u64 largestfilesize,
+			      u64 blocksize);
+
 #endif // __LIBPAR2_H__

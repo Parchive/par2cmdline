@@ -116,8 +116,15 @@ Result Par2Creator::Process(
     return eInvalidCommandLineArguments;
 
   // Determine how many recovery files to create.
-  if (!ComputeRecoveryFileCount())
+  if (!ComputeRecoveryFileCount(sout,
+				serr,
+				&recoveryfilecount,
+				recoveryfilescheme,
+				recoveryblockcount,
+				largestfilesize,
+				blocksize)) {
     return eInvalidCommandLineArguments;
+  }
 
   // Determine how much recovery data can be computed on one pass
   if (!CalculateProcessBlockSize(memorylimit))
@@ -297,73 +304,6 @@ bool Par2Creator::CalculateProcessBlockSize(size_t memorylimit)
   return true;
 }
 
-// Determine how many recovery files to create.
-bool Par2Creator::ComputeRecoveryFileCount(void)
-{
-  // Are we computing any recovery blocks
-  if (recoveryblockcount == 0)
-  {
-    recoveryfilecount = 0;
-    return true;
-  }
-
-  switch (recoveryfilescheme)
-  {
-  case scUnknown:
-    {
-      assert(false);
-      return false;
-    }
-    break;
-  case scVariable:
-  case scUniform:
-    {
-      if (recoveryfilecount == 0)
-      {
-        // If none specified then then filecount is roughly log2(blockcount)
-        // This prevents you getting excessively large numbers of files
-        // when the block count is high and also allows the files to have
-        // sizes which vary exponentially.
-
-        for (u32 blocks=recoveryblockcount; blocks>0; blocks>>=1)
-        {
-          recoveryfilecount++;
-        }
-      }
-
-      if (recoveryfilecount > recoveryblockcount)
-      {
-        // You cannot have move recovery files that there are recovery blocks
-        // to put in them.
-        serr << "Too many recovery files specified." << endl;
-        return false;
-      }
-    }
-    break;
-
-  case scLimited:
-    {
-      // No recovery file will contain more recovery blocks than would
-      // be required to reconstruct the largest source file if it
-      // were missing. Other recovery files will have recovery blocks
-      // distributed in an exponential scheme.
-
-      u32 largest = (u32)((largestfilesize + blocksize-1) / blocksize);
-      u32 whole = recoveryblockcount / largest;
-      whole = (whole >= 1) ? whole-1 : 0;
-
-      u32 extra = recoveryblockcount - whole * largest;
-      recoveryfilecount = whole;
-      for (u32 blocks=extra; blocks>0; blocks>>=1)
-      {
-        recoveryfilecount++;
-      }
-    }
-    break;
-  }
-
-  return true;
-}
 
 // Open all of the source files, compute the Hashes and CRC values, and store
 // the results in the file verification and file description packets.
