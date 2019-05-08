@@ -491,6 +491,14 @@ bool DiskFile::Create(string _filename, u64 _filesize)
   if (!DiskFile::CreateParentDirectory(filename))
     return false;
 
+  // This is after CreateParentDirectory because
+  // the Windows code would error out after too.
+  if (FileExists(filename))
+  {
+    *serr << "Could not create \"" << _filename << "\": File already exists." << endl;
+    return false;
+  }
+
   file = fopen(_filename.c_str(), "wb");
   if (file == 0)
   {
