@@ -158,6 +158,8 @@ int main() {
   if (test5()) return 1;
   if (test6()) return 1;
 
+  cout << "Test complete." << endl;
+  
   return 0;
 }
   

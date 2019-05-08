@@ -221,6 +221,8 @@ int main() {
   if (test5()) return 1;
   if (test6()) return 1;
 
+  cout << "Tests finished" << endl;
+  
   return 0;
 }
   

@@ -242,6 +242,8 @@ int main() {
   if (test3()) return 1;
   if (test4()) return 1;
   
+  cout << "Tests finished" << endl;
+
   return 0;
 }
   
