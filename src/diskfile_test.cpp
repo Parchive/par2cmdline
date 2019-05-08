@@ -36,13 +36,13 @@ int test1() {
   // create test file using C++ functions
   ofstream input1;
   input1.open("input1.txt");
-  const char *input1_contents = "diskfile_test test1 input1.txt\n";
+  const char *input1_contents = "diskfile_test test1 input1.txt";
   input1 << input1_contents;
   input1.close();
 
   ofstream input2;
   input2.open("input2.txt");
-  const char *input2_contents = "diskfile_test test1 input2.txt\n";
+  const char *input2_contents = "diskfile_test test1 input2.txt";
   input2 << input2_contents;
   input2.close();
 
@@ -283,7 +283,7 @@ int test2() {
   // create test file using C++ functions
   ofstream input1;
   input1.open("input1.txt");
-  const char *input1_contents = "diskfile_test test1 input1.txt\n";
+  const char *input1_contents = "diskfile_test test1 input1.txt";
   input1 << input1_contents;
   input1.close();
 
@@ -385,7 +385,7 @@ int test2() {
   {
     cout << "create input2.txt, move it to input3.txt, delete it." << endl;
     
-    const char *input2_contents = "diskfile_test test3 input2.txt is longer\n";
+    const char *input2_contents = "diskfile_test test3 input2.txt is longer";
 
     DiskFile diskfile(cout, cerr);
     if (diskfile.IsOpen()) {
@@ -499,7 +499,7 @@ int test2() {
   { 
     cout << "create input2.txt, write and read it." << endl;
     
-    const char *input2_contents = "diskfile_test test3 input2.txt is longer\n";
+    const char *input2_contents = "diskfile_test test3 input2.txt is longer";
     size_t buffer_len = strlen(input2_contents);
     
     srand(23461119);
@@ -555,8 +555,11 @@ int test2() {
 	  cout << "Read did not read contents correctly 2" << endl;
 	  return 1;
 	}
+      }
 
-	remove("input2.txt");
+      if (remove("input2.txt") != 0) {
+	cout << "input2.txt did not exist" << endl;
+	return 1;
       }
     }
   }
@@ -572,7 +575,7 @@ int test2() {
 int test3() {
   ofstream input1;
   input1.open("input1.txt");
-  const char *input1_contents = "diskfile_test test3 input1.txt\n";
+  const char *input1_contents = "diskfile_test test3 input1.txt";
   input1 << input1_contents;
   input1.close();
 
@@ -625,13 +628,13 @@ int test3() {
 int test4() {
   ofstream input1;
   input1.open("input1.txt");
-  const char *input1_contents = "diskfile_test test3 input1.txt\n";
+  const char *input1_contents = "diskfile_test test3 input1.txt";
   input1 << input1_contents;
   input1.close();
 
   ofstream input2;
   input2.open("input2.txt");
-  const char *input2_contents = "diskfile_test test3 input2.txt is longer\n";
+  const char *input2_contents = "diskfile_test test3 input2.txt is longer";
   input2 << input2_contents;
   input2.close();
 
