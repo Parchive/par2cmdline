@@ -2,6 +2,14 @@
 
 execdir="$PWD"
 
+if [ `which wine` != "" ] && [ -f "$execdir/par2.exe" ]
+then
+    PARBINARY="wine $execdir/par2.exe"
+else
+    PARBINARY="$execdir/par2"
+fi
+
+
 if [ -z "$srcdir" ] || [ "." = "$srcdir" ]; then
   srcdir="$PWD"
   TESTDATA="$srcdir/tests"
@@ -28,9 +36,9 @@ echo $dashes
 mkdir subfolder
 
 echo "file contents" > subfolder/some-file
-"$execdir/par2" create "$(pwd)"/subfolder/some-file || { echo "ERROR: Failed to create parchive"; exit1; } >&2
+$PARBINARY create "$(pwd)"/subfolder/some-file || { echo "ERROR: Failed to create parchive"; exit1; } >&2
 echo "corrupted contents" > subfolder/some-file
-"$execdir/par2" repair subfolder/some-file || { echo "ERROR: Failed to repair"; exit 1; } >&2
+$PARBINARY repair subfolder/some-file || { echo "ERROR: Failed to repair"; exit 1; } >&2
 
 cd "$TESTROOT"
 rm -rf "run$testname"

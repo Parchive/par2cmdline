@@ -2,6 +2,14 @@
 
 execdir="$PWD"
 
+if [ `which wine` != "" ] && [ -f "$execdir/par2.exe" ]
+then
+    PARBINARY="wine $execdir/par2.exe"
+else
+    PARBINARY="$execdir/par2"
+fi
+
+
 if [ -z "$srcdir" ] || [ "." = "$srcdir" ]; then
   srcdir="$PWD"
   TESTDATA="$srcdir/tests"
@@ -29,7 +37,7 @@ echo $dashes
 echo $banner
 echo $dashes
 
-"$execdir/par2" r recovery.par2 || { echo "ERROR: reparation of files using PAR 2.0 failed" ; exit 1; } >&2
+$PARBINARY r recovery.par2 || { echo "ERROR: reparation of files using PAR 2.0 failed" ; exit 1; } >&2
 
 cd "$TESTROOT"
 rm -rf "run$testname"

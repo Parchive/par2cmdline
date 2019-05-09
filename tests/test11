@@ -2,6 +2,14 @@
 
 execdir="$PWD"
 
+if [ `which wine` != "" ] && [ -f "$execdir/par2.exe" ]
+then
+    PARBINARY="wine $execdir/par2.exe"
+else
+    PARBINARY="$execdir/par2"
+fi
+
+
 if [ -z "$srcdir" ] || [ "." = "$srcdir" ]; then
   srcdir="$PWD"
   TESTDATA="$srcdir/tests"
@@ -27,7 +35,7 @@ echo $dashes
 echo $banner
 echo $dashes
 
-"$execdir/par2" c -b100 testdata.par2 * || { echo "ERROR: construction of files using PAR 2.0 failed" ; exit 1; } >&2
+$PARBINARY c -b100 testdata.par2 * || { echo "ERROR: construction of files using PAR 2.0 failed" ; exit 1; } >&2
 
 banner="repair 5% of 100 blocks par2files removing 3 files"
 dashes=`echo "$banner" | sed s/./-/g`
@@ -38,7 +46,7 @@ echo $dashes
 
 rm file file1 file3
 
-"$execdir/par2" r testdata.par2 * || { echo "ERROR: construction of files using PAR 2.0 failed" ; exit 1; } >&2
+$PARBINARY r testdata.par2 * || { echo "ERROR: construction of files using PAR 2.0 failed" ; exit 1; } >&2
 
 banner="repair 5% of 100 blocks par2files removing 1 files"
 dashes=`echo "$banner" | sed s/./-/g`
@@ -49,7 +57,7 @@ echo $dashes
 
 rm file5
 
-"$execdir/par2" r testdata.par2 * || { echo "ERROR: construction of files using PAR 2.0 failed" ; exit 1; } >&2
+$PARBINARY r testdata.par2 * || { echo "ERROR: construction of files using PAR 2.0 failed" ; exit 1; } >&2
 
 cd "$TESTROOT"
 rm -rf "run$testname"

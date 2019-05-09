@@ -2,6 +2,14 @@
 
 execdir="$PWD"
 
+if [ `which wine` != "" ] && [ -f "$execdir/par2.exe" ]
+then
+    PARBINARY="wine $execdir/par2.exe"
+else
+    PARBINARY="$execdir/par2"
+fi
+
+
 if [ -z "$srcdir" ] || [ "." = "$srcdir" ]; then
   srcdir="$PWD"
   TESTDATA="$srcdir/tests"
@@ -35,7 +43,7 @@ echo $dashes
 echo $banner
 echo $dashes
 
-"$execdir/par2" c -s200 -c1 recovery datafile || { echo "ERROR: Creating PAR 2.0 data failed" ; exit 1; } >&2
+$PARBINARY c -s200 -c1 recovery datafile || { echo "ERROR: Creating PAR 2.0 data failed" ; exit 1; } >&2
 ls -l
 
 banner="Damaging data file (trim first 100 bytes)"
@@ -57,7 +65,7 @@ echo $dashes
 echo $banner
 echo $dashes
 
-"$execdir/par2" r -N -S99 -vv recovery.par2 && { echo "ERROR: Repair should not be possible with skip leaway set to 99" ; exit 1; } >&2
+$PARBINARY r -N -S99 -vv recovery.par2 && { echo "ERROR: Repair should not be possible with skip leaway set to 99" ; exit 1; } >&2
 ls -l
 
 banner="Repairing using PAR 2.0 data (with skip leaway 100 - should succeed)"
@@ -67,7 +75,7 @@ echo $dashes
 echo $banner
 echo $dashes
 
-"$execdir/par2" r -N -S100 -vv recovery.par2 || { echo "ERROR: Repair should be possible with skip leaway set to 100" ; exit 1; } >&2
+$PARBINARY r -N -S100 -vv recovery.par2 || { echo "ERROR: Repair should be possible with skip leaway set to 100" ; exit 1; } >&2
 ls -l
 
 cd "$TESTROOT"

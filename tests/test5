@@ -2,6 +2,15 @@
 
 execdir="$PWD"
 
+# allow for windows testing on linux
+if [ `which wine` != "" ] && [ -f "$execdir/par2.exe" ]
+then
+    PARBINARY="wine $execdir/par2.exe"
+else
+    PARBINARY="$execdir/par2"
+fi
+
+
 if [ -z "$srcdir" ] || [ "." = "$srcdir" ]; then
   srcdir="$PWD"
   TESTDATA="$srcdir/tests"
@@ -27,7 +36,7 @@ echo $dashes
 echo $banner
 echo $dashes
 
-"$execdir/par2" c -r100 -b190 -a newtest test-*.data || { echo "ERROR: Creating PAR 2.0 data failed" ; exit 1; } >&2
+$PARBINARY c -r100 -b190 -a newtest test-*.data || { echo "ERROR: Creating PAR 2.0 data failed" ; exit 1; } >&2
 
 cp test-0.data test-0.data.orig
 cp test-1.data test-1.data.orig
@@ -51,7 +60,7 @@ echo $dashes
 
 rm -f test-*.data
 
-"$execdir/par2" r newtest.par2 || { echo "ERROR: Full Repair using PAR 2.0 failed" ; exit 1; } >&2
+$PARBINARY r newtest.par2 || { echo "ERROR: Full Repair using PAR 2.0 failed" ; exit 1; } >&2
 
 cmp -s test-0.data test-0.data.orig && cmp -s test-1.data test-1.data.orig && cmp -s test-2.data test-2.data.orig && cmp -s test-3.data test-3.data.orig && cmp -s test-4.data test-4.data.orig && cmp -s test-5.data test-5.data.orig && cmp -s test-6.data test-6.data.orig && cmp -s test-7.data test-7.data.orig && cmp -s test-8.data test-8.data.orig && cmp -s test-9.data test-9.data.orig || { echo "ERROR: Repaired files do not match originals" ; exit 1 ; } >&2
 

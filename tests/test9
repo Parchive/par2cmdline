@@ -2,6 +2,14 @@
 
 execdir="$PWD"
 
+if [ `which wine` != "" ] && [ -f "$execdir/par2.exe" ]
+then
+    PARBINARY="wine $execdir/par2.exe"
+else
+    PARBINARY="$execdir/par2"
+fi
+
+
 if [ -z "$srcdir" ] || [ "." = "$srcdir" ]; then
   srcdir="$PWD"
   TESTDATA="$srcdir/tests"
@@ -38,7 +46,7 @@ mv test-7.data rename3
 mv test-8.data rename1
 mv test-9.data rename2
 
-"$execdir/par2" r testdata.par2 rename* || { echo "ERROR: Initial PAR 2.0 verification and rename failed" ; exit 1; } >&2
+$PARBINARY r testdata.par2 rename* || { echo "ERROR: Initial PAR 2.0 verification and rename failed" ; exit 1; } >&2
 test -e test-1.data ||  { echo "ERROR: rename failed" ; exit 1; } >&2
 test -e test-2.data ||  { echo "ERROR: rename failed" ; exit 1; } >&2
 test -e test-3.data ||  { echo "ERROR: rename failed" ; exit 1; } >&2
