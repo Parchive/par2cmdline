@@ -27,7 +27,7 @@ static char THIS_FILE[]=__FILE__;
 #endif
 #endif
 
-Par1RepairerSourceFile::Par1RepairerSourceFile(PAR1FILEENTRY *fileentry, string searchpath)
+Par1RepairerSourceFile::Par1RepairerSourceFile(std::ostream &sout, std::ostream &serr, const NoiseLevel noiselevel, PAR1FILEENTRY *fileentry, string searchpath)
 {
   targetexists = false;
   targetfile = 0;
@@ -46,8 +46,7 @@ Par1RepairerSourceFile::Par1RepairerSourceFile(PAR1FILEENTRY *fileentry, string 
     if (ch >= 256)
     {
       // Convert the Unicode character to two characters
-      filename += ch & 255;
-      filename += ch >> 8;
+      filename += DescriptionPacket::UrlEncodeChar(ch);
     }
     else
     {
@@ -56,7 +55,7 @@ Par1RepairerSourceFile::Par1RepairerSourceFile(PAR1FILEENTRY *fileentry, string 
   }
 
   // Translate any characters the OS does not like;
-  filename = DiskFile::TranslateFilename(filename);
+  filename = DescriptionPacket::TranslateFilenameFromPar2ToLocal(sout, serr, noiselevel, filename);
 
   // Strip the path from the filename
   string::size_type where;

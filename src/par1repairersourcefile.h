@@ -28,7 +28,11 @@ class Par1RepairerSourceFile
 {
 public:
   // Construct the object and set the description and verification packets
-  Par1RepairerSourceFile(PAR1FILEENTRY *fileentry, string searchpath);
+  Par1RepairerSourceFile(std::ostream &sout,
+			 std::ostream &serr,
+			 const NoiseLevel noiselevel,
+			 PAR1FILEENTRY *fileentry,
+			 string searchpath);
   ~Par1RepairerSourceFile(void);
 
   string FileName(void) const {return filename;}

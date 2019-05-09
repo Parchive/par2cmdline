@@ -84,7 +84,6 @@ public:
 
   static void SplitFilename(string filename, string &path, string &name);
   static void SplitRelativeFilename(string filename, string basepath, string &name);
-  static string TranslateFilename(string filename);
   static std::string SplitRelativeFilename(const std::string& filename, const std::string& basepath)
   {
     std::string ret;

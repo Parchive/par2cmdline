@@ -55,6 +55,16 @@ public:
   // Get the Hash values from the packet
   const MD5Hash& HashFull(void) const;
   const MD5Hash& Hash16k(void) const;
+
+  // Used to encode characters we do not want, such as "\t" or ":".
+  // Function is public for easier testing.
+  static string UrlEncodeChar(char c);  
+
+  // Converts filename from local disk to how it will be encoded
+  // in the Par2 file, and back again.
+  static string TranslateFilenameFromLocalToPar2(std::ostream &sout, std::ostream &serr, const NoiseLevel noiselevel, string local_filename);
+  static string TranslateFilenameFromPar2ToLocal(std::ostream &sout, std::ostream &serr, const NoiseLevel noiselevel, string par2_encoded_filename);
+
 };
 
 // Get the file id from the packet

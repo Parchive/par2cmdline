@@ -955,7 +955,7 @@ bool Par2Repairer::CreateSourceFileList(void)
 
     if (sourcefile)
     {
-      sourcefile->ComputeTargetFileName(basepath);
+      sourcefile->ComputeTargetFileName(sout, serr, noiselevel, basepath);
 
 #ifdef _OPENMP
       // Need actual filesize on disk for mt-progress line

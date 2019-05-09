@@ -64,10 +64,10 @@ void Par2RepairerSourceFile::SetVerificationPacket(VerificationPacket *_verifica
   verificationpacket = _verificationpacket;
 }
 
-void Par2RepairerSourceFile::ComputeTargetFileName(string path)
+void Par2RepairerSourceFile::ComputeTargetFileName(std::ostream &sout, std::ostream &serr, const NoiseLevel noiselevel, string path)
 {
   // Get a version of the filename compatible with the OS
-  string filename = DiskFile::TranslateFilename(descriptionpacket->FileName());
+  string filename = DescriptionPacket::TranslateFilenameFromPar2ToLocal(sout, serr, noiselevel, descriptionpacket->FileName());
 
   targetfilename = path + filename;
 }

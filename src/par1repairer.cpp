@@ -412,7 +412,7 @@ bool Par1Repairer::LoadRecoveryFile(string filename)
           memcpy((void*)fileentry, (void*)current, (size_t)(u64)fileentry->entrysize);
 
           // Create source file and add it to the appropriate list
-          Par1RepairerSourceFile *sourcefile = new Par1RepairerSourceFile(fileentry, searchpath);
+          Par1RepairerSourceFile *sourcefile = new Par1RepairerSourceFile(sout, serr, noiselevel, fileentry, searchpath);
           if (fileentry->status & INPARITYVOLUME)
           {
             sourcefiles.push_back(sourcefile);

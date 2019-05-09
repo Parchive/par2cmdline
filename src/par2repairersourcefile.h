@@ -71,7 +71,7 @@ public:
   DiskFile* GetCompleteFile(void) const;
 
   // Compute/Get the filename for the final repaired version of the file
-  void ComputeTargetFileName(string path);
+  void ComputeTargetFileName(std::ostream &sout, std::ostream &serr, const NoiseLevel noiselevel, string path);
   string TargetFileName(void) const;
 
   // Get the number of blocks that the file uses
