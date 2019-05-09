@@ -85,7 +85,7 @@ int test2() {
       cerr << "hash1 and hash2 differ in location " << i << endl;
       cerr << "  hash1 = " << ((int) hash1.hash[i]) << endl;
       cerr << "  hash2 = " << ((int) hash2.hash[i]) << endl;
-      //return 1;
+      return 1;
     }
   }
   

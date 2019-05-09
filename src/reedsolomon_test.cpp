@@ -493,7 +493,7 @@ int test4(int NUM_IN, int *expected_bases) {
       cerr << "base at location " << i << " did not match expected." << endl;
       cerr << "   base     = " << base << endl;
       cerr << "   expected = " << expected_bases[i] << endl;
-      //      return 1;
+      return 1;
     }
   }
 
