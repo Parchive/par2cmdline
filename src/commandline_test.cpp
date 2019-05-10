@@ -377,7 +377,7 @@ int test9_helper(const char *arg)
   // buffer holds copy of arg, with ' ' replaced by '\0'
   const int len = strlen(arg);
   int argc = 0;
-  char *buffer = new char[len];
+  char *buffer = new char[len+1];
   const char **argv = new const char*[len];
   argv[argc]=&(buffer[0]);
   argc++;
@@ -396,6 +396,9 @@ int test9_helper(const char *arg)
     cout << "CommandLine should not have parsed: \"" << arg << "\"" << endl;
     return 1;
   }
+
+  delete [] buffer;
+  delete [] argv;
   
   return 0;
 }
@@ -569,7 +572,7 @@ int test10_helper(const char *arg,
   // buffer holds copy of arg, with ' ' replaced by '\0'
   const int len = strlen(arg);
   int argc = 0;
-  char *buffer = new char[len];
+  char *buffer = new char[len+1];
   const char **argv = new const char*[len];
   argv[argc]=&(buffer[0]);
   argc++;
@@ -670,6 +673,10 @@ int test10_helper(const char *arg,
     cout << commandline.GetRecoveryBlockCount() << " != " << recoveryblockcount << endl;
     return 1;
   }
+
+
+  delete [] buffer;
+  delete [] argv;
   
   return 0;
 }
@@ -1174,7 +1181,7 @@ int test11_helper(const char *arg,
   // buffer holds copy of arg, with ' ' replaced by '\0'
   const int len = strlen(arg);
   int argc = 0;
-  char *buffer = new char[len];
+  char *buffer = new char[len+1];
   const char **argv = new const char*[len];
   argv[argc]=&(buffer[0]);
   argc++;
@@ -1270,6 +1277,9 @@ int test11_helper(const char *arg,
       return 1;
     }
   }
+
+  delete [] buffer;
+  delete [] argv;
   
   return 0;
 }

@@ -209,7 +209,7 @@ bool DiskFile::Write(u64 _offset, const void *buffer, size_t length)
 
 // Open the file
 
-bool DiskFile::Open(string _filename, u64 _filesize)
+bool DiskFile::Open(const string &_filename, u64 _filesize)
 {
   assert(hFile == INVALID_HANDLE_VALUE);
 
@@ -360,7 +360,7 @@ string DiskFile::GetCanonicalPathname(string filename)
   return longname;
 }
 
-list<string>* DiskFile::FindFiles(string path, string wildcard, bool recursive)
+std::unique_ptr< list<string> > DiskFile::FindFiles(string path, string wildcard, bool recursive)
 {
   // check path, if not ending with path separator, add one
   char pathend = *path.rbegin();
@@ -387,9 +387,10 @@ list<string>* DiskFile::FindFiles(string path, string wildcard, bool recursive)
           continue;
         }
 
-        list<string> *dirmatches;
         string nwwildcard="*";
-        dirmatches = DiskFile::FindFiles(fd.cFileName, nwwildcard, true);
+	std::unique_ptr<list<string>> dirmatches(
+						 DiskFile::FindFiles(fd.cFileName, nwwildcard, true)
+						 );
 
         matches->merge(*dirmatches);
       }
@@ -397,7 +398,7 @@ list<string>* DiskFile::FindFiles(string path, string wildcard, bool recursive)
     ::FindClose(h);
   }
 
-  return matches;
+  return std::unique_ptr< list<string> >(matches);
 }
 
 u64 DiskFile::GetFileSize(string filename)
@@ -736,7 +737,7 @@ string DiskFile::GetCanonicalPathname(string filename)
   return result;
 }
 
-list<string>* DiskFile::FindFiles(string path, string wildcard, bool recursive)
+std::unique_ptr<list<string>> DiskFile::FindFiles(string path, string wildcard, bool recursive)
 {
   // check path, if not ending with path separator, add one
   char pathend = *path.rbegin();
@@ -744,7 +745,7 @@ list<string>* DiskFile::FindFiles(string path, string wildcard, bool recursive)
   {
     path += '/';
   }
-  list<string> *matches = new list<string>;
+  std::unique_ptr<list<string>> matches(new list<string>);
 
   string::size_type where;
 
@@ -780,10 +781,10 @@ list<string>* DiskFile::FindFiles(string path, string wildcard, bool recursive)
                   recursive == true)
               {
 
-                list<string> *dirmatches;
                 string nwwildcard="*";
-                dirmatches = DiskFile::FindFiles(fn, nwwildcard, true);
-
+                std::unique_ptr<list<string>> dirmatches(
+							 DiskFile::FindFiles(fn, nwwildcard, true)
+							 );
                 matches->merge(*dirmatches);
               }
               else if (S_ISREG(st.st_mode))
@@ -817,9 +818,10 @@ list<string>* DiskFile::FindFiles(string path, string wildcard, bool recursive)
                     recursive == true)
                 {
 
-                  list<string> *dirmatches;
                   string nwwildcard="*";
-                  dirmatches = DiskFile::FindFiles(fn, nwwildcard, true);
+		  std::unique_ptr<list<string>> dirmatches(
+							   DiskFile::FindFiles(fn, nwwildcard, true)
+							   );
 
                   matches->merge(*dirmatches);
                 }
@@ -845,10 +847,10 @@ list<string>* DiskFile::FindFiles(string path, string wildcard, bool recursive)
       if (S_ISDIR(st.st_mode) &&
           recursive == true)
       {
-
-        list<string> *dirmatches;
         string nwwildcard="*";
-        dirmatches = DiskFile::FindFiles(fn, nwwildcard, true);
+	std::unique_ptr<list<string>> dirmatches(
+						 DiskFile::FindFiles(fn, nwwildcard, true)
+						 );
 
         matches->merge(*dirmatches);
       }

@@ -26,6 +26,7 @@ using std::list;
 using std::map;
 #include <vector>
 using std::vector;
+#include <memory>
 
 // A disk file can be any type of file that par2cmdline needs
 // to read or write data from or to.
@@ -96,7 +97,7 @@ public:
 
   // Search the specified path for files which match the specified wildcard
   // and return their names in a list.
-  static list<string>* FindFiles(string path, string wildcard, bool recursive);
+  static std::unique_ptr<list<string>> FindFiles(string path, string wildcard, bool recursive);
 
 protected:
   // NOTE: These are pointers so that the operator= works correctly.

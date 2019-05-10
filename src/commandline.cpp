@@ -830,12 +830,13 @@ bool CommandLine::ReadArgs(int argc, const char * const *argv)
       }
       else
       {
-        list<string> *filenames;
 
         string path;
         string name;
         DiskFile::SplitFilename(argv[0], path, name);
-        filenames = DiskFile::FindFiles(path, name, recursive);
+	std::unique_ptr<list<string>> filenames(
+						DiskFile::FindFiles(path, name, recursive)
+						);
 
         list<string>::iterator fn = filenames->begin();
         while (fn != filenames->end())
@@ -845,7 +846,8 @@ bool CommandLine::ReadArgs(int argc, const char * const *argv)
           rawfilenames.push_back(filename);
           ++fn;
         }
-        delete filenames;
+
+        // delete filenames;   Taken care of by unique_ptr<>
       }
     }
 

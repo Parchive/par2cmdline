@@ -60,7 +60,7 @@ int test1() {
     return 1;
   }
 
-  list<string>* files = DiskFile::FindFiles(".", "input1.txt", false);
+  std::unique_ptr<list<string>> files = DiskFile::FindFiles(".", "input1.txt", false);
   if (files->size() != 1 || *(files->begin()) != "." + fs + "input1.txt") {
     cout << "FindFiles failed on exact name" << endl;
     cout << "   size=" << files->size() << endl;
@@ -305,6 +305,8 @@ int test2() {
       cout << "IsOpen failed 6" << endl;
       return 1;
     }
+
+    delete [] buffer;
   }
 
 
@@ -483,6 +485,8 @@ int test2() {
 	  cout << "Read did not read contents correctly 2" << endl;
 	  return 1;
 	}
+
+	delete [] buffer;
       }
 
       if (remove("input2.txt") != 0) {

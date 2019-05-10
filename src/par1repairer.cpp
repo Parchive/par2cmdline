@@ -542,7 +542,9 @@ bool Par1Repairer::LoadOtherRecoveryFiles(string filename)
 
   // Search for additional PAR files
   string wildcard = name + ".???";
-  list<string> *files = DiskFile::FindFiles(path, wildcard, false);
+  std::unique_ptr<list<string>> files(
+				      DiskFile::FindFiles(path, wildcard, false)
+				      );
 
   for (list<string>::const_iterator s=files->begin(); s!=files->end(); ++s)
   {
@@ -567,7 +569,7 @@ bool Par1Repairer::LoadOtherRecoveryFiles(string filename)
     }
   }
 
-  delete files;
+  //delete files;  This is taken care of by unique_ptr<>.
 
   return true;
 }
