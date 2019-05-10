@@ -834,7 +834,7 @@ bool CommandLine::ReadArgs(int argc, const char * const *argv)
         string path;
         string name;
         DiskFile::SplitFilename(argv[0], path, name);
-	std::unique_ptr<list<string>> filenames(
+	std::unique_ptr< list<string> > filenames(
 						DiskFile::FindFiles(path, name, recursive)
 						);
 

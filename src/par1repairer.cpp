@@ -542,7 +542,7 @@ bool Par1Repairer::LoadOtherRecoveryFiles(string filename)
 
   // Search for additional PAR files
   string wildcard = name + ".???";
-  std::unique_ptr<list<string>> files(
+  std::unique_ptr< list<string> > files(
 				      DiskFile::FindFiles(path, wildcard, false)
 				      );
 

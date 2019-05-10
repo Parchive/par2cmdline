@@ -388,7 +388,7 @@ std::unique_ptr< list<string> > DiskFile::FindFiles(string path, string wildcard
         }
 
         string nwwildcard="*";
-	std::unique_ptr<list<string>> dirmatches(
+	std::unique_ptr< list<string> > dirmatches(
 						 DiskFile::FindFiles(fd.cFileName, nwwildcard, true)
 						 );
 
@@ -737,7 +737,7 @@ string DiskFile::GetCanonicalPathname(string filename)
   return result;
 }
 
-std::unique_ptr<list<string>> DiskFile::FindFiles(string path, string wildcard, bool recursive)
+std::unique_ptr< list<string> > DiskFile::FindFiles(string path, string wildcard, bool recursive)
 {
   // check path, if not ending with path separator, add one
   char pathend = *path.rbegin();
@@ -745,7 +745,7 @@ std::unique_ptr<list<string>> DiskFile::FindFiles(string path, string wildcard, 
   {
     path += '/';
   }
-  std::unique_ptr<list<string>> matches(new list<string>);
+  list<string> *matches = new list<string>;
 
   string::size_type where;
 
@@ -782,7 +782,7 @@ std::unique_ptr<list<string>> DiskFile::FindFiles(string path, string wildcard, 
               {
 
                 string nwwildcard="*";
-                std::unique_ptr<list<string>> dirmatches(
+                std::unique_ptr< list<string> > dirmatches(
 							 DiskFile::FindFiles(fn, nwwildcard, true)
 							 );
                 matches->merge(*dirmatches);
@@ -819,7 +819,7 @@ std::unique_ptr<list<string>> DiskFile::FindFiles(string path, string wildcard, 
                 {
 
                   string nwwildcard="*";
-		  std::unique_ptr<list<string>> dirmatches(
+		  std::unique_ptr< list<string> > dirmatches(
 							   DiskFile::FindFiles(fn, nwwildcard, true)
 							   );
 
@@ -848,7 +848,7 @@ std::unique_ptr<list<string>> DiskFile::FindFiles(string path, string wildcard, 
           recursive == true)
       {
         string nwwildcard="*";
-	std::unique_ptr<list<string>> dirmatches(
+	std::unique_ptr< list<string> > dirmatches(
 						 DiskFile::FindFiles(fn, nwwildcard, true)
 						 );
 
@@ -861,7 +861,7 @@ std::unique_ptr<list<string>> DiskFile::FindFiles(string path, string wildcard, 
     }
   }
 
-  return matches;
+  return std::unique_ptr< list<string> >(matches);
 }
 
 u64 DiskFile::GetFileSize(string filename)

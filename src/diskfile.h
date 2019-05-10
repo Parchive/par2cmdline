@@ -97,7 +97,7 @@ public:
 
   // Search the specified path for files which match the specified wildcard
   // and return their names in a list.
-  static std::unique_ptr<list<string>> FindFiles(string path, string wildcard, bool recursive);
+  static std::unique_ptr< list<string> > FindFiles(string path, string wildcard, bool recursive);
 
 protected:
   // NOTE: These are pointers so that the operator= works correctly.

@@ -60,7 +60,7 @@ int test1() {
     return 1;
   }
 
-  std::unique_ptr<list<string>> files = DiskFile::FindFiles(".", "input1.txt", false);
+  std::unique_ptr< list<string> > files = DiskFile::FindFiles(".", "input1.txt", false);
   if (files->size() != 1 || *(files->begin()) != "." + fs + "input1.txt") {
     cout << "FindFiles failed on exact name" << endl;
     cout << "   size=" << files->size() << endl;
