@@ -9,7 +9,12 @@
 
 execdir="$PWD"
 
-if [ `which wine` != "" ] && [ -f "$execdir/par2.exe" ]
+# valgrind tests memory usage.
+# wine allow for windows testing on linux
+if [ -n "${PARVALGRINDOPTS+set}" ]
+then
+    PARBINARY="valgrind $PARVALGRINDOPTS $execdir/par2"
+elif [ `which wine` != "" ] && [ -f "$execdir/par2.exe" ]
 then
     PARBINARY="wine $execdir/par2.exe"
 else
