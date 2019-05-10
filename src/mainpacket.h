@@ -30,8 +30,13 @@ class MainPacket : public CriticalPacket
 {
 public:
   // Construct the packet
-  MainPacket(void) {};
-  ~MainPacket(void) {};
+  MainPacket(void)
+    : blocksize(0)
+    , totalfilecount(0)
+    , recoverablefilecount(0)
+  {
+  }
+  ~MainPacket(void) {}
 
 public:
   // Construct the main packet from the source file list and block size.

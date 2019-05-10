@@ -80,7 +80,7 @@ int test1() {
     return 1;
   }
   files = DiskFile::FindFiles(".", "input1?.txt", false);
-  if (files->size() != 0) {
+  if (!files->empty()) {
     cout << "FindFiles failed on empty ?" << endl;
     return 1;
   }
@@ -454,11 +454,13 @@ int test2() {
 	  const u64 offset = blocksize*blockorder[i];
 	  if (!diskfile.Write(offset, input2_contents + offset, blocksize)) {
 	    cout << "Write failed 1" << endl;
+	    delete [] blockorder;
 	    return 1;
 	  }
 	}
 
 	diskfile.Close();
+	delete [] blockorder;
       }
 
       { // scope for variables used in reading.

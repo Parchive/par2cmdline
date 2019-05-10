@@ -36,16 +36,18 @@ public:
                         DataBlock *_datablock,
                         bool _firstblock,
                         const FILEVERIFICATIONENTRY *_verificationentry)
-  {
-    sourcefile = _sourcefile;
-    datablock = _datablock;
-    firstblock = _firstblock;
 
-    crc = _verificationentry->crc;
-    hash = _verificationentry->hash;
-
-    left = right = same = next = 0;
-  }
+    : sourcefile(_sourcefile)
+    , datablock(_datablock)
+    , firstblock(_firstblock)
+    , crc(_verificationentry->crc)
+    , hash(_verificationentry->hash)
+    , left(0)
+    , right(0)
+    , same(0)
+    , next(0)
+    {
+    }
 
   ~VerificationHashEntry(void)
   {

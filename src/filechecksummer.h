@@ -104,6 +104,11 @@ protected:
 
   //// Fill the buffers with more data from disk
   bool Fill(void);
+
+private:
+  // private copy constructor to prevent any misuse.
+  FileCheckSummer(const FileCheckSummer &);
+  FileCheckSummer& operator=(const FileCheckSummer &);
 };
 
 // Return the current checksum

@@ -179,9 +179,10 @@ void MD5State::UpdateState(const u32 (&block)[16])
 
 MD5Context::MD5Context(void)
 : MD5State()
-, used(0)
+, used(0)   
 , bytes(0)
 {
+  memset(block, 0, buffersize);
 }
 
 void MD5Context::Reset(void)

@@ -108,10 +108,16 @@ protected:
 #ifdef LONGMULTIPLY
   GaloisLongMultiplyTable<g> *glmt;  // A multiplication table used by Process()
 #endif
+
+private:
+  // private copy constructor to prevent any misuse.
+  ReedSolomon(const ReedSolomon &);
+  ReedSolomon& operator=(const ReedSolomon &);
 };
 
 template<class g>
 inline ReedSolomon<g>::ReedSolomon(void)
+: outputrows()
 {
   inputcount = 0;
 
@@ -120,8 +126,6 @@ inline ReedSolomon<g>::ReedSolomon(void)
   datapresentindex = 0;
   datamissingindex = 0;
   database = 0;
-
-  outputrows.empty();
 
   outputcount = 0;
 

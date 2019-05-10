@@ -55,6 +55,16 @@ Par2Creator::Par2Creator(std::ostream &sout, std::ostream &serr, const NoiseLeve
 , mainpacket(0)
 , creatorpacket(0)
 
+, sourcefiles()
+, sourceblocks()
+, recoveryfiles()
+, recoverypackets()
+, criticalpackets()
+, criticalpacketentries()
+, rs()
+, progress(0)
+, totaldata(0)
+  
 , deferhashcomputation(false)
 #ifdef _OPENMP
 , mttotalsize(0)
@@ -85,7 +95,7 @@ Result Par2Creator::Process(
 			    const u32 nthreads,
 			    const u32 _filethreads,
 #endif
-			    string parfilename,
+			    const string &parfilename,
 			    const vector<string> &_extrafiles,
 			    const u64 _blocksize,
 			    const u32 _firstblock,
@@ -425,8 +435,8 @@ class FileAllocation
 {
 public:
   FileAllocation(void)
+  : filename("")
   {
-    filename = "";
     exponent = 0;
     count = 0;
   }
@@ -437,7 +447,7 @@ public:
 };
 
 // Create all of the output files and allocate all packets to appropriate file offets.
-bool Par2Creator::InitialiseOutputFiles(string parfilename)
+bool Par2Creator::InitialiseOutputFiles(const string &parfilename)
 {
   // Allocate the recovery packets
   recoverypackets.resize(recoveryblockcount);
@@ -577,7 +587,7 @@ bool Par2Creator::InitialiseOutputFiles(string parfilename)
         digitsCount++;
       }
 
-      sprintf(filenameformat, "%%s.vol%%0%dd+%%0%dd.par2", digitsLow, digitsCount);
+      sprintf(filenameformat, "%%s.vol%%0%dd+%%0%dd.par2", (int) digitsLow, (int) digitsCount);
     }
 
     // Set the filenames

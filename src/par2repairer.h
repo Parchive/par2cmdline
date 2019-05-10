@@ -86,10 +86,10 @@ protected:
   bool VerifySourceFiles(const std::string& basepath, std::vector<string>& extrafiles);
 
   // Scan any extra files specified on the command line
-  bool VerifyExtraFiles(const vector<string> &extrafiles, string basepath);
+  bool VerifyExtraFiles(const vector<string> &extrafiles, const string &basepath);
 
   // Attempt to match the data in the DiskFile with the source file
-  bool VerifyDataFile(DiskFile *diskfile, Par2RepairerSourceFile *sourcefile, string basepath);
+  bool VerifyDataFile(DiskFile *diskfile, Par2RepairerSourceFile *sourcefile, const string &basepath);
 
   // Perform a sliding window scan of the DiskFile looking for blocks of data that
   // might belong to any of the source files (for which a verification packet was
@@ -129,7 +129,7 @@ protected:
   bool ProcessData(u64 blockoffset, size_t blocklength);
 
   // Verify that all of the reconstructed target files are now correct
-  bool VerifyTargetFiles(string basepath);
+  bool VerifyTargetFiles(const string &basepath);
 
   // Delete all of the partly reconstructed files
   bool DeleteIncompleteTargetFiles(void);

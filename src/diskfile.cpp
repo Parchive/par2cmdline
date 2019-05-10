@@ -589,7 +589,7 @@ bool DiskFile::Write(u64 _offset, const void *buffer, size_t length)
 
 // Open the file
 
-bool DiskFile::Open(string _filename, u64 _filesize)
+bool DiskFile::Open(const string &_filename, u64 _filesize)
 {
   assert(file == 0);
 
@@ -884,7 +884,7 @@ bool DiskFile::Open(void)
   return Open(_filename);
 }
 
-bool DiskFile::Open(string _filename)
+bool DiskFile::Open(const string &_filename)
 {
   return Open(_filename, GetFileSize(_filename));
 }
@@ -965,7 +965,7 @@ bool DiskFile::Rename(void)
 
   do
   {
-    int length = snprintf(newname, _MAX_PATH, "%s.%d", filename.c_str(), ++index);
+    int length = snprintf(newname, _MAX_PATH, "%s.%u", filename.c_str(), (unsigned int) ++index);
     if (length < 0)
     {
       *serr << filename << " cannot be renamed." << endl;
@@ -1082,7 +1082,7 @@ FileSizeCache::FileSizeCache()
 u64 FileSizeCache::get(const string &filename) {
   map<string, u64>::const_iterator f = cache.find(filename);
   if (f != cache.end())
-    f->second;
+    return f->second;
 
   // go to disk
   u64 filesize = DiskFile::GetFileSize(filename);

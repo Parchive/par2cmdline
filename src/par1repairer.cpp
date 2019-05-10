@@ -34,19 +34,34 @@ Par1Repairer::Par1Repairer(std::ostream &sout, std::ostream &serr, const NoiseLe
 : sout(sout)
 , serr(serr)
 , noiselevel(noiselevel)
+, searchpath()
+, diskfilemap()
+, recoveryblocks()
+, filelist(0)
+, filelistsize(0)
+, blocksize(0)
+, chunksize(0)
+, sourcefiles()
+, extrafiles()
+, completefilecount(0)
+, renamedfilecount(0)
+, damagedfilecount(0)
+, missingfilecount(0)
+, verifylist()
+, backuplist()
+, parlist()
+, inputblocks()
+, outputblocks()
+, rs()
+, progress(0)
+, totaldata(0)
+, inputbuffersize(0)
+, inputbuffer(0)
+, outputbufferalignment(0)
+, outputbuffersize(0)
+, outputbuffer(0)
+, ignore16kfilehash(false)
 {
-  filelist = 0;
-  filelistsize = 0;
-
-  blocksize = 0;
-
-  completefilecount = 0;
-  renamedfilecount = 0;
-  damagedfilecount = 0;
-  missingfilecount = 0;
-
-  inputbuffer = 0;
-  outputbuffer = 0;
 }
 
 Par1Repairer::~Par1Repairer(void)
@@ -591,7 +606,6 @@ bool Par1Repairer::VerifySourceFiles(void)
 {
   bool finalresult = true;
 
-  u32 filenumber = 0;
   vector<Par1RepairerSourceFile*>::iterator sourceiterator = sourcefiles.begin();
   while (sourceiterator != sourcefiles.end())
   {
@@ -655,7 +669,6 @@ bool Par1Repairer::VerifySourceFiles(void)
     }
 
     ++sourceiterator;
-    ++filenumber;
   }
 
   return finalresult;
@@ -896,8 +909,13 @@ bool Par1Repairer::VerifyDataFile(DiskFile *diskfile, Par1RepairerSourceFile *so
               << endl;
       }
     }
-    else
+    else  
     {
+      // WARNING - this branch does nothing.  The "if" above
+      // makes sure of that.  I don't know if it's the result
+      // of a bad merge or what.  I couldn't figure out what
+      // the original author meant.  If you can figure that
+      // out, please fix it!
       if (noiselevel > nlSilent)
       {
         string targetname;
@@ -1236,7 +1254,7 @@ bool Par1Repairer::ComputeRSmatrix(void)
   }
 
   // If we need to, compute and solve the RS matrix
-  if (verifylist.size() == 0)
+  if (verifylist.empty())
   {
     return true;
   }
@@ -1286,7 +1304,7 @@ bool Par1Repairer::ProcessData(u64 blockoffset, size_t blocklength)
   u32                          inputindex = 0;
 
   // Are there any blocks which need to be reconstructed
-  if (verifylist.size() > 0)
+  if (!verifylist.empty())
   {
     // For each input block
     while (inputblock != inputblocks.end())       
@@ -1460,7 +1478,7 @@ bool Par1Repairer::RemoveBackupFiles(void)
 bool Par1Repairer::RemoveParFiles(void)
 {
   if (noiselevel > nlSilent
-      && parlist.size() > 0)
+      && !parlist.empty())
   {
       sout << endl << "Purge par files." << endl;
   }

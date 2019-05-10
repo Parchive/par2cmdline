@@ -38,7 +38,7 @@ public:
 		 const u32 nthreads,
 		 const u32 filethreads,
 #endif
-		 string parfilename,
+		 const string &parfilename,
 		 const vector<string> &extrafiles,
 		 const u64 blocksize,
 		 const u32 firstblock,
@@ -71,7 +71,7 @@ protected:
   bool CreateSourceBlocks(void);
 
   // Create all of the output files and allocate all packets to appropriate file offets.
-  bool InitialiseOutputFiles(string par2filename);
+  bool InitialiseOutputFiles(const string &par2filename);
 
   // Allocate memory buffers for reading and writing data to disk.
   bool AllocateBuffers(void);

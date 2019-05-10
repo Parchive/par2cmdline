@@ -201,8 +201,7 @@ bool CommandLine::ReadArgs(int argc, const char * const *argv)
 
   if (argc>0)
   {
-    if (argv[0][0] != 0 &&
-        argv[0][0] == '-')
+    if (argv[0][0] == '-')
     {
       if (argv[0] == string("-h") || argv[0] == string("--help"))
       {
@@ -726,8 +725,8 @@ bool CommandLine::ReadArgs(int argc, const char * const *argv)
           {
             usage();
             return false;
-            break;
           }
+	  // "break;" not needed.
 
         case 'R':
           {
@@ -1242,8 +1241,8 @@ bool CommandLine::ComputeRecoveryBlockCount(u32 *recoveryblockcount,
   }
   else if (redundancysize > 0)
   {
-    const u64 overhead_per_recovery_file = sourceblockcount * 21;
-    const u64 recovery_packet_size = blocksize + 70;
+    const u64 overhead_per_recovery_file = sourceblockcount * (u64) 21;
+    const u64 recovery_packet_size = blocksize + (u64) 70;
     if (recoveryfilecount == 0)
     {
       u32 estimatedFileCount = 15;

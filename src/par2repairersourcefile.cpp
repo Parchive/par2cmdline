@@ -29,17 +29,22 @@ static char THIS_FILE[]=__FILE__;
 
 Par2RepairerSourceFile::Par2RepairerSourceFile(DescriptionPacket *_descriptionpacket,
                                                VerificationPacket *_verificationpacket)
+: sourceblocks()
+, targetblocks()
+, targetfilename()
 {
-  firstblocknumber = 0;
-
   descriptionpacket = _descriptionpacket;
   verificationpacket = _verificationpacket;
+
+  blockcount = 0;
+  firstblocknumber = 0;
 
 //  verificationhashtable = 0;
 
   targetexists = false;
   targetfile = 0;
   completefile = 0;
+
 #ifdef _OPENMP
   diskfilesize = 0;
 #endif
@@ -64,7 +69,7 @@ void Par2RepairerSourceFile::SetVerificationPacket(VerificationPacket *_verifica
   verificationpacket = _verificationpacket;
 }
 
-void Par2RepairerSourceFile::ComputeTargetFileName(std::ostream &sout, std::ostream &serr, const NoiseLevel noiselevel, string path)
+void Par2RepairerSourceFile::ComputeTargetFileName(std::ostream &sout, std::ostream &serr, const NoiseLevel noiselevel, const string &path)
 {
   // Get a version of the filename compatible with the OS
   string filename = DescriptionPacket::TranslateFilenameFromPar2ToLocal(sout, serr, noiselevel, descriptionpacket->FileName());

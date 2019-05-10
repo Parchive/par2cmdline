@@ -27,8 +27,11 @@ class VerificationPacket : public CriticalPacket
 {
 public:
   // Construct the packet
-  VerificationPacket(void) {};
-  ~VerificationPacket(void) {};
+  VerificationPacket(void)
+    : blockcount(0)
+  {
+  }
+  ~VerificationPacket(void) {}
 
   // Create a packet large enough for the specified number of blocks
   bool Create(u32 blockcount);

@@ -37,12 +37,18 @@ FileCheckSummer::FileCheckSummer(DiskFile   *_diskfile,
 , blocksize(_blocksize)
 , windowtable(_windowtable)
 , windowmask(_windowmask)
+, filesize(_diskfile->FileSize())
+, currentoffset(0)
+, buffer(0)
+, outpointer(0)
+, inpointer(0)
+, tailpointer(0)
+, readoffset(0)
+, checksum(0)
+, contextfull()
+, context16k()
 {
   buffer = new char[(size_t)blocksize*2];
-
-  filesize = diskfile->FileSize();
-
-  currentoffset = 0;
 }
 
 FileCheckSummer::~FileCheckSummer(void)

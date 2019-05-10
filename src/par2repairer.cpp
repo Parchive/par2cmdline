@@ -38,18 +38,44 @@ Par2Repairer::Par2Repairer(std::ostream &sout, std::ostream &serr, const NoiseLe
 : sout(sout)
 , serr(serr)
 , noiselevel(noiselevel)
+, searchpath()
+, basepath()
+, setid()
+, recoverypacketmap()
+, diskFileMap()
+, sourcefilemap()
+, sourcefiles()
+, verifylist()
+, backuplist()
+, par2list()
+, sourceblocks()
+, targetblocks()
+, windowmask(0)
+, blockverifiable(false)
+, verificationhashtable()
+, unverifiablesourcefiles()
+, inputblocks()
+, copyblocks()
+, outputblocks()
+, rs()
 {
+  skipdata = false;
+  skipleaway = 0;
+
   firstpacket = true;
   mainpacket = 0;
   creatorpacket = 0;
 
   blocksize = 0;
+  chunksize = 0;
+
   sourceblockcount = 0;
-
-  blocksallocated = false;
-
   availableblockcount = 0;
   missingblockcount = 0;
+
+  memset(windowtable, 0, sizeof(windowtable));
+
+  blocksallocated = false;
 
   completefilecount = 0;
   renamedfilecount = 0;
@@ -59,8 +85,9 @@ Par2Repairer::Par2Repairer(std::ostream &sout, std::ostream &serr, const NoiseLe
   inputbuffer = 0;
   outputbuffer = 0;
 
-  skipdata = false;
-  skipleaway = 0;
+  progress = 0;
+  totaldata = 0;
+  
 #ifdef _OPENMP
   mttotalsize = 0;
   mttotalextrasize = 0;
@@ -1277,7 +1304,7 @@ bool Par2Repairer::VerifySourceFiles(const std::string& basepath, std::vector<st
 }
 
 // Scan any extra files specified on the command line
-bool Par2Repairer::VerifyExtraFiles(const vector<string> &extrafiles, string basepath)
+bool Par2Repairer::VerifyExtraFiles(const vector<string> &extrafiles, const string &basepath)
 {
   if (noiselevel > nlQuiet)
     sout << endl << "Scanning extra files:" << endl << endl;
@@ -1347,7 +1374,7 @@ bool Par2Repairer::VerifyExtraFiles(const vector<string> &extrafiles, string bas
 }
 
 // Attempt to match the data in the DiskFile with the source file
-bool Par2Repairer::VerifyDataFile(DiskFile *diskfile, Par2RepairerSourceFile *sourcefile, string basepath)
+bool Par2Repairer::VerifyDataFile(DiskFile *diskfile, Par2RepairerSourceFile *sourcefile, const string &basepath)
 {
   MatchType matchtype; // What type of match was made
   MD5Hash hashfull;    // The MD5 Hash of the whole file
@@ -1402,7 +1429,7 @@ bool Par2Repairer::VerifyDataFile(DiskFile *diskfile, Par2RepairerSourceFile *so
   // we can try a simple match of the hash for the whole file.
 
   // Are there any files that cannot be verified at the block level
-  if (unverifiablesourcefiles.size() > 0)
+  if (!unverifiablesourcefiles.empty())
   {
     // Would we have already computed the file hashes
     if (!blockverifiable)
@@ -2600,7 +2627,7 @@ bool Par2Repairer::ProcessData(u64 blockoffset, size_t blocklength)
 }
 
 // Verify that all of the reconstructed target files are now correct
-bool Par2Repairer::VerifyTargetFiles(string basepath)
+bool Par2Repairer::VerifyTargetFiles(const string &basepath)
 {
   bool finalresult = true;
 
@@ -2728,7 +2755,7 @@ bool Par2Repairer::RemoveBackupFiles(void)
 bool Par2Repairer::RemoveParFiles(void)
 {
   if (noiselevel > nlSilent
-      && par2list.size() > 0)
+      && !par2list.empty())
   {
     sout << endl << "Purge par files." << endl;
   }

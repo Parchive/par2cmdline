@@ -32,9 +32,10 @@ Par2CreatorSourceFile::Par2CreatorSourceFile(void)
   descriptionpacket = 0;
   verificationpacket = 0;
   diskfile = 0;
-  blockcount = 0;
+  filesize = 0;
   //diskfilename;
   //parfilename;
+  blockcount = 0;
   contextfull = 0;
 }
 

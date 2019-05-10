@@ -28,6 +28,8 @@ static char THIS_FILE[]=__FILE__;
 #endif
 
 RecoveryPacket::RecoveryPacket(void)
+: packet()
+, datablock()
 {
   diskfile = NULL;
   offset = 0;

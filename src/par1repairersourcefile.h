@@ -32,7 +32,7 @@ public:
 			 std::ostream &serr,
 			 const NoiseLevel noiselevel,
 			 PAR1FILEENTRY *fileentry,
-			 string searchpath);
+			 const string &searchpath);
   ~Par1RepairerSourceFile(void);
 
   string FileName(void) const {return filename;}

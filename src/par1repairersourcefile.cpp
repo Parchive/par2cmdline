@@ -27,14 +27,14 @@ static char THIS_FILE[]=__FILE__;
 #endif
 #endif
 
-Par1RepairerSourceFile::Par1RepairerSourceFile(std::ostream &sout, std::ostream &serr, const NoiseLevel noiselevel, PAR1FILEENTRY *fileentry, string searchpath)
+Par1RepairerSourceFile::Par1RepairerSourceFile(std::ostream &sout, std::ostream &serr, const NoiseLevel noiselevel, PAR1FILEENTRY *fileentry, const string &searchpath)
+: hashfull(fileentry->hashfull)
+, hash16k(fileentry->hash16k)
 {
   targetexists = false;
   targetfile = 0;
   completefile = 0;
 
-  hashfull = fileentry->hashfull;
-  hash16k = fileentry->hash16k;
   filesize = fileentry->filesize;
 
   u32 namelen = (u32)((fileentry->entrysize - offsetof(PAR1FILEENTRY, name)) / 2);

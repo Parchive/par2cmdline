@@ -47,8 +47,8 @@ public:
 
   // Open the file
   bool Open(void);
-  bool Open(string filename);
-  bool Open(string filename, u64 filesize);
+  bool Open(const string &filename);
+  bool Open(const string &filename, u64 filesize);
 
   // Check to see if the file is open
 #ifdef _WIN32
