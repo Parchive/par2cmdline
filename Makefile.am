@@ -160,7 +160,7 @@ TESTS = tests/test1 \
 		tests/test25 \
 		tests/test26 \
 		tests/test27 \
-		$(check_PROGRAMS) 
+		tests/unit_tests
 
 install-exec-hook :
 	ln -sf $(bindir)/par2$(EXEEXT) $(DESTDIR)$(bindir)/par2create$(EXEEXT)

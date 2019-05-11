@@ -1,0 +1,49 @@
+#!/bin/sh
+
+execdir="$PWD"
+
+
+for f in $execdir/tests/*_test
+do
+    # check that the filename exists.  If there are no files,
+    # Bourne shell will treat $execdir/tests/*_test like a
+    # literal string!
+    [ -f "$f" ] || continue
+
+    echo "------------------------------------------------------"
+    echo "Running unit tests from file $f"
+    echo "------------------------------------------------------"
+
+    if [ -n "${PARVALGRINDOPTS+set}" ]
+    then
+        PARBINARY="valgrind $PARVALGRINDOPTS $f"
+    else
+	PARBINARY="$f"
+    fi
+
+    $PARBINARY || { echo "ERROR: $f failed." ; exit 1; } >&2
+
+    echo "------------------------------------------------------"
+    echo "Unit test complete for file $f"
+    echo "------------------------------------------------------"
+done
+
+for f in $execdir/tests/*_test.exe
+do
+    # check that the filename exists.  If there are no files,
+    # Bourne shell will treat $execdir/tests/*_test like a
+    # literal string!
+    [ -f "$f" ] || continue
+    
+    echo "------------------------------------------------------"
+    echo "Running unit tests from file $f"
+    echo "------------------------------------------------------"
+
+    wine $f || { echo "ERROR: $f failed." ; exit 1; } >&2
+
+    echo "------------------------------------------------------"
+    echo "Unit test complete for file $f"
+    echo "------------------------------------------------------"
+done
+
+exit 0;
