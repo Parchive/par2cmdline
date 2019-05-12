@@ -100,7 +100,8 @@ EXTRA_DIST = PORTING ROADMAP \
 			 tests/test24 \
 			 tests/test25 \
 			 tests/test26 \
-			 tests/test27
+			 tests/test27 \
+			 tests/unit_tests
 
 
 # Programs that need to be compiled for the test suite.
