@@ -46,3 +46,89 @@ void CriticalPacket::FinishPacket(const MD5Hash &setid)
   packetcontext.Final(header->hash);
 }
 
+
+// Order is:
+// Main Packet
+// File Description Packet (sorted by FileID)
+// File Verification Packet  (sorted by FileID)
+// Creator Packet
+// Recovery Packet (sorted by exponent)
+
+bool CriticalPacket::CompareLess(const CriticalPacket* const &left, const CriticalPacket* const &right)
+{
+  PACKET_HEADER *left_header  = (PACKET_HEADER *)left->packetdata;
+  PACKET_HEADER *right_header = (PACKET_HEADER *)right->packetdata;
+
+  int left_value;
+  switch (left_header->type.type[8])
+  {
+  case 'M':
+    left_value = 0;
+    break;
+  case 'F':
+    left_value = 1;
+    break;
+  case 'I':
+    left_value = 2;
+    break;
+  case 'C':
+    left_value = 3;
+    break;
+  case 'R':
+    left_value = 4;
+    break;
+  default:
+    left_value = 5;
+    break;
+  }
+  
+  int right_value;
+  switch (right_header->type.type[8])
+  {
+  case 'M':
+    right_value = 0;
+    break;
+  case 'F':
+    right_value = 1;
+    break;
+  case 'I':
+    right_value = 2;
+    break;
+  case 'C':
+    right_value = 3;
+    break;
+  case 'R':
+    right_value = 4;
+    break;
+  default:
+    right_value = 5;
+    break;
+  }
+
+  if (left_value < right_value)
+    return true;
+  if (left_value > right_value)
+    return false;
+
+  if (left_value == 1) // file description packets
+  {
+    return ((FILEDESCRIPTIONPACKET *)left->packetdata)->fileid
+      < ((FILEDESCRIPTIONPACKET *)right->packetdata)->fileid;
+  }
+  else if (left_value == 2) // file verification packets
+  {
+    return ((FILEVERIFICATIONPACKET *)left->packetdata)->fileid
+      < ((FILEVERIFICATIONPACKET *)right->packetdata)->fileid;
+  }
+  else if (left_value == 4) // recovery packet
+  {
+    return ((RECOVERYBLOCKPACKET *)left->packetdata)->exponent
+      < ((RECOVERYBLOCKPACKET *)right->packetdata)->exponent;
+  }
+  else
+  {
+    // they're equal.
+    return false;
+  }
+}
+

@@ -604,6 +604,9 @@ bool Par2Creator::InitialiseOutputFiles(const string &parfilename)
   {
     recoveryfiles.resize(recoveryfilecount+1, DiskFile(sout, serr)); // pass default constructor.
 
+    // Sort critical packets, so we get consistency.
+    criticalpackets.sort(CriticalPacket::CompareLess);
+
     // Allocate packets to the output files
     {
       const MD5Hash &setid = mainpacket->SetId();
