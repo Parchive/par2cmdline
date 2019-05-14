@@ -33,10 +33,30 @@ MinGW/WINE
 	make clean	 
 	./configure --host=x86_64-w64-mingw32
 	make
-	make check 
 
-	To run Par2 with WINE, I just put "wine" in front.
+	To run Par2 with WINE, you need to tell it where
+	MinGW's copy of the DLLs are.  Start by trying to
+	run WINE by putting "wine" in front of your
+	par.exe command:
 	wine ./par2.exe create foo.par2 input1.txt input2.txt
+	If you get a warning about "libgomp.dll" or any other
+	DLL, use this command:
+	x86_64-w64-mingw32-g++ --print-file-name=libgomp.dll
+	which will tell you where to find MinGW's libgomp.dll.
+	You then convert that Linux path to WINE's Windows path
+	by running the command:
+	winepath <directory_with_DLLs>
+	On my machine, it just adds "z:" in front of the Linux
+	path.  You tell WINE about all the DLL directories by
+	putting those paths into the environment variable
+	WINEPATH, separated by semi-colons.  I use:
+	export WINEPATH="z:/usr/lib/gcc/x86_64-w64-mingw32/7.3-win32/;z:/usr/x86_64-w64-mingw32/lib/"
+	Then, you should be able to run "wine par2.exe --help"
+	to test that it works.
+
+	If WINE is working, you can run tests in WINE with
+	the command:
+	make check
 
 	WARNING: If the tests see that par2 or the unit tests have
 	an ".exe" extension, they will be automatically run with
