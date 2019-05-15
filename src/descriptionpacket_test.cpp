@@ -260,17 +260,20 @@ int test3() {
   
 
 int main() {
-  if (test1())
+  if (test1()) {
+    cerr << "FAILED: test1" << endl;
     return 1;
-  cout << "finished test 1" << endl;
+  }
+  if (test2()) {
+    cerr << "FAILED: test2" << endl;
+    return 1;
+  }
+  if (test3()) {
+    cerr << "FAILED: test3" << endl;
+    return 1;
+  }
 
-  if (test2())
-    return 1;
-  cout << "finished test 2" << endl;
-  
-  if (test3())
-    return 1;
-  cout << "finished test 3" << endl;
+  cout << "SUCCESS: descriptionpacket_test complete." << endl;
   
   return 0;
 }

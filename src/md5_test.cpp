@@ -237,12 +237,24 @@ int test4() {
 
 
 int main() {
-  if (test1()) return 1;
-  if (test2()) return 1;
-  if (test3()) return 1;
-  if (test4()) return 1;
+  if (test1()) {
+    cerr << "FAILED: test1" << endl;
+    return 1;
+  }
+  if (test2()) {
+    cerr << "FAILED: test2" << endl;
+    return 1;
+  }
+  if (test3()) {
+    cerr << "FAILED: test3" << endl;
+    return 1;
+  }
+  if (test4()) {
+    cerr << "FAILED: test4" << endl;
+    return 1;
+  }
   
-  cout << "Tests finished" << endl;
+  cout << "SUCCESS: md5_test complete." << endl;
 
   return 0;
 }

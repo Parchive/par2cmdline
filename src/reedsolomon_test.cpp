@@ -503,21 +503,23 @@ int test4(int NUM_IN, int *expected_bases) {
 
 
 int main() {
-  if (test1<Galois8,u8>())
+  if (test1<Galois8,u8>()) {
+    cerr << "FAILED: test1(8)" << endl;
     return 1;
-  cout << "finished test 1(8)" << endl;
+  }
+  if (test1<Galois16,u16>()) {
+    cerr << "FAILED: test1(16)" << endl;
+    return 1;
+  }
 
-  if (test1<Galois16,u16>())
+  if (test2<Galois8,u8>()) {
+    cerr << "FAILED: test2(8)" << endl;
     return 1;
-  cout << "finished test 1(16)" << endl;
-
-  if (test2<Galois8,u8>())
+  }
+  if (test2<Galois16,u16>()) {
+    cerr << "FAILED: test2(16)" << endl;
     return 1;
-  cout << "finished test 2(8)" << endl;
-
-  if (test2<Galois16,u16>())
-    return 1;
-  cout << "finished test 2(16)" << endl;
+  }
 
   // test3 used more parity blocks than missing source blocks.
   // The code should either work or not allow it.
@@ -525,18 +527,19 @@ int main() {
   //if (test3<Galois8,u8>()) return 1;  cout << "finished test 3(8)" << endl;
   //if (test3<Galois16,u16>()) return 1;  cout << "finished test 3(16)" << endl;
 
-
   // the values for Par1
   int expected_bases8[10] = {1,2,3,4,5,6,7,8,9,10};
-  if (test4<Galois8,u8>(10, expected_bases8))
+  if (test4<Galois8,u8>(10, expected_bases8)) {
+    cerr << "FAILED: test4(8)" << endl;
     return 1;
-  cout << "finished test 4(8)" << endl;
+  }
 
   // from the Par2 standard
   int expected_bases16[10] = {2, 4, 16, 128, 256, 2048, 8192, 16384, 4107, 32856};
-  if (test4<Galois16,u16>(10, expected_bases16))
+  if (test4<Galois16,u16>(10, expected_bases16)) {
+    cerr << "FAILED: test4(16)" << endl;
     return 1;
-  cout << "finished test 4(16)" << endl;
+  }
   
   return 0;
 }

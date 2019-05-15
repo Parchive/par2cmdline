@@ -1760,32 +1760,43 @@ int test12() {
 
 int main() {
   cout << "Tests 1 through 4 were moved to libpar2_test." << endl;
-  
-  if (test5())
-    return 1;
-  cout << "finished test 5" << endl;
-  if (test6())
-    return 1;
-  cout << "finished test 6" << endl;
-  if (test7())
-    return 1;
-  cout << "finished test 7" << endl;
-  if (test8())
-    return 1;
-  cout << "finished test 8" << endl;
 
-  if (test9())
+
+  if (test5()) {
+    cerr << "FAILED: test5" << endl;
     return 1;
-  cout << "finished test 9" << endl;
-  if (test10())
+  }
+  if (test6()) {
+    cerr << "FAILED: test6" << endl;
     return 1;
-  cout << "finished test 10" << endl;
-  if (test11())
+  }
+  if (test7()) {
+    cerr << "FAILED: test7" << endl;
     return 1;
-  cout << "finished test 11" << endl;
-  if (test12())
+  }
+  if (test8()) {
+    cerr << "FAILED: test8" << endl;
     return 1;
-  cout << "finished test 12" << endl;
+  }
+
+  if (test9()) {
+    cerr << "FAILED: test9" << endl;
+    return 1;
+  }
+  if (test10()) {
+    cerr << "FAILED: test10" << endl;
+    return 1;
+  }
+  if (test11()) {
+    cerr << "FAILED: test11" << endl;
+    return 1;
+  }
+  if (test12()) {
+    cerr << "FAILED: test12" << endl;
+    return 1;
+  }
+  
+  cout << "SUCCESS: commandline_test complete." << endl;
   
   return 0;
 }

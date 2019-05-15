@@ -72,9 +72,12 @@ int test1() {
 
 
 int main() {
-  if (test1())
+  if (test1()) {
+    cerr << "FAILED: test1" << endl;
     return 1;
-  cout << "finished test 1" << endl;
+  }
+
+  cout << "SUCCESS: criticalpacket_test complete." << endl;
   
   return 0;
 }

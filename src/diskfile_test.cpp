@@ -614,25 +614,28 @@ int test5() {
 
 
 int main() {
-  if (test1())
+  if (test1()) {
+    cerr << "FAILED: test1" << endl;
     return 1;
-  cout << "finished test 1" << endl;
+  }
+  if (test2()) {
+    cerr << "FAILED: test2" << endl;
+    return 1;
+  }
+  if (test3()) {
+    cerr << "FAILED: test3" << endl;
+    return 1;
+  }
+  if (test4()) {
+    cerr << "FAILED: test4" << endl;
+    return 1;
+  }
+  if (test5()) {
+    cerr << "FAILED: test5" << endl;
+    return 1;
+  }
 
-  if (test2())
-    return 1;
-  cout << "finished test 2" << endl;
-
-  if (test3())
-    return 1;
-  cout << "finished test 3" << endl;
-
-  if (test4())
-    return 1;
-  cout << "finished test 4" << endl;
-  
-  if (test5())
-    return 1;
-  cout << "finished test 5" << endl;
+  cout << "SUCCESS: diskfile_test complete." << endl;
   
   return 0;
 }

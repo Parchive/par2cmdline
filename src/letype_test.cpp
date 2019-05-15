@@ -151,14 +151,32 @@ int test6() {
 
 
 int main() {
-  if (test1()) return 1;
-  if (test2()) return 1;
-  if (test3()) return 1;
-  if (test4()) return 1;
-  if (test5()) return 1;
-  if (test6()) return 1;
+  if (test1()) {
+    cerr << "FAILED: test1" << endl;
+    return 1;
+  }
+  if (test2()) {
+    cerr << "FAILED: test2" << endl;
+    return 1;
+  }
+  if (test3()) {
+    cerr << "FAILED: test3" << endl;
+    return 1;
+  }
+  if (test4()) {
+    cerr << "FAILED: test4" << endl;
+    return 1;
+  }
+  if (test5()) {
+    cerr << "FAILED: test5" << endl;
+    return 1;
+  }
+  if (test6()) {
+    cerr << "FAILED: test6" << endl;
+    return 1;
+  }
 
-  cout << "Test complete." << endl;
+  cout << "SUCCESS: letype_test complete." << endl;
   
   return 0;
 }

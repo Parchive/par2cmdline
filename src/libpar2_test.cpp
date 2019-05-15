@@ -447,18 +447,24 @@ int test4() {
 
 
 int main() {
-  if (test1())
+  if (test1()) {
+    cerr << "FAILED: test1" << endl;
     return 1;
-  cout << "finished test 1" << endl;
-  if (test2())
+  }
+  if (test2()) {
+    cerr << "FAILED: test2" << endl;
     return 1;
-  cout << "finished test 2" << endl;
-  if (test3())
+  }
+  if (test3()) {
+    cerr << "FAILED: test3" << endl;
     return 1;
-  cout << "finished test 3" << endl;
-  if (test4())
+  }
+  if (test4()) {
+    cerr << "FAILED: test4" << endl;
     return 1;
-  cout << "finished test 4" << endl;
+  }
 
+  cout << "SUCCESS: libpar2_test complete." << endl;
+  
   return 0;
 }
