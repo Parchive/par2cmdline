@@ -458,7 +458,7 @@ int test9() {
     return 1;
 
   // missing input files for create
-  if (test9_helper("par2 create foo.par2 "))
+  if (test9_helper("par2 create foo.par2"))
     return 1;
   
   // wrong options for the chosen operation
