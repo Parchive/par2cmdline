@@ -117,13 +117,15 @@ int main(int argc, char *argv[])
 				  commandline->GetSkipData(),
 				  commandline->GetSkipLeaway());
               break;
-            case CommandLine::opNone:
+	    default:
               break;
           }
         }
         break;
       case CommandLine::opNone:
         result = eSuccess;
+        break;
+      default:
         break;
     }
   }
