@@ -47,7 +47,8 @@ Par1RepairerSourceFile::Par1RepairerSourceFile(std::ostream &sout, std::ostream 
     if (ch >= 256)
     {
       // Convert the Unicode character to two characters
-      filename += DescriptionPacket::UrlEncodeChar(ch);
+      filename += ch & 255;
+      filename += ch >> 8;
     }
     else
     {
