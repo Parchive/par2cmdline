@@ -186,6 +186,7 @@
     <ClCompile Include="src\diskfile.cpp" />
     <ClCompile Include="src\filechecksummer.cpp" />
     <ClCompile Include="src\galois.cpp" />
+    <ClCompile Include="src\libpar2.cpp" />
     <ClCompile Include="src\mainpacket.cpp" />
     <ClCompile Include="src\md5.cpp" />
     <ClCompile Include="src\par1fileformat.cpp" />
@@ -213,6 +214,7 @@
     <ClInclude Include="src\filechecksummer.h" />
     <ClInclude Include="src\galois.h" />
     <ClInclude Include="src\letype.h" />
+    <ClInclude Include="src\libpar2.h" />
     <ClInclude Include="src\mainpacket.h" />
     <ClInclude Include="src\md5.h" />
     <ClInclude Include="src\par1fileformat.h" />
