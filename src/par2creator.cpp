@@ -327,12 +327,12 @@ bool Par2Creator::OpenSourceFiles(const vector<string> &extrafiles, string basep
   u64 totalprogress = 0;
 
   //Total size of files for mt-progress line
-  for (u64 i=0; i<extrafiles.size(); ++i)
+  for (size_t i=0; i<extrafiles.size(); ++i)
     mttotalsize += DiskFile::GetFileSize(extrafiles[i]);
 #endif
 
   #pragma omp parallel for schedule(dynamic) num_threads(Par2Creator::GetFileThreads())
-  for (i64 i=0; i<(i64)extrafiles.size(); ++i)
+  for (size_t i=0; i<extrafiles.size(); ++i)
   {
 #ifdef _OPENMP
     if (openfailed)
