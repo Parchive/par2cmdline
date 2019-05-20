@@ -612,6 +612,123 @@ int test5() {
 }
 
 
+// Testing Read()/Write() where length > maxlength
+// To do this, the functions were modified to take
+// maxlength as a parameter.  In production code,
+// the default maxlength is like 2GB, which is too
+// large for fast tests.
+int test6() {
+  const char *input1_contents = "diskfile_test test6 input1.txt";
+
+  {
+    DiskFile diskfile(cout, cerr);
+    if (!diskfile.Create("input1.txt", strlen(input1_contents))) {
+      cout << "Create failed!" << endl;
+      return 1;
+    }
+
+    if (!diskfile.Write(0, input1_contents, strlen(input1_contents), 2)) {
+      cout << "Write failed 1" << endl;
+      return 1;
+    }
+
+    diskfile.Close();
+  }
+
+  {
+    DiskFile diskfile(cout, cerr);
+    
+    if (!diskfile.Open("input1.txt")) {
+      cout << "Open failed" << endl;
+      return 1;
+    }
+
+    const size_t buffer_len = strlen(input1_contents)+1;  // for end-of-string
+    u8 *buffer = new u8[buffer_len];
+    // put end-of-string in buffer.
+    buffer[buffer_len-1] = '\0';
+
+    if (!diskfile.Read(0, buffer, buffer_len - 1, 2)) {
+      cout << "Read whole file returned false" << endl;
+      return 1;
+    }
+
+    if (string(input1_contents) != (char *) buffer) {
+      cout << "Read did not read contents correctly" << endl;
+      cout << "read     \"" << buffer << "\"" << endl;
+      cout << "expected \"" << input1_contents << "\"" << endl;
+      return 1;
+    }
+
+    diskfile.Close();
+
+    remove("input1.txt");
+  }
+
+
+  const char *input2_contents = "diskfile_test test6 input2.txt is longer";
+
+  // try again, writing mid-file with different maxlength.
+  {
+    DiskFile diskfile(cout, cerr);
+    if (!diskfile.Create("input2.txt", strlen(input2_contents))) {
+      cout << "Create 2 failed." << endl;
+      return 1;
+    }
+
+    size_t midpoint = strlen(input2_contents);
+    if (!diskfile.Write(midpoint, input2_contents + midpoint, strlen(input2_contents) - midpoint, 3)) {
+      cout << "Write failed 2" << endl;
+      return 1;
+    }
+    if (!diskfile.Write(0, input2_contents, midpoint, 4)) {
+      cout << "Write failed 3" << endl;
+      return 1;
+    }
+      
+    diskfile.Close();
+  }
+
+
+  {
+    DiskFile diskfile(cout, cerr);
+    
+    if (!diskfile.Open("input2.txt")) {
+      cout << "Open failed" << endl;
+      return 1;
+    }
+
+    const size_t buffer_len = strlen(input2_contents)+1;  // for end-of-string
+    u8 *buffer = new u8[buffer_len];
+    // put end-of-string in buffer.
+    buffer[buffer_len-1] = '\0';
+
+
+    size_t midpoint = strlen(input2_contents) - 2;
+    if (!diskfile.Read(midpoint, buffer + midpoint, strlen(input2_contents) - midpoint, 4)) {
+      cout << "Read second half of file returned false" << endl;
+      return 1;
+    }
+    if (!diskfile.Read(0, buffer, midpoint, 3)) {
+      cout << "Read first half of file returned false" << endl;
+      return 1;
+    }
+
+    if (string(input2_contents) != (char *) buffer) {
+      cout << "Read did not read contents correctly" << endl;
+      cout << "read     \"" << buffer << "\"" << endl;
+      cout << "expected \"" << input2_contents << "\"" << endl;
+      return 1;
+    }
+
+    diskfile.Close();
+
+    remove("input2.txt");
+  }
+
+  return 0;
+}
+
 
 int main() {
   if (test1()) {
@@ -632,6 +749,10 @@ int main() {
   }
   if (test5()) {
     cerr << "FAILED: test5" << endl;
+    return 1;
+  }
+  if (test6()) {
+    cerr << "FAILED: test6" << endl;
     return 1;
   }
 

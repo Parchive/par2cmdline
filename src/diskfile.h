@@ -21,6 +21,19 @@
 #ifndef __DISKFILE_H__
 #define __DISKFILE_H__
 
+
+// MAX_LENGTH is the maximum read/write size.  It can be OS-dependant.
+// The "& ~7" is to make it 8-byte aligned.
+// LengthType is the type required for the read/write by the OS.
+#ifdef _WIN32
+#define MAX_LENGTH (0xffffffffUL & ~7)
+#define LengthType DWORD
+#else // !_WIN32
+#define MAX_LENGTH (0xffffffffUL & ~7)
+#define LengthType size_t
+#endif
+
+
 #include <list>
 using std::list;
 #include <map>
@@ -45,7 +58,9 @@ public:
   bool Create(string filename, u64 filesize);
 
   // Write some data to the file
-  bool Write(u64 offset, const void *buffer, size_t length);
+  // maxlength should be the default value, except during testing.
+  bool Write(u64 offset, const void *buffer, size_t length,
+	     LengthType maxlength = MAX_LENGTH);
 
   // Open the file
   bool Open(void);
@@ -60,7 +75,9 @@ public:
 #endif
 
   // Read some data from the file
-  bool Read(u64 offset, void *buffer, size_t length);
+  // maxlength should be the default value, except during testing.
+  bool Read(u64 offset, void *buffer, size_t length,
+	    LengthType maxlength = MAX_LENGTH);
 
   // Close the file
   void Close(void);
