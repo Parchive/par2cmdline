@@ -2,6 +2,7 @@
 //  repair tool). See http://parchive.sourceforge.net for details of PAR 2.0.
 //
 //  Copyright (c) 2003 Peter Brian Clements
+//  Copyright (c) 2019 Michael D. Nahas
 //
 //  par2cmdline is free software; you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License as published by
@@ -36,16 +37,18 @@ public:
                         DataBlock *_datablock,
                         bool _firstblock,
                         const FILEVERIFICATIONENTRY *_verificationentry)
-  {
-    sourcefile = _sourcefile;
-    datablock = _datablock;
-    firstblock = _firstblock;
 
-    crc = _verificationentry->crc;
-    hash = _verificationentry->hash;
-
-    left = right = same = next = 0;
-  }
+    : sourcefile(_sourcefile)
+    , datablock(_datablock)
+    , firstblock(_firstblock)
+    , crc(_verificationentry->crc)
+    , hash(_verificationentry->hash)
+    , left(0)
+    , right(0)
+    , same(0)
+    , next(0)
+    {
+    }
 
   ~VerificationHashEntry(void)
   {

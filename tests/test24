@@ -2,6 +2,19 @@
 
 execdir="$PWD"
 
+# valgrind tests memory usage.
+# wine allow for windows testing on linux
+if [ -n "${PARVALGRINDOPTS+set}" ]
+then
+    PARBINARY="valgrind $PARVALGRINDOPTS $execdir/par2"
+elif [ `which wine` != "" ] && [ -f "$execdir/par2.exe" ]
+then
+    PARBINARY="wine $execdir/par2.exe"
+else
+    PARBINARY="$execdir/par2"
+fi
+
+
 if [ -z "$srcdir" ] || [ "." = "$srcdir" ]; then
   srcdir="$PWD"
   TESTDATA="$srcdir/tests"
@@ -47,7 +60,7 @@ echo $dashes
 cd rundir
 
 rm -f "$faraway"/test-1.data "$faraway"/test-3.data
-"$execdir/par2" r -B"$faraway" "$faraway"/testdata.par2  || { echo "ERROR: repair of PAR 2.0 files failed" ; exit 1; } >&2
+$PARBINARY r -B"$faraway" "$faraway"/testdata.par2  || { echo "ERROR: repair of PAR 2.0 files failed" ; exit 1; } >&2
 cmp -s "$faraway"/test-1.data "$faraway"/test-1.data.orig && cmp -s "$faraway"/test-3.data "$faraway"/test-3.data.orig || { echo "ERROR: Repaired files do not match originals" ; exit 1; } >&2
 
 cd "$TESTROOT"

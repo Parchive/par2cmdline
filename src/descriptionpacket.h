@@ -2,6 +2,7 @@
 //  repair tool). See http://parchive.sourceforge.net for details of PAR 2.0.
 //
 //  Copyright (c) 2003 Peter Brian Clements
+//  Copyright (c) 2019 Michael D. Nahas
 //
 //  par2cmdline is free software; you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License as published by
@@ -55,6 +56,16 @@ public:
   // Get the Hash values from the packet
   const MD5Hash& HashFull(void) const;
   const MD5Hash& Hash16k(void) const;
+
+  // Used to encode characters we do not want, such as "\t" or ":".
+  // Function is public for easier testing.
+  static string UrlEncodeChar(char c);  
+
+  // Converts filename from local disk to how it will be encoded
+  // in the Par2 file, and back again.
+  static string TranslateFilenameFromLocalToPar2(std::ostream &sout, std::ostream &serr, const NoiseLevel noiselevel, string local_filename);
+  static string TranslateFilenameFromPar2ToLocal(std::ostream &sout, std::ostream &serr, const NoiseLevel noiselevel, string par2_encoded_filename);
+
 };
 
 // Get the file id from the packet

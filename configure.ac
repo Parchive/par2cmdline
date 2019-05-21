@@ -4,6 +4,7 @@ dnl
 dnl  Copyright (c) 2003-2015 Peter Brian Clements
 dnl  Copyright (c) 2011-2012 Marcel Partap
 dnl  Copyright (c) 2012-2015 Ike Devolder
+dnl  Copyright (c) 2019 Michael D. Nahas
 dnl
 dnl  par2cmdline is free software; you can redistribute it and/or modify
 dnl  it under the terms of the GNU General Public License as published by
@@ -34,6 +35,12 @@ AM_INIT_AUTOMAKE
 dnl Checks for programs.
 AC_PROG_CXX
 AC_PROG_INSTALL
+
+dnl Need to define RANLIB used in making static library.
+AC_PROG_RANLIB
+dnl gnu.org says the following may be needed for Microsoft libraries.
+AM_PROG_AR
+
 
 dnl Set language to C++
 AC_LANG(C++)

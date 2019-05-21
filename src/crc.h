@@ -2,6 +2,7 @@
 //  repair tool). See http://parchive.sourceforge.net for details of PAR 2.0.
 //
 //  Copyright (c) 2003 Peter Brian Clements
+//  Copyright (c) 2019 Michael D. Nahas
 //
 //  par2cmdline is free software; you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License as published by
@@ -49,6 +50,9 @@ struct crc32table
 extern crc32table ccitttable;
 
 // Update the CRC using one character
+//
+// This seems to follow:
+// http://www.efg2.com/Lab/Mathematics/CRC.htm
 inline u32 CRCUpdateChar(u32 crc, u8 ch)
 {
   return ((crc >> 8) & 0x00ffffffL) ^ ccitttable.table[(u8)crc ^ ch];

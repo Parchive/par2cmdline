@@ -2,6 +2,7 @@
 //  repair tool). See http://parchive.sourceforge.net for details of PAR 2.0.
 //
 //  Copyright (c) 2003 Peter Brian Clements
+//  Copyright (c) 2019 Michael D. Nahas
 //
 //  par2cmdline is free software; you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License as published by
@@ -30,8 +31,13 @@ class MainPacket : public CriticalPacket
 {
 public:
   // Construct the packet
-  MainPacket(void) {};
-  ~MainPacket(void) {};
+  MainPacket(void)
+    : blocksize(0)
+    , totalfilecount(0)
+    , recoverablefilecount(0)
+  {
+  }
+  ~MainPacket(void) {}
 
 public:
   // Construct the main packet from the source file list and block size.

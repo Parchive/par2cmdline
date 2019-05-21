@@ -44,6 +44,9 @@ public:
   // Finish a packet (by storing the set_id_hash and then computing the packet_hash).
   void    FinishPacket(const MD5Hash &set_id_hash);
 
+  // Sort critical packets by type and FileId
+  static bool CompareLess(const CriticalPacket* const &left, const CriticalPacket* const &right);
+
 protected:
   u8     *packetdata;
   size_t  packetlength;

@@ -85,7 +85,7 @@ int test2() {
       cerr << "hash1 and hash2 differ in location " << i << endl;
       cerr << "  hash1 = " << ((int) hash1.hash[i]) << endl;
       cerr << "  hash2 = " << ((int) hash2.hash[i]) << endl;
-      //return 1;
+      return 1;
     }
   }
   
@@ -237,11 +237,25 @@ int test4() {
 
 
 int main() {
-  if (test1()) return 1;
-  if (test2()) return 1;
-  if (test3()) return 1;
-  if (test4()) return 1;
+  if (test1()) {
+    cerr << "FAILED: test1" << endl;
+    return 1;
+  }
+  if (test2()) {
+    cerr << "FAILED: test2" << endl;
+    return 1;
+  }
+  if (test3()) {
+    cerr << "FAILED: test3" << endl;
+    return 1;
+  }
+  if (test4()) {
+    cerr << "FAILED: test4" << endl;
+    return 1;
+  }
   
+  cout << "SUCCESS: md5_test complete." << endl;
+
   return 0;
 }
   

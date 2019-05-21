@@ -2,6 +2,7 @@
 //  repair tool). See http://parchive.sourceforge.net for details of PAR 2.0.
 //
 //  Copyright (c) 2003 Peter Brian Clements
+//  Copyright (c) 2019 Michael D. Nahas
 //
 //  par2cmdline is free software; you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License as published by
@@ -20,7 +21,7 @@
 #ifndef __PARCMDLINE_H__
 #define __PARCMDLINE_H__
 
-#ifdef WIN32
+#ifdef _WIN32
 // Windows includes
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -48,15 +49,6 @@
 
 #define __BYTE_ORDER __LITTLE_ENDIAN
 
-typedef unsigned char    u8;
-typedef signed char      i8;
-typedef unsigned short   u16;
-typedef signed short     i16;
-typedef unsigned int     u32;
-typedef signed int       i32;
-typedef unsigned __int64 u64;
-typedef signed __int64   i64;
-
 #ifndef _SIZE_T_DEFINED
 #  ifdef _WIN64
 typedef unsigned __int64 size_t;
@@ -70,7 +62,7 @@ typedef unsigned int     size_t;
 #include <config.h>
 #endif
 
-#else // WIN32
+#else // _WIN32
 #ifdef HAVE_CONFIG_H
 
 #include <config.h>
@@ -122,31 +114,6 @@ char *strchr(), *strrchr();
 #  if HAVE_STRCASECMP
 #    define stricmp strcasecmp
 #  endif
-#endif
-
-#if HAVE_INTTYPES_H
-#  include <inttypes.h>
-#endif
-
-#if HAVE_STDINT_H
-#  include <stdint.h>
-typedef uint8_t            u8;
-typedef int8_t             i8;
-typedef uint16_t           u16;
-typedef int16_t            i16;
-typedef uint32_t           u32;
-typedef int32_t            i32;
-typedef uint64_t           u64;
-typedef int64_t            i64;
-#else
-typedef unsigned char      u8;
-typedef signed char        i8;
-typedef unsigned short     u16;
-typedef signed short       i16;
-typedef unsigned int       u32;
-typedef signed int         i32;
-typedef unsigned long long u64;
-typedef signed long long   i64;
 #endif
 
 #if HAVE_SYS_STAT_H
@@ -211,15 +178,10 @@ typedef signed long long   i64;
 #define stricmp strcasecmp
 #define _stat stat
 
-typedef   unsigned char        u8;
-typedef   unsigned short       u16;
-typedef   unsigned int         u32;
-typedef   unsigned long long   u64;
-
 #endif
 #endif
 
-#ifdef WIN32
+#ifdef _WIN32
 #define PATHSEP "\\"
 #define ALTPATHSEP "/"
 #else
@@ -229,47 +191,14 @@ typedef   unsigned long long   u64;
 
 #define _FILE_THREADS 2
 
-// Return type of par2cmdline
-typedef enum Result
-{
-  eSuccess                     = 0,
-
-  eRepairPossible              = 1,  // Data files are damaged and there is
-                                     // enough recovery data available to
-                                     // repair them.
-
-  eRepairNotPossible           = 2,  // Data files are damaged and there is
-                                     // insufficient recovery data available
-                                     // to be able to repair them.
-
-  eInvalidCommandLineArguments = 3,  // There was something wrong with the
-                                     // command line arguments
-
-  eInsufficientCriticalData    = 4,  // The PAR2 files did not contain sufficient
-                                     // information about the data files to be able
-                                     // to verify them.
-
-  eRepairFailed                = 5,  // Repair completed but the data files
-                                     // still appear to be damaged.
-
-
-  eFileIOError                 = 6,  // An error occurred when accessing files
-  eLogicError                  = 7,  // In internal error occurred
-  eMemoryError                 = 8,  // Out of memory
-
-} Result;
-
 #define LONGMULTIPLY
 
 // STL includes
-#include <string>
 #include <list>
-#include <vector>
 #include <map>
 #include <algorithm>
 
 #include <ctype.h>
-#include <iostream>
 #include <iomanip>
 
 #include <cassert>
@@ -281,14 +210,15 @@ using namespace std;
 #endif
 #define offsetof(TYPE, MEMBER) ((size_t) ((char*)(&((TYPE *)1)->MEMBER) - (char*)1))
 
-#include "letype.h"
 // par2cmdline includes
+#include "libpar2.h"
+
+#include "letype.h"
 
 #include "galois.h"
 #include "crc.h"
 #include "md5.h"
 #include "par2fileformat.h"
-#include "commandline.h"
 #include "reedsolomon.h"
 
 #include "diskfile.h"

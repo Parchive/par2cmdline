@@ -2,6 +2,19 @@
 
 execdir="$PWD"
 
+# valgrind tests memory usage.
+# wine allow for windows testing on linux
+if [ -n "${PARVALGRINDOPTS+set}" ]
+then
+    PARBINARY="valgrind $PARVALGRINDOPTS $execdir/par2"
+elif [ `which wine` != "" ] && [ -f "$execdir/par2.exe" ]
+then
+    PARBINARY="wine $execdir/par2.exe"
+else
+    PARBINARY="$execdir/par2"
+fi
+
+
 if [ -z "$srcdir" ] || [ "." = "$srcdir" ]; then
   srcdir="$PWD"
   TESTDATA="$srcdir/tests"
@@ -34,7 +47,7 @@ echo $dashes
 echo $banner
 echo $dashes
 
-"$execdir/par2" c -s1000 -c0 recovery myfile.dat || { echo "ERROR: Creating PAR 2.0 data failed" ; exit 1; } >&2
+$PARBINARY c -s1000 -c0 recovery myfile.dat || { echo "ERROR: Creating PAR 2.0 data failed" ; exit 1; } >&2
 
 banner="split files"
 dashes=`echo "$banner" | sed s/./-/g`
@@ -55,7 +68,7 @@ echo $dashes
 echo $banner
 echo $dashes
 
-"$execdir/par2" r recovery.par2 ./* || { echo "ERROR: PAR 2.0 repair failed" ; exit 1; } >&2
+$PARBINARY r recovery.par2 ./* || { echo "ERROR: PAR 2.0 repair failed" ; exit 1; } >&2
 
 cd "$TESTROOT"
 rm -rf "run$testname"

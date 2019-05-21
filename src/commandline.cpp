@@ -2,6 +2,7 @@
 //  repair tool). See http://parchive.sourceforge.net for details of PAR 2.0.
 //
 //  Copyright (c) 2003 Peter Brian Clements
+//  Copyright (c) 2019 Michael D. Nahas
 //
 //  par2cmdline is free software; you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License as published by
@@ -19,6 +20,14 @@
 
 #include "par2cmdline.h"
 
+// This is included here, so that cout and cerr are not used elsewhere.
+#include<iostream>
+
+#include "commandline.h"
+
+
+
+
 #ifdef _MSC_VER
 #ifdef _DEBUG
 #undef THIS_FILE
@@ -27,42 +36,24 @@ static char THIS_FILE[]=__FILE__;
 #endif
 #endif
 
-// Set default for filethreads
-#ifdef _OPENMP
-u32 CommandLine::filethreads = _FILE_THREADS;
-#endif
-
-CommandLine::ExtraFile::ExtraFile(void)
-: filename()
-, filesize(0)
-{
-}
-
-CommandLine::ExtraFile::ExtraFile(const CommandLine::ExtraFile &other)
-: filename(other.filename)
-, filesize(other.filesize)
-{
-}
-
-CommandLine::ExtraFile& CommandLine::ExtraFile::operator=(const CommandLine::ExtraFile &other)
-{
-  filename = other.filename;
-  filesize = other.filesize;
-
-  return *this;
-}
-
-CommandLine::ExtraFile::ExtraFile(const string &name, u64 size)
-: filename(name)
-, filesize(size)
-{
-}
-
 
 CommandLine::CommandLine(void)
-: operation(opNone)
+: filesize_cache()
 , version(verUnknown)
 , noiselevel(nlUnknown)
+, memorylimit(0)
+, basepath()
+#ifdef _OPENMP
+, nthreads(0) // 0 means use default number
+, filethreads( _FILE_THREADS ) // default from header file
+#endif
+, parfilename()
+, rawfilenames()
+, extrafiles()
+, operation(opNone)  
+, purgefiles(false)
+, skipdata(false)
+, skipleaway(0)
 , blockcount(0)
 , blocksize(0)
 , firstblock(0)
@@ -73,15 +64,7 @@ CommandLine::CommandLine(void)
 , redundancy(0)
 , redundancysize(0)
 , redundancyset(false)
-, parfilename()
-, extrafiles()
-, totalsourcesize(0)
-, largestsourcesize(0)
-, memorylimit(0)
-, purgefiles(false)
 , recursive(false)
-, skipdata(false)
-, skipleaway(0)
 {
 }
 
@@ -97,6 +80,7 @@ void CommandLine::banner(void)
     << "Copyright (C) 2011-2012 Marcel Partap." << endl
     << "Copyright (C) 2012-2017 Ike Devolder." << endl
     << "Copyright (C) 2014-2017 Jussi Kansanen." << endl
+    << "Copyright (C) 2019 Michael Nahas." << endl
     << endl
     << "par2cmdline comes with ABSOLUTELY NO WARRANTY." << endl
     << endl
@@ -122,8 +106,25 @@ void CommandLine::usage(void)
     "You may also leave out the \"c\", \"v\", and \"r\" commands by using \"par2create\",\n"
     "\"par2verify\", or \"par2repair\" instead.\n"
     "\n"
-    "Options:\n"
-    "\n"
+    "Options: (all uses)\n"
+    "  -B<path> : Set the basepath to use as reference for the datafiles\n"
+    "  -v [-v]  : Be more verbose\n"
+    "  -q [-q]  : Be more quiet (-q -q gives silence)\n"
+    "  -m<n>    : Memory (in MB) to use\n";
+#ifdef _OPENMP
+  cout <<
+    "  -t<n>    : Number of threads used for main processing (" << omp_get_max_threads() << " detected)\n"
+    "  -T<n>    : Number of files hashed in parallel\n"
+    "             (" << _FILE_THREADS << " are the default)\n";
+#endif
+  cout <<
+    "  --       : Treat all following arguments as filenames\n"
+    "Options: (verify or repair)\n"
+    "  -p       : Purge backup files and par files on successful recovery or\n"
+    "             when no recovery is needed\n"
+    "  -N       : Data skipping (find badly mispositioned data blocks)\n"
+    "  -S<n>    : Skip leaway (distance +/- from expected block position)\n"
+    "Options: (create)\n"
     "  -a<file> : Set the main PAR2 archive name\n"
     "  -b<n>    : Set the Block-Count\n"
     "  -s<n>    : Set the Block-Size (don't use both -b and -s)\n"
@@ -134,27 +135,59 @@ void CommandLine::usage(void)
     "  -u       : Uniform recovery file sizes\n"
     "  -l       : Limit size of recovery files (don't use both -u and -l)\n"
     "  -n<n>    : Number of recovery files (don't use both -n and -l)\n"
-    "  -m<n>    : Memory (in MB) to use\n";
-#ifdef _OPENMP
+    "  -R       : Recurse into subdirectories\n"
+    "\n";
   cout <<
-    "  -t<n>    : Number of threads used for main processing (" << omp_get_max_threads() << " detected)\n"
-    "  -T<n>    : Number of files hashed in parallel\n"
-    "             (file verification and creation stages, " << filethreads << " default)\n";
-#endif
-  cout <<
-    "  -v [-v]  : Be more verbose\n"
-    "  -q [-q]  : Be more quiet (-q -q gives silence)\n"
-    "  -p       : Purge backup files and par files on successful recovery or\n"
-    "             when no recovery is needed\n"
-    "  -R       : Recurse into subdirectories (only useful on create)\n"
-    "  -N       : Data skipping (find badly mispositioned data blocks)\n"
-    "  -S<n>    : Skip leaway (distance +/- from expected block position)\n"
-    "  -B<path> : Set the basepath to use as reference for the datafiles\n"
-    "  --       : Treat all following arguments as filenames\n"
+    "Example:\n"
+    "   par2 repair *.par2\n"
     "\n";
 }
 
-bool CommandLine::Parse(int argc, char *argv[])
+bool CommandLine::Parse(int argc, const char * const *argv)
+{
+  if (!ReadArgs(argc, argv))
+    return false;
+
+  if (operation != opNone) {  // user didn't do "par --help", etc.
+    if (!CheckValuesAndSetDefaults())
+      return false;
+  }
+
+  if (operation == opCreate) {
+    if (!ComputeBlockSize())
+      return false;
+
+    u64 sourceblockcount = 0;
+    u64 largestfilesize = 0;
+    for (vector<string>::const_iterator i=extrafiles.begin(); i!=extrafiles.end(); i++)
+    {
+      u64 filesize = filesize_cache.get(*i);
+      sourceblockcount += (filesize + blocksize-1) / blocksize;
+      if (filesize > largestfilesize)
+      {
+	largestfilesize = filesize;
+      }
+    }
+
+    if (!ComputeRecoveryBlockCount(&recoveryblockcount,
+				   sourceblockcount,
+				   blocksize,
+				   firstblock,
+				   recoveryfilescheme,
+				   recoveryfilecount,
+				   recoveryblockcountset,
+				   redundancy,
+				   redundancysize,
+				   largestfilesize))
+    {
+      return false;
+    }
+  }
+  
+  return true;
+}
+
+bool CommandLine::ReadArgs(int argc, const char * const *argv)
 {
   if (argc<1)
   {
@@ -169,32 +202,24 @@ bool CommandLine::Parse(int argc, char *argv[])
 
   if (argc>0)
   {
-    if (argv[0][0] != 0 &&
-        argv[0][0] == '-')
+    if (argv[0][0] == '-')
     {
-      if (argv[0][1] != 0)
+      if (argv[0] == string("-h") || argv[0] == string("--help"))
       {
-        switch (argv[0][1])
-        {
-        case 'h':
-          usage();
-          return true;
-        case 'V':
-          showversion();
-          if (argv[0][2] != 0 &&
-              argv[0][2] == 'V')
-          {
-            cout << endl;
-            banner();
-          }
-          return true;
-        case '-':
-          if (0 == stricmp(argv[0], "--help"))
-          {
-            usage();
-            return true;
-          }
-        }
+	usage();
+	return true;
+      }
+      else if (argv[0] == string("-V") || argv[0] == string("--version"))
+      {
+	showversion();
+	return true;
+      }
+      else if (argv[0] == string("-VV"))
+      {
+	showversion();
+	cout << endl;
+	banner();
+	return true;
       }
     }
   }
@@ -254,7 +279,6 @@ bool CommandLine::Parse(int argc, char *argv[])
   }
 
   bool options = true;
-  list<string> a_filenames;
   basepath = "";
 
   while (argc>0)
@@ -311,7 +335,7 @@ bool CommandLine::Parse(int argc, char *argv[])
               return false;
             }
 
-            char *p = &argv[0][2];
+            const char *p = &argv[0][2];
             while (blockcount <= 3276 && *p && isdigit(*p))
             {
               blockcount = blockcount * 10 + (*p - '0');
@@ -343,7 +367,7 @@ bool CommandLine::Parse(int argc, char *argv[])
               return false;
             }
 
-            char *p = &argv[0][2];
+            const char *p = &argv[0][2];
             while (blocksize <= 429496729 && *p && isdigit(*p))
             {
               blocksize = blocksize * 10 + (*p - '0');
@@ -365,8 +389,8 @@ bool CommandLine::Parse(int argc, char *argv[])
 #ifdef _OPENMP
         case 't':  // Set amount of threads
           {
-            u32 nthreads = 0;
-            char *p = &argv[0][2];
+            nthreads = 0;
+            const char *p = &argv[0][2];
 
             while (*p && isdigit(*p))
             {
@@ -379,17 +403,13 @@ bool CommandLine::Parse(int argc, char *argv[])
               cerr << "Invalid thread option: " << argv[0] << endl;
               return false;
             }
-
-            // Sets the number of threads to use
-            omp_set_num_threads(nthreads);
-
           }
           break;
 
         case 'T':  // Set amount of file threads
           {
             filethreads = 0;
-            char *p = &argv[0][2];
+            const char *p = &argv[0][2];
 
             while (*p && isdigit(*p))
             {
@@ -429,7 +449,7 @@ bool CommandLine::Parse(int argc, char *argv[])
                 || argv[0][2] == 'g'
             )
             {
-              char *p = &argv[0][3];
+              const char *p = &argv[0][3];
               while (*p && isdigit(*p))
               {
                 redundancysize = redundancysize * 10 + (*p - '0');
@@ -448,7 +468,7 @@ bool CommandLine::Parse(int argc, char *argv[])
             }
             else
             {
-              char *p = &argv[0][2];
+              const char *p = &argv[0][2];
               while (redundancy <= 10 && *p && isdigit(*p))
               {
                 redundancy = redundancy * 10 + (*p - '0');
@@ -487,7 +507,7 @@ bool CommandLine::Parse(int argc, char *argv[])
               return false;
             }
 
-            char *p = &argv[0][2];
+            const char *p = &argv[0][2];
             while (recoveryblockcount <= 32768 && *p && isdigit(*p))
             {
               recoveryblockcount = recoveryblockcount * 10 + (*p - '0');
@@ -520,7 +540,7 @@ bool CommandLine::Parse(int argc, char *argv[])
               return false;
             }
 
-            char *p = &argv[0][2];
+            const char *p = &argv[0][2];
             while (firstblock <= 3276 && *p && isdigit(*p))
             {
               firstblock = firstblock * 10 + (*p - '0');
@@ -607,7 +627,7 @@ bool CommandLine::Parse(int argc, char *argv[])
               return false;
             }
 
-            char *p = &argv[0][2];
+            const char *p = &argv[0][2];
             while (*p && isdigit(*p))
             {
               recoveryfilecount = recoveryfilecount * 10 + (*p - '0');
@@ -629,7 +649,7 @@ bool CommandLine::Parse(int argc, char *argv[])
               return false;
             }
 
-            char *p = &argv[0][2];
+            const char *p = &argv[0][2];
             while (*p && isdigit(*p))
             {
               memorylimit = memorylimit * 10 + (*p - '0');
@@ -706,8 +726,8 @@ bool CommandLine::Parse(int argc, char *argv[])
           {
             usage();
             return false;
-            break;
           }
+	  // "break;" not needed.
 
         case 'R':
           {
@@ -717,7 +737,8 @@ bool CommandLine::Parse(int argc, char *argv[])
             }
             else
             {
-              cerr << "Recursive has no impact except on creating." << endl;
+              cerr << "Cannot specific Recursive unless creating." << endl;
+              return false;
             }
           }
           break;
@@ -746,7 +767,7 @@ bool CommandLine::Parse(int argc, char *argv[])
               return false;
             }
 
-            char *p = &argv[0][2];
+            const char *p = &argv[0][2];
             while (skipleaway <= 429496729 && *p && isdigit(*p))
             {
               skipleaway = skipleaway * 10 + (*p - '0');
@@ -778,6 +799,13 @@ bool CommandLine::Parse(int argc, char *argv[])
 
         case '-':
           {
+	    if (argv[0] != string("--")) {
+              cerr << "Unknown option: " << argv[0] << endl;
+	      cerr << "  (Options must appear after create, repair or verify.)" << endl;
+	      cerr << "  (Run \"" << path << name << " --help\" for supported options.)" << endl;
+              return false;
+            }
+	      
             argc--;
             argv++;
             options = false;
@@ -803,22 +831,24 @@ bool CommandLine::Parse(int argc, char *argv[])
       }
       else
       {
-        list<string> *filenames;
 
         string path;
         string name;
         DiskFile::SplitFilename(argv[0], path, name);
-        filenames = DiskFile::FindFiles(path, name, recursive);
+	std::unique_ptr< list<string> > filenames(
+						DiskFile::FindFiles(path, name, recursive)
+						);
 
         list<string>::iterator fn = filenames->begin();
         while (fn != filenames->end())
         {
           // Convert filename from command line into a full path + filename
           string filename = DiskFile::GetCanonicalPathname(*fn);
-          a_filenames.push_back(filename);
+          rawfilenames.push_back(filename);
           ++fn;
         }
-        delete filenames;
+
+        // delete filenames;   Taken care of by unique_ptr<>
       }
     }
 
@@ -826,12 +856,103 @@ bool CommandLine::Parse(int argc, char *argv[])
     argv++;
   }
 
+  return true;
+}
+
+
+// This webpage has code to get physical memory size on many OSes
+// http://nadeausoftware.com/articles/2012/09/c_c_tip_how_get_physical_memory_size_system
+
+#ifdef _WIN32
+u64 CommandLine::GetTotalPhysicalMemory()
+{
+  u64 TotalPhysicalMemory = 0;
+  
+  HMODULE hLib = ::LoadLibraryA("kernel32.dll");
+  if (NULL != hLib)
+  {
+    BOOL (WINAPI *pfn)(LPMEMORYSTATUSEX) = (BOOL (WINAPI*)(LPMEMORYSTATUSEX))::GetProcAddress(hLib, "GlobalMemoryStatusEx");
+    
+    if (NULL != pfn)
+    {
+      MEMORYSTATUSEX mse;
+      mse.dwLength = sizeof(mse);
+      if (pfn(&mse))
+      {
+	TotalPhysicalMemory = mse.ullTotalPhys;
+      }
+    }
+    
+    ::FreeLibrary(hLib);
+  }
+  
+  if (TotalPhysicalMemory == 0)
+  {
+    MEMORYSTATUS ms;
+    ::ZeroMemory(&ms, sizeof(ms));
+    ::GlobalMemoryStatus(&ms);
+    
+    TotalPhysicalMemory = ms.dwTotalPhys;
+  }
+
+  return TotalPhysicalMemory;
+}
+#elif defined(_SC_PHYS_PAGES) && defined(_SC_PAGESIZE)
+// POSIX compliant OSes, including OSX/MacOS and Cygwin.  Also works for Linux.
+u64 CommandLine::GetTotalPhysicalMemory()
+{
+  long pages = sysconf(_SC_PHYS_PAGES);
+  long page_size = sysconf(_SC_PAGESIZE);  
+  return pages*page_size;
+}
+#else
+// default version == unable to request memory size
+u64 CommandLine::GetTotalPhysicalMemory()
+{
+  return 0;
+}
+#endif
+
+
+bool CommandLine::CheckValuesAndSetDefaults() {
   if (parfilename.length() == 0)
   {
     cerr << "You must specify a Recovery file." << endl;
     return false;
   }
 
+  
+  // Default noise level
+  if (noiselevel == nlUnknown)
+  {
+    noiselevel = nlNormal;
+  }
+
+  // Default memorylimit of 128MB
+  if (memorylimit == 0)
+  {
+    u64 TotalPhysicalMemory = GetTotalPhysicalMemory();
+
+    if (TotalPhysicalMemory == 0)
+    {
+      // Default/error case:
+      // NOTE: In 2019, Ubuntu's minimum requirements are 256MiB.
+      TotalPhysicalMemory = 256 * 1048576;
+    }
+
+    // Half of total physical memory
+    memorylimit = (size_t)(TotalPhysicalMemory / 1048576 / 2);
+  }
+  // convert to megabytes
+  memorylimit *= 1048576;
+
+  if (noiselevel >= nlDebug)
+  {
+    cout << "[DEBUG] memorylimit: " << memorylimit << " bytes" << endl;
+  }
+
+
+  // Default basepath  (uses parfilename)
   if ("" == basepath)
   {
     if (noiselevel >= nlDebug)
@@ -854,7 +975,7 @@ bool CommandLine::Parse(int argc, char *argv[])
   string lastchar = basepath.substr(basepath.length() -1);
   if ("/" != lastchar && "\\" != lastchar)
   {
-#ifdef WIN32
+#ifdef _WIN32
     basepath = basepath + "\\";
 #else
     basepath = basepath + "/";
@@ -866,12 +987,15 @@ bool CommandLine::Parse(int argc, char *argv[])
     cout << "[DEBUG] basepath: " << basepath << endl;
   }
 
-  // check correctness of files
-  list<string> b_filenames;
-  list<string>::iterator a_filenames_fn;
-  for (a_filenames_fn = a_filenames.begin(); a_filenames_fn != a_filenames.end(); ++a_filenames_fn)
+
+  // parfilename is checked earlier, because it is used by basepath.
+
+
+  // check extrafiles
+  list<string>::iterator rawfilenames_fn;
+  for (rawfilenames_fn = rawfilenames.begin(); rawfilenames_fn != rawfilenames.end(); ++rawfilenames_fn)
   {
-    string filename = *a_filenames_fn;
+    string filename = *rawfilenames_fn;
 
     // Originally, all specified files were supposed to exist, or the program
     // would stop with an error message. This was not practical, for example in
@@ -888,63 +1012,47 @@ bool CommandLine::Parse(int argc, char *argv[])
     }
     else
     {
-      u64 filesize = DiskFile::GetFileSize(filename);
+      u64 filesize = filesize_cache.get(filename);
 
       // Ignore all 0 byte files
       if (filesize == 0)
       {
         cout << "Skipping 0 byte file: " << filename << endl;
       }
-      else if (b_filenames.end() != find(b_filenames.begin(), b_filenames.end(), filename))
+      else if (extrafiles.end() != find(extrafiles.begin(), extrafiles.end(), filename))
       {
         cout << "Skipping duplicate filename: " << filename << endl;
       }
       else
       {
-        b_filenames.push_back(filename);
-        extrafiles.push_back(ExtraFile(filename, filesize));
-
-        // track the total size of the source files and how
-        // big the largest one is.
-        totalsourcesize += filesize;
-        if (largestsourcesize < filesize)
-          largestsourcesize = filesize;
+        extrafiles.push_back(filename);
       }
     } //end file exists
   }
 
-  // Default noise level
-  if (noiselevel == nlUnknown)
-  {
-    noiselevel = nlNormal;
+  
+  // operation should alway be set, but let's be thorough.
+  if (operation == opNone) {
+    cerr << "ERROR: No operation was specified (create, repair, or verify)" << endl;
+    return false;
   }
+  
 
-  // Default skip leaway
-  if (operation != opCreate
-      && skipdata
-      && skipleaway == 0)
-  {
-    // Expect to find blocks within +/- 64 bytes of the expected
-    // position relative to the last block that was found.
-    skipleaway = 64;
+  if (operation != opCreate) {
+    // skipdata is bool and either value is valid.
+
+    // Default skip leaway
+    if (skipdata && skipleaway == 0)
+    {
+      // Expect to find blocks within +/- 64 bytes of the expected
+      // position relative to the last block that was found.
+      skipleaway = 64;
+    }
   }
 
   // If we a creating, check the other parameters
   if (operation == opCreate)
   {
-    // If no recovery file size scheme is specified then use Variable
-    if (recoveryfilescheme == scUnknown)
-    {
-      recoveryfilescheme = scVariable;
-    }
-
-    // If neither block count not block size is specified
-    if (blockcount == 0 && blocksize == 0)
-    {
-      // Use a block count of 2000
-      blockcount = 2000;
-    }
-
     // If we are creating, the source files must be given.
     if (extrafiles.size() == 0)
     {
@@ -966,13 +1074,7 @@ bool CommandLine::Parse(int argc, char *argv[])
         if (DiskFile::FileExists(parfilename) &&
             (filesize = DiskFile::GetFileSize(parfilename)) > 0)
         {
-          extrafiles.push_back(ExtraFile(parfilename, filesize));
-
-          // track the total size of the source files and how
-          // big the largest one is.
-          totalsourcesize += filesize;
-          if (largestsourcesize < filesize)
-            largestsourcesize = filesize;
+          extrafiles.push_back(parfilename);
         }
         else
         {
@@ -990,62 +1092,227 @@ bool CommandLine::Parse(int argc, char *argv[])
       parfilename = parfilename.substr(0, parfilename.length()-5);
     }
 
+    // If neither block count not block size is specified
+    if (blockcount == 0 && blocksize == 0)
+    {
+      // Use a block count of 2000
+      blockcount = 2000;
+    }
+
+    // If no recovery file size scheme is specified then use Variable
+    if (recoveryfilescheme == scUnknown)
+    {
+      recoveryfilescheme = scVariable;
+    }
+
     // Assume a redundancy of 5% if neither redundancy or recoveryblockcount were set.
     if (!redundancyset && !recoveryblockcountset)
     {
       redundancy = 5;
+      redundancyset = true;
     }
   }
 
-  // Assume a memory limit of 16MB if not specified.
-  if (memorylimit == 0)
-  {
-#ifdef WIN32
-    u64 TotalPhysicalMemory = 0;
-
-    HMODULE hLib = ::LoadLibraryA("kernel32.dll");
-    if (NULL != hLib)
-    {
-      BOOL (WINAPI *pfn)(LPMEMORYSTATUSEX) = (BOOL (WINAPI*)(LPMEMORYSTATUSEX))::GetProcAddress(hLib, "GlobalMemoryStatusEx");
-
-      if (NULL != pfn)
-      {
-        MEMORYSTATUSEX mse;
-        mse.dwLength = sizeof(mse);
-        if (pfn(&mse))
-        {
-          TotalPhysicalMemory = mse.ullTotalPhys;
-        }
-      }
-
-      ::FreeLibrary(hLib);
-    }
-
-    if (TotalPhysicalMemory == 0)
-    {
-      MEMORYSTATUS ms;
-      ::ZeroMemory(&ms, sizeof(ms));
-      ::GlobalMemoryStatus(&ms);
-
-      TotalPhysicalMemory = ms.dwTotalPhys;
-    }
-
-    if (TotalPhysicalMemory == 0)
-    {
-      // Assume 128MB
-      TotalPhysicalMemory = 128 * 1048576;
-    }
-
-    // Half of total physical memory
-    memorylimit = (size_t)(TotalPhysicalMemory / 1048576 / 2);
-#else
-    memorylimit = 16;
-#endif
-  }
-  memorylimit *= 1048576;
 
   return true;
 }
+
+
+bool CommandLine::ComputeBlockSize() {
+
+  if (blocksize == 0) {
+    // compute value from blockcount
+
+    if (blockcount < extrafiles.size())
+    {
+      // The block count cannot be less than the number of files.
+
+      cerr << "Block count (" << blockcount <<
+              ") cannot be smaller than the number of files(" << extrafiles.size() << "). " << endl;
+      return false;
+    }
+    else if (blockcount == extrafiles.size())
+    {
+      // If the block count is the same as the number of files, then the block
+      // size is the size of the largest file (rounded up to a multiple of 4).
+
+      u64 largestfilesize = 0;
+      for (vector<string>::const_iterator i=extrafiles.begin(); i!=extrafiles.end(); i++)
+      {
+	u64 filesize = filesize_cache.get(*i);
+	if (filesize > largestfilesize)
+	{
+	  largestfilesize = filesize;
+	}
+      }
+      blocksize = (largestfilesize + 3) & ~3;
+    }
+    else
+    {
+      u64 totalsize = 0;
+      for (vector<string>::const_iterator i=extrafiles.begin(); i!=extrafiles.end(); i++)
+      {
+        totalsize += (filesize_cache.get(*i) + 3) / 4;
+      }
+
+      if (blockcount > totalsize)
+      {
+        blocksize = 4;
+      }
+      else
+      {
+        // Absolute lower bound and upper bound on the source block size that will
+        // result in the requested source block count.
+        u64 lowerBound = totalsize / blockcount;
+        u64 upperBound = (totalsize + blockcount - extrafiles.size() - 1) / (blockcount - extrafiles.size());
+
+        u64 count = 0;
+        u64 size;
+
+        do
+        {
+          size = (lowerBound + upperBound)/2;
+
+          count = 0;
+          for (vector<string>::const_iterator i=extrafiles.begin(); i!=extrafiles.end(); i++)
+          {
+            count += ((filesize_cache.get(*i)+3)/4 + size-1) / size;
+          }
+          if (count > blockcount)
+          {
+            lowerBound = size+1;
+            if (lowerBound >= upperBound)
+            {
+              size = lowerBound;
+              count = 0;
+              for (vector<string>::const_iterator i=extrafiles.begin(); i!=extrafiles.end(); i++)
+              {
+                count += ((filesize_cache.get(*i)+3)/4 + size-1) / size;
+              }
+            }
+          }
+          else
+          {
+            upperBound = size;
+          }
+        }
+        while (lowerBound < upperBound);
+
+        if (count > 32768)
+        {
+          cerr << "Error calculating block size. cannot be higher than 32768." << endl;
+          return false;
+        }
+        else if (count == 0)
+        {
+          cerr << "Error calculating block size. cannot be 0." << endl;
+          return false;
+        }
+
+        blocksize = size*4;
+      }
+    }
+  }
+  
+  return true;
+}
+
+
+// Determine how many recovery blocks to create based on the source block
+// count and the requested level of redundancy.
+bool CommandLine::ComputeRecoveryBlockCount(u32 *recoveryblockcount,
+					    u32 sourceblockcount,
+					    u64 blocksize,
+					    u32 firstblock,
+					    Scheme recoveryfilescheme,
+					    u32 recoveryfilecount,
+					    bool recoveryblockcountset,
+					    u32 redundancy,
+					    u64 redundancysize,
+					    u64 largestfilesize)
+{
+  if (recoveryblockcountset) {
+    // no need to assign value.
+    // pass through, so that value can be checked below.
+  }
+  else if (redundancy > 0)
+  {
+    // count is the number of input blocks
+
+    // Determine recoveryblockcount
+    *recoveryblockcount = (sourceblockcount * redundancy + 50) / 100;
+  }
+  else if (redundancysize > 0)
+  {
+    const u64 overhead_per_recovery_file = sourceblockcount * (u64) 21;
+    const u64 recovery_packet_size = blocksize + (u64) 70;
+    if (recoveryfilecount == 0)
+    {
+      u32 estimatedFileCount = 15;
+      u64 overhead = estimatedFileCount * overhead_per_recovery_file;
+      u64 estimatedrecoveryblockcount;
+      if (overhead > redundancysize)
+      {
+        estimatedrecoveryblockcount = 1;  // at least 1
+      }
+      else
+      {
+	estimatedrecoveryblockcount = (u32)((redundancysize - overhead) / recovery_packet_size);
+      }
+
+      // recoveryfilecount assigned below.
+      bool success = ComputeRecoveryFileCount(cout,
+					      cerr,
+					      &recoveryfilecount,
+					      recoveryfilescheme,
+					      estimatedrecoveryblockcount,
+					      largestfilesize,
+					      blocksize);
+      if (!success) {
+	return false;
+      }
+    }
+
+    const u64 overhead = recoveryfilecount * overhead_per_recovery_file;
+    if (overhead > redundancysize)
+    {
+      *recoveryblockcount = 1;  // at least 1
+    }
+    else
+    {
+      *recoveryblockcount = (u32)((redundancysize - overhead) / recovery_packet_size);
+    }
+  }
+  else
+  {
+    cerr << "Redundancy and Redundancysize not set." << endl;
+    return false;
+  }
+
+  // Force valid values if necessary
+  if (*recoveryblockcount == 0 && redundancy > 0)
+    *recoveryblockcount = 1;
+
+  if (*recoveryblockcount > 65536)
+  {
+    cerr << "Too many recovery blocks requested." << endl;
+    return false;
+  }
+
+  // Check that the last recovery block number would not be too large
+  if (firstblock + *recoveryblockcount >= 65536)
+  {
+    cerr << "First recovery block number is too high." << endl;
+    return false;
+  }
+
+  cout << endl;
+  return true;
+}
+
+
+
+
 
 bool CommandLine::SetParFilename(string filename)
 {

@@ -205,7 +205,7 @@ int generate_data(unsigned int seed, u8 data[][BUF_SIZE], int in_count, int reco
   ReedSolomon<gtype> rs_creator;
 
   //cout << "creator.setinput" << in_count << endl;
-  if (!rs_creator.SetInput(in_count)) {
+  if (!rs_creator.SetInput(in_count, cout, cerr)) {
     cerr << "rs_creator.SetInput returned false";
     return 1;
   }
@@ -215,7 +215,7 @@ int generate_data(unsigned int seed, u8 data[][BUF_SIZE], int in_count, int reco
     return 1;
   }
   //cout << "creator.compute" << endl;
-  if (!rs_creator.Compute(CommandLine::nlSilent)) {
+  if (!rs_creator.Compute(nlSilent, cout, cerr)) {
     cerr << "rs_creator.Compute returned false";
     return 1;
   }
@@ -238,7 +238,7 @@ int init_repair_rs(ReedSolomon<gtype> &rs_repair, vector<bool> &in_present, vect
   //for (unsigned int z = 0; z < in_present.size(); z++)
   //  cout << (in_present[z] ? " true": " false");
   //cout << endl;
-  if (!rs_repair.SetInput(in_present)) {
+  if (!rs_repair.SetInput(in_present, cout, cerr)) {
     cerr << "rs_repair.SetInput returned false";
     return 1;
   }
@@ -254,7 +254,7 @@ int init_repair_rs(ReedSolomon<gtype> &rs_repair, vector<bool> &in_present, vect
   }
   
   //cout << "Repair.compute" << endl;
-  if (!rs_repair.Compute(CommandLine::nlSilent)) {
+  if (!rs_repair.Compute(nlSilent, cout, cerr)) {
     cerr << "rs_repair.Compute returned false";
     return 1;
   }
@@ -462,7 +462,7 @@ int test4(int NUM_IN, int *expected_bases) {
   ReedSolomon<gtype> rs_creator;
 
   //cout << "creator.setinput" << NUM_IN << endl;
-  if (!rs_creator.SetInput(NUM_IN)) {
+  if (!rs_creator.SetInput(NUM_IN, cout, cerr)) {
     cerr << "rs_creator.SetInput returned false";
     return 1;
   }
@@ -472,7 +472,7 @@ int test4(int NUM_IN, int *expected_bases) {
     return 1;
   }
   //cout << "creator.compute" << endl;
-  if (!rs_creator.Compute(CommandLine::nlSilent)) {
+  if (!rs_creator.Compute(nlSilent, cout, cerr)) {
     cerr << "rs_creator.Compute returned false";
     return 1;
   }
@@ -493,7 +493,7 @@ int test4(int NUM_IN, int *expected_bases) {
       cerr << "base at location " << i << " did not match expected." << endl;
       cerr << "   base     = " << base << endl;
       cerr << "   expected = " << expected_bases[i] << endl;
-      //      return 1;
+      return 1;
     }
   }
 
@@ -503,21 +503,23 @@ int test4(int NUM_IN, int *expected_bases) {
 
 
 int main() {
-  if (test1<Galois8,u8>())
+  if (test1<Galois8,u8>()) {
+    cerr << "FAILED: test1(8)" << endl;
     return 1;
-  cout << "finished test 1(8)" << endl;
+  }
+  if (test1<Galois16,u16>()) {
+    cerr << "FAILED: test1(16)" << endl;
+    return 1;
+  }
 
-  if (test1<Galois16,u16>())
+  if (test2<Galois8,u8>()) {
+    cerr << "FAILED: test2(8)" << endl;
     return 1;
-  cout << "finished test 1(16)" << endl;
-
-  if (test2<Galois8,u8>())
+  }
+  if (test2<Galois16,u16>()) {
+    cerr << "FAILED: test2(16)" << endl;
     return 1;
-  cout << "finished test 2(8)" << endl;
-
-  if (test2<Galois16,u16>())
-    return 1;
-  cout << "finished test 2(16)" << endl;
+  }
 
   // test3 used more parity blocks than missing source blocks.
   // The code should either work or not allow it.
@@ -525,18 +527,19 @@ int main() {
   //if (test3<Galois8,u8>()) return 1;  cout << "finished test 3(8)" << endl;
   //if (test3<Galois16,u16>()) return 1;  cout << "finished test 3(16)" << endl;
 
-
   // the values for Par1
   int expected_bases8[10] = {1,2,3,4,5,6,7,8,9,10};
-  if (test4<Galois8,u8>(10, expected_bases8))
+  if (test4<Galois8,u8>(10, expected_bases8)) {
+    cerr << "FAILED: test4(8)" << endl;
     return 1;
-  cout << "finished test 4(8)" << endl;
+  }
 
   // from the Par2 standard
   int expected_bases16[10] = {2, 4, 16, 128, 256, 2048, 8192, 16384, 4107, 32856};
-  if (test4<Galois16,u16>(10, expected_bases16))
+  if (test4<Galois16,u16>(10, expected_bases16)) {
+    cerr << "FAILED: test4(16)" << endl;
     return 1;
-  cout << "finished test 4(16)" << endl;
+  }
   
   return 0;
 }

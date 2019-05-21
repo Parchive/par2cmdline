@@ -2,6 +2,7 @@
 //  repair tool). See http://parchive.sourceforge.net for details of PAR 2.0.
 //
 //  Copyright (c) 2003 Peter Brian Clements
+//  Copyright (c) 2019 Michael D. Nahas
 //
 //  par2cmdline is free software; you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License as published by
@@ -33,7 +34,7 @@ static char THIS_FILE[]=__FILE__;
 #endif
 
 
-#ifdef WIN32
+#ifdef _WIN32
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #define OffsetType __int64
@@ -41,7 +42,9 @@ static char THIS_FILE[]=__FILE__;
 #define LengthType unsigned int
 #define MaxLength 0xffffffffUL
 
-DiskFile::DiskFile(void)
+DiskFile::DiskFile(std::ostream &sout, std::ostream &serr)
+: sout(&sout)
+, serr(&serr)
 {
   filename = "";
   filesize = 0;
@@ -51,6 +54,7 @@ DiskFile::DiskFile(void)
 
   exists = false;
 }
+
 
 DiskFile::~DiskFile(void)
 {
@@ -78,7 +82,7 @@ bool DiskFile::CreateParentDirectory(string _pathname)
     {
       DWORD error = ::GetLastError();
 
-      cerr << "Could not create the " << path << " directory: " << ErrorMessage(error) << endl;
+      *serr << "Could not create the " << path << " directory: " << ErrorMessage(error) << endl;
 
       return false;
     }
@@ -104,7 +108,7 @@ bool DiskFile::Create(string _filename, u64 _filesize)
   {
     DWORD error = ::GetLastError();
 
-    cerr << "Could not create \"" << _filename << "\": " << ErrorMessage(error) << endl;
+    *serr << "Could not create \"" << _filename << "\": " << ErrorMessage(error) << endl;
 
     return false;
   }
@@ -120,7 +124,7 @@ bool DiskFile::Create(string _filename, u64 _filesize)
     {
       DWORD error = ::GetLastError();
 
-      cerr << "Could not set size of \"" << _filename << "\": " << ErrorMessage(error) << endl;
+      *serr << "Could not set size of \"" << _filename << "\": " << ErrorMessage(error) << endl;
 
       ::CloseHandle(hFile);
       hFile = INVALID_HANDLE_VALUE;
@@ -134,7 +138,7 @@ bool DiskFile::Create(string _filename, u64 _filesize)
     {
       DWORD error = ::GetLastError();
 
-      cerr << "Could not set size of \"" << _filename << "\": " << ErrorMessage(error) << endl;
+      *serr << "Could not set size of \"" << _filename << "\": " << ErrorMessage(error) << endl;
 
       ::CloseHandle(hFile);
       hFile = INVALID_HANDLE_VALUE;
@@ -167,7 +171,7 @@ bool DiskFile::Write(u64 _offset, const void *buffer, size_t length)
     {
       DWORD error = ::GetLastError();
 
-      cerr << "Could not write " << (u64)length << " bytes to \"" << filename << "\" at offset " << _offset << ": " << ErrorMessage(error) << endl;
+      *serr << "Could not write " << (u64)length << " bytes to \"" << filename << "\" at offset " << _offset << ": " << ErrorMessage(error) << endl;
 
       return false;
     }
@@ -176,7 +180,7 @@ bool DiskFile::Write(u64 _offset, const void *buffer, size_t length)
 
   if (length > MaxLength)
   {
-    cerr << "Could not write " << (u64)length << " bytes to \"" << filename << "\" at offset " << _offset << ": " << "Write too long" << endl;
+    *serr << "Could not write " << (u64)length << " bytes to \"" << filename << "\" at offset " << _offset << ": " << "Write too long" << endl;
 
     return false;
   }
@@ -189,7 +193,7 @@ bool DiskFile::Write(u64 _offset, const void *buffer, size_t length)
   {
     DWORD error = ::GetLastError();
 
-    cerr << "Could not write " << (u64)length << " bytes to \"" << filename << "\" at offset " << _offset << ": " << ErrorMessage(error) << endl;
+    *serr << "Could not write " << (u64)length << " bytes to \"" << filename << "\" at offset " << _offset << ": " << ErrorMessage(error) << endl;
 
     return false;
   }
@@ -206,7 +210,7 @@ bool DiskFile::Write(u64 _offset, const void *buffer, size_t length)
 
 // Open the file
 
-bool DiskFile::Open(string _filename, u64 _filesize)
+bool DiskFile::Open(const string &_filename, u64 _filesize)
 {
   assert(hFile == INVALID_HANDLE_VALUE);
 
@@ -224,7 +228,7 @@ bool DiskFile::Open(string _filename, u64 _filesize)
     case ERROR_PATH_NOT_FOUND:
       break;
     default:
-      cerr << "Could not open \"" << _filename << "\": " << ErrorMessage(error) << endl;
+      *serr << "Could not open \"" << _filename << "\": " << ErrorMessage(error) << endl;
     }
 
     return false;
@@ -253,7 +257,7 @@ bool DiskFile::Read(u64 _offset, void *buffer, size_t length)
     {
       DWORD error = ::GetLastError();
 
-      cerr << "Could not read " << (u64)length << " bytes from \"" << filename << "\" at offset " << _offset << ": " << ErrorMessage(error) << endl;
+      *serr << "Could not read " << (u64)length << " bytes from \"" << filename << "\" at offset " << _offset << ": " << ErrorMessage(error) << endl;
 
       return false;
     }
@@ -262,7 +266,7 @@ bool DiskFile::Read(u64 _offset, void *buffer, size_t length)
 
   if (length > MaxLength)
   {
-    cerr << "Could not read " << (u64)length << " bytes from \"" << filename << "\" at offset " << _offset << ": " << "Read too long" << endl;
+    *serr << "Could not read " << (u64)length << " bytes from \"" << filename << "\" at offset " << _offset << ": " << "Read too long" << endl;
 
     return false;
   }
@@ -275,7 +279,7 @@ bool DiskFile::Read(u64 _offset, void *buffer, size_t length)
   {
     DWORD error = ::GetLastError();
 
-    cerr << "Could not read " << (u64)length << " bytes from \"" << filename << "\" at offset " << _offset << ": " << ErrorMessage(error) << endl;
+    *serr << "Could not read " << (u64)length << " bytes from \"" << filename << "\" at offset " << _offset << ": " << ErrorMessage(error) << endl;
 
     return false;
   }
@@ -357,7 +361,7 @@ string DiskFile::GetCanonicalPathname(string filename)
   return longname;
 }
 
-list<string>* DiskFile::FindFiles(string path, string wildcard, bool recursive)
+std::unique_ptr< list<string> > DiskFile::FindFiles(string path, string wildcard, bool recursive)
 {
   // check path, if not ending with path separator, add one
   char pathend = *path.rbegin();
@@ -384,9 +388,10 @@ list<string>* DiskFile::FindFiles(string path, string wildcard, bool recursive)
           continue;
         }
 
-        list<string> *dirmatches;
         string nwwildcard="*";
-        dirmatches = DiskFile::FindFiles(fd.cFileName, nwwildcard, true);
+	std::unique_ptr< list<string> > dirmatches(
+						 DiskFile::FindFiles(fd.cFileName, nwwildcard, true)
+						 );
 
         matches->merge(*dirmatches);
       }
@@ -394,7 +399,7 @@ list<string>* DiskFile::FindFiles(string path, string wildcard, bool recursive)
     ::FindClose(h);
   }
 
-  return matches;
+  return std::unique_ptr< list<string> >(matches);
 }
 
 u64 DiskFile::GetFileSize(string filename)
@@ -411,7 +416,7 @@ u64 DiskFile::GetFileSize(string filename)
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-#else // !WIN32
+#else // !_WIN32
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #ifdef HAVE_FSEEKO
@@ -431,7 +436,9 @@ u64 DiskFile::GetFileSize(string filename)
 #define LengthType unsigned int
 #define MaxLength 0xffffffffUL
 
-DiskFile::DiskFile(void)
+DiskFile::DiskFile(std::ostream &sout, std::ostream &serr)
+: sout(&sout)
+, serr(&serr)
 {
   //filename;
   filesize = 0;
@@ -441,6 +448,7 @@ DiskFile::DiskFile(void)
 
   exists = false;
 }
+
 
 DiskFile::~DiskFile(void)
 {
@@ -466,7 +474,7 @@ bool DiskFile::CreateParentDirectory(string _pathname)
 
     if (mkdir(path.c_str(), S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH))
     {
-      cerr << "Could not create the " << path << " directory: " << strerror(errno) << endl;
+      *serr << "Could not create the " << path << " directory: " << strerror(errno) << endl;
       return false;
     }
   }
@@ -485,17 +493,25 @@ bool DiskFile::Create(string _filename, u64 _filesize)
   if (!DiskFile::CreateParentDirectory(filename))
     return false;
 
+  // This is after CreateParentDirectory because
+  // the Windows code would error out after too.
+  if (FileExists(filename))
+  {
+    *serr << "Could not create \"" << _filename << "\": File already exists." << endl;
+    return false;
+  }
+
   file = fopen(_filename.c_str(), "wb");
   if (file == 0)
   {
-    cerr << "Could not create " << _filename << ": " << strerror(errno) << endl;
+    *serr << "Could not create " << _filename << ": " << strerror(errno) << endl;
 
     return false;
   }
 
   if (_filesize > (u64)MaxOffset)
   {
-    cerr << "Requested file size for " << _filename << " is too large." << endl;
+    *serr << "Requested file size for " << _filename << " is too large." << endl;
     return false;
   }
 
@@ -503,7 +519,7 @@ bool DiskFile::Create(string _filename, u64 _filesize)
   {
     if (fseek(file, (OffsetType)_filesize-1, SEEK_SET))
     {
-      cerr << "Could not set end of file of " << _filename << ": " << strerror(errno) << endl;
+      *serr << "Could not set end of file of " << _filename << ": " << strerror(errno) << endl;
 
       fclose(file);
       file = 0;
@@ -513,7 +529,7 @@ bool DiskFile::Create(string _filename, u64 _filesize)
 
     if (1 != fwrite(&_filesize, 1, 1, file))
     {
-      cerr << "Could not set end of file of " << _filename << ": " << strerror(errno) << endl;
+      *serr << "Could not set end of file of " << _filename << ": " << strerror(errno) << endl;
 
       fclose(file);
       file = 0;
@@ -538,14 +554,14 @@ bool DiskFile::Write(u64 _offset, const void *buffer, size_t length)
   {
     if (_offset > (u64)MaxOffset)
     {
-        cerr << "Could not write " << (u64)length << " bytes to " << filename << " at offset " << _offset << endl;
+        *serr << "Could not write " << (u64)length << " bytes to " << filename << " at offset " << _offset << endl;
       return false;
     }
 
 
     if (fseek(file, (OffsetType)_offset, SEEK_SET))
     {
-      cerr << "Could not write " << (u64)length << " bytes to " << filename << " at offset " << _offset << ": " << strerror(errno) << endl;
+      *serr << "Could not write " << (u64)length << " bytes to " << filename << " at offset " << _offset << ": " << strerror(errno) << endl;
       return false;
     }
     offset = _offset;
@@ -553,13 +569,13 @@ bool DiskFile::Write(u64 _offset, const void *buffer, size_t length)
 
   if (length > MaxLength)
   {
-    cerr << "Could not write " << (u64)length << " bytes to " << filename << " at offset " << _offset << endl;
+    *serr << "Could not write " << (u64)length << " bytes to " << filename << " at offset " << _offset << endl;
     return false;
   }
 
   if (1 != fwrite(buffer, (LengthType)length, 1, file))
   {
-    cerr << "Could not write " << (u64)length << " bytes to " << filename << " at offset " << _offset << ": " << strerror(errno) << endl;
+    *serr << "Could not write " << (u64)length << " bytes to " << filename << " at offset " << _offset << ": " << strerror(errno) << endl;
     return false;
   }
 
@@ -575,7 +591,7 @@ bool DiskFile::Write(u64 _offset, const void *buffer, size_t length)
 
 // Open the file
 
-bool DiskFile::Open(string _filename, u64 _filesize)
+bool DiskFile::Open(const string &_filename, u64 _filesize)
 {
   assert(file == 0);
 
@@ -584,7 +600,7 @@ bool DiskFile::Open(string _filename, u64 _filesize)
 
   if (_filesize > (u64)MaxOffset)
   {
-    cerr << "File size for " << _filename << " is too large." << endl;
+    *serr << "File size for " << _filename << " is too large." << endl;
     return false;
   }
 
@@ -610,14 +626,14 @@ bool DiskFile::Read(u64 _offset, void *buffer, size_t length)
   {
     if (_offset > (u64)MaxOffset)
     {
-      cerr << "Could not read " << (u64)length << " bytes from " << filename << " at offset " << _offset << endl;
+      *serr << "Could not read " << (u64)length << " bytes from " << filename << " at offset " << _offset << endl;
       return false;
     }
 
 
     if (fseek(file, (OffsetType)_offset, SEEK_SET))
     {
-      cerr << "Could not read " << (u64)length << " bytes from " << filename << " at offset " << _offset << ": " << strerror(errno) << endl;
+      *serr << "Could not read " << (u64)length << " bytes from " << filename << " at offset " << _offset << ": " << strerror(errno) << endl;
       return false;
     }
     offset = _offset;
@@ -625,13 +641,13 @@ bool DiskFile::Read(u64 _offset, void *buffer, size_t length)
 
   if (length > MaxLength)
   {
-    cerr << "Could not read " << (u64)length << " bytes from " << filename << " at offset " << _offset << endl;
+    *serr << "Could not read " << (u64)length << " bytes from " << filename << " at offset " << _offset << endl;
     return false;
   }
 
   if (1 != fread(buffer, (LengthType)length, 1, file))
   {
-    cerr << "Could not read " << (u64)length << " bytes from " << filename << " at offset " << _offset << ": " << strerror(errno) << endl;
+    *serr << "Could not read " << (u64)length << " bytes from " << filename << " at offset " << _offset << ": " << strerror(errno) << endl;
     return false;
   }
 
@@ -722,7 +738,7 @@ string DiskFile::GetCanonicalPathname(string filename)
   return result;
 }
 
-list<string>* DiskFile::FindFiles(string path, string wildcard, bool recursive)
+std::unique_ptr< list<string> > DiskFile::FindFiles(string path, string wildcard, bool recursive)
 {
   // check path, if not ending with path separator, add one
   char pathend = *path.rbegin();
@@ -766,10 +782,10 @@ list<string>* DiskFile::FindFiles(string path, string wildcard, bool recursive)
                   recursive == true)
               {
 
-                list<string> *dirmatches;
                 string nwwildcard="*";
-                dirmatches = DiskFile::FindFiles(fn, nwwildcard, true);
-
+                std::unique_ptr< list<string> > dirmatches(
+							 DiskFile::FindFiles(fn, nwwildcard, true)
+							 );
                 matches->merge(*dirmatches);
               }
               else if (S_ISREG(st.st_mode))
@@ -803,9 +819,10 @@ list<string>* DiskFile::FindFiles(string path, string wildcard, bool recursive)
                     recursive == true)
                 {
 
-                  list<string> *dirmatches;
                   string nwwildcard="*";
-                  dirmatches = DiskFile::FindFiles(fn, nwwildcard, true);
+		  std::unique_ptr< list<string> > dirmatches(
+							   DiskFile::FindFiles(fn, nwwildcard, true)
+							   );
 
                   matches->merge(*dirmatches);
                 }
@@ -831,10 +848,10 @@ list<string>* DiskFile::FindFiles(string path, string wildcard, bool recursive)
       if (S_ISDIR(st.st_mode) &&
           recursive == true)
       {
-
-        list<string> *dirmatches;
         string nwwildcard="*";
-        dirmatches = DiskFile::FindFiles(fn, nwwildcard, true);
+	std::unique_ptr< list<string> > dirmatches(
+						 DiskFile::FindFiles(fn, nwwildcard, true)
+						 );
 
         matches->merge(*dirmatches);
       }
@@ -845,7 +862,7 @@ list<string>* DiskFile::FindFiles(string path, string wildcard, bool recursive)
     }
   }
 
-  return matches;
+  return std::unique_ptr< list<string> >(matches);
 }
 
 u64 DiskFile::GetFileSize(string filename)
@@ -870,7 +887,7 @@ bool DiskFile::Open(void)
   return Open(_filename);
 }
 
-bool DiskFile::Open(string _filename)
+bool DiskFile::Open(const string &_filename)
 {
   return Open(_filename, GetFileSize(_filename));
 }
@@ -879,7 +896,7 @@ bool DiskFile::Open(string _filename)
 
 bool DiskFile::Delete(void)
 {
-#ifdef WIN32
+#ifdef _WIN32
   assert(hFile == INVALID_HANDLE_VALUE);
 #else
   assert(file == 0);
@@ -887,11 +904,12 @@ bool DiskFile::Delete(void)
 
   if (filename.size() > 0 && 0 == unlink(filename.c_str()))
   {
+    exists = false;
     return true;
   }
   else
   {
-    cerr << "Cannot delete " << filename << endl;
+    *serr << "Cannot delete " << filename << endl;
 
     return false;
   }
@@ -941,73 +959,6 @@ bool DiskFile::FileExists(string filename)
   return ((0 == stat(filename.c_str(), &st)) && (0 != (st.st_mode & S_IFREG)));
 }
 
-// Take a filename from a PAR2 file and replace any characters
-// which would be illegal for a file on disk
-string DiskFile::TranslateFilename(string filename)
-{
-  string result;
-
-  string::iterator p = filename.begin();
-  while (p != filename.end())
-  {
-    unsigned char ch = *p;
-
-    bool ok = true;
-#ifdef WIN32
-    if (ch < 32)
-    {
-      ok = false;
-    }
-    else
-    {
-      switch (ch)
-      {
-      case '"':
-      case '*':
-      case ':':
-      case '<':
-      case '>':
-      case '?':
-      case '|':
-        ok = false;
-      }
-    }
-#else
-    if (ch < 32)
-    {
-      ok = false;
-    }
-#endif
-
-    // replace unix / to windows \ or windows \ to unix /
-#ifdef WIN32
-    if (ch == '/') {
-      ch = '\\';
-    }
-#else
-    if (ch == '\\') {
-      ch = '/';
-    }
-#endif
-
-
-    if (ok)
-    {
-      result += ch;
-    }
-    else
-    {
-      // convert problem characters to hex
-      result += ((ch >> 4) < 10) ? (ch >> 4) + '0' : (ch >> 4) + 'A'-10;
-      result += ((ch & 0xf) < 10) ? (ch & 0xf) + '0' : (ch & 0xf) + 'A'-10;
-    }
-
-    ++p;
-  }
-
-  return result;
-}
-
 bool DiskFile::Rename(void)
 {
   char newname[_MAX_PATH+1];
@@ -1017,15 +968,15 @@ bool DiskFile::Rename(void)
 
   do
   {
-    int length = snprintf(newname, _MAX_PATH, "%s.%d", filename.c_str(), ++index);
+    int length = snprintf(newname, _MAX_PATH, "%s.%u", filename.c_str(), (unsigned int) ++index);
     if (length < 0)
     {
-      cerr << filename << " cannot be renamed." << endl;
+      *serr << filename << " cannot be renamed." << endl;
       return false;
     }
     else if (length > _MAX_PATH)
     {
-      cerr << filename << " pathlength is more than " << _MAX_PATH << "." << endl;
+      *serr << filename << " pathlength is more than " << _MAX_PATH << "." << endl;
       return false;
     }
     newname[length] = 0;
@@ -1036,7 +987,7 @@ bool DiskFile::Rename(void)
 
 bool DiskFile::Rename(string _filename)
 {
-#ifdef WIN32
+#ifdef _WIN32
   assert(hFile == INVALID_HANDLE_VALUE);
 #else
   assert(file == 0);
@@ -1050,13 +1001,13 @@ bool DiskFile::Rename(string _filename)
   }
   else
   {
-    cerr << filename << " cannot be renamed to " << _filename << endl;
+    *serr << filename << " cannot be renamed to " << _filename << endl;
 
     return false;
   }
 }
 
-#ifdef WIN32
+#ifdef _WIN32
 string DiskFile::ErrorMessage(DWORD error)
 {
   string result;
@@ -1124,4 +1075,25 @@ DiskFile* DiskFileMap::Find(string filename) const
   map<string, DiskFile*>::const_iterator f = diskfilemap.find(filename);
 
   return (f != diskfilemap.end()) ?  f->second : 0;
+}
+
+
+FileSizeCache::FileSizeCache()
+{
+}
+
+u64 FileSizeCache::get(const string &filename) {
+  map<string, u64>::const_iterator f = cache.find(filename);
+  if (f != cache.end())
+    return f->second;
+
+  // go to disk
+  u64 filesize = DiskFile::GetFileSize(filename);
+
+  cache.insert(pair<string,u64>(filename, filesize));
+  //  pair<map<string,u64>::const_iterator,bool> location = cache.insert(pair<string,u64>(filename, filesize));
+  //  if (!location.second) {
+  //    throw exception?
+  //  }
+  return filesize;
 }

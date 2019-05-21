@@ -1,3 +1,76 @@
+I'm using this file for notes to developers.
+
+
+-----------------------------------
+Programs to help you test your code
+-----------------------------------
+
+
+Cppcheck
+	Cppcheck is a program that will run a static analysis of the code
+	report likely errors.  I used the command:
+	cppcheck --enable=all src/*.cpp > cppcheck_output.txt 2>&1
+
+Valgrind
+	Valgrind is an program that tracks memory usage.  So, if you
+	forget to free memory or use memory after it has been freed,
+	it will print out a warning.  To run Par2 with Valgrind, you
+	the command is:
+	valgrind --leak-check=yes par2 create foo.par2 input1.txt input2.txt
+
+	The tests will run with Valgrind if you set the environment
+	variable "VALGRINDOPTS".  That environment variable is put
+	on the commandline after "valgrind".  So, I use:
+	export PARVALGRINDOPTS="--leak-check=yes"
+
+MinGW/WINE
+	If you are on a UNIX box and want to check the Windows code,
+	you can compile using MinGW and run using WINE.  MinGW is a
+	package for compiling with GCC against Windows libraries.
+	WINE is a Windows simulator.  
+
+	To compile with MinGW, I use the commands:
+	make clean	 
+	./configure --host=x86_64-w64-mingw32
+	make
+
+	To run Par2 with WINE, you need to tell it where
+	MinGW's copy of the DLLs are.  Start by trying to
+	run WINE by putting "wine" in front of your
+	par.exe command:
+	wine ./par2.exe create foo.par2 input1.txt input2.txt
+	If you get a warning about "libgomp.dll" or any other
+	DLL, use this command:
+	x86_64-w64-mingw32-g++ --print-file-name=libgomp.dll
+	which will tell you where to find MinGW's libgomp.dll.
+	You then convert that Linux path to WINE's Windows path
+	by running the command:
+	winepath <directory_with_DLLs>
+	On my machine, it just adds "z:" in front of the Linux
+	path.  You tell WINE about all the DLL directories by
+	putting those paths into the environment variable
+	WINEPATH, separated by semi-colons.  I use:
+	export WINEPATH="z:/usr/lib/gcc/x86_64-w64-mingw32/7.3-win32/;z:/usr/x86_64-w64-mingw32/lib/"
+	Then, you should be able to run "wine par2.exe --help"
+	to test that it works.
+
+	If WINE is working, you can run tests in WINE with
+	the command:
+	make check
+
+	WARNING: If the tests see that par2 or the unit tests have
+	an ".exe" extension, they will be automatically run with
+	WINE.  When switching from MinGW to normal GCC, you need
+	to run "make clean" or the tests may run the wrong version
+	(or run both versions).
+
+
+
+-----------------------------------------
+Below are some older notes about the code
+-----------------------------------------
+
+
 commandline.h / commandline.cpp
 
 	class CommandLine;

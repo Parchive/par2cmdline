@@ -2,6 +2,7 @@
 //  repair tool). See http://parchive.sourceforge.net for details of PAR 2.0.
 //
 //  Copyright (c) 2003 Peter Brian Clements
+//  Copyright (c) 2019 Michael D. Nahas
 //
 //  par2cmdline is free software; you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License as published by
@@ -32,9 +33,10 @@ Par2CreatorSourceFile::Par2CreatorSourceFile(void)
   descriptionpacket = 0;
   verificationpacket = 0;
   diskfile = 0;
-  blockcount = 0;
+  filesize = 0;
   //diskfilename;
   //parfilename;
+  blockcount = 0;
   contextfull = 0;
 }
 
@@ -51,14 +53,14 @@ Par2CreatorSourceFile::~Par2CreatorSourceFile(void)
 // in a file description packet and a file verification packet.
 
 #ifdef _OPENMP
-bool Par2CreatorSourceFile::Open(CommandLine::NoiseLevel noiselevel, const CommandLine::ExtraFile &extrafile, u64 blocksize, bool deferhashcomputation, string basepath, u64 totalsize, u64 &totalprogress)
+bool Par2CreatorSourceFile::Open(NoiseLevel noiselevel, std::ostream &sout, std::ostream &serr, const string &extrafile, u64 blocksize, bool deferhashcomputation, string basepath, u64 totalsize, u64 &totalprogress)
 #else
-bool Par2CreatorSourceFile::Open(CommandLine::NoiseLevel noiselevel, const CommandLine::ExtraFile &extrafile, u64 blocksize, bool deferhashcomputation, string basepath)
+bool Par2CreatorSourceFile::Open(NoiseLevel noiselevel, std::ostream &sout, std::ostream &serr, const string &extrafile, u64 blocksize, bool deferhashcomputation, string basepath)
 #endif
 {
   // Get the filename and filesize
-  diskfilename = extrafile.FileName();
-  filesize = extrafile.FileSize();
+  diskfilename = extrafile;
+  filesize = DiskFile::GetFileSize(extrafile);
 
   // Work out how many blocks the file will be sliced into
   blockcount = (u32)((filesize + blocksize-1) / blocksize);
@@ -66,7 +68,8 @@ bool Par2CreatorSourceFile::Open(CommandLine::NoiseLevel noiselevel, const Comma
   // Determine what filename to record in the PAR2 files
   parfilename = diskfilename;
   parfilename.erase(0, basepath.length());
-
+  parfilename = DescriptionPacket::TranslateFilenameFromLocalToPar2(sout, serr, noiselevel, parfilename);
+  
   // Create the Description and Verification packets
   descriptionpacket = new DescriptionPacket;
   descriptionpacket->Create(parfilename, filesize);
@@ -75,7 +78,7 @@ bool Par2CreatorSourceFile::Open(CommandLine::NoiseLevel noiselevel, const Comma
   verificationpacket->Create(blockcount);
 
   // Create the diskfile object
-  diskfile  = new DiskFile;
+  diskfile  = new DiskFile(sout, serr);
 
   // Open the source file
   if (!diskfile->Open(diskfilename, filesize))
@@ -209,7 +212,7 @@ bool Par2CreatorSourceFile::Open(CommandLine::NoiseLevel noiselevel, const Comma
         }
       }
 
-      if (noiselevel > CommandLine::nlQuiet)
+      if (noiselevel > nlQuiet)
       {
         // Display progress
 #ifdef _OPENMP
@@ -225,7 +228,7 @@ bool Par2CreatorSourceFile::Open(CommandLine::NoiseLevel noiselevel, const Comma
         if (oldfraction != newfraction)
         {
           #pragma omp critical
-          cout << newfraction/10 << '.' << newfraction%10 << "%\r" << flush;
+          sout << newfraction/10 << '.' << newfraction%10 << "%\r" << flush;
         }
       }
 

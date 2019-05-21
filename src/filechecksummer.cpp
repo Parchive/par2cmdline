@@ -2,6 +2,7 @@
 //  repair tool). See http://parchive.sourceforge.net for details of PAR 2.0.
 //
 //  Copyright (c) 2003 Peter Brian Clements
+//  Copyright (c) 2019 Michael D. Nahas
 //
 //  par2cmdline is free software; you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License as published by
@@ -37,12 +38,18 @@ FileCheckSummer::FileCheckSummer(DiskFile   *_diskfile,
 , blocksize(_blocksize)
 , windowtable(_windowtable)
 , windowmask(_windowmask)
+, filesize(_diskfile->FileSize())
+, currentoffset(0)
+, buffer(0)
+, outpointer(0)
+, inpointer(0)
+, tailpointer(0)
+, readoffset(0)
+, checksum(0)
+, contextfull()
+, context16k()
 {
   buffer = new char[(size_t)blocksize*2];
-
-  filesize = diskfile->FileSize();
-
-  currentoffset = 0;
 }
 
 FileCheckSummer::~FileCheckSummer(void)

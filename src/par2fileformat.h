@@ -2,6 +2,7 @@
 //  repair tool). See http://parchive.sourceforge.net for details of PAR 2.0.
 //
 //  Copyright (c) 2003 Peter Brian Clements
+//  Copyright (c) 2019 Michael D. Nahas
 //
 //  par2cmdline is free software; you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License as published by
@@ -39,7 +40,7 @@
 //  Creator Packet                     struct CREATORPACKET
 
 
-#ifdef WIN32
+#ifdef _WIN32
 #pragma pack(push, 1)
 #define PACKED
 #else
@@ -159,7 +160,7 @@ struct RECOVERYBLOCKPACKET
 #pragma warning(default:4200)
 #endif
 
-#ifdef WIN32
+#ifdef _WIN32
 #pragma pack(pop)
 #endif
 #undef PACKED

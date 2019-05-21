@@ -2,6 +2,7 @@
 //  repair tool). See http://parchive.sourceforge.net for details of PAR 2.0.
 //
 //  Copyright (c) 2003 Peter Brian Clements
+//  Copyright (c) 2019 Michael D. Nahas
 //
 //  par2cmdline is free software; you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License as published by
@@ -20,13 +21,21 @@
 #ifndef __DISKFILE_H__
 #define __DISKFILE_H__
 
+#include <list>
+using std::list;
+#include <map>
+using std::map;
+#include <vector>
+using std::vector;
+#include <memory>
+
 // A disk file can be any type of file that par2cmdline needs
 // to read or write data from or to.
 
 class DiskFile
 {
 public:
-  DiskFile(void);
+  DiskFile(std::ostream &sout, std::ostream &serr);
   ~DiskFile(void);
 
   // Ensures the specified path's parent directory exists
@@ -40,11 +49,11 @@ public:
 
   // Open the file
   bool Open(void);
-  bool Open(string filename);
-  bool Open(string filename, u64 filesize);
+  bool Open(const string &filename);
+  bool Open(const string &filename, u64 filesize);
 
   // Check to see if the file is open
-#ifdef WIN32
+#ifdef _WIN32
   bool IsOpen(void) const {return hFile != INVALID_HANDLE_VALUE;}
 #else
   bool IsOpen(void) const {return file != 0;}
@@ -77,7 +86,6 @@ public:
 
   static void SplitFilename(string filename, string &path, string &name);
   static void SplitRelativeFilename(string filename, string basepath, string &name);
-  static string TranslateFilename(string filename);
   static std::string SplitRelativeFilename(const std::string& filename, const std::string& basepath)
   {
     std::string ret;
@@ -90,14 +98,20 @@ public:
 
   // Search the specified path for files which match the specified wildcard
   // and return their names in a list.
-  static list<string>* FindFiles(string path, string wildcard, bool recursive);
+  static std::unique_ptr< list<string> > FindFiles(string path, string wildcard, bool recursive);
 
 protected:
+  // NOTE: These are pointers so that the operator= works correctly.
+  // The references used elsewhere cannot be reassigned.
+  // (Operator= is needed when vectors are resized.)
+  std::ostream *sout; // stream for output (for commandline, this is cout)
+  std::ostream *serr; // stream for errors (for commandline, this is cerr)
+  
   string filename;
   u64    filesize;
 
   // OS file handle
-#ifdef WIN32
+#ifdef _WIN32
   HANDLE hFile;
 #else
   FILE *file;
@@ -110,7 +124,7 @@ protected:
   bool   exists;
 
 protected:
-#ifdef WIN32
+#ifdef _WIN32
   static string ErrorMessage(DWORD error);
 #endif
 };
@@ -130,6 +144,15 @@ public:
 
 protected:
   map<string, DiskFile*>    diskfilemap;             // Map from filename to DiskFile
+};
+
+class FileSizeCache
+{
+public:  
+  FileSizeCache();
+  u64 get(const string &filename);
+protected:
+  map<string, u64> cache; 
 };
 
 #endif // __DISKFILE_H__

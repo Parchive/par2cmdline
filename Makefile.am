@@ -2,6 +2,7 @@
 ##  repair tool). See http://parchive.sourceforge.net for details of PAR 2.0.
 ##
 ##  Copyright (c) 2003 Peter Brian Clements
+##  Copyright (c) 2019 Michael D. Nahas
 ##
 ##  par2cmdline is free software; you can redistribute it and/or modify
 ##  it under the terms of the GNU General Public License as published by
@@ -21,12 +22,8 @@ AUTOMAKE_OPTIONS = subdir-objects
 
 .DELETE_ON_ERROR:
 
-bin_PROGRAMS = par2
-man_MANS = man/par2.1
-
-par2_SOURCES = src/par2cmdline.cpp src/par2cmdline.h \
-	src/commandline.cpp src/commandline.h \
-	src/crc.cpp src/crc.h \
+noinst_LIBRARIES = libpar2.a
+libpar2_a_SOURCES = src/crc.cpp src/crc.h \
 	src/creatorpacket.cpp src/creatorpacket.h \
 	src/criticalpacket.cpp src/criticalpacket.h \
 	src/datablock.cpp src/datablock.h \
@@ -48,10 +45,19 @@ par2_SOURCES = src/par2cmdline.cpp src/par2cmdline.h \
 	src/recoverypacket.cpp src/recoverypacket.h \
 	src/reedsolomon.cpp src/reedsolomon.h \
 	src/verificationhashtable.cpp src/verificationhashtable.h \
-	src/verificationpacket.cpp src/verificationpacket.h
+	src/verificationpacket.cpp src/verificationpacket.h \
+	src/libpar2.cpp src/libpar2.h
+
+
+bin_PROGRAMS = par2
+man_MANS = man/par2.1
+
+par2_SOURCES = src/par2cmdline.cpp src/par2cmdline.h \
+	src/commandline.cpp src/commandline.h
+par2_LDADD = libpar2.a
 
 LDADD = -lstdc++
-AM_CXXFLAGS = -Wall $(OPENMP_CXXFLAGS)
+AM_CXXFLAGS = -Wall -std=c++11 $(OPENMP_CXXFLAGS)
 
 EXTRA_DIST = PORTING ROADMAP \
 			 man/par2.1 \
@@ -95,12 +101,13 @@ EXTRA_DIST = PORTING ROADMAP \
 			 tests/test24 \
 			 tests/test25 \
 			 tests/test26 \
-			 tests/test27
+			 tests/test27 \
+			 tests/unit_tests
 
 
 # Programs that need to be compiled for the test suite.
 # These are the unit tests.  
-check_PROGRAMS = tests/letype_test tests/crc_test tests/md5_test tests/reedsolomon_test tests/galois_test 
+check_PROGRAMS = tests/letype_test tests/crc_test tests/md5_test tests/diskfile_test tests/libpar2_test tests/commandline_test tests/descriptionpacket_test tests/criticalpacket_test tests/reedsolomon_test tests/galois_test 
 
 tests_letype_test_SOURCES = src/letype_test.cpp src/letype.h
 
@@ -108,10 +115,23 @@ tests_crc_test_SOURCES = src/crc_test.cpp src/crc.cpp src/crc.h
 
 tests_md5_test_SOURCES = src/md5_test.cpp src/md5.cpp src/md5.h
 
+tests_diskfile_test_SOURCES = src/diskfile_test.cpp src/diskfile.cpp src/diskfile.h
+
+tests_libpar2_test_SOURCES = src/libpar2_test.cpp src/libpar2.h
+tests_libpar2_test_LDADD = libpar2.a
+
+tests_commandline_test_SOURCES = src/commandline_test.cpp src/commandline.cpp src/commandline.h 
+tests_commandline_test_LDADD = libpar2.a
+
+tests_descriptionpacket_test_SOURCES = src/descriptionpacket_test.cpp src/descriptionpacket.cpp src/descriptionpacket.h
+tests_descriptionpacket_test_LDADD = libpar2.a
+
+tests_criticalpacket_test_SOURCES = src/criticalpacket_test.cpp src/criticalpacket.cpp src/criticalpacket.h
+tests_criticalpacket_test_LDADD = libpar2.a
+
 tests_reedsolomon_test_SOURCES = src/reedsolomon_test.cpp src/reedsolomon.cpp src/reedsolomon.h
 
 tests_galois_test_SOURCES = src/galois_test.cpp src/galois.cpp src/galois.h
-
 
 
 # List of all tests.
@@ -145,7 +165,7 @@ TESTS = tests/test1 \
 		tests/test25 \
 		tests/test26 \
 		tests/test27 \
-		$(check_PROGRAMS) 
+		tests/unit_tests
 
 install-exec-hook :
 	ln -sf $(bindir)/par2$(EXEEXT) $(DESTDIR)$(bindir)/par2create$(EXEEXT)

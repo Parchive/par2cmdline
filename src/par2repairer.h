@@ -2,6 +2,7 @@
 //  repair tool). See http://parchive.sourceforge.net for details of PAR 2.0.
 //
 //  Copyright (c) 2003 Peter Brian Clements
+//  Copyright (c) 2019 Michael D. Nahas
 //
 //  par2cmdline is free software; you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License as published by
@@ -20,13 +21,26 @@
 #ifndef __PAR2REPAIRER_H__
 #define __PAR2REPAIRER_H__
 
+
 class Par2Repairer
 {
 public:
-  Par2Repairer(void);
+  Par2Repairer(std::ostream &sout, std::ostream &serr, const NoiseLevel noiselevel);
   ~Par2Repairer(void);
 
-  Result Process(const CommandLine &commandline, bool dorepair);
+  Result Process(const size_t memorylimit,
+		 const string &basepath,
+#ifdef _OPENMP
+		 const u32 nthreads,
+		 const u32 filethreads,
+#endif
+		 string parfilename,
+		 const vector<string> &extrafiles,
+		 const bool dorepair,   // derived from operation
+		 const bool purgefiles,
+		 const bool skipdata,
+		 const u64 skipleaway
+		 );
 
 protected:
   // Steps in verifying and repairing files:
@@ -48,7 +62,7 @@ protected:
   bool LoadPacketsFromOtherFiles(string filename);
 
   // Load packets from any other PAR2 files whose names are given on the command line
-  bool LoadPacketsFromExtraFiles(const vector<CommandLine::ExtraFile> &extrafiles);
+  bool LoadPacketsFromExtraFiles(const vector<string> &extrafiles);
 
   // Check that the packets are consistent and discard any that are not
   bool CheckPacketConsistency(void);
@@ -70,13 +84,13 @@ protected:
   bool ComputeWindowTable(void);
 
   // Attempt to verify all of the source files
-  bool VerifySourceFiles(const std::string& basepath, std::vector<CommandLine::ExtraFile>& extrafiles);
+  bool VerifySourceFiles(const std::string& basepath, std::vector<string>& extrafiles);
 
   // Scan any extra files specified on the command line
-  bool VerifyExtraFiles(const vector<CommandLine::ExtraFile> &extrafiles, string basepath);
+  bool VerifyExtraFiles(const vector<string> &extrafiles, const string &basepath);
 
   // Attempt to match the data in the DiskFile with the source file
-  bool VerifyDataFile(DiskFile *diskfile, Par2RepairerSourceFile *sourcefile, string basepath);
+  bool VerifyDataFile(DiskFile *diskfile, Par2RepairerSourceFile *sourcefile, const string &basepath);
 
   // Perform a sliding window scan of the DiskFile looking for blocks of data that
   // might belong to any of the source files (for which a verification packet was
@@ -116,7 +130,7 @@ protected:
   bool ProcessData(u64 blockoffset, size_t blocklength);
 
   // Verify that all of the reconstructed target files are now correct
-  bool VerifyTargetFiles(string basepath);
+  bool VerifyTargetFiles(const string &basepath);
 
   // Delete all of the partly reconstructed files
   bool DeleteIncompleteTargetFiles(void);
@@ -125,13 +139,24 @@ protected:
   bool RemoveBackupFiles(void);
   bool RemoveParFiles(void);
 
+#ifdef _OPENMP
+  static u32                          GetFileThreads(void) {return filethreads;}
+#endif
+  
 protected:
-  CommandLine::NoiseLevel   noiselevel;              // OnScreen display
+  std::ostream &sout; // stream for output (for commandline, this is cout)
+  std::ostream &serr; // stream for errors (for commandline, this is cerr)
+
+  const NoiseLevel noiselevel;              // OnScreen display
 
   string                    searchpath;              // Where to find files on disk
 
   std::string               basepath;
 
+#ifdef _OPENMP
+  static u32 filethreads;      // Number of threads for file processing
+#endif
+  
   bool                      skipdata;                // Should we skip data whilst scanning
   u64                       skipleaway;              // The leaway +/- we should allow whilst scanning
 

@@ -2,6 +2,7 @@
 //  repair tool). See http://parchive.sourceforge.net for details of PAR 2.0.
 //
 //  Copyright (c) 2003 Peter Brian Clements
+//  Copyright (c) 2019 Michael D. Nahas
 //
 //  par2cmdline is free software; you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License as published by
@@ -28,7 +29,11 @@ class Par1RepairerSourceFile
 {
 public:
   // Construct the object and set the description and verification packets
-  Par1RepairerSourceFile(PAR1FILEENTRY *fileentry, string searchpath);
+  Par1RepairerSourceFile(std::ostream &sout,
+			 std::ostream &serr,
+			 const NoiseLevel noiselevel,
+			 PAR1FILEENTRY *fileentry,
+			 const string &searchpath);
   ~Par1RepairerSourceFile(void);
 
   string FileName(void) const {return filename;}

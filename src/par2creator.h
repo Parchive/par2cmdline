@@ -2,6 +2,7 @@
 //  repair tool). See http://parchive.sourceforge.net for details of PAR 2.0.
 //
 //  Copyright (c) 2003 Peter Brian Clements
+//  Copyright (c) 2019 Michael D. Nahas
 //
 //  par2cmdline is free software; you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License as published by
@@ -24,35 +25,42 @@ class MainPacket;
 class CreatorPacket;
 class CriticalPacket;
 
+
 class Par2Creator
 {
 public:
-  Par2Creator(void);
+  Par2Creator(std::ostream &sout, std::ostream &serr, const NoiseLevel noiselevel);
   ~Par2Creator(void);
 
   // Create recovery files from the source files specified on the command line
-  Result Process(const CommandLine &commandline);
+  Result Process(const size_t memorylimit,
+		 const string &basepath,
+#ifdef _OPENMP
+		 const u32 nthreads,
+		 const u32 filethreads,
+#endif
+		 const string &parfilename,
+		 const vector<string> &extrafiles,
+		 const u64 blocksize,
+		 const u32 firstblock,
+		 const Scheme recoveryfilescheme,
+		 const u32 recoveryfilecount,
+		 const u32 recoveryblockcount
+		 );
 
 protected:
   // Steps in the creation process:
 
   // Compute block size from block count or vice versa depending on which was
   // specified on the command line
-  bool ComputeBlockSizeAndBlockCount(const vector<CommandLine::ExtraFile> &extrafiles);
-
-  // Determine how many recovery blocks to create based on the source block
-  // count and the requested level of redundancy.
-  bool ComputeRecoveryBlockCount(u32 redundancy, u64 redundancysize);
+  bool ComputeBlockCount(const vector<string> &extrafiles);
 
   // Determine how much recovery data can be computed on one pass
   bool CalculateProcessBlockSize(size_t memorylimit);
 
-  // Determine how many recovery files to create.
-  bool ComputeRecoveryFileCount(void);
-
   // Open all of the source files, compute the Hashes and CRC values, and store
   // the results in the file verification and file description packets.
-  bool OpenSourceFiles(const vector<CommandLine::ExtraFile> &extrafiles, string basepath);
+  bool OpenSourceFiles(const vector<string> &extrafiles, string basepath);
 
   // Create the main packet and determine the set_id_hash to use with all packets
   bool CreateMainPacket(void);
@@ -64,7 +72,7 @@ protected:
   bool CreateSourceBlocks(void);
 
   // Create all of the output files and allocate all packets to appropriate file offets.
-  bool InitialiseOutputFiles(string par2filename);
+  bool InitialiseOutputFiles(const string &par2filename);
 
   // Allocate memory buffers for reading and writing data to disk.
   bool AllocateBuffers(void);
@@ -90,8 +98,19 @@ protected:
   // Close all files.
   bool CloseFiles(void);
 
+#ifdef _OPENMP
+  static u32                          GetFileThreads(void) {return filethreads;}
+#endif
+  
 protected:
-  CommandLine::NoiseLevel noiselevel; // How noisy we should be
+  std::ostream &sout; // stream for output (for commandline, this is cout)
+  std::ostream &serr; // stream for errors (for commandline, this is cerr)
+  
+  const NoiseLevel noiselevel; // How noisy we should be
+
+#ifdef _OPENMP
+  static u32 filethreads;      // Number of threads for file processing
+#endif
 
   u64 blocksize;      // The size of each block.
   size_t chunksize;   // How much of each block will be processed at a 
@@ -106,7 +125,7 @@ protected:
 
   u64 largestfilesize;   // The size of the largest source file
 
-  CommandLine::Scheme recoveryfilescheme;  // What scheme will be used to select the
+  Scheme recoveryfilescheme;  // What scheme will be used to select the
                                            // sizes for the recovery files.
   
   u32 recoveryfilecount;  // The number of recovery files that will be created

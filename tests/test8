@@ -2,6 +2,19 @@
 
 execdir="$PWD"
 
+# valgrind tests memory usage.
+# wine allow for windows testing on linux
+if [ -n "${PARVALGRINDOPTS+set}" ]
+then
+    PARBINARY="valgrind $PARVALGRINDOPTS $execdir/par2"
+elif [ `which wine` != "" ] && [ -f "$execdir/par2.exe" ]
+then
+    PARBINARY="wine $execdir/par2.exe"
+else
+    PARBINARY="$execdir/par2"
+fi
+
+
 if [ -z "$srcdir" ] || [ "." = "$srcdir" ]; then
   srcdir="$PWD"
   TESTDATA="$srcdir/tests"
@@ -31,7 +44,7 @@ echo $dashes
 echo $banner
 echo $dashes
 
-"$execdir/par2" c -R testdata.par2 * || { echo "ERROR: construction of files using PAR 2.0 failed" ; exit 1; } >&2
+$PARBINARY c -R testdata.par2 * || { echo "ERROR: construction of files using PAR 2.0 failed" ; exit 1; } >&2
 
 cd ..
 mv source1 source2
@@ -45,7 +58,7 @@ echo $dashes
 echo $banner
 echo $dashes
 
-"$execdir/par2" v testdata.par2 || { echo "ERROR: verification of files using PAR 2.0 failed" ; exit 1; } >&2
+$PARBINARY v testdata.par2 || { echo "ERROR: verification of files using PAR 2.0 failed" ; exit 1; } >&2
 
 cd "$TESTROOT"
 rm -rf "run$testname"

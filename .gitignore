@@ -4,8 +4,11 @@
 
 # compilation output
 par2
+libpar2.a
 *.o
 .deps/
+par2.exe
+tests/*.exe
 
 # test output
 *.trs
@@ -31,6 +34,7 @@ stamp-h1
 src/.dirstamp
 install-sh
 missing
+ar-lib
 
 # windows
 Release/

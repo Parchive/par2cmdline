@@ -2,6 +2,7 @@
 //  repair tool). See http://parchive.sourceforge.net for details of PAR 2.0.
 //
 //  Copyright (c) 2003 Peter Brian Clements
+//  Copyright (c) 2019 Michael D. Nahas
 //
 //  par2cmdline is free software; you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License as published by
@@ -27,14 +28,14 @@ static char THIS_FILE[]=__FILE__;
 #endif
 #endif
 
-Par1RepairerSourceFile::Par1RepairerSourceFile(PAR1FILEENTRY *fileentry, string searchpath)
+Par1RepairerSourceFile::Par1RepairerSourceFile(std::ostream &sout, std::ostream &serr, const NoiseLevel noiselevel, PAR1FILEENTRY *fileentry, const string &searchpath)
+: hashfull(fileentry->hashfull)
+, hash16k(fileentry->hash16k)
 {
   targetexists = false;
   targetfile = 0;
   completefile = 0;
 
-  hashfull = fileentry->hashfull;
-  hash16k = fileentry->hash16k;
   filesize = fileentry->filesize;
 
   u32 namelen = (u32)((fileentry->entrysize - offsetof(PAR1FILEENTRY, name)) / 2);
@@ -56,13 +57,13 @@ Par1RepairerSourceFile::Par1RepairerSourceFile(PAR1FILEENTRY *fileentry, string 
   }
 
   // Translate any characters the OS does not like;
-  filename = DiskFile::TranslateFilename(filename);
+  filename = DescriptionPacket::TranslateFilenameFromPar2ToLocal(sout, serr, noiselevel, filename);
 
   // Strip the path from the filename
   string::size_type where;
   if (string::npos != (where = filename.find_last_of('\\'))
       || string::npos != (where = filename.find_last_of('/'))
-#ifdef WIN32
+#ifdef _WIN32
       || string::npos != (where = filename.find_last_of(':'))
 #endif
      )

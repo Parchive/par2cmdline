@@ -2,6 +2,7 @@
 //  repair tool). See http://parchive.sourceforge.net for details of PAR 2.0.
 //
 //  Copyright (c) 2003 Peter Brian Clements
+//  Copyright (c) 2019 Michael D. Nahas
 //
 //  par2cmdline is free software; you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License as published by
@@ -23,10 +24,22 @@
 class Par1Repairer
 {
 public:
-  Par1Repairer(void);
+  Par1Repairer(std::ostream &sout, std::ostream &serr, const NoiseLevel noiselevel);
   ~Par1Repairer(void);
 
-  Result Process(const CommandLine &commandline, bool dorepair);
+  Result Process(const size_t memorylimit,
+		 // basepath is not used by Par1
+#ifdef _OPENMP
+		 const u32 nthreads,
+		 // filethreads is not used by Par1
+#endif
+		 string parfilename,
+		 const vector<string> &extrafiles,
+		 const bool dorepair,   // derived from operation
+		 const bool purgefiles
+		 // skipdata is not used by Par1
+		 // skipleaway is not used by Par1
+		 );
 
 protected:
   // Load the main PAR file
@@ -36,14 +49,14 @@ protected:
   bool LoadOtherRecoveryFiles(string filename);
 
   // Load any extra PAR files specified on the command line
-  bool LoadExtraRecoveryFiles(const vector<CommandLine::ExtraFile> &extrafiles);
+  bool LoadExtraRecoveryFiles(const vector<string> &extrafiles);
 
   // Check for the existence of and verify each of the source files
   bool VerifySourceFiles(void);
 
   // Check any other files specified on the command line to see if they are
   // actually copies of the source files that have the wrong filename
-  bool VerifyExtraFiles(const vector<CommandLine::ExtraFile> &extrafiles);
+  bool VerifyExtraFiles(const vector<string> &extrafiles);
 
   // Attempt to match the data in the DiskFile with the source file
   bool VerifyDataFile(DiskFile *diskfile, Par1RepairerSourceFile *sourcefile);
@@ -82,7 +95,10 @@ protected:
   bool RemoveParFiles(void);
 
 protected:
-  CommandLine::NoiseLevel   noiselevel;              // How noisy we should be
+  std::ostream &sout; // stream for output (for commandline, this is cout)
+  std::ostream &serr; // stream for errors (for commandline, this is cerr)
+  const NoiseLevel   noiselevel;              // How noisy we should be
+  
   string                    searchpath;              // Where to find files on disk
   DiskFileMap               diskfilemap;             // Map from filename to DiskFile
 

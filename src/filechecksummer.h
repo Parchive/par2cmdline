@@ -2,6 +2,7 @@
 //  repair tool). See http://parchive.sourceforge.net for details of PAR 2.0.
 //
 //  Copyright (c) 2003 Peter Brian Clements
+//  Copyright (c) 2019 Michael D. Nahas
 //
 //  par2cmdline is free software; you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License as published by
@@ -104,6 +105,11 @@ protected:
 
   //// Fill the buffers with more data from disk
   bool Fill(void);
+
+private:
+  // private copy constructor to prevent any misuse.
+  FileCheckSummer(const FileCheckSummer &);
+  FileCheckSummer& operator=(const FileCheckSummer &);
 };
 
 // Return the current checksum

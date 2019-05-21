@@ -2,6 +2,7 @@
 //  repair tool). See http://parchive.sourceforge.net for details of PAR 2.0.
 //
 //  Copyright (c) 2003 Peter Brian Clements
+//  Copyright (c) 2019 Michael D. Nahas
 //
 //  par2cmdline is free software; you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License as published by
@@ -39,11 +40,11 @@ public:
   ~Par2CreatorSourceFile(void);
 
   // Open the source file and compute the Hashes and CRCs.
-  //bool Open(CommandLine::NoiseLevel noiselevel, const CommandLine::ExtraFile &extrafile, u64 blocksize, bool deferhashcomputation, string basepath);
+  //bool Open(NoiseLevel noiselevel, const string &extrafile, u64 blocksize, bool deferhashcomputation, string basepath);
 #ifdef _OPENMP
-  bool Open(CommandLine::NoiseLevel noiselevel, const CommandLine::ExtraFile &extrafile, u64 blocksize, bool deferhashcomputation, string basepath, u64 totalsize, u64 &totalprogress);
+  bool Open(NoiseLevel noiselevel, std::ostream &sout, std::ostream &serr, const string &extrafile, u64 blocksize, bool deferhashcomputation, string basepath, u64 totalsize, u64 &totalprogress);
 #else
-  bool Open(CommandLine::NoiseLevel noiselevel, const CommandLine::ExtraFile &extrafile, u64 blocksize, bool deferhashcomputation, string basepath);
+  bool Open(NoiseLevel noiselevel, std::ostream &sout, std::ostream &serr, const string &extrafile, u64 blocksize, bool deferhashcomputation, string basepath);
 #endif
   void Close(void);
 
