@@ -39,8 +39,6 @@ static char THIS_FILE[]=__FILE__;
 
 #define OffsetType __int64
 #define MaxOffset 0x7fffffffffffffffI64
-#define LengthType unsigned int
-#define MaxLength 0xffffffffUL
 
 DiskFile::DiskFile(std::ostream &sout, std::ostream &serr)
 : sout(&sout)
@@ -156,7 +154,7 @@ bool DiskFile::Create(string _filename, u64 _filesize)
 
 // Write some data to disk
 
-bool DiskFile::Write(u64 _offset, const void *buffer, size_t length)
+bool DiskFile::Write(u64 _offset, const void *buffer, size_t length, LengthType maxlength)
 {
   assert(hFile != INVALID_HANDLE_VALUE);
 
@@ -178,31 +176,39 @@ bool DiskFile::Write(u64 _offset, const void *buffer, size_t length)
     offset = _offset;
   }
 
-  if (length > MaxLength)
-  {
-    *serr << "Could not write " << (u64)length << " bytes to \"" << filename << "\" at offset " << _offset << ": " << "Write too long" << endl;
 
-    return false;
-  }
+  while (length > 0) {
 
-  DWORD write = (LengthType)length;
-  DWORD wrote;
+    DWORD write;
+    if (length > maxlength)
+      write = maxlength;
+    else
+      write = (LengthType) length;
+    DWORD wrote = 0;
 
-  // Write the data
-  if (!::WriteFile(hFile, buffer, write, &wrote, NULL))
-  {
-    DWORD error = ::GetLastError();
+    // Write the data
+    if (!::WriteFile(hFile, buffer, write, &wrote, NULL))
+    {
+      DWORD error = ::GetLastError();
+      
+      *serr << "Could not write " << write << " bytes to \"" << filename << "\" at offset " << _offset << ": " << ErrorMessage(error) << endl;
+      
+      return false;
+    }
 
-    *serr << "Could not write " << (u64)length << " bytes to \"" << filename << "\" at offset " << _offset << ": " << ErrorMessage(error) << endl;
+    if (wrote != write)
+    {
+      *serr << "INFO: Incomplete write to \"" << filename << "\" at offset " << _offset << ".  Expected to write " << write << " bytes and wrote " << wrote << " bytes." << endl;
+    }
 
-    return false;
-  }
-
-  offset += length;
-
-  if (filesize < offset)
-  {
-    filesize = offset;
+    offset += wrote;
+    length -= wrote;
+    buffer = ((char *) buffer) + wrote; 
+    
+    if (filesize < offset)
+    {
+      filesize = offset;
+    }
   }
 
   return true;
@@ -242,7 +248,7 @@ bool DiskFile::Open(const string &_filename, u64 _filesize)
 
 // Read some data from disk
 
-bool DiskFile::Read(u64 _offset, void *buffer, size_t length)
+bool DiskFile::Read(u64 _offset, void *buffer, size_t length, LengthType maxlength)
 {
   assert(hFile != INVALID_HANDLE_VALUE);
 
@@ -264,27 +270,36 @@ bool DiskFile::Read(u64 _offset, void *buffer, size_t length)
     offset = _offset;
   }
 
-  if (length > MaxLength)
-  {
-    *serr << "Could not read " << (u64)length << " bytes from \"" << filename << "\" at offset " << _offset << ": " << "Read too long" << endl;
+  while (length > 0) {
+  
+    DWORD want;
+    if (length > maxlength)
+      want = maxlength;
+    else
+      want = (LengthType)length;
+    DWORD got = 0;
 
-    return false;
+    // Read the data
+    if (!::ReadFile(hFile, buffer, want, &got, NULL))
+    {
+      DWORD error = ::GetLastError();
+
+      *serr << "Could not read " << (u64)length << " bytes from \"" << filename << "\" at offset " << _offset << ": " << ErrorMessage(error) << endl;
+
+      return false;
+    }
+
+    if (want != got)
+    {
+      *serr << "Incomplete read from \"" << filename << "\" at offset " << offset << ".  Tried to read " << want << " bytes and received " << got << " bytes." << endl;
+    }
+    
+    offset += got;
+    length -= got;
+    buffer = ((char *) buffer) + got; 
+
+    // write updates filesize.  Do we want to do that here?
   }
-
-  DWORD want = (LengthType)length;
-  DWORD got;
-
-  // Read the data
-  if (!::ReadFile(hFile, buffer, want, &got, NULL))
-  {
-    DWORD error = ::GetLastError();
-
-    *serr << "Could not read " << (u64)length << " bytes from \"" << filename << "\" at offset " << _offset << ": " << ErrorMessage(error) << endl;
-
-    return false;
-  }
-
-  offset += length;
 
   return true;
 }
@@ -433,8 +448,6 @@ u64 DiskFile::GetFileSize(string filename)
 # endif
 #endif
 
-#define LengthType unsigned int
-#define MaxLength 0xffffffffUL
 
 DiskFile::DiskFile(std::ostream &sout, std::ostream &serr)
 : sout(&sout)
@@ -546,7 +559,7 @@ bool DiskFile::Create(string _filename, u64 _filesize)
 
 // Write some data to disk
 
-bool DiskFile::Write(u64 _offset, const void *buffer, size_t length)
+bool DiskFile::Write(u64 _offset, const void *buffer, size_t length, LengthType maxlength)
 {
   assert(file != 0);
 
@@ -567,23 +580,29 @@ bool DiskFile::Write(u64 _offset, const void *buffer, size_t length)
     offset = _offset;
   }
 
-  if (length > MaxLength)
-  {
-    *serr << "Could not write " << (u64)length << " bytes to " << filename << " at offset " << _offset << endl;
-    return false;
-  }
+  while (length > 0) {
 
-  if (1 != fwrite(buffer, (LengthType)length, 1, file))
-  {
-    *serr << "Could not write " << (u64)length << " bytes to " << filename << " at offset " << _offset << ": " << strerror(errno) << endl;
-    return false;
-  }
+    LengthType write;
+    if (length > maxlength)
+      write = maxlength;
+    else
+      write = length;
+    
+    LengthType wrote = fwrite(buffer, 1, write, file);
+    if (wrote != write)
+    {
+      *serr << "Could not write " << (u64)length << " bytes to " << filename << " at offset " << _offset << ": " << strerror(errno) << endl;
+      return false;
+    }
 
-  offset += length;
+    offset += wrote;
+    length -= wrote;
+    buffer = ((char *) buffer) + wrote; 
 
-  if (filesize < offset)
-  {
-    filesize = offset;
+    if (filesize < offset)
+    {
+      filesize = offset;
+    }
   }
 
   return true;
@@ -618,7 +637,7 @@ bool DiskFile::Open(const string &_filename, u64 _filesize)
 
 // Read some data from disk
 
-bool DiskFile::Read(u64 _offset, void *buffer, size_t length)
+bool DiskFile::Read(u64 _offset, void *buffer, size_t length, LengthType maxlength)
 {
   assert(file != 0);
 
@@ -639,20 +658,31 @@ bool DiskFile::Read(u64 _offset, void *buffer, size_t length)
     offset = _offset;
   }
 
-  if (length > MaxLength)
-  {
-    *serr << "Could not read " << (u64)length << " bytes from " << filename << " at offset " << _offset << endl;
-    return false;
+
+  while (length > 0) {
+
+    LengthType want;
+    if (length > maxlength)
+      want = maxlength;
+    else
+      want = length;
+
+    LengthType got = fread(buffer, 1, want, file);
+    if (got != want) 
+    {
+      // NOTE: This can happen on error or when hitting the end-of-file.
+      
+      *serr << "Could not read " << (u64)length << " bytes from " << filename << " at offset " << _offset << ": " << strerror(errno) << endl;
+      return false;
+    }
+
+    offset += got;
+    length -= got;
+    buffer = ((char *) buffer) + got;
+
+    // Write() updates filesize.  Should we do that here too?
   }
-
-  if (1 != fread(buffer, (LengthType)length, 1, file))
-  {
-    *serr << "Could not read " << (u64)length << " bytes from " << filename << " at offset " << _offset << ": " << strerror(errno) << endl;
-    return false;
-  }
-
-  offset += length;
-
+  
   return true;
 }
 
