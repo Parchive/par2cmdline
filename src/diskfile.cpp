@@ -430,6 +430,12 @@ u64 DiskFile::GetFileSize(string filename)
   }
 }
 
+bool DiskFile::FileExists(string filename)
+{
+  struct _stati64 st;
+  return ((0 == _stati64(filename.c_str(), &st)) && (0 != (st.st_mode & S_IFREG)));
+}
+
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 #else // !_WIN32
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -907,6 +913,12 @@ u64 DiskFile::GetFileSize(string filename)
     return 0;
   }
 }
+
+bool DiskFile::FileExists(string filename)
+{
+  struct stat st;
+  return ((0 == stat(filename.c_str(), &st)) && (0 != (st.st_mode & S_IFREG)));
+}
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 #endif
 
@@ -981,12 +993,6 @@ void DiskFile::SplitRelativeFilename(string filename, string basepath, string &n
 {
   name = filename;
   name.erase(0, basepath.length());
-}
-
-bool DiskFile::FileExists(string filename)
-{
-  struct stat st;
-  return ((0 == stat(filename.c_str(), &st)) && (0 != (st.st_mode & S_IFREG)));
 }
 
 bool DiskFile::Rename(void)
