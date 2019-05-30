@@ -1214,7 +1214,7 @@ bool Par2Repairer::VerifySourceFiles(const std::string& basepath, std::vector<st
 
   // Start verifying the files
   #pragma omp parallel for schedule(dynamic) num_threads(Par2Repairer::GetFileThreads())
-  for (size_t i=0; i<sortedfiles.size(); ++i)
+  for (int i=0; i< static_cast<int>(sortedfiles.size()); ++i)
   {
     // Do we have a source file
     Par2RepairerSourceFile *sourcefile = sortedfiles[i];
@@ -1328,7 +1328,7 @@ bool Par2Repairer::VerifyExtraFiles(const vector<string> &extrafiles, const stri
 #endif
 
     #pragma omp parallel for schedule(dynamic) num_threads(Par2Repairer::GetFileThreads())
-    for (size_t i=0; i<extrafiles.size(); ++i)
+    for (int i=0; i< static_cast<int>(extrafiles.size()); ++i)
     {
       string filename = extrafiles[i];
 
@@ -2653,7 +2653,7 @@ bool Par2Repairer::VerifyTargetFiles(const string &basepath)
 
   // Iterate through each file in the verification list
   #pragma omp parallel for schedule(dynamic) num_threads(Par2Repairer::GetFileThreads())
-  for (size_t i=0; i<verifylist.size(); ++i)
+  for (int i=0; i< static_cast<int>(verifylist.size()); ++i)
   {
     Par2RepairerSourceFile *sourcefile = verifylist[i];
     DiskFile *targetfile = sourcefile->GetTargetFile();
