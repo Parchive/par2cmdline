@@ -17,6 +17,6 @@
 //  along with this program; if not, write to the Free Software
 //  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-#include "par2cmdline.h"
+#include "libpar2internal.h"
 
 PAR1MAGIC    par1_magic                = {{'P', 'A', 'R', '\0', '\0', '\0', '\0', '\0'}};

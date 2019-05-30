@@ -20,7 +20,6 @@
 
 #include "libpar2.h"
 #include "commandline.h"
-#include "par2cmdline.h"
 
 // This is included here, so that cout and cerr are not used elsewhere.
 #include <iostream>

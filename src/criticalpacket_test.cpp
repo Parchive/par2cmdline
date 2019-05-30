@@ -20,7 +20,7 @@
 #include <iostream>
 #include <fstream>
 
-#include "par2cmdline.h"
+#include "libpar2internal.h"
 
 // CriticalPacket::CompareLess
 int test1() {

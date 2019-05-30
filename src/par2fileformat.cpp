@@ -17,7 +17,7 @@
 //  along with this program; if not, write to the Free Software
 //  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-#include "par2cmdline.h"
+#include "libpar2internal.h"
 
 MAGIC      packet_magic                = {{'P', 'A', 'R', '2', '\0','P', 'K', 'T'}};
 PACKETTYPE fileverificationpacket_type = {{'P', 'A', 'R', ' ', '2', '.', '0', '\0', 'I', 'F', 'S', 'C', '\0','\0','\0','\0'}};

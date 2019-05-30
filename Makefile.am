@@ -46,13 +46,13 @@ libpar2_a_SOURCES = src/crc.cpp src/crc.h \
 	src/reedsolomon.cpp src/reedsolomon.h \
 	src/verificationhashtable.cpp src/verificationhashtable.h \
 	src/verificationpacket.cpp src/verificationpacket.h \
-	src/libpar2.cpp src/libpar2.h
+	src/libpar2.cpp src/libpar2.h src/libpar2internal.h
 
 
 bin_PROGRAMS = par2
 man_MANS = man/par2.1
 
-par2_SOURCES = src/par2cmdline.cpp src/par2cmdline.h \
+par2_SOURCES = src/par2cmdline.cpp \
 	src/commandline.cpp src/commandline.h
 par2_LDADD = libpar2.a
 

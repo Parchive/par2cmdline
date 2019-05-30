@@ -93,7 +93,7 @@
       <OpenMPSupport>true</OpenMPSupport>
       <PrecompiledHeader>
       </PrecompiledHeader>
-      <PrecompiledHeaderFile>src/par2cmdline.h</PrecompiledHeaderFile>
+      <PrecompiledHeaderFile>src\libpar2internal.h</PrecompiledHeaderFile>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
     </ClCompile>
@@ -114,7 +114,7 @@
       <OpenMPSupport>true</OpenMPSupport>
       <PrecompiledHeader>
       </PrecompiledHeader>
-      <PrecompiledHeaderFile>src/par2cmdline.h</PrecompiledHeaderFile>
+      <PrecompiledHeaderFile>src\libpar2internal.h</PrecompiledHeaderFile>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
     </ClCompile>
@@ -137,7 +137,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <PrecompiledHeader>
       </PrecompiledHeader>
-      <PrecompiledHeaderFile>par2cmdline.h</PrecompiledHeaderFile>
+      <PrecompiledHeaderFile>src\libpar2internal.h</PrecompiledHeaderFile>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <OpenMPSupport>true</OpenMPSupport>
@@ -163,7 +163,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <PrecompiledHeader>
       </PrecompiledHeader>
-      <PrecompiledHeaderFile>par2cmdline.h</PrecompiledHeaderFile>
+      <PrecompiledHeaderFile>src\libpar2internal.h</PrecompiledHeaderFile>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <OpenMPSupport>true</OpenMPSupport>
@@ -215,12 +215,12 @@
     <ClInclude Include="src\galois.h" />
     <ClInclude Include="src\letype.h" />
     <ClInclude Include="src\libpar2.h" />
+    <ClInclude Include="src\libpar2internal.h" />
     <ClInclude Include="src\mainpacket.h" />
     <ClInclude Include="src\md5.h" />
     <ClInclude Include="src\par1fileformat.h" />
     <ClInclude Include="src\par1repairer.h" />
     <ClInclude Include="src\par1repairersourcefile.h" />
-    <ClInclude Include="src\par2cmdline.h" />
     <ClInclude Include="src\par2creator.h" />
     <ClInclude Include="src\par2creatorsourcefile.h" />
     <ClInclude Include="src\par2fileformat.h" />

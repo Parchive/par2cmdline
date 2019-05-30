@@ -21,7 +21,7 @@
 // This is just a simple set of tests on md5 hash.
 // The initial version just showed it was self-consistent, not accurate.
 
-#include "par2cmdline.h"
+#include "libpar2internal.h"
 
 #include <iostream>
 #include <stdlib.h>

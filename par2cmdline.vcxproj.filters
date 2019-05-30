@@ -87,6 +87,9 @@
     <ClCompile Include="src\verificationpacket.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\libpar2.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\commandline.h">
@@ -134,9 +137,6 @@
     <ClInclude Include="src\par1repairersourcefile.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\par2cmdline.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\par2creator.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -162,6 +162,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\verificationpacket.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\libpar2.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\libpar2internal.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

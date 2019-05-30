@@ -27,7 +27,24 @@ using std::string;
 // This is needed by diskfile.h
 #ifdef _WIN32
 #include <windows.h>
+
+// Heap checking
+#ifdef _MSC_VER
+#define _CRTDBG_MAP_ALLOC
+#include <crtdbg.h>
+#define DEBUG_NEW new(_NORMAL_BLOCK, THIS_FILE, __LINE__)
 #endif
+
+#define stricmp  _stricmp
+
+#else
+
+#include <string.h>
+#define stricmp strcasecmp
+
+#endif
+
+#define _FILE_THREADS 2
 
 #include "libpar2.h"
 #include "diskfile.h"
