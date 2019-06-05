@@ -22,9 +22,8 @@
 #include <fstream>
 #include <stdlib.h>
 
-#include "par2cmdline.h"
 #include "commandline.h"
-
+using namespace std;
 
 // ComputeRecoveryBlockCount
 // recoveryblockset = true

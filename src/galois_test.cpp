@@ -21,7 +21,7 @@
 #include <iostream>
 #include <stdlib.h>
 
-#include "par2cmdline.h"
+#include "libpar2internal.h"
 #include "galois.h"
 
 

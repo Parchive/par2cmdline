@@ -25,7 +25,7 @@
 //    g++ -DHAVE_CONFIG_H -I.. crc_test.cpp crc.cpp 
 
 
-#include "par2cmdline.h"
+#include "libpar2internal.h"
 
 #include <iostream>
 #include <stdlib.h>

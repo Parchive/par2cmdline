@@ -20,7 +20,7 @@
 #include <iostream>
 #include <fstream>
 
-#include "par2cmdline.h"
+#include "libpar2internal.h"
 
 // The file separator
 #ifdef _WIN32

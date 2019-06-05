@@ -18,7 +18,7 @@
 //  along with this program; if not, write to the Free Software
 //  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-#include "par2cmdline.h"
+#include "libpar2internal.h"
 
 #ifdef _MSC_VER
 #ifdef _DEBUG
@@ -332,7 +332,7 @@ bool Par2Creator::OpenSourceFiles(const vector<string> &extrafiles, string basep
 #endif
 
   #pragma omp parallel for schedule(dynamic) num_threads(Par2Creator::GetFileThreads())
-  for (size_t i=0; i<extrafiles.size(); ++i)
+  for (int i=0; i< static_cast<int>(extrafiles.size()); ++i)
   {
 #ifdef _OPENMP
     if (openfailed)

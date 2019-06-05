@@ -18,15 +18,11 @@
 //  along with this program; if not, write to the Free Software
 //  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-#include "par2cmdline.h"
-
 // This is included here, so that cout and cerr are not used elsewhere.
 #include<iostream>
-
+#include<algorithm>
 #include "commandline.h"
-
-
-
+using namespace std;
 
 #ifdef _MSC_VER
 #ifdef _DEBUG
@@ -36,6 +32,10 @@ static char THIS_FILE[]=__FILE__;
 #endif
 #endif
 
+// OpenMP
+#ifdef _OPENMP
+# include <omp.h>
+#endif
 
 CommandLine::CommandLine(void)
 : filesize_cache()
