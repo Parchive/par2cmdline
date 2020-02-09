@@ -1,3 +1,9 @@
+09 February 2020 Ike Devolder
+  * release: 0.8.1
+  * Serious rework of internals by Michael Nahas
+  * Added unittests by Michael Nahas
+  * Added support for static libpar2
+
 11 December 2017 Ike Devolder
   * release: 0.8.0
 	* improved parallelisation on input files
