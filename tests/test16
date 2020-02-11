@@ -12,7 +12,7 @@ execdir="$PWD"
 if [ -n "${PARVALGRINDOPTS+set}" ]
 then
     PARBINARY="valgrind $PARVALGRINDOPTS $execdir/par2"
-elif [ `which wine` != "" ] && [ -f "$execdir/par2.exe" ]
+elif [ "`which wine`" != "" ] && [ -f "$execdir/par2.exe" ]
 then
     PARBINARY="wine $execdir/par2.exe"
 else
