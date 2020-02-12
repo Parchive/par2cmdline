@@ -433,6 +433,23 @@ int test3() {
 
 
 // Check that the correct constants are being used for Par2
+
+//The test pretends there are 10 input blocks ("NUM_IN") and 1
+//recovery block ("NUM_REC"), each 1024 bytes long ("BUF_SIZE"). These
+//are all stored in data[11][BUF_SIZE], with the input blocks
+//occupying data[0] through data[9] and the recovery block in
+//data[10].
+
+//The test zeroes out the input blocks and then writes a 1 into the
+//first location of the first input block, and into the second
+//location of the second input block, etc. It then generates the
+//recovery block using many calls to ReedSolomon. When that happens,
+//those 1s are multiplied by the coefficients for each input block. So
+//the first location of recovery block holds the coefficient for the
+//first input block, the second location has the coefficient for the
+//second input block, etc. Those values are checked against the
+//expected values passed to the function.
+
 template<typename gtype, typename utype>
 int test4(int NUM_IN, int *expected_bases) {
   //const int NUM_IN  = 10;
@@ -448,8 +465,9 @@ int test4(int NUM_IN, int *expected_bases) {
     for (int k = 0; k < BUF_SIZE; k++) {
       data[i][k] = (u8)0;
     }
-    // EXCEPT put a 1 in a different place for each file
-    ((gtype *)(&(data[i][0])))[i] = (utype) 1;
+    // EXCEPT write a (little endian) 1 in a different place for each file
+    // In the i-th file, it is written into the i-th location
+    data[i][sizeof(utype)*i] = (u8) 1;
   }
   // zero recovery
   for (int j = 0; j < NUM_REC; j++) {
@@ -488,7 +506,13 @@ int test4(int NUM_IN, int *expected_bases) {
   // The recovery file has exponent 1 and should
   // contain each base to the power 1.
   for (int i = 0; i < NUM_IN; i++) {
-    int base = (utype) ((gtype *) &(data[NUM_IN+0][0]))[i];
+    // read little-endian value
+    utype v = 0;
+    for (int byte_index = 0; byte_index < sizeof(utype); byte_index++) {
+      u8 byte = data[NUM_IN+0][sizeof(utype)*i + byte_index];
+      v |= (((utype)byte) << (byte_index*8));
+    }
+    int base = v;
     if (base != expected_bases[i]) {
       cerr << "base at location " << i << " did not match expected." << endl;
       cerr << "   base     = " << base << endl;
