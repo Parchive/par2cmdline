@@ -31,6 +31,22 @@ rm -rf "run$testname"
 
 mkdir "run$testname" && cd "run$testname" || { echo "ERROR: Could not change to test directory" ; exit 1; } >&2
 
+tar -xzf "$TESTDATA/flatdata.tar.gz" || { echo "ERROR: Could not extract data test files" ; exit 1; } >&2
+
+banner="Ensuring silent noise level"
+dashes=`echo "$banner" | sed s/./-/g`
+
+echo $dashes
+echo $banner
+echo $dashes
+
+$PARBINARY c -a newtest -qq test-*.data >output || { echo "ERROR: Creating PAR 2.0 data failed" ; exit 1; } >&2
+test ! -s output || { echo "ERROR: create with -qq was not silent" ; exit 1; } >&2
+$PARBINARY v -qq newtest test-*.data >output || { echo "ERROR: Verifying PAR 2.0 data failed" ; exit 1; } >&2
+test ! -s output || { echo "ERROR: verify with -qq was not silent" ; exit 1; } >&2
+$PARBINARY r -qq newtest test-*.data >output || { echo "ERROR: Repairing PAR 2.0 data failed" ; exit 1; } >&2
+test ! -s output || { echo "ERROR: repair with -qq was not silent" ; exit 1; } >&2
+
 cd "$TESTROOT"
 rm -rf "run$testname"
 
