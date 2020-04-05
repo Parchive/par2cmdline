@@ -206,7 +206,7 @@ string DescriptionPacket::TranslateFilenameFromLocalToPar2(std::ostream &sout, s
   // Par files should never contain an absolute path.  On Windows,
   // These start "C:\...", etc.  An attacker could put an absolute
   // path into a Par file and overwrite system files.
-  if (par2_encoded_filename.at(1) == ':')
+  if (par2_encoded_filename.size() > 1 && par2_encoded_filename.at(1) == ':')
   {
     if (noiselevel >= nlNormal)
     {
