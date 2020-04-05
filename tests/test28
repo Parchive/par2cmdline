@@ -40,12 +40,12 @@ echo $dashes
 echo $banner
 echo $dashes
 
-$PARBINARY c -a newtest -qq test-*.data >output || { echo "ERROR: Creating PAR 2.0 data failed" ; exit 1; } >&2
-test ! -s output || { echo "ERROR: create with -qq was not silent" ; exit 1; } >&2
-$PARBINARY v -qq newtest test-*.data >output || { echo "ERROR: Verifying PAR 2.0 data failed" ; exit 1; } >&2
-test ! -s output || { echo "ERROR: verify with -qq was not silent" ; exit 1; } >&2
-$PARBINARY r -qq newtest test-*.data >output || { echo "ERROR: Repairing PAR 2.0 data failed" ; exit 1; } >&2
-test ! -s output || { echo "ERROR: repair with -qq was not silent" ; exit 1; } >&2
+$PARBINARY c -a newtest -qq test-*.data >stdout || { echo "ERROR: Creating PAR 2.0 data failed" ; exit 1; } >&2
+test ! -s stdout || { echo "ERROR: create with -qq was not silent" ; exit 1; } >&2
+$PARBINARY v -qq newtest test-*.data >stdout || { echo "ERROR: Verifying PAR 2.0 data failed" ; exit 1; } >&2
+test ! -s stdout || { echo "ERROR: verify with -qq was not silent" ; exit 1; } >&2
+$PARBINARY r -qq newtest test-*.data >stdout || { echo "ERROR: Repairing PAR 2.0 data failed" ; exit 1; } >&2
+test ! -s stdout || { echo "ERROR: repair with -qq was not silent" ; exit 1; } >&2
 
 cd "$TESTROOT"
 rm -rf "run$testname"
