@@ -47,6 +47,10 @@ test ! -s stdout || { echo "ERROR: verify with -qq was not silent" ; exit 1; } >
 $PARBINARY r -qq newtest test-*.data >stdout || { echo "ERROR: repair failed" ; exit 1; } >&2
 test ! -s stdout || { echo "ERROR: repair with -qq was not silent" ; exit 1; } >&2
 
+$PARBINARY c -a newtest -qq test-*.data >stdout 2>stderr && { echo "ERROR: second create succeeded but shouldn't have" ; exit 1; } >&2
+test ! -s stdout || { echo "ERROR: second create with -qq was not silent" ; exit 1; } >&2
+test -s stderr || { echo "ERROR: second create with -qq did not produce output to stderr" ; exit 1; } >&2
+
 cd "$TESTROOT"
 rm -rf "run$testname"
 
