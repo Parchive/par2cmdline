@@ -40,11 +40,11 @@ echo $dashes
 echo $banner
 echo $dashes
 
-$PARBINARY c -a newtest -qq test-*.data >stdout || { echo "ERROR: Creating PAR 2.0 data failed" ; exit 1; } >&2
+$PARBINARY c -a newtest -qq test-*.data >stdout || { echo "ERROR: create failed" ; exit 1; } >&2
 test ! -s stdout || { echo "ERROR: create with -qq was not silent" ; exit 1; } >&2
-$PARBINARY v -qq newtest test-*.data >stdout || { echo "ERROR: Verifying PAR 2.0 data failed" ; exit 1; } >&2
+$PARBINARY v -qq newtest test-*.data >stdout || { echo "ERROR: verify failed" ; exit 1; } >&2
 test ! -s stdout || { echo "ERROR: verify with -qq was not silent" ; exit 1; } >&2
-$PARBINARY r -qq newtest test-*.data >stdout || { echo "ERROR: Repairing PAR 2.0 data failed" ; exit 1; } >&2
+$PARBINARY r -qq newtest test-*.data >stdout || { echo "ERROR: repair failed" ; exit 1; } >&2
 test ! -s stdout || { echo "ERROR: repair with -qq was not silent" ; exit 1; } >&2
 
 cd "$TESTROOT"
