@@ -474,7 +474,7 @@ bool CommandLine::ReadArgs(int argc, const char * const *argv)
                 redundancy = redundancy * 10 + (*p - '0');
                 p++;
               }
-              if (redundancy > 100 || *p)
+              if (*p)
               {
                 cerr << "Invalid redundancy option: " << argv[0] << endl;
                 return false;
