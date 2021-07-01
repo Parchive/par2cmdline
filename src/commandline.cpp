@@ -1306,7 +1306,6 @@ bool CommandLine::ComputeRecoveryBlockCount(u32 *recoveryblockcount,
     return false;
   }
 
-  cout << endl;
   return true;
 }
 

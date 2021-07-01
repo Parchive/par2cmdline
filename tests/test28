@@ -1,0 +1,58 @@
+#!/bin/sh
+
+execdir="$PWD"
+
+# valgrind tests memory usage.
+# wine allow for windows testing on linux
+if [ -n "${PARVALGRINDOPTS+set}" ]
+then
+    PARBINARY="valgrind $PARVALGRINDOPTS $execdir/par2"
+elif [ "`which wine`" != "" ] && [ -f "$execdir/par2.exe" ]
+then
+    PARBINARY="wine $execdir/par2.exe"
+else
+    PARBINARY="$execdir/par2"
+fi
+
+
+if [ -z "$srcdir" ] || [ "." = "$srcdir" ]; then
+  srcdir="$PWD"
+  TESTDATA="$srcdir/tests"
+else
+  srcdir="$PWD/$srcdir"
+  TESTDATA="$srcdir/tests"
+fi
+
+TESTROOT="$PWD"
+
+testname=$(basename $0)
+rm -f "$testname.log"
+rm -rf "run$testname"
+
+mkdir "run$testname" && cd "run$testname" || { echo "ERROR: Could not change to test directory" ; exit 1; } >&2
+
+tar -xzf "$TESTDATA/flatdata.tar.gz" || { echo "ERROR: Could not extract data test files" ; exit 1; } >&2
+
+banner="Ensuring silent noise level"
+dashes=`echo "$banner" | sed s/./-/g`
+
+echo $dashes
+echo $banner
+echo $dashes
+
+$PARBINARY c -a newtest -qq test-*.data >stdout || { echo "ERROR: create failed" ; exit 1; } >&2
+test ! -s stdout || { echo "ERROR: create with -qq produced output to stdout" ; exit 1; } >&2
+$PARBINARY v -qq newtest test-*.data >stdout || { echo "ERROR: verify failed" ; exit 1; } >&2
+test ! -s stdout || { echo "ERROR: verify with -qq produced output to stdout" ; exit 1; } >&2
+$PARBINARY r -qq newtest test-*.data >stdout || { echo "ERROR: repair failed" ; exit 1; } >&2
+test ! -s stdout || { echo "ERROR: repair with -qq produced output to stdout" ; exit 1; } >&2
+
+$PARBINARY c -a newtest -qq test-*.data >stdout 2>stderr && { echo "ERROR: second create succeeded but shouldn't have" ; exit 1; } >&2
+test ! -s stdout || { echo "ERROR: second create with -qq produced output to stdout" ; exit 1; } >&2
+test -s stderr || { echo "ERROR: second create with -qq did not produce output to stderr" ; exit 1; } >&2
+
+cd "$TESTROOT"
+rm -rf "run$testname"
+
+exit 0;
+
