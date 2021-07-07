@@ -469,7 +469,7 @@ bool CommandLine::ReadArgs(int argc, const char * const *argv)
             else
             {
               const char *p = &argv[0][2];
-              while (redundancy <= 10 && *p && isdigit(*p))
+              while (*p && isdigit(*p))
               {
                 redundancy = redundancy * 10 + (*p - '0');
                 p++;
