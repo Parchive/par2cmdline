@@ -484,6 +484,10 @@ bool CommandLine::ReadArgs(int argc, const char * const *argv)
                 cerr << "Cannot set redundancy to 0 and file count > 0" << endl;
                 return false;
               }
+	      if (redundancy > 100)
+	      {
+	        cerr << "WARNING: Creating recovery file(s) with " << redundancy << "% redundancy." << endl;
+	      }
             }
             redundancyset = true;
           }
