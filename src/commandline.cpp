@@ -469,12 +469,12 @@ bool CommandLine::ReadArgs(int argc, const char * const *argv)
             else
             {
               const char *p = &argv[0][2];
-              while (redundancy <= 10 && *p && isdigit(*p))
+              while (*p && isdigit(*p))
               {
                 redundancy = redundancy * 10 + (*p - '0');
                 p++;
               }
-              if (redundancy > 100 || *p)
+              if (*p)
               {
                 cerr << "Invalid redundancy option: " << argv[0] << endl;
                 return false;
@@ -484,6 +484,10 @@ bool CommandLine::ReadArgs(int argc, const char * const *argv)
                 cerr << "Cannot set redundancy to 0 and file count > 0" << endl;
                 return false;
               }
+	      if (redundancy > 100)
+	      {
+	        cerr << "WARNING: Creating recovery file(s) with " << redundancy << "% redundancy." << endl;
+	      }
             }
             redundancyset = true;
           }
