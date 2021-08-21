@@ -29,7 +29,7 @@ static char THIS_FILE[]=__FILE__;
 #endif
 
 
-// static variable 
+// static variable
 #ifdef _OPENMP
 u32 Par2Repairer::filethreads = _FILE_THREADS;
 #endif
@@ -88,7 +88,7 @@ Par2Repairer::Par2Repairer(std::ostream &sout, std::ostream &serr, const NoiseLe
 
   progress = 0;
   totaldata = 0;
-  
+
 #ifdef _OPENMP
   mttotalsize = 0;
   mttotalextrasize = 0;
@@ -141,17 +141,17 @@ Result Par2Repairer::Process(
 #ifdef _OPENMP
   filethreads = _filethreads;
 #endif
-  
+
   // Should we skip data whilst scanning files
   skipdata = _skipdata;
-  
+
   // How much leaway should we allow when scanning files
   skipleaway = _skipleaway;
 
   // Get filenames from the command line
   basepath = _basepath;
   std::vector<string> extrafiles = _extrafiles;
-    
+
 #ifdef _OPENMP
   // Set the number of threads
   if (nthreads != 0)
@@ -1707,7 +1707,7 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
       }
       oldoffset = filechecksummer.Offset();
     }
-#endif 
+#endif
 
     // If we fail to find a match, it might be because it was a duplicate of a block
     // that we have already found.
@@ -1864,7 +1864,7 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
     {
     // Clear out old scanning line
     sout << std::setw(shortname.size()+19) << std::setfill(' ') << "";
-    
+
     if (duplicatecount > 0)
       sout << "\r[DEBUG] duplicates: " << duplicatecount << endl;
     sout << "\r[DEBUG] matchcount: " << count << endl;

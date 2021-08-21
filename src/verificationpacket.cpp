@@ -97,7 +97,7 @@ bool VerificationPacket::Load(DiskFile *diskfile, u64 offset, PACKET_HEADER &hea
   blockcount = (u32)((((FILEVERIFICATIONPACKET*)packetdata)->header.length - sizeof(FILEVERIFICATIONPACKET)) / sizeof(FILEVERIFICATIONENTRY));
 
   // Read the rest of the packet
-  return diskfile->Read(offset + sizeof(PACKET_HEADER), 
-                        &packet->fileid, 
+  return diskfile->Read(offset + sizeof(PACKET_HEADER),
+                        &packet->fileid,
                         (size_t)packet->header.length - sizeof(PACKET_HEADER));
 }

@@ -103,7 +103,7 @@ struct FILEDESCRIPTIONPACKET
   MD5Hash          hashfull;  // MD5 Hash of the whole file
   MD5Hash          hash16k;   // MD5 Hash of the first 16k of the file
   leu64            length;    // Length of the file
-  u8               name[];    // Name of the file, padded with 1 to 3 zero bytes to reach 
+  u8               name[];    // Name of the file, padded with 1 to 3 zero bytes to reach
                               // a multiple of 4 bytes.
                               // Actual length can be determined from overall packet
                               // length and then working backwards to find the first non

@@ -28,7 +28,7 @@
 string fs("\\");
 #else
 string fs("/");
-#endif  
+#endif
 
 
 // test static functions
@@ -162,7 +162,7 @@ int test1() {
     }
   }
 
-  
+
   { // scope to hide variable names
     string path_and_name1 = DiskFile::GetCanonicalPathname("input1.txt");
     string path1, name1;
@@ -195,11 +195,11 @@ int test1() {
     }
   }
 
-      
+
   // delete test files using C++ function
   remove("input1.txt");
   remove("input2.txt");
-  
+
   return 0;
 }
 
@@ -278,7 +278,7 @@ int test2() {
 	return 1;
       }
     }
-      
+
     if (!diskfile.IsOpen()) {
       cout << "IsOpen failed 3" << endl;
       return 1;
@@ -312,7 +312,7 @@ int test2() {
 
   {
     cout << "create input2.txt, move it to input3.txt, delete it." << endl;
-    
+
     const char *input2_contents = "diskfile_test test3 input2.txt is longer";
 
     DiskFile diskfile(cout, cerr);
@@ -350,7 +350,7 @@ int test2() {
     }
 
     /*    // confirm write with read
-    
+
     const size_t buffer_len = strlen(input2_contents)+1;  // for end-of-string
     u8 *buffer = new u8[buffer_len];
     // put end-of-string in buffer.
@@ -370,7 +370,7 @@ int test2() {
       cout << "IsOpen failed 3" << endl;
       return 1;
     }
-    
+
     // Rename from input2.txt to input3.txt
     if (!diskfile.Rename("input3.txt")) {
       cout << "Rename failed 1" << endl;
@@ -390,7 +390,7 @@ int test2() {
       return 1;
     }
 
-    /*    
+    /*
     // read again
     if (!diskfile.Read(0, buffer, buffer_len - 1)) {
       cout << "Read whole file returned false 2" << endl;
@@ -410,7 +410,7 @@ int test2() {
       cout << "Exists failed 4" << endl;
       return 1;
     }
-    
+
     // C's remove returns 0 on success and non-0 on failure
     if (remove("input3.txt") == 0) {
       cout << "input3.txt exists after deletion!" << endl;
@@ -424,22 +424,22 @@ int test2() {
   // CreateParentDirectory()
 
   // random write + read
-  { 
+  {
     cout << "create input2.txt, write and read it." << endl;
-    
+
     const char *input2_contents = "diskfile_test test3 input2.txt is longer";
     size_t buffer_len = strlen(input2_contents);
-    
+
     srand(23461119);
     for (size_t blocksize = 1; blocksize < buffer_len; blocksize *=2) {
       { // scope for variables used in writing
 	DiskFile diskfile(cout, cerr);
-	
+
 	if (!diskfile.Create("input2.txt", strlen(input2_contents))) {
 	  cout << "Create failed" << endl;
 	  return 1;
 	}
-	
+
 	int blockcount = (buffer_len + (blocksize - 1))/blocksize;
 	int *blockorder = new int[blockcount];
 	for (int i = 0; i < blockcount; i++)
@@ -495,10 +495,10 @@ int test2() {
       }
     }
   }
-  
+
   // delete test files using C++ function
   remove("input1.txt");
-  
+
   return 0;
 }
 
@@ -519,7 +519,7 @@ int test3() {
     cout << "Find succeeded when it shouldn't have" << endl;
     return 1;
   }
-  
+
   DiskFile df1(cout, cerr);
   df1.Open("input1.txt");
   if (!dfm.Insert(&df1)) {
@@ -530,14 +530,14 @@ int test3() {
     cout << "Find failed when it shouldn't have" << endl;
     return 1;
   }
-    
+
   DiskFile df2(cout, cerr);
   df2.Open("input1.txt");
   if (dfm.Insert(&df2)) {
     cout << "Insert succeeded when it shouldn't have" << endl;
     return 1;
   }
-  
+
   if (dfm.Find("input1.txt") != &df1) {
     cout << "Find failed when it shouldn't have 2" << endl;
     return 1;
@@ -549,7 +549,7 @@ int test3() {
     cout << "Find succeeded when it shouldn't have 2" << endl;
     return 1;
   }
-  
+
   // delete test files using C++ function
   remove("input1.txt");
 
@@ -605,7 +605,7 @@ int test5() {
     cout << "Create succeeded when file already existed!" << endl;
     return 1;
   }
-  
+
   // delete test files using C++ function
   remove("input1.txt");
   return 0;
@@ -637,7 +637,7 @@ int test6() {
 
   {
     DiskFile diskfile(cout, cerr);
-    
+
     if (!diskfile.Open("input1.txt")) {
       cout << "Open failed" << endl;
       return 1;
@@ -685,14 +685,14 @@ int test6() {
       cout << "Write failed 3" << endl;
       return 1;
     }
-      
+
     diskfile.Close();
   }
 
 
   {
     DiskFile diskfile(cout, cerr);
-    
+
     if (!diskfile.Open("input2.txt")) {
       cout << "Open failed" << endl;
       return 1;
@@ -757,7 +757,6 @@ int main() {
   }
 
   cout << "SUCCESS: diskfile_test complete." << endl;
-  
+
   return 0;
 }
-

@@ -72,7 +72,7 @@ void DescriptionPacket::ComputeFileId(void)
   // Compute the fileid from the hash, length, and name fields in the packet.
 
   MD5Context context;
-  context.Update(&packet->hash16k, 
+  context.Update(&packet->hash16k,
                  sizeof(FILEDESCRIPTIONPACKET)-offsetof(FILEDESCRIPTIONPACKET,hash16k)
                  +strlen((const char*)packet->name));
   context.Final(packet->fileid);
@@ -99,8 +99,8 @@ bool DescriptionPacket::Load(DiskFile *diskfile, u64 offset, PACKET_HEADER &head
   packet->header = header;
 
   // Read the rest of the packet from disk
-  if (!diskfile->Read(offset + sizeof(PACKET_HEADER), 
-                      &packet->fileid, 
+  if (!diskfile->Read(offset + sizeof(PACKET_HEADER),
+                      &packet->fileid,
                       (size_t)packet->header.length - sizeof(PACKET_HEADER)))
     return false;
 
@@ -131,7 +131,7 @@ string DescriptionPacket::UrlEncodeChar(char c)
     result += '0' + low_bits;
   else
     result += 'A' + (low_bits - 10);
-  
+
   return result;
 }
 
@@ -183,7 +183,7 @@ string DescriptionPacket::TranslateFilenameFromLocalToPar2(std::ostream &sout, s
 	serr << "WARNING: A filename contains the character \'" << ch << "\' which some systems do not allow in filenames." << endl;
       }
     }
-      
+
 #ifdef _WIN32
     // replace Windows-slash with HTML-slash
     if (ch == '\\') {
@@ -244,7 +244,7 @@ string DescriptionPacket::TranslateFilenameFromLocalToPar2(std::ostream &sout, s
       serr << "         for Windows systems to handle." << endl;
     }
   }
-  
+
   return par2_encoded_filename;
 }
 
@@ -257,7 +257,7 @@ string DescriptionPacket::TranslateFilenameFromLocalToPar2(std::ostream &sout, s
 // encoding of %HH where H is a hex-digit.
 //
 // NOTE: Windows limits path names to 255 characters.  I'm not
-// sure that anything can be done here for that.  
+// sure that anything can be done here for that.
 string DescriptionPacket::TranslateFilenameFromPar2ToLocal(std::ostream &sout, std::ostream &serr, const NoiseLevel noiselevel, string par2_encoded_filename)
 {
   string local_filename;
@@ -356,7 +356,7 @@ string DescriptionPacket::TranslateFilenameFromPar2ToLocal(std::ostream &sout, s
     {
       serr << "INFO: Found attempt to write parent directory.  Changing \"..\" to \"" << UrlEncodeChar('.') << UrlEncodeChar('.') << "\"" << endl;
     }
-    
+
     local_filename.replace(index, 2, UrlEncodeChar('.')+UrlEncodeChar('.'));
   }
 #else
@@ -368,7 +368,7 @@ string DescriptionPacket::TranslateFilenameFromPar2ToLocal(std::ostream &sout, s
     {
       serr << "INFO: Found attempt to write absolute path.  Changing '/' at start of filename to \"" << UrlEncodeChar('/') << "\"" << endl;
     }
-    
+
     local_filename.replace(0, 1, UrlEncodeChar('/'));
   }
 
@@ -384,8 +384,6 @@ string DescriptionPacket::TranslateFilenameFromPar2ToLocal(std::ostream &sout, s
     local_filename.replace(index, 2, UrlEncodeChar('.')+UrlEncodeChar('.'));
   }
 #endif
- 
+
   return local_filename;
 }
-
-

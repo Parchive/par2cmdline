@@ -107,8 +107,8 @@ EXTRA_DIST = PORTING ROADMAP \
 
 
 # Programs that need to be compiled for the test suite.
-# These are the unit tests.  
-check_PROGRAMS = tests/letype_test tests/crc_test tests/md5_test tests/diskfile_test tests/libpar2_test tests/commandline_test tests/descriptionpacket_test tests/criticalpacket_test tests/reedsolomon_test tests/galois_test 
+# These are the unit tests.
+check_PROGRAMS = tests/letype_test tests/crc_test tests/md5_test tests/diskfile_test tests/libpar2_test tests/commandline_test tests/descriptionpacket_test tests/criticalpacket_test tests/reedsolomon_test tests/galois_test
 
 tests_letype_test_SOURCES = src/letype_test.cpp src/letype.h
 
@@ -121,7 +121,7 @@ tests_diskfile_test_SOURCES = src/diskfile_test.cpp src/diskfile.cpp src/diskfil
 tests_libpar2_test_SOURCES = src/libpar2_test.cpp src/libpar2.h
 tests_libpar2_test_LDADD = libpar2.a
 
-tests_commandline_test_SOURCES = src/commandline_test.cpp src/commandline.cpp src/commandline.h 
+tests_commandline_test_SOURCES = src/commandline_test.cpp src/commandline.cpp src/commandline.h
 tests_commandline_test_LDADD = libpar2.a
 
 tests_descriptionpacket_test_SOURCES = src/descriptionpacket_test.cpp src/descriptionpacket.cpp src/descriptionpacket.h
@@ -179,4 +179,3 @@ uninstall-hook :
 	rm -f $(DESTDIR)$(bindir)/par2create$(EXEEXT)
 	rm -f $(DESTDIR)$(bindir)/par2verify$(EXEEXT)
 	rm -f $(DESTDIR)$(bindir)/par2repair$(EXEEXT)
-

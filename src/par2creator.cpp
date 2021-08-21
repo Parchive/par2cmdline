@@ -29,7 +29,7 @@ static char THIS_FILE[]=__FILE__;
 #endif
 
 
-// static variable 
+// static variable
 #ifdef _OPENMP
 u32 Par2Creator::filethreads = _FILE_THREADS;
 #endif
@@ -65,7 +65,7 @@ Par2Creator::Par2Creator(std::ostream &sout, std::ostream &serr, const NoiseLeve
 , rs()
 , progress(0)
 , totaldata(0)
-  
+
 , deferhashcomputation(false)
 #ifdef _OPENMP
 , mttotalsize(0)
@@ -107,7 +107,7 @@ Result Par2Creator::Process(
 #ifdef _OPENMP
   filethreads = _filethreads;
 #endif
-  
+
   // Get information from commandline
   blocksize = _blocksize;
   const vector<string> extrafiles = _extrafiles;
@@ -241,7 +241,7 @@ Result Par2Creator::Process(
 bool Par2Creator::ComputeBlockCount(const vector<string> &extrafiles)
 {
   FileSizeCache filesize_cache;
-  
+
   largestfilesize = 0;
   for (vector<string>::const_iterator i=extrafiles.begin(); i!=extrafiles.end(); i++)
   {
@@ -251,7 +251,7 @@ bool Par2Creator::ComputeBlockCount(const vector<string> &extrafiles)
       largestfilesize = filesize;
     }
   }
-  
+
 
   if (blocksize == 0)
   {
@@ -293,7 +293,7 @@ bool Par2Creator::CalculateProcessBlockSize(size_t memorylimit)
   if (recoveryblockcount == 0)
   {
     chunksize = 0;
-    
+
     deferhashcomputation = false;
   }
   else

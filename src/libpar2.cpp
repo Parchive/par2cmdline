@@ -197,6 +197,3 @@ bool ComputeRecoveryFileCount(std::ostream &sout,
 
   return true;
 }
-
-
-

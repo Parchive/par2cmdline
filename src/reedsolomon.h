@@ -233,7 +233,7 @@ inline bool ReedSolomon<g>::Compute(NoiseLevel noiselevel, std::ostream &sout, s
 
   /*  Layout of RS Matrix:
       NOTE: The second set of columns represents the parity vectors present,
-      but this only uses datamissing of them.  Otherwise, it is over constrained. 
+      but this only uses datamissing of them.  Otherwise, it is over constrained.
 
                                        datamissing
                      datapresent      <=parpresent        datamissing       parmissing

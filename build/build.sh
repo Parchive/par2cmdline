@@ -9,4 +9,3 @@ export CXXFLAGS="-O3 -pipe -fstack-protector-strong"
 ./configure
 # make
 make
-

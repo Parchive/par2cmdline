@@ -22,12 +22,12 @@
 #define __CRC_H__
 
 // These global functions are used to compute the CCITT CRC32 checksum of
-// blocks of data. 
+// blocks of data.
 
-// The CRC for a block of data may be computed piecemeal be repeatedly 
-// calling CRCUpdateChar, and CRCUpdateBlock. 
+// The CRC for a block of data may be computed piecemeal be repeatedly
+// calling CRCUpdateChar, and CRCUpdateBlock.
 
-// Given the CRC for a block of data in a buffer, CRCSlideChar may be used 
+// Given the CRC for a block of data in a buffer, CRCSlideChar may be used
 // to quickly compute the CRC for the block of data in the buffer that is the
 // same size but offset one character later in the buffer.
 
