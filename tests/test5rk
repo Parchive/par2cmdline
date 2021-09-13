@@ -93,5 +93,4 @@ cmp -s test-0.data test-0.data.orig && cmp -s test-1.data test-1.data.orig && cm
 cd "$TESTROOT"
 rm -rf "run$testname"
 
-exit 0;
-
+exit 0

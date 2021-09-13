@@ -48,5 +48,4 @@ $PARBINARY repair subfolder/some-file || { echo "ERROR: Failed to repair"; exit 
 cd "$TESTROOT"
 rm -rf "run$testname"
 
-exit 0;
-
+exit 0

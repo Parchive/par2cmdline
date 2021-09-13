@@ -57,5 +57,4 @@ $PARBINARY r testdata.par2 || { echo "ERROR: repair files using PAR 2.0 failed" 
 cd "$TESTROOT"
 rm -rf "run$testname"
 
-exit 0;
-
+exit 0

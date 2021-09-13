@@ -65,5 +65,4 @@ test -e test-9.data ||  { echo "ERROR: rename failed" ; exit 1; } >&2
 cd "$TESTROOT"
 rm -rf "run$testname"
 
-exit 0;
-
+exit 0
