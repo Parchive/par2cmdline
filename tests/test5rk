@@ -1,7 +1,7 @@
 #!/bin/sh
 # This is a copy of test5 but using "-rk" instead of "-r100".
 # (This increases redundancy, but I'm missing system knowledge
-# to refactore the test core).
+# to refactor the test core).
 
 # Couldn't we move the stuff common for all tests and maybe some
 # helper functions to a utility file and source it? For example:

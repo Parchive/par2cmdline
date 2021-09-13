@@ -31,7 +31,7 @@ rm -rf "run$testname"
 
 mkdir "run$testname" && cd "run$testname" || { echo "ERROR: Could not change to test directory" ; exit 1; } >&2
 
-banner="genereate datafile with 2000 random bytes"
+banner="generate datafile with 2000 random bytes"
 dashes=`echo "$banner" | sed s/./-/g`
 
 echo $dashes

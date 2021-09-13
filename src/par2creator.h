@@ -71,7 +71,7 @@ protected:
   // Initialise all of the source blocks ready to start reading data from the source files.
   bool CreateSourceBlocks(void);
 
-  // Create all of the output files and allocate all packets to appropriate file offets.
+  // Create all of the output files and allocate all packets to appropriate file offsets.
   bool InitialiseOutputFiles(const string &par2filename);
 
   // Allocate memory buffers for reading and writing data to disk.

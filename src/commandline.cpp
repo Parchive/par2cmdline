@@ -1035,7 +1035,7 @@ bool CommandLine::CheckValuesAndSetDefaults() {
   }
 
   
-  // operation should alway be set, but let's be thorough.
+  // operation should always be set, but let's be thorough.
   if (operation == opNone) {
     cerr << "ERROR: No operation was specified (create, repair, or verify)" << endl;
     return false;

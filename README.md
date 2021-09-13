@@ -117,7 +117,7 @@ You may also leave off the .par2 file extension when verifying and repairing.
 
 ## Creating PAR2 files
 
-With PAR 2.0 you can create PAR2 recovery files for as few as 1 or as many as 32768 files. If you wanted to create PAR1 recovery files for a single file you were forced to split the file into muliple parts and RAR was frequently used for this purpose. You do NOT need to split files with PAR 2.0.
+With PAR 2.0 you can create PAR2 recovery files for as few as 1 or as many as 32768 files. If you wanted to create PAR1 recovery files for a single file you were forced to split the file into multiple parts and RAR was frequently used for this purpose. You do NOT need to split files with PAR 2.0.
 
 To create PAR 2 recovery files for a single data file (e.g. one called *test.mpg*), you can use the following command:
 

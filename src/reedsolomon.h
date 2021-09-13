@@ -407,7 +407,7 @@ inline bool ReedSolomon<g>::GaussElim(NoiseLevel noiselevel, std::ostream &sout,
   // Because the matrices being operated on are Vandermonde matrices
   // they are guaranteed not to be singular.
 
-  // Additionally, because Galois arithmetic is being used, all calulations
+  // Additionally, because Galois arithmetic is being used, all calculations
   // involve exact values with no loss of precision. It is therefore
   // not necessary to carry out any row or column swapping.
 

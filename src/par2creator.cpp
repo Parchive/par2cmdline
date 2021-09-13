@@ -171,7 +171,7 @@ Result Par2Creator::Process(
   if (!CreateSourceBlocks())
     return eLogicError;
 
-  // Create all of the output files and allocate all packets to appropriate file offets.
+  // Create all of the output files and allocate all packets to appropriate file offsets.
   if (!InitialiseOutputFiles(parfilename))
     return eFileIOError;
 
@@ -423,7 +423,7 @@ bool Par2Creator::CreateSourceBlocks(void)
        sourcefile!= sourcefiles.end();
        sourcefile++)
   {
-    // Allocate the appopriate number of source blocks to each source file.
+    // Allocate the appropriate number of source blocks to each source file.
     // sourceblock will be advanced.
 
     (*sourcefile)->InitialiseSourceBlocks(sourceblock, blocksize);
@@ -447,7 +447,7 @@ public:
   u32 count;
 };
 
-// Create all of the output files and allocate all packets to appropriate file offets.
+// Create all of the output files and allocate all packets to appropriate file offsets.
 bool Par2Creator::InitialiseOutputFiles(const string &parfilename)
 {
   // Allocate the recovery packets
@@ -743,7 +743,7 @@ bool Par2Creator::ProcessData(u64 blockoffset, size_t blocklength)
   // Clear the output buffer
   memset(outputbuffer, 0, chunksize * recoveryblockcount);
 
-  // If we have defered computation of the file hash and block crc and hashes
+  // If we have deferred computation of the file hash and block crc and hashes
   // sourcefile and sourceindex will be used to update them during
   // the main recovery block computation
   vector<Par2CreatorSourceFile*>::iterator sourcefile = sourcefiles.begin();
@@ -868,7 +868,7 @@ bool Par2Creator::WriteRecoveryPacketHeaders(void)
 
 bool Par2Creator::FinishFileHashComputation(void)
 {
-  // If we defered the computation of the full file hash, then we finish it now
+  // If we deferred the computation of the full file hash, then we finish it now
   if (deferhashcomputation)
   {
     // For each source file
