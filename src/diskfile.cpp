@@ -405,7 +405,7 @@ std::unique_ptr< list<string> > DiskFile::FindFiles(string path, string wildcard
 
         string nwwildcard="*";
 	std::unique_ptr< list<string> > dirmatches(
-						 DiskFile::FindFiles(fd.cFileName, nwwildcard, true)
+						 DiskFile::FindFiles(path + fd.cFileName, nwwildcard, true)
 						 );
 
         matches->merge(*dirmatches);
