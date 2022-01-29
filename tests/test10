@@ -50,5 +50,4 @@ cmp -s subdir1/test-0.data test-0.data.orig || { echo "ERROR: Repaired files do 
 cd "$TESTROOT"
 rm -rf "run$testname"
 
-exit 0;
-
+exit 0

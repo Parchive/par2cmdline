@@ -47,7 +47,7 @@ int test5() {
     cerr << "ComputeRecoveryBlockCount should not overwrite recoveryblockcount" << endl;
     cerr << "   it returned " << recoveryblockcount << endl;
     return 1;
-  }    
+  }
 
 
   recoveryblockcount = 66000;
@@ -67,7 +67,7 @@ int test5() {
   }
 
 
-  
+
   recoveryblockcount = 6000;
   success = CommandLine::ComputeRecoveryBlockCount(&recoveryblockcount,
 							100,
@@ -109,7 +109,7 @@ int test6() {
     cerr << "ComputeRecoveryBlockCount 1% of 100 is 1" << endl;
     cerr << "   it returned " << recoveryblockcount << endl;
     return 1;
-  }    
+  }
 
   recoveryblockcount = 0;
   success = CommandLine::ComputeRecoveryBlockCount(&recoveryblockcount,
@@ -130,7 +130,7 @@ int test6() {
     cerr << "ComputeRecoveryBlockCount 5% of 1000 is 50" << endl;
     cerr << "   it returned " << recoveryblockcount << endl;
     return 1;
-  }    
+  }
 
 
   recoveryblockcount = 0;
@@ -152,7 +152,7 @@ int test6() {
     cerr << "ComputeRecoveryBlockCount 1% of 10 is still positive" << endl;
     cerr << "   it returned " << recoveryblockcount << endl;
     return 1;
-  }    
+  }
 
   return 0;
 }
@@ -164,7 +164,7 @@ int test7_helper(int sourcefilecount, // not used by ComputeRecoveryBlockCount!
 		 int blocksize,
 		 int redundancysize,
 		 int recoveryfilecount)
-{  
+{
   // overhead from packet headers, formatting, etc.
   // fixed: main packet header, main packet contents
   const int overhead_fixed = 76;
@@ -173,7 +173,7 @@ int test7_helper(int sourcefilecount, // not used by ComputeRecoveryBlockCount!
   // per source block: file slices contents
   const int overhead_persourceblock = 20;
   // per recovery bloc: recovery block header
-  const int overhead_perrecoveryblock = 68; 
+  const int overhead_perrecoveryblock = 68;
 
   u32 recoveryblockcount;
   bool success = CommandLine::ComputeRecoveryBlockCount(&recoveryblockcount,
@@ -205,8 +205,8 @@ int test7_helper(int sourcefilecount, // not used by ComputeRecoveryBlockCount!
     cerr << "        blocksize=" << blocksize << endl;
     cerr << "        recoveryfilecount=" << recoveryfilecount << endl;
     return 2;
-  }    
-  
+  }
+
   return 0;
 }
 
@@ -216,7 +216,7 @@ int test7_helper(int sourcefilecount, // not used by ComputeRecoveryBlockCount!
 int test7() {
   // CD is 10 files, 600 source blocks, 1MB block size
   // Redundancys is 40MB in 5 files.
-  
+
   //sourcefilecount, sourceblockcount, blocksize, redundancysize, recoveryfilecount
   if (test7_helper(10, 600, 1024*1024, 40*1024*1024, 5))
     return 1;
@@ -241,12 +241,12 @@ int test7() {
   // Redundancys is 50MB in 5 files.
   if (test7_helper(1, 5000, 1024*1024, 50*1024*1024, 5) == 1)
     return 1;
-  
+
 
   // if redundancy size is too small, still have 1 block
   u32 recoveryblockcount;
   bool success = CommandLine::ComputeRecoveryBlockCount(&recoveryblockcount,
-							1000, 
+							1000,
 							1024,
 							0,
 							scUniform,
@@ -263,8 +263,8 @@ int test7() {
     cerr << "ComputeRecoveryBlockCount with small redundancy amount should still return 1" << endl;
     cerr << "   it returned " << recoveryblockcount << endl;
     return 1;
-  }    
-  
+  }
+
   return 0;
 }
 
@@ -276,7 +276,7 @@ int test8_helper(int sourcefilecount, // not used by ComputeRecoveryBlockCount!
 		 int sourceblockcount,
 		 int blocksize,
 		 int redundancysize)
-{  
+{
   // overhead from packet headers, formatting, etc.
   // fixed: main packet header, main packet contents
   const int overhead_fixed = 76;
@@ -285,7 +285,7 @@ int test8_helper(int sourcefilecount, // not used by ComputeRecoveryBlockCount!
   // per source block: file slices contents
   const int overhead_persourceblock = 20;
   // per recovery bloc: recovery block header
-  const int overhead_perrecoveryblock = 68; 
+  const int overhead_perrecoveryblock = 68;
 
   u32 recoveryblockcount;
   bool success = CommandLine::ComputeRecoveryBlockCount(&recoveryblockcount,
@@ -314,7 +314,7 @@ int test8_helper(int sourcefilecount, // not used by ComputeRecoveryBlockCount!
     cerr << "ComputeRecoveryBlockCount failed test8.2" << endl;
     return 1;
   }
-  
+
   int usage_per_recoveryfile = overhead_fixed
     + sourcefilecount * overhead_persourcefile
     + sourceblockcount * overhead_persourceblock;
@@ -329,8 +329,8 @@ int test8_helper(int sourcefilecount, // not used by ComputeRecoveryBlockCount!
     cerr << "        blocksize=" << blocksize << endl;
     cerr << "        recoveryfilecount=" << recoveryfilecount << endl;
     return 2;
-  }    
-  
+  }
+
   return 0;
 }
 
@@ -353,7 +353,7 @@ int test8() {
   // WARNING: THIS TEST USUALLY FAILS BY A SMALL AMOUNT
   //    The ==1 at the end will make the test fail
   //     if the function doesn't return any value.
-  // 
+  //
   if (test8_helper(10, 600,   16*1024, 40*1024*1024) == 1)
     return 1;
 
@@ -363,7 +363,7 @@ int test8() {
 
   if (test8_helper(1, 5000, 1024*1024, 50*1024*1024))
     return 1;
-  
+
   return 0;
 }
 
@@ -389,7 +389,7 @@ int test9_helper(const char *arg)
     }
   }
   buffer[len] = '\0';
-  
+
   CommandLine commandline;
   if (commandline.Parse(argc, argv)) {
     cout << "CommandLine should not have parsed: \"" << arg << "\"" << endl;
@@ -398,7 +398,7 @@ int test9_helper(const char *arg)
 
   delete [] buffer;
   delete [] argv;
-  
+
   return 0;
 }
 
@@ -413,7 +413,7 @@ int test9() {
   par2file_bar.open("bar.par2");
   par2file_bar << "dummy par2 file.  Just has to exist.";
   par2file_bar.close();
-  
+
   ofstream input1;
   input1.open("input1.txt");
   input1 << "commandline_test test9 input1.txt\n";
@@ -422,8 +422,8 @@ int test9() {
   input2.open("input2.txt");
   input2 << "commandline_test test9 input2.txt\n";
   input2.close();
-  
-  
+
+
   // mistaken call for help, version, etc.
   if (test9_helper("par2 -?"))
     return 1;
@@ -439,7 +439,7 @@ int test9() {
     return 1;
   if (test9_helper("par2 -b100 createfoo.par"))
     return 1;
-  
+
   // missing parfile
   if (test9_helper("par2 repair"))
     return 1;
@@ -459,7 +459,7 @@ int test9() {
   // missing input files for create
   if (test9_helper("par2 create foo.par2"))
     return 1;
-  
+
   // wrong options for the chosen operation
   if (test9_helper("par2 create -p foo.par2 input1.txt input2.txt"))
     return 1;
@@ -584,7 +584,7 @@ int test10_helper(const char *arg,
     }
   }
   buffer[len] = '\0';
-  
+
   CommandLine commandline;
   if (!commandline.Parse(argc, argv)) {
     cout << "CommandLine said it was unable to parse \"" << arg << "\"" << endl;
@@ -601,7 +601,7 @@ int test10_helper(const char *arg,
     cout << commandline.GetOperation() << " != " << CommandLine::opCreate << endl;
     return 1;
   }
-  
+
   if (commandline.GetNoiseLevel() != noiselevel) {
     cout << "test10 fail noiselevel  arg=" << arg << endl;
     cout << commandline.GetNoiseLevel() << " != " << noiselevel << endl;
@@ -676,7 +676,7 @@ int test10_helper(const char *arg,
 
   delete [] buffer;
   delete [] argv;
-  
+
   return 0;
 }
 
@@ -724,7 +724,7 @@ int test10() {
   const Scheme default_recoveryfilescheme = scVariable;
   const u32 default_recoveryfilecount = 0;
   const u32 default_recoveryblockcount = 1; // tries to do 5% recovery data ... this is minimum value
-  
+
   if (test10_helper("par2 create foo.par2 input1.txt input2.txt",
 		    default_noiselevel,
 		    default_memorylimit,
@@ -742,7 +742,7 @@ int test10() {
 		    default_recoveryblockcount)) {
     return 1;
   }
-  
+
 
   // TODO: -B option
 
@@ -876,7 +876,7 @@ int test10() {
     return 1;
   }
 #endif
-  
+
   // -- option
   if (test10_helper("par2 create -- foo.par2 input1.txt input2.txt",
 		    default_noiselevel,
@@ -1073,7 +1073,7 @@ int test10() {
 		    default_firstblock,
 		    default_recoveryfilescheme,
 		    default_recoveryfilecount,
-		    42)) { 
+		    42)) {
     return 1;
   }
   if (test10_helper("par2 create -f42 foo.par2 input1.txt input2.txt",
@@ -1090,7 +1090,7 @@ int test10() {
 		    42,
 		    default_recoveryfilescheme,
 		    default_recoveryfilecount,
-		    default_recoveryblockcount)) { 
+		    default_recoveryblockcount)) {
     return 1;
   }
   if (test10_helper("par2 create -u foo.par2 input1.txt input2.txt",
@@ -1107,7 +1107,7 @@ int test10() {
 		    default_firstblock,
 		    scUniform,
 		    default_recoveryfilecount,
-		    default_recoveryblockcount)) { 
+		    default_recoveryblockcount)) {
     return 1;
   }
   if (test10_helper("par2 create -l foo.par2 input1.txt input2.txt",
@@ -1124,7 +1124,7 @@ int test10() {
 		    default_firstblock,
 		    scLimited,
 		    default_recoveryfilecount,
-		    default_recoveryblockcount)) { 
+		    default_recoveryblockcount)) {
     return 1;
   }
   if (test10_helper("par2 create -n42 foo.par2 input1.txt input2.txt",
@@ -1141,14 +1141,14 @@ int test10() {
 		    default_firstblock,
 		    default_recoveryfilescheme,
 		    42,
-		    default_recoveryblockcount)) { 
+		    default_recoveryblockcount)) {
     return 1;
   }
 
 
   // TODO: Test "-R" option (Recurse into subdirectories)
-  
-  
+
+
   // delete files that were created at start of test.
   remove("input1.txt");
   remove("input2.txt");
@@ -1193,14 +1193,14 @@ int test11_helper(const char *arg,
     }
   }
   buffer[len] = '\0';
-  
+
   CommandLine commandline;
   if (!commandline.Parse(argc, argv)) {
     cout << "CommandLine said it was unable to parse \"" << arg << "\"" << endl;
     return 1;
   }
 
-  
+
   if (commandline.GetVersion() != version) {
     cout << "test11 fail version  arg=" << arg << endl;
     cout << commandline.GetVersion() << " != " << version << endl;
@@ -1257,7 +1257,7 @@ int test11_helper(const char *arg,
       return 1;
     }
   }
-  
+
   if (commandline.GetPurgeFiles() != purgefiles) {
     cout << "test11 fail purgefiles  arg=" << arg << endl;
     cout << commandline.GetPurgeFiles() << " != " << purgefiles << endl;
@@ -1279,7 +1279,7 @@ int test11_helper(const char *arg,
 
   delete [] buffer;
   delete [] argv;
-  
+
   return 0;
 }
 
@@ -1292,7 +1292,7 @@ int test11() {
   par2file.open("foo.par2");
   par2file << "dummy par2 file.  Just has to exist.";
   par2file.close();
-  
+
   ofstream input1;
   input1.open("input1.txt");
   const char *input1_contents = "commandline_test test11 input1.txt\n";
@@ -1312,7 +1312,7 @@ int test11() {
     cout << "CommandLine unable to fetch default values." << endl;
     return 1;
   }
-  
+
 
   // Define the default values
   // (Using variable names makes it more obvious when
@@ -1331,7 +1331,7 @@ int test11() {
   bool default_purgefiles = false;
   bool default_skipdata = false;
   u64 default_skipleaway = 0;
-  
+
   if (test11_helper("par2 repair foo.par2 input1.txt input2.txt",
 		    default_noiselevel,
 		    default_memorylimit,
@@ -1516,7 +1516,7 @@ int test11() {
     dashpar2file.open("-foo.par2");
     dashpar2file << "anything\n";
     dashpar2file.close();
-    
+
     if (test11_helper("par2 repair -- -foo.par2 input1.txt input2.txt",
 		    default_noiselevel,
 		    default_memorylimit,
@@ -1542,11 +1542,11 @@ int test11() {
     dashinput2.open("-input2.txt");
     dashinput2 << "commandline_test test11 -input2.txt\n";
     dashinput2.close();
-      
+
     vector<string> extrafiles;
     extrafiles.push_back(default_basepath + "input1.txt");
     extrafiles.push_back(default_basepath + "-input2.txt");
-      
+
     if (test11_helper("par2 repair foo.par2 input1.txt -- -input2.txt",
 		    default_noiselevel,
 		    default_memorylimit,
@@ -1641,7 +1641,7 @@ int test11() {
 		    42)) {
     return 1;
   }
-  
+
   // remove par2 file
   remove("foo.par2");
 
@@ -1687,7 +1687,7 @@ int test11() {
     return 1;
   }
 
-  
+
   remove("bar.par");
   remove("input1.txt");
   remove("input2.txt");
@@ -1752,7 +1752,7 @@ int test12() {
     return 1;
   }
 
-  
+
   return 0;
 }
 
@@ -1794,8 +1794,8 @@ int main() {
     cerr << "FAILED: test12" << endl;
     return 1;
   }
-  
+
   cout << "SUCCESS: commandline_test complete." << endl;
-  
+
   return 0;
 }

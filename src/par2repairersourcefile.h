@@ -52,7 +52,7 @@ public:
   // file and set the length of each allocated block correctly.
   void SetBlocks(u32 _blocknumber,
                  u32 _blockcount,
-                 vector<DataBlock>::iterator _sourceblocks, 
+                 vector<DataBlock>::iterator _sourceblocks,
                  vector<DataBlock>::iterator _targetblocks,
                  u64 blocksize);
 
@@ -89,7 +89,7 @@ public:
 
 #if _OPENMP
   // Set/Get "filesize on disk" needed for mt progress line
-  void SetDiskFileSize();                           
+  void SetDiskFileSize();
   u64 DiskFileSize(void) const {return diskfilesize;}
 #endif
 

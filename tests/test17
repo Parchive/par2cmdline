@@ -47,5 +47,4 @@ $PARBINARY r recovery.par2 || { echo "ERROR: reparation of files using PAR 2.0 f
 cd "$TESTROOT"
 rm -rf "run$testname"
 
-exit 0;
-
+exit 0

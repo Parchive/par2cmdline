@@ -24,7 +24,7 @@
 // created a particular recovery file.
 
 // The PAR 2.0 specification requires the presence of a
-// creator packet, but it is not actually needed for the 
+// creator packet, but it is not actually needed for the
 // verification or recovery of damaged files.
 
 class CreatorPacket : public CriticalPacket

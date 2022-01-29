@@ -57,7 +57,7 @@ int test1() {
   ((RECOVERYBLOCKPACKET *)data)->exponent = 1;
   data = (u8 *) criticalpackets[10].AllocatePacket(sizeof(RECOVERYBLOCKPACKET), 0);
   // type is zeroed by AllocatePacket.
-  
+
   for (size_t i = 0; i < 11; i++) {
     for (size_t j = 0; j < 11; j++) {
       if (CriticalPacket::CompareLess(criticalpackets + i, criticalpackets + j) != (i < j)) {
@@ -66,7 +66,7 @@ int test1() {
       }
     }
   }
-  
+
   return 0;
 }
 
@@ -78,7 +78,6 @@ int main() {
   }
 
   cout << "SUCCESS: criticalpacket_test complete." << endl;
-  
+
   return 0;
 }
-

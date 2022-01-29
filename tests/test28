@@ -54,5 +54,4 @@ test -s stderr || { echo "ERROR: second create with -qq did not produce output t
 cd "$TESTROOT"
 rm -rf "run$testname"
 
-exit 0;
-
+exit 0

@@ -74,7 +74,7 @@ protected:
   // target DataBlocks to them, and remember them for later verification.
   bool CreateTargetFiles(void);
 
-  // Work out which data blocks are available, which need to be recreated, 
+  // Work out which data blocks are available, which need to be recreated,
   // and compute the appropriate Reed Solomon matrix.
   bool ComputeRSmatrix(void);
 
@@ -98,7 +98,7 @@ protected:
   std::ostream &sout; // stream for output (for commandline, this is cout)
   std::ostream &serr; // stream for errors (for commandline, this is cerr)
   const NoiseLevel   noiselevel;              // How noisy we should be
-  
+
   string                    searchpath;              // Where to find files on disk
   DiskFileMap               diskfilemap;             // Map from filename to DiskFile
 

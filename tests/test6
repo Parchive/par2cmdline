@@ -51,5 +51,4 @@ cmp -s subdir1/test-2.data subdir1/test-2.data.orig && cmp -s subdir2/test-7.dat
 cd "$TESTROOT"
 rm -rf "run$testname"
 
-exit 0;
-
+exit 0

@@ -66,5 +66,4 @@ cmp -s "$faraway"/test-1.data "$faraway"/test-1.data.orig && cmp -s "$faraway"/t
 cd "$TESTROOT"
 rm -rf "run$testname"
 
-exit 0;
-
+exit 0

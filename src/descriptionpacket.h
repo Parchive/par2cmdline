@@ -59,7 +59,7 @@ public:
 
   // Used to encode characters we do not want, such as "\t" or ":".
   // Function is public for easier testing.
-  static string UrlEncodeChar(char c);  
+  static string UrlEncodeChar(char c);
 
   // Converts filename from local disk to how it will be encoded
   // in the Par2 file, and back again.

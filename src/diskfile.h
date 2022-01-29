@@ -123,7 +123,7 @@ protected:
   // (Operator= is needed when vectors are resized.)
   std::ostream *sout; // stream for output (for commandline, this is cout)
   std::ostream *serr; // stream for errors (for commandline, this is cerr)
-  
+
   string filename;
   u64    filesize;
 
@@ -165,11 +165,11 @@ protected:
 
 class FileSizeCache
 {
-public:  
+public:
   FileSizeCache();
   u64 get(const string &filename);
 protected:
-  map<string, u64> cache; 
+  map<string, u64> cache;
 };
 
 #endif // __DISKFILE_H__

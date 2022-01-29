@@ -2,7 +2,6 @@
 
 execdir="$PWD"
 
-
 for f in $execdir/tests/*_test
 do
     # check that the filename exists.  If there are no files,
@@ -34,7 +33,7 @@ do
     # Bourne shell will treat $execdir/tests/*_test like a
     # literal string!
     [ -f "$f" ] || continue
-    
+
     echo "------------------------------------------------------"
     echo "Running unit tests from file $f"
     echo "------------------------------------------------------"
@@ -46,4 +45,4 @@ do
     echo "------------------------------------------------------"
 done
 
-exit 0;
+exit 0

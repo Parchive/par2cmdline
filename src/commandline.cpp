@@ -50,7 +50,7 @@ CommandLine::CommandLine(void)
 , parfilename()
 , rawfilenames()
 , extrafiles()
-, operation(opNone)  
+, operation(opNone)
 , purgefiles(false)
 , skipdata(false)
 , skipleaway(0)
@@ -183,7 +183,7 @@ bool CommandLine::Parse(int argc, const char * const *argv)
       return false;
     }
   }
-  
+
   return true;
 }
 
@@ -809,7 +809,7 @@ bool CommandLine::ReadArgs(int argc, const char * const *argv)
 	      cerr << "  (Run \"" << path << name << " --help\" for supported options.)" << endl;
               return false;
             }
-	      
+
             argc--;
             argv++;
             options = false;
@@ -871,12 +871,12 @@ bool CommandLine::ReadArgs(int argc, const char * const *argv)
 u64 CommandLine::GetTotalPhysicalMemory()
 {
   u64 TotalPhysicalMemory = 0;
-  
+
   HMODULE hLib = ::LoadLibraryA("kernel32.dll");
   if (NULL != hLib)
   {
     BOOL (WINAPI *pfn)(LPMEMORYSTATUSEX) = (BOOL (WINAPI*)(LPMEMORYSTATUSEX))::GetProcAddress(hLib, "GlobalMemoryStatusEx");
-    
+
     if (NULL != pfn)
     {
       MEMORYSTATUSEX mse;
@@ -886,16 +886,16 @@ u64 CommandLine::GetTotalPhysicalMemory()
 	TotalPhysicalMemory = mse.ullTotalPhys;
       }
     }
-    
+
     ::FreeLibrary(hLib);
   }
-  
+
   if (TotalPhysicalMemory == 0)
   {
     MEMORYSTATUS ms;
     ::ZeroMemory(&ms, sizeof(ms));
     ::GlobalMemoryStatus(&ms);
-    
+
     TotalPhysicalMemory = ms.dwTotalPhys;
   }
 
@@ -906,7 +906,7 @@ u64 CommandLine::GetTotalPhysicalMemory()
 u64 CommandLine::GetTotalPhysicalMemory()
 {
   long pages = sysconf(_SC_PHYS_PAGES);
-  long page_size = sysconf(_SC_PAGESIZE);  
+  long page_size = sysconf(_SC_PAGESIZE);
   return pages*page_size;
 }
 #else
@@ -925,7 +925,7 @@ bool CommandLine::CheckValuesAndSetDefaults() {
     return false;
   }
 
-  
+
   // Default noise level
   if (noiselevel == nlUnknown)
   {
@@ -1034,13 +1034,13 @@ bool CommandLine::CheckValuesAndSetDefaults() {
     } //end file exists
   }
 
-  
-  // operation should alway be set, but let's be thorough.
+
+  // operation should always be set, but let's be thorough.
   if (operation == opNone) {
     cerr << "ERROR: No operation was specified (create, repair, or verify)" << endl;
     return false;
   }
-  
+
 
   if (operation != opCreate) {
     // skipdata is bool and either value is valid.
@@ -1217,7 +1217,7 @@ bool CommandLine::ComputeBlockSize() {
       }
     }
   }
-  
+
   return true;
 }
 

@@ -29,14 +29,14 @@
 
 Creator.SetInput 100
 Creator.SetOutput 0 4
-Creator.Compute 
+Creator.Compute
 creator.process 10004 0 0
 creator.process 10004 0 1
 creator.process 10004 0 2
 creator.process 10004 0 3
 creator.process 10004 0 4
 creator.process 10004 1 0
-creator.process 10004 1 1 
+creator.process 10004 1 1
 creator.process 10004 1 2
 creator.process 10004 1 3
 creator.process 10004 1 4
@@ -96,11 +96,11 @@ repair.process
 
 
 
-/**  This is a simpler field than Galois. 
- *   I'm not sure why ReedSolomon was 
+/**  This is a simpler field than Galois.
+ *   I'm not sure why ReedSolomon was
  *   specialized for Galois8 and Galois16.
  *   It should be made to work with this type.
- * 
+ *
 #include <cmath>
 
 template <const unsigned int prime, typename valuetype, int bits>
@@ -155,7 +155,7 @@ public:
   }
   ValueType ALog(void) const { return (valuetype) (((long) std::pow((double) 2, (double) value)) % prime); }
 
-  enum 
+  enum
   {
     Bits  = bits,
     //    Count = GaloisTable<bits,generator,valuetype>::Count,
@@ -172,7 +172,7 @@ protected:
     }
     cerr << "Did not find multiplicative inverse for " << v << endl;
   }
-  
+
   ValueType value;
 
 };
@@ -185,10 +185,10 @@ protected:
 template<typename gtype, typename utype>
 int generate_data(unsigned int seed, u8 data[][BUF_SIZE], int in_count, int recovery_count, int low_exponent) {
   int high_exponent = low_exponent + recovery_count - 1;
-  
+
   // random input data
   srand(seed);
-  
+
   for (int i = 0; i < in_count; i++) {
     for (int k = 0; k < BUF_SIZE; k++) {
       data[i][k] = (u8)(rand() % 256);
@@ -219,7 +219,7 @@ int generate_data(unsigned int seed, u8 data[][BUF_SIZE], int in_count, int reco
     cerr << "rs_creator.Compute returned false";
     return 1;
   }
-  
+
   for (int i = 0; i < in_count; i++) {
     for (int j = 0; j < recovery_count; j++) {
 	//cout << "creator.process " << BUF_SIZE << " " << i << " " << j << endl;
@@ -242,7 +242,7 @@ int init_repair_rs(ReedSolomon<gtype> &rs_repair, vector<bool> &in_present, vect
     cerr << "rs_repair.SetInput returned false";
     return 1;
   }
-  
+
   for (unsigned int j = 0; j < recovery_present.size(); j++) {
     //cout << "Repair.SetOutput true " << j << endl;
     if (recovery_present[j]) {
@@ -252,7 +252,7 @@ int init_repair_rs(ReedSolomon<gtype> &rs_repair, vector<bool> &in_present, vect
       }
     }
   }
-  
+
   //cout << "Repair.compute" << endl;
   if (!rs_repair.Compute(nlSilent, cout, cerr)) {
     cerr << "rs_repair.Compute returned false";
@@ -268,7 +268,7 @@ int init_repair_rs(ReedSolomon<gtype> &rs_repair, vector<bool> &in_present, vect
 template<typename gtype, typename utype>
 int recover_data(ReedSolomon<gtype> &rs_repair, int missing_place, u8 *buffer, u8 data[][BUF_SIZE], vector<bool> &in_present, vector<bool> &recovery_present) {
   memset(buffer, 0, BUF_SIZE);
-  
+
   int index = 0;
   for (unsigned int i = 0; i < in_present.size(); i++) {
     if (in_present[i]) {
@@ -309,7 +309,7 @@ template<typename gtype, typename utype>
 int test1() {
   const int NUM_IN  = 4;
   const int NUM_REC = 2;  // recovery
-  const int LOW_EXPONENT = 0; 
+  const int LOW_EXPONENT = 0;
 
   u8 data[NUM_IN + NUM_REC][BUF_SIZE];
 
@@ -328,7 +328,7 @@ int test1() {
       for (int i = 0; i < NUM_REC; i++) {
 	recovery_present.push_back(true);
       }
-      
+
       ReedSolomon<gtype> rs_repair;
       if (init_repair_rs<gtype,utype>(rs_repair, in_present, recovery_present, LOW_EXPONENT))
 	return 1;
@@ -356,7 +356,7 @@ template<typename gtype, typename utype>
 int test2() {
   const int NUM_IN  = 5;
   const int NUM_REC = 5;  // recovery
-  const int LOW_EXPONENT = 0; 
+  const int LOW_EXPONENT = 0;
 
   u8 data[NUM_IN + NUM_REC][BUF_SIZE];
 
@@ -371,7 +371,7 @@ int test2() {
   for (int i = 0; i < NUM_REC; i++) {
     recovery_present.push_back(true);
   }
-      
+
   ReedSolomon<gtype> rs_repair;
   if (init_repair_rs<gtype,utype>(rs_repair, in_present, recovery_present, LOW_EXPONENT))
     return 1;
@@ -395,7 +395,7 @@ template<typename gtype, typename utype>
 int test3() {
   const int NUM_IN  = 4;
   const int NUM_REC = 2;  // recovery
-  const int LOW_EXPONENT = 0; 
+  const int LOW_EXPONENT = 0;
 
   u8 data[NUM_IN + NUM_REC][BUF_SIZE];
 
@@ -405,7 +405,7 @@ int test3() {
   // loop over missing input blocks
   for (int missing1 = 0; missing1 < NUM_IN; missing1++) {
     cerr << "Processing " << missing1 << endl;
-    
+
     vector<bool> in_present;
     for (int i = 0; i < NUM_IN; i++) {
       in_present.push_back(i != missing1);
@@ -414,7 +414,7 @@ int test3() {
     for (int i = 0; i < NUM_REC; i++) {
       recovery_present.push_back(true);
     }
-    
+
     ReedSolomon<gtype> rs_repair;
     if (init_repair_rs<gtype,utype>(rs_repair, in_present, recovery_present, LOW_EXPONENT))
       return 1;
@@ -564,9 +564,6 @@ int main() {
     cerr << "FAILED: test4(16)" << endl;
     return 1;
   }
-  
+
   return 0;
 }
-  
-
-

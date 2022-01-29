@@ -27,10 +27,10 @@ MinGW/WINE
 	If you are on a UNIX box and want to check the Windows code,
 	you can compile using MinGW and run using WINE.  MinGW is a
 	package for compiling with GCC against Windows libraries.
-	WINE is a Windows simulator.  
+	WINE is a Windows simulator.
 
 	To compile with MinGW, I use the commands:
-	make clean	 
+	make clean
 	./configure --host=x86_64-w64-mingw32
 	make
 

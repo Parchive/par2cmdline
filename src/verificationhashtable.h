@@ -53,27 +53,27 @@ public:
   ~VerificationHashEntry(void)
   {
     // problem: may cause stack overflow due to recursion.
-    // this happens if there are a lot of nodes with the same crc & hash 
+    // this happens if there are a lot of nodes with the same crc & hash
     // possible solution: use a loop
-    
+
     // I still don't like the idea of two recursions (left and right),
     // AFAIK only one can be optimized by the compiler
-    
+
     // delete all nodes with same crc and hash
     VerificationHashEntry *nextSame = same;
     while(0 != nextSame)
     {
         VerificationHashEntry *const currSame = nextSame;
         nextSame = currSame->same;
-        
+
         // prevent currSame from recursive delete
         currSame->same = 0;
         currSame->left = 0;
         currSame->right = 0;
-        
+
         delete currSame;
     }
-    
+
     delete left;
     delete right;
   }
@@ -88,15 +88,15 @@ public:
   static const VerificationHashEntry* Search(const VerificationHashEntry *entry, const MD5Hash &hash);
 
   // Comparison operators for searching
-  bool operator <(const VerificationHashEntry &r) const 
+  bool operator <(const VerificationHashEntry &r) const
   {
     return crc < r.crc || (crc == r.crc && hash < r.hash);
   }
-  bool operator >(const VerificationHashEntry &r) const 
+  bool operator >(const VerificationHashEntry &r) const
   {
     return crc > r.crc || (crc == r.crc && hash > r.hash);
   }
-  bool operator ==(const VerificationHashEntry &r) const 
+  bool operator ==(const VerificationHashEntry &r) const
   {
     return crc == r.crc && hash == r.hash;
   }
@@ -108,7 +108,7 @@ public:
   Par2RepairerSourceFile* SourceFile(void) const {return sourcefile;}
   const DataBlock* GetDataBlock(void) const {return datablock;}
   bool FirstBlock(void) const {return firstblock;}
-  
+
   // Set/Check the associated datablock
   void SetBlock(DiskFile *diskfile, u64 offset) const;
   bool IsSet(void) const;
@@ -388,7 +388,7 @@ inline const VerificationHashEntry* VerificationHashTable::FindMatch(const Verif
     if (nextentry == suggestedentry)
     {
       // Was the existing match in the same file as the new match
-      if (nextentry->IsSet() && 
+      if (nextentry->IsSet() &&
           nextentry->GetDataBlock()->GetDiskFile() == checksummer.GetDiskFile())
       {
         // Yes. Don't return it
@@ -425,15 +425,15 @@ inline const VerificationHashEntry* VerificationHashTable::FindMatch(const Verif
 
     // We don't want entries for the wrong source file, ones that
     // have already been matched, or ones that are the wrong length
-    while (currententry && (currententry->SourceFile() != sourcefile || 
+    while (currententry && (currententry->SourceFile() != sourcefile ||
                             currententry->IsSet() ||
                             (checksummer.ShortBlock() && checksummer.BlockLength() != currententry->GetDataBlock()->GetLength())
                            )
           )
     {
-      // If we found an unused entry (which was presumably for the wrong 
+      // If we found an unused entry (which was presumably for the wrong
       // source file) remember it (providing it is the correct length).
-      if (0 == nextentry && !(currententry->IsSet() || 
+      if (0 == nextentry && !(currententry->IsSet() ||
                               (checksummer.ShortBlock() && checksummer.BlockLength() != currententry->GetDataBlock()->GetLength())
                              )
          )

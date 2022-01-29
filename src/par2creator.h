@@ -71,7 +71,7 @@ protected:
   // Initialise all of the source blocks ready to start reading data from the source files.
   bool CreateSourceBlocks(void);
 
-  // Create all of the output files and allocate all packets to appropriate file offets.
+  // Create all of the output files and allocate all packets to appropriate file offsets.
   bool InitialiseOutputFiles(const string &par2filename);
 
   // Allocate memory buffers for reading and writing data to disk.
@@ -101,11 +101,11 @@ protected:
 #ifdef _OPENMP
   static u32                          GetFileThreads(void) {return filethreads;}
 #endif
-  
+
 protected:
   std::ostream &sout; // stream for output (for commandline, this is cout)
   std::ostream &serr; // stream for errors (for commandline, this is cerr)
-  
+
   const NoiseLevel noiselevel; // How noisy we should be
 
 #ifdef _OPENMP
@@ -113,12 +113,12 @@ protected:
 #endif
 
   u64 blocksize;      // The size of each block.
-  size_t chunksize;   // How much of each block will be processed at a 
+  size_t chunksize;   // How much of each block will be processed at a
                       // time (due to memory constraints).
 
   void *inputbuffer;  // chunksize
   void *outputbuffer; // chunksize * recoveryblockcount
-  
+
   u32 sourcefilecount;   // Number of source files for which recovery data will be computed.
   u32 sourceblockcount;  // Total number of data blocks that the source files will be
                          // virtually sliced into.
@@ -127,7 +127,7 @@ protected:
 
   Scheme recoveryfilescheme;  // What scheme will be used to select the
                                            // sizes for the recovery files.
-  
+
   u32 recoveryfilecount;  // The number of recovery files that will be created
   u32 recoveryblockcount; // The number of recovery blocks that will be placed
                           // in the recovery files.
@@ -161,7 +161,7 @@ protected:
                              // the recovery data is computed.
 #ifdef _OPENMP
   u64 mttotalsize;           // Total size of files for mt-progress line
-#endif  
+#endif
 };
 
 #endif // __PAR2CREATOR_H__

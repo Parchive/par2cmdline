@@ -53,7 +53,7 @@ int test1() {
     cerr << "ComputeRecoveryFileCount worked with more files than blocks!" << endl;
     return 1;
   }
-  
+
   return 0;
 }
 
@@ -76,7 +76,7 @@ int test2() {
     cerr << "ComputeRecoveryFileCount for 0 blocks should return 0" << endl;
     cerr << "   it returned " << recoveryfilecount << endl;
     return 1;
-  }    
+  }
 
   recoveryfilecount = 0;
   success = ComputeRecoveryFileCount(cout, cerr,
@@ -94,7 +94,7 @@ int test2() {
     cerr << "ComputeRecoveryFileCount for 8 blocks should return 4" << endl;
     cerr << "   it returned " << recoveryfilecount << endl;
     return 1;
-  }    
+  }
 
   recoveryfilecount = 0;
   success = ComputeRecoveryFileCount(cout, cerr,
@@ -112,7 +112,7 @@ int test2() {
     cerr << "ComputeRecoveryFileCount for 15 blocks should return 4" << endl;
     cerr << "   it returned " << recoveryfilecount << endl;
     return 1;
-  }    
+  }
 
 
   recoveryfilecount = 0;
@@ -131,7 +131,7 @@ int test2() {
     cerr << "ComputeRecoveryFileCount for 64 blocks should return 7" << endl;
     cerr << "   it returned " << recoveryfilecount << endl;
     return 1;
-  }    
+  }
 
   recoveryfilecount = 0;
   success = ComputeRecoveryFileCount(cout, cerr,
@@ -149,8 +149,8 @@ int test2() {
     cerr << "ComputeRecoveryFileCount for 127 blocks should return 7" << endl;
     cerr << "   it returned " << recoveryfilecount << endl;
     return 1;
-  }    
-  
+  }
+
   return 0;
 }
 
@@ -173,7 +173,7 @@ int test3() {
     cerr << "ComputeRecoveryFileCount for 0 blocks should return 0" << endl;
     cerr << "   it returned " << recoveryfilecount << endl;
     return 1;
-  }    
+  }
 
   recoveryfilecount = 0;
   success = ComputeRecoveryFileCount(cout, cerr,
@@ -191,7 +191,7 @@ int test3() {
     cerr << "ComputeRecoveryFileCount for 1 block should a positive value" << endl;
     cerr << "   it returned " << recoveryfilecount << endl;
     return 1;
-  }    
+  }
 
 
   recoveryfilecount = 0;
@@ -210,7 +210,7 @@ int test3() {
     cerr << "ComputeRecoveryFileCount for 8 blocks should a positive value" << endl;
     cerr << "   it returned " << recoveryfilecount << endl;
     return 1;
-  }    
+  }
 
   return 0;
 }
@@ -236,7 +236,7 @@ int test4() {
     cerr << "ComputeRecoveryFileCount for 0 blocks should return 0" << endl;
     cerr << "   it returned " << recoveryfilecount << endl;
     return 1;
-  }    
+  }
 
   recoveryfilecount = 0;
   success = ComputeRecoveryFileCount(cout, cerr,
@@ -254,7 +254,7 @@ int test4() {
     cerr << "ComputeRecoveryFileCount for 8 blocks should return 4" << endl;
     cerr << "   it returned " << recoveryfilecount << endl;
     return 1;
-  }    
+  }
 
   recoveryfilecount = 0;
   success = ComputeRecoveryFileCount(cout, cerr,
@@ -272,7 +272,7 @@ int test4() {
     cerr << "ComputeRecoveryFileCount for 15 blocks should return 4" << endl;
     cerr << "   it returned " << recoveryfilecount << endl;
     return 1;
-  }    
+  }
 
 
   recoveryfilecount = 0;
@@ -291,7 +291,7 @@ int test4() {
     cerr << "ComputeRecoveryFileCount for 64 blocks should return 7" << endl;
     cerr << "   it returned " << recoveryfilecount << endl;
     return 1;
-  }    
+  }
 
   recoveryfilecount = 0;
   success = ComputeRecoveryFileCount(cout, cerr,
@@ -309,7 +309,7 @@ int test4() {
     cerr << "ComputeRecoveryFileCount for 127 blocks should return 7" << endl;
     cerr << "   it returned " << recoveryfilecount << endl;
     return 1;
-  }    
+  }
 
 
   // smaller largest files
@@ -330,7 +330,7 @@ int test4() {
     cerr << "ComputeRecoveryFileCount for 127 blocks should return 7" << endl;
     cerr << "   it returned " << recoveryfilecount << endl;
     return 1;
-  }    
+  }
 
   recoveryfilecount = 0;
   success = ComputeRecoveryFileCount(cout, cerr,
@@ -348,7 +348,7 @@ int test4() {
     cerr << "ComputeRecoveryFileCount for 127 blocks should return 7" << endl;
     cerr << "   it returned " << recoveryfilecount << endl;
     return 1;
-  }    
+  }
 
   recoveryfilecount = 0;
   success = ComputeRecoveryFileCount(cout, cerr,
@@ -366,7 +366,7 @@ int test4() {
     cerr << "ComputeRecoveryFileCount for 127 blocks should return 7" << endl;
     cerr << "   it returned " << recoveryfilecount << endl;
     return 1;
-  }    
+  }
 
   recoveryfilecount = 0;
   success = ComputeRecoveryFileCount(cout, cerr,
@@ -384,8 +384,8 @@ int test4() {
     cerr << "ComputeRecoveryFileCount for 127 blocks should return 7" << endl;
     cerr << "   it returned " << recoveryfilecount << endl;
     return 1;
-  }    
-  
+  }
+
   recoveryfilecount = 0;
   success = ComputeRecoveryFileCount(cout, cerr,
 					  &recoveryfilecount,
@@ -402,7 +402,7 @@ int test4() {
     cerr << "ComputeRecoveryFileCount for 127 blocks should return 7" << endl;
     cerr << "   it returned " << recoveryfilecount << endl;
     return 1;
-  }    
+  }
 
   recoveryfilecount = 0;
   success = ComputeRecoveryFileCount(cout, cerr,
@@ -420,7 +420,7 @@ int test4() {
     cerr << "ComputeRecoveryFileCount for 127 blocks should return 7" << endl;
     cerr << "   it returned " << recoveryfilecount << endl;
     return 1;
-  }    
+  }
 
 
   recoveryfilecount = 0;
@@ -439,9 +439,9 @@ int test4() {
     cerr << "ComputeRecoveryFileCount for 127 blocks should return 7" << endl;
     cerr << "   it returned " << recoveryfilecount << endl;
     return 1;
-  }    
+  }
 
-  
+
   return 0;
 }
 
@@ -465,6 +465,6 @@ int main() {
   }
 
   cout << "SUCCESS: libpar2_test complete." << endl;
-  
+
   return 0;
 }

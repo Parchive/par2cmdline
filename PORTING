@@ -5,7 +5,7 @@ compilers and operating systems:
   gcc 3.2               on  CygWin 1.3.22
   gcc 3.2.2             on  Red Hat Linux 9.0
 
-If you wish to compile par2cmdline under a different enviromnent, then you
+If you wish to compile par2cmdline under a different environment, then you
 should start by trying to compile with the supplied Makefile.
 
 If you get compile errors, then the most likely place you will need to make

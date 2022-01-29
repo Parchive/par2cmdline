@@ -117,7 +117,7 @@ DiskFile* Par2RepairerSourceFile::GetCompleteFile(void) const
 // and set their lengths appropriately
 void Par2RepairerSourceFile::SetBlocks(u32 _blocknumber,
                                        u32 _blockcount,
-                                       vector<DataBlock>::iterator _sourceblocks, 
+                                       vector<DataBlock>::iterator _sourceblocks,
                                        vector<DataBlock>::iterator _targetblocks,
                                        u64 blocksize)
 {

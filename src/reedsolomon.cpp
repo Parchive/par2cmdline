@@ -64,7 +64,7 @@ template <> bool ReedSolomon<Galois8>::SetInput(const vector<bool> &present, std
 
   for (unsigned int index=0; index<inputcount; index++)
   {
-    // Record the index of the file in the datapresentindex array 
+    // Record the index of the file in the datapresentindex array
     // or the datamissingindex array
     if (present[index])
     {
@@ -195,7 +195,7 @@ template <> bool ReedSolomon<Galois16>::SetInput(const vector<bool> &present, st
 
   for (unsigned int index=0; index<inputcount; index++)
   {
-    // Record the index of the file in the datapresentindex array 
+    // Record the index of the file in the datapresentindex array
     // or the datamissingindex array
     if (present[index])
     {
@@ -318,7 +318,7 @@ template<> bool ReedSolomon<Galois16>::InternalProcess(const Galois16 &factor, s
   u32 *src = (u32 *)inputbuffer;
   u32 *end = (u32 *)&((u8*)inputbuffer)[size];
   u32 *dst = (u32 *)outputbuffer;
-  
+
   // Process the data
   while (src < end)
   {
@@ -355,4 +355,3 @@ template<> bool ReedSolomon<Galois16>::InternalProcess(const Galois16 &factor, s
 
   return eSuccess;
 }
-

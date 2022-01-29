@@ -107,8 +107,8 @@ bool MainPacket::Load(DiskFile *diskfile, u64 offset, PACKET_HEADER &header)
   packet->header = header;
 
   // Read the rest of the packet from disk
-  if (!diskfile->Read(offset + sizeof(PACKET_HEADER), 
-                      &packet->blocksize, 
+  if (!diskfile->Read(offset + sizeof(PACKET_HEADER),
+                      &packet->blocksize,
                      (size_t)packet->header.length - sizeof(PACKET_HEADER)))
     return false;
 
