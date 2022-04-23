@@ -106,7 +106,7 @@ Set the basepath to use as reference for the datafiles
 .B \-\-
 Treat all following arguments as filenames
 .SH EXAMPLES
-With PAR 2.0 you can create PAR2 recovery files for as few as 1 or as many as 32768 files. If you wanted to create PAR1 recovery files for a single file you are forced to split the file into muliple parts and RAR is frequently used for this purpose. You do NOT need to split files with PAR 2.0.
+With PAR 2.0 you can create PAR2 recovery files for as few as 1 or as many as 32768 files. If you wanted to create PAR1 recovery files for a single file you are forced to split the file into multiple parts and RAR is frequently used for this purpose. You do NOT need to split files with PAR 2.0.
 
 To create PAR 2 recovery files for a single data file (e.g. one called test.mpg), you can use the following command:
 
@@ -131,7 +131,7 @@ This will create 9 PAR2 files instead of 8, and they will be capable of correcti
 
   par2 create -s307200 -r10 test.mpg
 
-This would also create 9 PAR2 files, but they would be able to correct up to 269 errors totalling 80 MB. Since twice as much recovery data is created, it will take about 16 minutes to do so with a 1500MHz CPU. The "-u" and "-n" options can be used to control exactly how many recovery files are created and how the recovery blocks are distributed amoungst them. They do not affect the total quantity of recovery data created. The "-f" option is used when you create additional recovery data. e.g. If you have already created 10% and want another 5% then you migh use the following command:
+This would also create 9 PAR2 files, but they would be able to correct up to 269 errors totalling 80 MB. Since twice as much recovery data is created, it will take about 16 minutes to do so with a 1500MHz CPU. The "-u" and "-n" options can be used to control exactly how many recovery files are created and how the recovery blocks are distributed amongst them. They do not affect the total quantity of recovery data created. The "-f" option is used when you create additional recovery data. e.g. If you have already created 10% and want another 5% then you might use the following command:
 
   par2 create -s307200 -r5 -f300 test.mpg
 
@@ -200,4 +200,3 @@ Ike Devolder <ike.devolder@gmail.com>
 .br
 Jussi Kansanen <jussi.kansanen@gmail.com>
 .br
-

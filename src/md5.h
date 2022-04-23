@@ -133,15 +133,15 @@ inline bool MD5Hash::operator<(const MD5Hash &other) const
 
   return hash[index] < other.hash[index];
 }
-inline bool MD5Hash::operator>=(const MD5Hash &other) const 
+inline bool MD5Hash::operator>=(const MD5Hash &other) const
 {
   return !operator<(other);
 }
-inline bool MD5Hash::operator>(const MD5Hash &other) const 
+inline bool MD5Hash::operator>(const MD5Hash &other) const
 {
   return other.operator<(*this);
 }
-inline bool MD5Hash::operator<=(const MD5Hash &other) const 
+inline bool MD5Hash::operator<=(const MD5Hash &other) const
 {
   return !other.operator<(*this);
 }

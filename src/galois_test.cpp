@@ -72,7 +72,7 @@ int test_field(const gtype a, const gtype b, const gtype c, const gtype zero, co
 	 << ((int) (utype) b) << endl;
     return 1;
   }
-  
+
   if ( a*(b+c) != (a*b)+(a*c) ) {
     cerr << "addative associativity fails for "
 	 << ((int) (utype) a) << ","
@@ -81,7 +81,7 @@ int test_field(const gtype a, const gtype b, const gtype c, const gtype zero, co
     return 1;
   }
 
- 
+
   if ( a+zero != a || zero+a != a ) {
     cerr << "addative identity fails for "
 	 << ((int) (utype) a) << endl;
@@ -93,8 +93,8 @@ int test_field(const gtype a, const gtype b, const gtype c, const gtype zero, co
 	 << ((int) (utype) a) << endl;
     return 1;
   }
-  
-  
+
+
   // search for inverses
   int addative_inverse = -1;
   int multiplicative_inverse = -1;
@@ -103,7 +103,7 @@ int test_field(const gtype a, const gtype b, const gtype c, const gtype zero, co
 
     //cout << ((int) (utype) a) << " + " << ((int) (utype) other) << " = " << ((int) (utype) (a + other)) << endl;
     //cout << ((a + other == zero) ? "true" : "false") << endl;
-    
+
     if (a + other == zero) {
       if (addative_inverse != -1) {
 	cerr << "value " << ((int) (utype) a) << " has two addative inverses" << endl;
@@ -120,7 +120,7 @@ int test_field(const gtype a, const gtype b, const gtype c, const gtype zero, co
 	return 1;
       }
       multiplicative_inverse = i;
-    }      
+    }
   }
   if (addative_inverse == -1) {
     cerr << "value " << ((int) (utype) a) << " has no addative inverse!" << endl;
@@ -128,7 +128,7 @@ int test_field(const gtype a, const gtype b, const gtype c, const gtype zero, co
   }
   if (multiplicative_inverse == -1 && a != zero) {
     cerr << "value " << ((int) (utype) a) << " has no multiplicative inverse!" << endl;
-    return 1;    
+    return 1;
   }
 
   return 0;
@@ -162,7 +162,7 @@ int test2() {
 template<typename gtype, typename utype>
 int test_operators(const gtype a, const gtype b, const gtype zero, const gtype one, int max_value) {
   gtype c;
-  
+
   c = a;
   c += b;
   if ( c != a+b ) {
@@ -214,7 +214,7 @@ int test_operators(const gtype a, const gtype b, const gtype zero, const gtype o
       return 1;
     }
   }
-  
+
   unsigned int power = (unsigned int) (utype) b;
   c = one;
   for (unsigned int i = 0; i < power; i++) {
@@ -253,7 +253,7 @@ int test_operators(const gtype a, const gtype b, const gtype zero, const gtype o
 	   << ((int) (a*b).Log()) << endl;
       return 1;
     }
-  }    
+  }
 
   c = gtype(gtype(a.Log()).ALog());
   if (c != a) {
@@ -263,7 +263,7 @@ int test_operators(const gtype a, const gtype b, const gtype zero, const gtype o
     return 1;
   }
 
-  
+
   return 0;
 }
 
@@ -299,14 +299,14 @@ int test4() {
 template<typename gtype, typename utype>
 int test_powers(const gtype two, const gtype zero, int max_value) {
   gtype g = two;
-  
+
   int used[256*256];
   for (int i = 0; i < max_value; i++)
     used[i] = 0;
 
   // mark 0 as used, so we get an error if it reaches it.
   used[0] = -1;
-  
+
   for (int power = 1; power < max_value; power++) {
     int index = (int) (utype) g;
     if (used[index] != 0) {
@@ -370,4 +370,3 @@ int main() {
 
   return 0;
 }
-  

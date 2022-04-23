@@ -29,7 +29,7 @@ static char THIS_FILE[]=__FILE__;
 #endif
 
 
-// static variable 
+// static variable
 #ifdef _OPENMP
 u32 Par2Creator::filethreads = _FILE_THREADS;
 #endif
@@ -65,7 +65,7 @@ Par2Creator::Par2Creator(std::ostream &sout, std::ostream &serr, const NoiseLeve
 , rs()
 , progress(0)
 , totaldata(0)
-  
+
 , deferhashcomputation(false)
 #ifdef _OPENMP
 , mttotalsize(0)
@@ -107,7 +107,7 @@ Result Par2Creator::Process(
 #ifdef _OPENMP
   filethreads = _filethreads;
 #endif
-  
+
   // Get information from commandline
   blocksize = _blocksize;
   const vector<string> extrafiles = _extrafiles;
@@ -171,7 +171,7 @@ Result Par2Creator::Process(
   if (!CreateSourceBlocks())
     return eLogicError;
 
-  // Create all of the output files and allocate all packets to appropriate file offets.
+  // Create all of the output files and allocate all packets to appropriate file offsets.
   if (!InitialiseOutputFiles(parfilename))
     return eFileIOError;
 
@@ -241,7 +241,7 @@ Result Par2Creator::Process(
 bool Par2Creator::ComputeBlockCount(const vector<string> &extrafiles)
 {
   FileSizeCache filesize_cache;
-  
+
   largestfilesize = 0;
   for (vector<string>::const_iterator i=extrafiles.begin(); i!=extrafiles.end(); i++)
   {
@@ -251,7 +251,7 @@ bool Par2Creator::ComputeBlockCount(const vector<string> &extrafiles)
       largestfilesize = filesize;
     }
   }
-  
+
 
   if (blocksize == 0)
   {
@@ -293,7 +293,7 @@ bool Par2Creator::CalculateProcessBlockSize(size_t memorylimit)
   if (recoveryblockcount == 0)
   {
     chunksize = 0;
-    
+
     deferhashcomputation = false;
   }
   else
@@ -423,7 +423,7 @@ bool Par2Creator::CreateSourceBlocks(void)
        sourcefile!= sourcefiles.end();
        sourcefile++)
   {
-    // Allocate the appopriate number of source blocks to each source file.
+    // Allocate the appropriate number of source blocks to each source file.
     // sourceblock will be advanced.
 
     (*sourcefile)->InitialiseSourceBlocks(sourceblock, blocksize);
@@ -447,7 +447,7 @@ public:
   u32 count;
 };
 
-// Create all of the output files and allocate all packets to appropriate file offets.
+// Create all of the output files and allocate all packets to appropriate file offsets.
 bool Par2Creator::InitialiseOutputFiles(const string &parfilename)
 {
   // Allocate the recovery packets
@@ -743,7 +743,7 @@ bool Par2Creator::ProcessData(u64 blockoffset, size_t blocklength)
   // Clear the output buffer
   memset(outputbuffer, 0, chunksize * recoveryblockcount);
 
-  // If we have defered computation of the file hash and block crc and hashes
+  // If we have deferred computation of the file hash and block crc and hashes
   // sourcefile and sourceindex will be used to update them during
   // the main recovery block computation
   vector<Par2CreatorSourceFile*>::iterator sourcefile = sourcefiles.begin();
@@ -868,7 +868,7 @@ bool Par2Creator::WriteRecoveryPacketHeaders(void)
 
 bool Par2Creator::FinishFileHashComputation(void)
 {
-  // If we defered the computation of the full file hash, then we finish it now
+  // If we deferred the computation of the full file hash, then we finish it now
   if (deferhashcomputation)
   {
     // For each source file

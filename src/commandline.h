@@ -136,12 +136,12 @@ protected:
 
   // Use values like % recovery data to compute the number of recover blocks
   bool ComputeRecoveryBlockCount();
-  
+
   bool                         SetParFilename(string filename);
 
   FileSizeCache filesize_cache;// Caches the size of each file,
                                // to prevent multiple calls to OS.
-  
+
   // options for all operations
   Version version;             // What version files will be processed.
   NoiseLevel noiselevel;       // How much display output should there be.
@@ -184,8 +184,8 @@ protected:
   u64 skipleaway;              // The maximum leaway +/- that we will
                                // allow when searching for blocks.
 
-  
-  // options for creating par files  
+
+  // options for creating par files
   u32 blockcount;              // How many blocks the source files should
                                // be virtually split into.
   u64 blocksize;               // What virtual block size to use.

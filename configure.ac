@@ -73,4 +73,3 @@ AC_CHECK_FUNCS([getopt] [getopt_long])
 AC_CONFIG_FILES([stamp-h], [echo timestamp > stamp-h])
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT
-

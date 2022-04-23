@@ -96,7 +96,7 @@ public:
   ValueType Log(void) const;
   ValueType ALog(void) const;
 
-  enum 
+  enum
   {
     Bits  = GaloisTable<bits,generator,valuetype>::Bits,
     Count = GaloisTable<bits,generator,valuetype>::Count,
@@ -110,7 +110,7 @@ protected:
 };
 
 #ifdef LONGMULTIPLY
-template <class g> 
+template <class g>
 class GaloisLongMultiplyTable
 {
 public:
@@ -163,10 +163,10 @@ inline Galois<bits,generator,valuetype>::Galois(typename Galois<bits,generator,v
 
 template <const unsigned int bits, const unsigned int generator, typename valuetype>
 inline Galois<bits,generator,valuetype> Galois<bits,generator,valuetype>::operator * (const Galois<bits,generator,valuetype> &right) const
-{ 
+{
   if (value == 0 || right.value == 0) return 0;
   unsigned int sum = table.log[value] + table.log[right.value];
-  if (sum >= Limit) 
+  if (sum >= Limit)
   {
     return table.antilog[sum-Limit];
   }
@@ -178,15 +178,15 @@ inline Galois<bits,generator,valuetype> Galois<bits,generator,valuetype>::operat
 
 template <const unsigned int bits, const unsigned int generator, typename valuetype>
 inline Galois<bits,generator,valuetype>& Galois<bits,generator,valuetype>::operator *= (const Galois<bits,generator,valuetype> &right)
-{ 
-  if (value == 0 || right.value == 0) 
+{
+  if (value == 0 || right.value == 0)
   {
     value = 0;
   }
   else
   {
     unsigned int sum = table.log[value] + table.log[right.value];
-    if (sum >= Limit) 
+    if (sum >= Limit)
     {
       value = table.antilog[sum-Limit];
     }
@@ -201,14 +201,14 @@ inline Galois<bits,generator,valuetype>& Galois<bits,generator,valuetype>::opera
 
 template <const unsigned int bits, const unsigned int generator, typename valuetype>
 inline Galois<bits,generator,valuetype> Galois<bits,generator,valuetype>::operator / (const Galois<bits,generator,valuetype> &right) const
-{ 
+{
   if (value == 0) return 0;
 
   assert(right.value != 0);
   if (right.value == 0) {return 0;} // Division by 0!
 
   int sum = table.log[value] - table.log[right.value];
-  if (sum < 0) 
+  if (sum < 0)
   {
     return table.antilog[sum+Limit];
   }
@@ -220,14 +220,14 @@ inline Galois<bits,generator,valuetype> Galois<bits,generator,valuetype>::operat
 
 template <const unsigned int bits, const unsigned int generator, typename valuetype>
 inline Galois<bits,generator,valuetype>& Galois<bits,generator,valuetype>::operator /= (const Galois<bits,generator,valuetype> &right)
-{ 
+{
   if (value == 0) return *this;
 
   assert(right.value != 0);
   if (right.value == 0) {return *this;} // Division by 0!
 
   int sum = table.log[value] - table.log[right.value];
-  if (sum < 0) 
+  if (sum < 0)
   {
     value = table.antilog[sum+Limit];
   }
@@ -248,14 +248,14 @@ inline Galois<bits,generator,valuetype> Galois<bits,generator,valuetype>::pow(un
   unsigned int sum = table.log[value] * right;
 
   sum = (sum >> Bits) + (sum & Limit);
-  if (sum >= Limit) 
+  if (sum >= Limit)
   {
     return table.antilog[sum-Limit];
   }
   else
   {
     return table.antilog[sum];
-  }  
+  }
 }
 
 template <const unsigned int bits, const unsigned int generator, typename valuetype>
@@ -267,14 +267,14 @@ inline Galois<bits,generator,valuetype> Galois<bits,generator,valuetype>::operat
   unsigned int sum = table.log[value] * right;
 
   sum = (sum >> Bits) + (sum & Limit);
-  if (sum >= Limit) 
+  if (sum >= Limit)
   {
     return table.antilog[sum-Limit];
   }
   else
   {
     return table.antilog[sum];
-  }  
+  }
 }
 
 template <const unsigned int bits, const unsigned int generator, typename valuetype>
@@ -286,7 +286,7 @@ inline Galois<bits,generator,valuetype>& Galois<bits,generator,valuetype>::opera
   unsigned int sum = table.log[value] * right;
 
   sum = (sum >> Bits) + (sum & Limit);
-  if (sum >= Limit) 
+  if (sum >= Limit)
   {
     value = table.antilog[sum-Limit];
   }
@@ -311,7 +311,7 @@ inline valuetype Galois<bits,generator,valuetype>::ALog(void) const
 }
 
 #ifdef LONGMULTIPLY
-template <class g> 
+template <class g>
 inline GaloisLongMultiplyTable<g>::GaloisLongMultiplyTable(void)
 {
   G *table = tables;

@@ -29,10 +29,10 @@
 #include "md5.h"
 
 
-// compares Update(length) to Update(buffer,buffersize) 
+// compares Update(length) to Update(buffer,buffersize)
 int test1() {
   unsigned char buffer[] = {0,0,0,0,0,0,0,0};
-  
+
   MD5Context context1;
   context1.Update(buffer, sizeof(buffer));
   MD5Hash hash1;
@@ -48,7 +48,7 @@ int test1() {
     cerr << "hash2 = " << hash2 << endl;
     return 1;
   }
-  
+
   return 0;
 }
 
@@ -88,7 +88,7 @@ int test2() {
       return 1;
     }
   }
-  
+
   return 0;
 }
 
@@ -201,7 +201,7 @@ int test4() {
   for (unsigned int i = 0; i < sizeof(buffer); i++) {
     buffer[i] = (unsigned char) (rand() % 256);
   }
-  
+
   MD5Context context1;
   unsigned int offset = 0;
   while (offset < sizeof(buffer)) {
@@ -231,7 +231,7 @@ int test4() {
     cerr << "random hash2 = " << hash2 << endl;
     return 1;
   }
-  
+
   return 0;
 }
 
@@ -253,9 +253,8 @@ int main() {
     cerr << "FAILED: test4" << endl;
     return 1;
   }
-  
+
   cout << "SUCCESS: md5_test complete." << endl;
 
   return 0;
 }
-  

@@ -7,4 +7,3 @@
         gpg --detach-sign $file
     done
 )
-

@@ -82,7 +82,7 @@ bool CriticalPacket::CompareLess(const CriticalPacket* const &left, const Critic
     left_value = 5;
     break;
   }
-  
+
   int right_value;
   switch (right_header->type.type[8])
   {
@@ -132,4 +132,3 @@ bool CriticalPacket::CompareLess(const CriticalPacket* const &left, const Critic
     return false;
   }
 }
-

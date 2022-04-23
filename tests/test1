@@ -46,5 +46,4 @@ $PARBINARY v testdata.par || { echo "ERROR: Initial PAR 1.0 verification failed"
 cd "$TESTROOT"
 rm -rf "run$testname"
 
-exit 0;
-
+exit 0

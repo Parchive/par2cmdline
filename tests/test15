@@ -46,5 +46,4 @@ $PARBINARY r pack-ea5f7f848340980493ed39f5b7173d956c680e43.par2 || { echo "ERROR
 cd "$TESTROOT"
 rm -rf "run$testname"
 
-exit 0;
-
+exit 0

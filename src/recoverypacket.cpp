@@ -42,16 +42,16 @@ RecoveryPacket::~RecoveryPacket(void)
   delete packetcontext;
 }
 
-// Create a recovery packet. 
+// Create a recovery packet.
 
 // The packet header can be almost completely filled in using the supplied
 // information and computation of the hash of the packet started immediately.
 // The hash will be updated as new data is written to the packet.
 
-void RecoveryPacket::Create(DiskFile      *_diskfile, 
-                            u64            _offset, 
-                            u64            _blocksize, 
-                            u32            _exponent, 
+void RecoveryPacket::Create(DiskFile      *_diskfile,
+                            u64            _offset,
+                            u64            _blocksize,
+                            u32            _exponent,
                             const MD5Hash &_setid)
 {
   diskfile = _diskfile;
@@ -67,7 +67,7 @@ void RecoveryPacket::Create(DiskFile      *_diskfile,
 
   // Start computation of the packet hash
   packetcontext = new MD5Context;
-  packetcontext->Update(&packet.header.setid, 
+  packetcontext->Update(&packet.header.setid,
                         sizeof(RECOVERYBLOCKPACKET)-offsetof(RECOVERYBLOCKPACKET, header.setid));
 
   // Set the data block to immediately follow the header on disk
@@ -76,8 +76,8 @@ void RecoveryPacket::Create(DiskFile      *_diskfile,
 }
 
 // Write data from the buffer to the data block on disk
-bool RecoveryPacket::WriteData(u64 position, 
-                               size_t size, 
+bool RecoveryPacket::WriteData(u64 position,
+                               size_t size,
                                const void *buffer)
 {
   // Update the packet hash
@@ -95,7 +95,7 @@ bool RecoveryPacket::WriteHeader(void)
   packetcontext->Final(packet.header.hash);
 
   // Write the header to disk
-  return diskfile->Write(offset, &packet, sizeof(packet));  
+  return diskfile->Write(offset, &packet, sizeof(packet));
 }
 
 // Load the recovery packet from disk.
@@ -105,8 +105,8 @@ bool RecoveryPacket::WriteHeader(void)
 // The recovery data is not read from disk at this point. Its location
 // is recovered in the DataBlock object.
 
-bool RecoveryPacket::Load(DiskFile      *_diskfile, 
-                          u64            _offset, 
+bool RecoveryPacket::Load(DiskFile      *_diskfile,
+                          u64            _offset,
                           PACKET_HEADER &_header)
 {
   diskfile = _diskfile;

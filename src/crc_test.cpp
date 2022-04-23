@@ -22,7 +22,7 @@
 // The initial version just showed it was self-consistent, not accurate.
 
 // I compile with:
-//    g++ -DHAVE_CONFIG_H -I.. crc_test.cpp crc.cpp 
+//    g++ -DHAVE_CONFIG_H -I.. crc_test.cpp crc.cpp
 
 
 #include "libpar2internal.h"
@@ -37,10 +37,10 @@
 //   u32 checksum = ~0 ^ CRCUpdateBlock(~0, (size_t)blocksize, buffer);
 
 
-// compares UpdateBlock(crc, length) to UpdateBlock(crc,buffer,buffersize) 
+// compares UpdateBlock(crc, length) to UpdateBlock(crc,buffer,buffersize)
 int test1() {
   unsigned char buffer[] = {0,0,0,0,0,0,0,0};
-  
+
   u32 checksum1 = ~0 ^ CRCUpdateBlock(~0, sizeof(buffer), buffer);
   u32 checksum2 = ~0 ^ CRCUpdateBlock(~0, sizeof(buffer));
 
@@ -49,7 +49,7 @@ int test1() {
     cerr << "checksum2 = " << checksum2 << endl;
     return 1;
   }
-  
+
   return 0;
 }
 
@@ -60,15 +60,15 @@ int test2() {
   unsigned char buffer[] = "123456789";
   size_t buffer_length = 9;
   u32 expected_checksum = 0xCBF43926u;
-  
+
   u32 checksum1 = ~0 ^ CRCUpdateBlock(~0, buffer_length, buffer);
 
   if (checksum1 != expected_checksum) {
     cerr << "checksum was not precalculated value: " << hex << checksum1 << dec << endl;
-    cerr << "   expected " << hex << expected_checksum << dec << endl; 
+    cerr << "   expected " << hex << expected_checksum << dec << endl;
     return 1;
   }
-  
+
   return 0;
 }
 
@@ -83,7 +83,7 @@ int test3() {
   for (unsigned int i = 0; i < sizeof(buffer); i++) {
     buffer[i] = (unsigned char) (rand() % 256);
   }
-  
+
   u32 checksum1 = ~0;
   unsigned int offset = 0;
   while (offset < sizeof(buffer)) {
@@ -112,7 +112,7 @@ int test3() {
     cerr << "random checksum2 = " << checksum2 << endl;
     return 1;
   }
-  
+
   return 0;
 }
 
@@ -127,7 +127,7 @@ int test4() {
   for (unsigned int i = 0; i < sizeof(buffer); i++) {
     buffer[i] = (unsigned char) (rand() % 256);
   }
-  
+
   u32 checksum1 = ~0;
   unsigned int offset = 0;
   while (offset < sizeof(buffer)) {
@@ -151,7 +151,7 @@ int test4() {
     cerr << "random checksum2 = " << checksum2 << endl;
     return 1;
   }
-  
+
   return 0;
 }
 
@@ -167,13 +167,13 @@ int test5() {
   }
 
   u64 window = 1024;
-  
+
   u32 windowtable[256];
   GenerateWindowTable(window, windowtable);
   u32 windowmask = ComputeWindowMask(window);
 
   int result = 0;
-  
+
   u32 crc = ~0 ^ CRCUpdateBlock(~0, window, buffer);
   for (int offset = 0; offset + window < sizeof(buffer) - 1; offset++) {
     // compare against reference
@@ -188,7 +188,7 @@ int test5() {
     // slide window
     crc = windowmask ^ CRCSlideChar(windowmask ^ crc, buffer[offset + window], buffer[offset], windowtable);
   }
-    
+
   return result;
 }
 
@@ -240,7 +240,6 @@ int main() {
   }
 
   cout << "SUCCESS: crc_test complete." << endl;
-  
+
   return 0;
 }
-  

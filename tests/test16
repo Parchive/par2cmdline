@@ -57,5 +57,4 @@ rm "$testname.log"
 cd "$TESTROOT"
 rm -rf "run$testname"
 
-exit 0;
-
+exit 0

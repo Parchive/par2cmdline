@@ -46,7 +46,7 @@ int main(int argc, char *argv[])
 		|| sizeof(u64) == 8 || sizeof(i64) == 1,
 		"Error: the assumed sizes of integers is wrong!");
 
-  
+
   // Parse the command line
   CommandLine *commandline = new CommandLine;
 
@@ -72,7 +72,7 @@ int main(int argc, char *argv[])
 			    commandline->GetExtraFiles(),
 
 			    commandline->GetBlockSize(),
-			    
+
 			    commandline->GetFirstRecoveryBlock(),
 			    commandline->GetRecoveryFileScheme(),
 			    commandline->GetRecoveryFileCount(),
@@ -98,7 +98,7 @@ int main(int argc, char *argv[])
 				  commandline->GetExtraFiles(),
 				  commandline->GetOperation() == CommandLine::opRepair,
 				  commandline->GetPurgeFiles());
-	      
+
               break;
             case CommandLine::verPar2:
 	      result = par2repair(std::cout,

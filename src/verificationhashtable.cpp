@@ -85,8 +85,8 @@ void VerificationHashTable::Load(Par2RepairerSourceFile *sourcefile, u64 blocksi
 
     // Create a new VerificationHashEntry with the details for the current
     // data block and verification entry.
-    VerificationHashEntry *entry = new VerificationHashEntry(sourcefile, 
-                                                             &datablock, 
+    VerificationHashEntry *entry = new VerificationHashEntry(sourcefile,
+                                                             &datablock,
                                                              blocknumber == 0,
                                                              verificationentry);
 

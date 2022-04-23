@@ -91,8 +91,8 @@ inline void* CriticalPacket::AllocatePacket(size_t length, size_t extra)
 class CriticalPacketEntry
 {
 public:
-  CriticalPacketEntry(DiskFile *_diskfile, 
-                      u64 _offset, 
+  CriticalPacketEntry(DiskFile *_diskfile,
+                      u64 _offset,
                       const CriticalPacket *_packet)
     : diskfile(_diskfile)
     , offset(_offset)

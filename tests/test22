@@ -52,5 +52,4 @@ $PARBINARY c -r2 -B"$faraway" "$faraway"/test.par2 "$faraway"/*.data || { echo "
 cd "$TESTROOT"
 rm -rf "run$testname"
 
-exit 0;
-
+exit 0

@@ -27,9 +27,9 @@ static char THIS_FILE[]=__FILE__;
 #endif
 #endif
 
-// Construct the creator packet. 
+// Construct the creator packet.
 
-// The only external information required to complete construction is 
+// The only external information required to complete construction is
 // the set_id_hash (which is normally computed from information in the
 // main packet).
 
@@ -79,7 +79,7 @@ bool CreatorPacket::Load(DiskFile *diskfile, u64 offset, PACKET_HEADER &header)
   packet->header = header;
 
   // Load the rest of the packet from disk
-  return diskfile->Read(offset + sizeof(PACKET_HEADER), 
-                        packet->client, 
+  return diskfile->Read(offset + sizeof(PACKET_HEADER),
+                        packet->client,
                         (size_t)packet->header.length - sizeof(PACKET_HEADER));
 }

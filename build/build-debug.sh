@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 export CFLAGS="-g -O0"
 export CXXFLAGS="-g -O0"
@@ -9,4 +9,3 @@ export CXXFLAGS="-g -O0"
 ./configure
 # make
 make
-

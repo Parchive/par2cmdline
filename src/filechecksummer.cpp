@@ -232,7 +232,7 @@ MD5Hash FileCheckSummer::Hash(void)
 u32 FileCheckSummer::ShortChecksum(u64 blocklength)
 {
   u32 crc = CRCUpdateBlock(~0, (size_t)blocklength, outpointer);
-  
+
   if (blocksize > blocklength)
   {
     crc = CRCUpdateBlock(crc, (size_t)(blocksize-blocklength));

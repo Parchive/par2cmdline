@@ -145,7 +145,7 @@ inline bool FileCheckSummer::Step(void)
   if (currentoffset >= filesize)
     return false;
 
-  // Advance the file offset and check to see if 
+  // Advance the file offset and check to see if
   // we have reached the end of the file
   if (++currentoffset >= filesize)
   {

@@ -31,13 +31,13 @@ int test1() {
   leu16 x;
   x = expected;
   u16 output = x;
-  
+
   if (output != expected) {
     cerr << "output = " << output << endl;
     cerr << "expected = " << expected << endl;
     return 1;
   }
-  
+
   return 0;
 }
 
@@ -49,31 +49,31 @@ int test2() {
     leu16 x;
     x = expected;
     u16 output = x;
-    
+
     if (output != expected) {
       cerr << "output = " << output << endl;
       cerr << "expected = " << expected << endl;
       return 1;
     }
   }
-  
+
   return 0;
 }
 
 
 // test one 32-bit value
 int test3() {
-  u32 expected = 127*127*127*127; 
+  u32 expected = 127*127*127*127;
   leu32 x;
   x = expected;
   u32 output = x;
-  
+
   if (output != expected) {
     cerr << "output = " << output << endl;
     cerr << "expected = " << expected << endl;
     return 1;
   }
-  
+
   return 0;
 }
 
@@ -89,35 +89,35 @@ int test4() {
     z += (rand() % 256)*256;
     z += (rand() % 256);
 
-    u32 expected = z; 
+    u32 expected = z;
     leu32 x;
     x = expected;
     u32 output = x;
-    
+
     if (output != expected) {
       cerr << "output = " << output << endl;
       cerr << "expected = " << expected << endl;
       return 1;
     }
   }
-  
+
   return 0;
 }
 
 
 // test one 64-bit value
 int test5() {
-  u64 expected = 127ul*127ul*127ul*127ul*127ul*127ul*127ul*127ul; 
+  u64 expected = 127ul*127ul*127ul*127ul*127ul*127ul*127ul*127ul;
   leu64 x;
   x = expected;
   u64 output = x;
-  
+
   if (output != expected) {
     cerr << "output = " << output << endl;
     cerr << "expected = " << expected << endl;
     return 1;
   }
-  
+
   return 0;
 }
 
@@ -133,19 +133,19 @@ int test6() {
       z += (rand() % 256)*factor;
       factor *= 256;
     }
-    
-    u64 expected = z; 
+
+    u64 expected = z;
     leu64 x;
     x = expected;
     u64 output = x;
-    
+
     if (output != expected) {
       cerr << "output = " << output << endl;
       cerr << "expected = " << expected << endl;
       return 1;
     }
   }
-  
+
   return 0;
 }
 
@@ -177,7 +177,6 @@ int main() {
   }
 
   cout << "SUCCESS: letype_test complete." << endl;
-  
+
   return 0;
 }
-  

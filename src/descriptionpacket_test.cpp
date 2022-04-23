@@ -27,7 +27,7 @@
 string fs("\\");
 #else
 string fs("/");
-#endif  
+#endif
 
 
 int test1() {
@@ -69,7 +69,7 @@ int test2() {
     cout << "TranslateFilenameFromLocalToPar2 nothing" << endl;
     return 1;
   }
-  
+
   cout << "---------------------------------------------------------" << endl;
   cout << "The following calls to Translate should produce warnings:" << endl;
   cout << "---------------------------------------------------------" << endl;
@@ -104,7 +104,7 @@ int test2() {
     cout << "TranslateFilenameFromLocalToPar2 4" << endl;
     return 1;
   }
-#else  
+#else
   // Windows backslash on UNIX systems
   par2filename = DescriptionPacket::TranslateFilenameFromLocalToPar2(cout, cerr, nlNormal, "\\input1.txt");
   if (par2filename != "\\input1.txt") {
@@ -184,10 +184,10 @@ int test3() {
     cout << "TranslateFilenameFromPar2ToLocal windows" << endl;
     return 1;
   }
-#elif __APPLE__ 
+#elif __APPLE__
   // (Assuming OSX/MacOS and not IOS!)
   local_filename = DescriptionPacket::TranslateFilenameFromPar2ToLocal(cout, cerr, nlNormal, "\"*:<>?|%abcd");
-  expected = "\"*" 
+  expected = "\"*"
     + DescriptionPacket::UrlEncodeChar(':')
     + "<>?|%abcd";
   if (local_filename != expected) {
@@ -239,8 +239,8 @@ int test3() {
     return 1;
   }
   local_filename = DescriptionPacket::TranslateFilenameFromPar2ToLocal(cout, cerr, nlNormal, "tricky/../../system_file");
-  expected = "tricky" 
-    + fs 
+  expected = "tricky"
+    + fs
     + DescriptionPacket::UrlEncodeChar('.')
     + DescriptionPacket::UrlEncodeChar('.')
     + fs
@@ -257,7 +257,7 @@ int test3() {
 
   return 0;
 }
-  
+
 
 int main() {
   if (test1()) {
@@ -274,7 +274,6 @@ int main() {
   }
 
   cout << "SUCCESS: descriptionpacket_test complete." << endl;
-  
+
   return 0;
 }
-

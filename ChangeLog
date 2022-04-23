@@ -70,7 +70,7 @@
 	* add test with valgrind
 
 16 December 2013 Ike Devolder
-	* allow verification of files even with ducplicates in parfiles
+	* allow verification of files even with duplicates in parfiles
 
 15 December 2013 Ike Devolder
 	* avoid adding of duplicates
@@ -103,7 +103,7 @@
 	* release: 0.6.0
 	* test8: windows generated recovery files with subdir
 	* windows recurses in . and .. which leads to deadlock
-	  so dont recurse in folders starting with . on windows
+	  so don't recurse in folders starting with . on windows
 	* when recursion happens make sure windows can recover with
 	  unix created par2 files
 	* fixed fc -> fd typo in windows part of diskfile
@@ -212,7 +212,7 @@
 	  number of recovery blocks to be directly specified rather than
 	  indirectly via the -r<n> option. Add -l option to allow the
 	  recovery file size to be limited so that the largest will have
-	  just enough recovery data to reconstruct the larget source file.
+	  just enough recovery data to reconstruct the largest source file.
 
 	* par2creator.h, par2creator.cpp: Use the recovery block count
 	  specified via the command line instead of the redundancy % if
@@ -321,7 +321,7 @@
 
 	* Updated commandline.cpp, commandline.h: Added "redundancyseet"
 	  member to record whether or not the value of "redundancy" has been
-	  specified so that 0% reduncancy is permissible.
+	  specified so that 0% redundancy is permissible.
 
 	* Updated par2creator.cpp: Detect situation where no recovery
 	  blocks are being created and skip related code sections.
@@ -335,7 +335,7 @@
 
 	* Updated par1repair.cpp, par1repairer.h: Detect buggy version
 	  of smartpar which creates PAR1 files with invalid 16k hash
-	  values, Change alignement of temporary buffer used for
+	  values, Change alignment of temporary buffer used for
 	  PAR1FILEENTRYs to 8 bytes.
 
 7 June 2003 Peter B Clements
@@ -456,4 +456,3 @@
 7 May 2003 Peter B Clements
 
 	* Version 0.1: Initial release.
-

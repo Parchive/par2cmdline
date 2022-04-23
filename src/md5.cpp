@@ -34,7 +34,7 @@ ostream& operator<<(ostream &result, const MD5Hash &h)
 {
   char buffer[33];
 
-  sprintf(buffer, 
+  sprintf(buffer,
           "%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X",
           h.hash[15], h.hash[14], h.hash[13], h.hash[12],
           h.hash[11], h.hash[10], h.hash[9],  h.hash[8],
@@ -48,7 +48,7 @@ string MD5Hash::print(void) const
 {
   char buffer[33];
 
-  sprintf(buffer, 
+  sprintf(buffer,
           "%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X",
           hash[15], hash[14], hash[13], hash[12],
           hash[11], hash[10], hash[9],  hash[8],
@@ -84,7 +84,7 @@ void MD5State::UpdateState(const u32 (&block)[16])
 // The first version of ROL does not work on an Alpha CPU!
 //#define ROL(x,y)   ( ((x) << (y)) | (((unsigned int)x) >> (32-y)) )
 #define ROL(x,y)     ( ((x) << (y)) | (((x) >> (32-y)) & ((1<<y)-1)))
-  
+
 #define ROUND(f,w,x,y,z,k,s,ti)   w = x + ROL(w + f(x,y,z) + block[k] + ti, s)
 
   u32 a = state[0];
@@ -96,77 +96,77 @@ void MD5State::UpdateState(const u32 (&block)[16])
   ROUND(F1, d, a, b, c,  1, 12, 0xe8c7b756);
   ROUND(F1, c, d, a, b, 2, 17, 0x242070db);
   ROUND(F1, b, c, d, a,  3, 22, 0xc1bdceee);
-  
+
   ROUND(F1, a, b, c, d,  4,  7, 0xf57c0faf);
   ROUND(F1, d, a, b, c,  5, 12, 0x4787c62a);
   ROUND(F1, c, d, a, b,  6, 17, 0xa8304613);
   ROUND(F1, b, c, d, a,  7, 22, 0xfd469501);
-  
+
   ROUND(F1, a, b, c, d,  8,  7, 0x698098d8);
   ROUND(F1, d, a, b, c,  9, 12, 0x8b44f7af);
   ROUND(F1, c, d, a, b, 10, 17, 0xffff5bb1);
   ROUND(F1, b, c, d, a, 11, 22, 0x895cd7be);
-  
+
   ROUND(F1, a, b, c, d, 12,  7, 0x6b901122);
   ROUND(F1, d, a, b, c, 13, 12, 0xfd987193);
   ROUND(F1, c, d, a, b, 14, 17, 0xa679438e);
   ROUND(F1, b, c, d, a, 15, 22, 0x49b40821);
-  
+
   ROUND(F2, a, b, c, d,  1,  5, 0xf61e2562);
   ROUND(F2, d, a, b, c,  6,  9, 0xc040b340);
   ROUND(F2, c, d, a, b, 11, 14, 0x265e5a51);
   ROUND(F2, b, c, d, a,  0, 20, 0xe9b6c7aa);
-  
+
   ROUND(F2, a, b, c, d,  5,  5, 0xd62f105d);
   ROUND(F2, d, a, b, c, 10,  9, 0x02441453);
   ROUND(F2, c, d, a, b, 15, 14, 0xd8a1e681);
   ROUND(F2, b, c, d, a,  4, 20, 0xe7d3fbc8);
-  
+
   ROUND(F2, a, b, c, d,  9,  5, 0x21e1cde6);
   ROUND(F2, d, a, b, c, 14,  9, 0xc33707d6);
   ROUND(F2, c, d, a, b,  3, 14, 0xf4d50d87);
   ROUND(F2, b, c, d, a,  8, 20, 0x455a14ed);
-  
+
   ROUND(F2, a, b, c, d, 13,  5, 0xa9e3e905);
   ROUND(F2, d, a, b, c,  2,  9, 0xfcefa3f8);
   ROUND(F2, c, d, a, b,  7, 14, 0x676f02d9);
   ROUND(F2, b, c, d, a, 12, 20, 0x8d2a4c8a);
-  
+
   ROUND(F3, a, b, c, d,  5,  4, 0xfffa3942);
   ROUND(F3, d, a, b, c,  8, 11, 0x8771f681);
   ROUND(F3, c, d, a, b, 11, 16, 0x6d9d6122);
   ROUND(F3, b, c, d, a, 14, 23, 0xfde5380c);
-  
+
   ROUND(F3, a, b, c, d,  1,  4, 0xa4beea44);
   ROUND(F3, d, a, b, c,  4, 11, 0x4bdecfa9);
   ROUND(F3, c, d, a, b,  7, 16, 0xf6bb4b60);
   ROUND(F3, b, c, d, a, 10, 23, 0xbebfbc70);
-  
+
   ROUND(F3, a, b, c, d, 13,  4, 0x289b7ec6);
   ROUND(F3, d, a, b, c,  0, 11, 0xeaa127fa);
   ROUND(F3, c, d, a, b,  3, 16, 0xd4ef3085);
   ROUND(F3, b, c, d, a,  6, 23, 0x04881d05);
-  
+
   ROUND(F3, a, b, c, d,  9,  4, 0xd9d4d039);
   ROUND(F3, d, a, b, c, 12, 11, 0xe6db99e5);
   ROUND(F3, c, d, a, b, 15, 16, 0x1fa27cf8);
   ROUND(F3, b, c, d, a,  2, 23, 0xc4ac5665);
-  
+
   ROUND(F4, a, b, c, d,  0,  6, 0xf4292244);
   ROUND(F4, d, a, b, c,  7, 10, 0x432aff97);
   ROUND(F4, c, d, a, b, 14, 15, 0xab9423a7);
   ROUND(F4, b, c, d, a,  5, 21, 0xfc93a039);
-  
+
   ROUND(F4, a, b, c, d, 12,  6, 0x655b59c3);
   ROUND(F4, d, a, b, c,  3, 10, 0x8f0ccc92);
   ROUND(F4, c, d, a, b, 10, 15, 0xffeff47d);
   ROUND(F4, b, c, d, a, 1, 21, 0x85845dd1);
-  
+
   ROUND(F4, a, b, c, d,  8,  6, 0x6fa87e4f);
   ROUND(F4, d, a, b, c, 15, 10, 0xfe2ce6e0);
   ROUND(F4, c, d, a, b,  6, 15, 0xa3014314);
   ROUND(F4, b, c, d, a, 13, 21, 0x4e0811a1);
-  
+
   ROUND(F4, a, b, c, d,  4,  6, 0xf7537e82);
   ROUND(F4, d, a, b, c, 11, 10, 0xbd3af235);
   ROUND(F4, c, d, a, b,  2, 15, 0x2ad7d2bb);
@@ -180,7 +180,7 @@ void MD5State::UpdateState(const u32 (&block)[16])
 
 MD5Context::MD5Context(void)
 : MD5State()
-, used(0)   
+, used(0)
 , bytes(0)
 {
   memset(block, 0, buffersize);
@@ -232,7 +232,7 @@ void MD5Context::Update(const void *buffer, size_t length)
   bytes += length;
 
   // Process any whole blocks
-  while (used + length >= buffersize) 
+  while (used + length >= buffersize)
   {
     size_t have = buffersize - used;
 
@@ -242,7 +242,7 @@ void MD5Context::Update(const void *buffer, size_t length)
     length -= have;
 
     u32 wordblock[16];
-    for (int i=0; i<16; i++) 
+    for (int i=0; i<16; i++)
     {
       // Convert source data from little endian format to internal format if different
       wordblock[i] = ( ((u32)block[i*4+3]) << 24 ) |
@@ -257,11 +257,11 @@ void MD5Context::Update(const void *buffer, size_t length)
   }
 
   // Store any remainder
-  if (length > 0) 
+  if (length > 0)
   {
     memcpy(&block[used], current, length);
     used += length;
-  } 
+  }
 }
 
 // Finalise the computation and extract the Hash value
@@ -298,7 +298,7 @@ void MD5Context::Final(MD5Hash &output)
   buffer[0] = (unsigned char)((bits >>  0) & 0xFF);
   Update(buffer, 8);
 
-  for (int i = 0; i < 4; i++) 
+  for (int i = 0; i < 4; i++)
   {
     // Read out the state and convert it from internal format to little endian format
     output.hash[4*i+3] = (u8)((MD5State::state[i] >> 24) & 0xFF);
@@ -313,7 +313,7 @@ MD5Hash MD5Context::Hash(void) const
 {
   MD5Hash output;
 
-  for (unsigned int i = 0; i < 4; i++) 
+  for (unsigned int i = 0; i < 4; i++)
   {
     // Read out the state and convert it from internal format to little endian format
     output.hash[4*i+3] = (unsigned char)((MD5State::state[i] >> 24) & 0xFF);
@@ -350,4 +350,3 @@ string MD5Context::print(void) const
 
   return buffer;
 }
-

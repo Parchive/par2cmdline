@@ -50,7 +50,7 @@ bool DataBlock::ReadData(u64    position, // Position within the block
 
   // Check to see if the position from which data is to be read
   // is within the bounds of the data block
-  if (length > position) 
+  if (length > position)
   {
     // Compute the file offset and how much data to physically read from disk
     u64    fileoffset = offset + position;
