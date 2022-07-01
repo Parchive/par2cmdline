@@ -136,6 +136,9 @@ void CommandLine::usage(void)
     "  -l       : Limit size of recovery files (don't use both -u and -l)\n"
     "  -n<n>    : Number of recovery files (don't use both -n and -l)\n"
     "  -R       : Recurse into subdirectories\n"
+#ifdef __NVCC__
+    "  -C       : Use CUDA device to accelerate recovery files creation\n"
+#endif
     "\n";
   cout <<
     "Example:\n"
@@ -1143,11 +1146,11 @@ bool CommandLine::ComputeBlockSize() {
       u64 largestfilesize = 0;
       for (vector<string>::const_iterator i=extrafiles.begin(); i!=extrafiles.end(); i++)
       {
-	u64 filesize = filesize_cache.get(*i);
-	if (filesize > largestfilesize)
-	{
-	  largestfilesize = filesize;
-	}
+        u64 filesize = filesize_cache.get(*i);
+        if (filesize > largestfilesize)
+        {
+          largestfilesize = filesize;
+        }
       }
       blocksize = (largestfilesize + 3) & ~3;
     }

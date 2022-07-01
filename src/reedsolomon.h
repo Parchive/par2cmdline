@@ -67,6 +67,14 @@ public:
                const void *inputbuffer, // Buffer containing input data
                u32 outputindex,         // The row in the RS matrix
                void *outputbuffer);     // Buffer containing output data
+
+  /* Below member functions are for CUDA route. */
+#ifdef __CUDACC__
+  // Compute the RS Matrix on CUDA device.
+  bool ComputeToCuda(NoiseLevel noiselevel, std::ostream &sout, std::ostream &serr);
+#endif
+
+
 private:
 		bool InternalProcess(const g &factor, size_t size, const void *inputbuffer, void *outputbuffer);	// Optimization
 
