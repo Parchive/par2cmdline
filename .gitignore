@@ -60,3 +60,6 @@ perf.*
 .#*
 \#*#
 .~lock.*#
+
+# profiling workspace
+profiling/
