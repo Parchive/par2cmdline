@@ -20,6 +20,12 @@
 #ifndef __GALOIS_H__
 #define __GALOIS_H__
 
+#ifdef __CUDACC__
+#define CUDA_CALLABLE __host__ __device__
+#else
+#define CUDA_CALLABLE 
+#endif
+
 template <const unsigned int bits, const unsigned int generator, typename valuetype> class GaloisTable;
 template <const unsigned int bits, const unsigned int generator, typename valuetype> class Galois;
 
@@ -60,41 +66,74 @@ public:
   typedef valuetype ValueType;
 
   // Basic constructors
-  Galois(void) {};
-  Galois(ValueType v);
+  CUDA_CALLABLE Galois(void) {};
+  CUDA_CALLABLE Galois(ValueType v);
 
   // Copy and assignment
-  Galois(const Galois &right) {value = right.value;}
-  Galois& operator = (const Galois &right) { value = right.value; return *this;}
+  CUDA_CALLABLE Galois(const Galois &right) {value = right.value;}
+  CUDA_CALLABLE Galois& operator = (const Galois &right) { value = right.value; return *this;}
 
   // Addition
-  Galois operator + (const Galois &right) const { return (value ^ right.value); }
-  Galois& operator += (const Galois &right) { value ^= right.value; return *this;}
+  CUDA_CALLABLE Galois operator + (const Galois &right) const { return (value ^ right.value); }
+  CUDA_CALLABLE Galois& operator += (const Galois &right) { value ^= right.value; return *this;}
 
   // Subtraction
-  Galois operator - (const Galois &right) const { return (value ^ right.value); }
-  Galois& operator -= (const Galois &right) { value ^= right.value; return *this;}
+  CUDA_CALLABLE Galois operator - (const Galois &right) const { return (value ^ right.value); }
+  CUDA_CALLABLE Galois& operator -= (const Galois &right) { value ^= right.value; return *this;}
 
   // Multiplication
-  Galois operator * (const Galois &right) const;
-  Galois& operator *= (const Galois &right);
+  CUDA_CALLABLE Galois operator * (const Galois &right) const;
+  CUDA_CALLABLE Galois& operator *= (const Galois &right);
 
   // Division
-  Galois operator / (const Galois &right) const;
-  Galois& operator /= (const Galois &right);
+  CUDA_CALLABLE Galois operator / (const Galois &right) const;
+  CUDA_CALLABLE Galois& operator /= (const Galois &right);
 
   // Power
-  Galois pow(unsigned int right) const;
-  Galois operator ^ (unsigned int right) const;
-  Galois& operator ^= (unsigned int right);
+  CUDA_CALLABLE Galois pow(unsigned int right) const;
+  CUDA_CALLABLE Galois operator ^ (unsigned int right) const;
+  CUDA_CALLABLE Galois& operator ^= (unsigned int right);
 
   // Cast to value and value access
-  operator ValueType(void) const {return value;}
-  ValueType Value(void) const {return value;}
+  CUDA_CALLABLE operator ValueType(void) const {return value;}
+  CUDA_CALLABLE ValueType Value(void) const {return value;}
 
   // Direct log and antilog
-  ValueType Log(void) const;
-  ValueType ALog(void) const;
+  CUDA_CALLABLE ValueType Log(void) const;
+  CUDA_CALLABLE ValueType ALog(void) const;
+
+  // Upload Galois Table to CUDA device
+  static void toCuda(void)
+  {
+    if (d_table<bits, generator, valuetype>) return;
+  
+    cudaError_t err = cudaSuccess;
+    err = cudaMalloc((void**) &d_table<bits, generator, valuetype>, sizeof(table));
+    if (err != cudaSuccess)
+    {
+      fprintf(stderr, "Error allocating %dB vram for Galois Table: %s\n", sizeof(table), cudaGetErrorString(err));
+      exit(EXIT_FAILURE);
+    }
+
+    err = cudaMemCpy(d_table<bits, generator, valuetype>, &table, sizeof(table), cudaMemcpyHostToDevice);
+    if (err != cudaSuccess)
+    {
+    fprintf(stderr, "Error copying Galois Table to device: %s\n", cudaGetErrorString(err));
+    exit(EXIT_FAILURE);
+    }
+#ifdef _DEBUG
+    printf("Copied Galois table to vram.\n");
+#endif
+  }
+
+  // Free Galois Table from CUDA device memory.
+  // To be called at the end of the program.
+  static void freeCuda(void)
+  {
+    if (!d_table<bits, generator, valuetype>) return;
+    cudaFree(d_table<bits, generator, valuetype>);
+    d_table<bits, generator, valuetype> = nullptr;
+  }
 
   enum
   {
@@ -131,7 +170,7 @@ public:
 // Construct the log and antilog tables from the generator
 
 template <const unsigned int bits, const unsigned int generator, typename valuetype>
-inline GaloisTable<bits,generator,valuetype>::GaloisTable(void)
+CUDA_CALLABLE inline GaloisTable<bits,generator,valuetype>::GaloisTable(void)
 {
   u32 b = 1;
 
@@ -154,17 +193,22 @@ inline GaloisTable<bits,generator,valuetype>::GaloisTable(void)
 template <const unsigned int bits, const unsigned int generator, typename valuetype>
 GaloisTable<bits,generator,valuetype> Galois<bits,generator,valuetype>::table;
 
+#ifdef __CUDACC__
+template <const unsigned int bits, const unsigned int generator, typename valuetype>
+__device__ GaloisTable<bits,generator,valuetype> *d_table;
+#endif 
 
 template <const unsigned int bits, const unsigned int generator, typename valuetype>
-inline Galois<bits,generator,valuetype>::Galois(typename Galois<bits,generator,valuetype>::ValueType v)
+CUDA_CALLABLE inline Galois<bits,generator,valuetype>::Galois(typename Galois<bits,generator,valuetype>::ValueType v)
 {
   value = v;
 }
 
 template <const unsigned int bits, const unsigned int generator, typename valuetype>
-inline Galois<bits,generator,valuetype> Galois<bits,generator,valuetype>::operator * (const Galois<bits,generator,valuetype> &right) const
+CUDA_CALLABLE inline Galois<bits,generator,valuetype> Galois<bits,generator,valuetype>::operator * (const Galois<bits,generator,valuetype> &right) const
 {
   if (value == 0 || right.value == 0) return 0;
+#ifndef __CUDA_ARCH__
   unsigned int sum = table.log[value] + table.log[right.value];
   if (sum >= Limit)
   {
@@ -174,11 +218,15 @@ inline Galois<bits,generator,valuetype> Galois<bits,generator,valuetype>::operat
   {
     return table.antilog[sum];
   }
+#else
+// TODO：CUDA routine
+#endif
 }
 
 template <const unsigned int bits, const unsigned int generator, typename valuetype>
-inline Galois<bits,generator,valuetype>& Galois<bits,generator,valuetype>::operator *= (const Galois<bits,generator,valuetype> &right)
+CUDA_CALLABLE inline Galois<bits,generator,valuetype>& Galois<bits,generator,valuetype>::operator *= (const Galois<bits,generator,valuetype> &right)
 {
+#ifndef __CUDA_ARCH__
   if (value == 0 || right.value == 0)
   {
     value = 0;
@@ -200,7 +248,7 @@ inline Galois<bits,generator,valuetype>& Galois<bits,generator,valuetype>::opera
 }
 
 template <const unsigned int bits, const unsigned int generator, typename valuetype>
-inline Galois<bits,generator,valuetype> Galois<bits,generator,valuetype>::operator / (const Galois<bits,generator,valuetype> &right) const
+CUDA_CALLABLE inline Galois<bits,generator,valuetype> Galois<bits,generator,valuetype>::operator / (const Galois<bits,generator,valuetype> &right) const
 {
   if (value == 0) return 0;
 
@@ -219,7 +267,7 @@ inline Galois<bits,generator,valuetype> Galois<bits,generator,valuetype>::operat
 }
 
 template <const unsigned int bits, const unsigned int generator, typename valuetype>
-inline Galois<bits,generator,valuetype>& Galois<bits,generator,valuetype>::operator /= (const Galois<bits,generator,valuetype> &right)
+CUDA_CALLABLE inline Galois<bits,generator,valuetype>& Galois<bits,generator,valuetype>::operator /= (const Galois<bits,generator,valuetype> &right)
 {
   if (value == 0) return *this;
 
@@ -240,7 +288,7 @@ inline Galois<bits,generator,valuetype>& Galois<bits,generator,valuetype>::opera
 }
 
 template <const unsigned int bits, const unsigned int generator, typename valuetype>
-inline Galois<bits,generator,valuetype> Galois<bits,generator,valuetype>::pow(unsigned int right) const
+CUDA_CALLABLE inline Galois<bits,generator,valuetype> Galois<bits,generator,valuetype>::pow(unsigned int right) const
 {
   if (right == 0) return 1;
   if (value == 0) return 0;
@@ -259,7 +307,7 @@ inline Galois<bits,generator,valuetype> Galois<bits,generator,valuetype>::pow(un
 }
 
 template <const unsigned int bits, const unsigned int generator, typename valuetype>
-inline Galois<bits,generator,valuetype> Galois<bits,generator,valuetype>::operator ^ (unsigned int right) const
+CUDA_CALLABLE inline Galois<bits,generator,valuetype> Galois<bits,generator,valuetype>::operator ^ (unsigned int right) const
 {
   if (right == 0) return 1;
   if (value == 0) return 0;
@@ -278,7 +326,7 @@ inline Galois<bits,generator,valuetype> Galois<bits,generator,valuetype>::operat
 }
 
 template <const unsigned int bits, const unsigned int generator, typename valuetype>
-inline Galois<bits,generator,valuetype>& Galois<bits,generator,valuetype>::operator ^= (unsigned int right)
+CUDA_CALLABLE inline Galois<bits,generator,valuetype>& Galois<bits,generator,valuetype>::operator ^= (unsigned int right)
 {
   if (right == 0) {value = 1; return *this;}
   if (value == 0) return *this;
@@ -299,13 +347,13 @@ inline Galois<bits,generator,valuetype>& Galois<bits,generator,valuetype>::opera
 }
 
 template <const unsigned int bits, const unsigned int generator, typename valuetype>
-inline valuetype Galois<bits,generator,valuetype>::Log(void) const
+CUDA_CALLABLE inline valuetype Galois<bits,generator,valuetype>::Log(void) const
 {
   return table.log[value];
 }
 
 template <const unsigned int bits, const unsigned int generator, typename valuetype>
-inline valuetype Galois<bits,generator,valuetype>::ALog(void) const
+CUDA_CALLABLE inline valuetype Galois<bits,generator,valuetype>::ALog(void) const
 {
   return table.antilog[value];
 }
