@@ -21,7 +21,6 @@
 #define __GALOIS_CU_H__
 
 #include "libpar2.h"
-#include "galois.h"
 
 template <const unsigned int bits, const unsigned int generator, typename valuetype> class GaloisTable;
 template <const unsigned int bits, const unsigned int generator, typename valuetype> class Galois;
@@ -57,39 +56,39 @@ public:
 };
 
 template <const unsigned int bits, const unsigned int generator, typename valuetype>
-class Galois_Cu
+class Galois
 {
 public:
   typedef valuetype ValueType;
 
   // Basic constructors
-  __device__ Galois_Cu(void) {};
-  __device__ Galois_Cu(ValueType v);
+  __device__ Galois(void) {};
+  __device__ Galois(ValueType v);
 
   // Copy and assignment
-  __device__ inline Galois_Cu(const Galois_Cu &right) {value = right.value;}
-  __device__ inline Galois_Cu& operator = (const Galois_Cu &right) { value = right.value; return *this;}
+  __device__ inline Galois(const Galois &right) {value = right.value;}
+  __device__ inline Galois& operator = (const Galois &right) { value = right.value; return *this;}
 
   // Addition
-  __device__ inline Galois_Cu operator + (const Galois_Cu &right) const { return (value ^ right.value); }
-  __device__ inline Galois_Cu& operator += (const Galois_Cu &right) { value ^= right.value; return *this;}
+  __device__ inline Galois operator + (const Galois &right) const { return (value ^ right.value); }
+  __device__ inline Galois& operator += (const Galois &right) { value ^= right.value; return *this;}
 
   // Subtraction
-  __device__ inline Galois_Cu operator - (const Galois_Cu &right) const { return (value ^ right.value); }
-  __device__ inline Galois_Cu& operator -= (const Galois_Cu &right) { value ^= right.value; return *this;}
+  __device__ inline Galois operator - (const Galois &right) const { return (value ^ right.value); }
+  __device__ inline Galois& operator -= (const Galois &right) { value ^= right.value; return *this;}
 
   // Multiplication
-  __device__ Galois_Cu operator * (const Galois_Cu &right) const;
-  __device__ Galois_Cu& operator *= (const Galois_Cu &right);
+  __device__ Galois operator * (const Galois &right) const;
+  __device__ Galois& operator *= (const Galois &right);
 
   // Division
-  __device__ Galois_Cu operator / (const Galois_Cu &right) const;
-  __device__ Galois_Cu& operator /= (const Galois_Cu &right);
+  __device__ Galois operator / (const Galois &right) const;
+  __device__ Galois& operator /= (const Galois &right);
 
   // Power
-  __device__ Galois_Cu pow(unsigned int right) const;
-  __device__ Galois_Cu operator ^ (unsigned int right) const;
-  __device__ Galois_Cu& operator ^= (unsigned int right);
+  __device__ Galois pow(unsigned int right) const;
+  __device__ Galois operator ^ (unsigned int right) const;
+  __device__ Galois& operator ^= (unsigned int right);
 
   // Cast to value and value access
   __device__ operator ValueType(void) const {return value;}
