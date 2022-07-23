@@ -21,6 +21,7 @@
 
 #include "galois.h"
 #include "helper_cuda.cuh"
+#include <assert.h>
 
 // This source file defines the CUDA version of Galois object for carrying out
 // arithmetic in GF(2^16) using the generator 0x1100B on CUDA device.
@@ -32,7 +33,11 @@
 
 // CUDA Device global galois log/antilog table object
 template <const unsigned int bits, const unsigned int generator, typename valuetype>
-__device__ GaloisTable<bits,generator,valuetype> *d_table;
+__device__ static GaloisTable<bits,generator,valuetype> *d_table;
+
+// For readability
+#define D_TABLE d_table<bits, generator, valuetype>
+
 
 template <const unsigned int bits, const unsigned int generator, typename valuetype>
 class GaloisCu
@@ -41,8 +46,11 @@ public:
   typedef valuetype ValueType;
 
   // Basic constructors
-  __device__ GaloisCu(void) {};
-  __device__ GaloisCu(ValueType v);
+  __device__ __host__ GaloisCu(void) {};
+  __device__ __host__ GaloisCu(ValueType v);
+
+  // Construct from CPU Galois variable in the same field.
+  __device__ __host__ GaloisCu(const Galois<bits, generator, valuetype> g);
 
   // Copy and assignment
   __device__ GaloisCu(const GaloisCu &right) {value = right.value;}
@@ -80,13 +88,13 @@ public:
   // Upload Galois Table to CUDA device
   static void uploadTable(void)
   {
-    if (d_table<bits, generator, valuetype>) return;
+    if (D_TABLE) return;
 
     GaloisTable<bits,generator,valuetype> table, *d;
 
     cudaErrchk( cudaMalloc((void**) &d, sizeof(GaloisTable<bits, generator, valuetype>)) );
     cudaErrchk( cudaMemcpy(d, &table, sizeof(GaloisTable<bits, generator, valuetype>), cudaMemcpyHostToDevice) );
-    cudaErrchk( cudaMemcpyToSymbol(d_table<bits, generator, valuetype>, &d, sizeof(d), 0, cudaMemcpyHostToDevice) );
+    cudaErrchk( cudaMemcpyToSymbol(D_TABLE, &d, sizeof(d), 0, cudaMemcpyHostToDevice) );
 
 #ifdef _DEBUG
     printf("Copied Galois table to device.\n");
@@ -97,9 +105,9 @@ public:
   // To be called at the end of the program.
   static void freeTable(void)
   {
-    if (!d_table<bits, generator, valuetype>) return;
-    cudaFree(d_table<bits, generator, valuetype>);
-    d_table<bits, generator, valuetype> = nullptr;
+    if (!D_TABLE) return;
+    cudaFree(D_TABLE);
+    D_TABLE = nullptr;
   }
 
   enum
@@ -111,64 +119,72 @@ public:
 
 protected:
   ValueType value;
+
 };
 
-// #ifdef LONGMULTIPLY
-// template <class g>
-// class GaloisLongMultiplyTable
-// {
-// public:
-//   GaloisLongMultiplyTable(void);
+#ifdef LONGMULTIPLY
+template <class g>
+class GaloisLongMultiplyTable
+{
+public:
+  GaloisLongMultiplyTable(void);
 
-//   typedef g G;
+  typedef g G;
 
-//   enum
-//   {
-//     Bytes = ((G::Bits + 7) >> 3),
-//     Count = ((Bytes * (Bytes+1)) / 2),
-//   };
+  enum
+  {
+    Bytes = ((G::Bits + 7) >> 3),
+    Count = ((Bytes * (Bytes+1)) / 2),
+  };
 
-//   G tables[Count * 256 * 256];
-// };
-// #endif
+  G tables[Count * 256 * 256];
+};
+#endif
 
 template <const unsigned int bits, const unsigned int generator, typename valuetype>
-__device__ inline GaloisCu<bits,generator,valuetype>::GaloisCu(typename GaloisCu<bits,generator,valuetype>::ValueType v)
+__device__ __host__ inline GaloisCu<bits,generator,valuetype>::GaloisCu(typename GaloisCu<bits,generator,valuetype>::ValueType v)
 {
   value = v;
 }
 
 template <const unsigned int bits, const unsigned int generator, typename valuetype>
+__device__ __host__ inline GaloisCu<bits,generator,valuetype>::GaloisCu(Galois<bits, generator, valuetype> g)
+{
+  value = g.Value;
+}
+
+template <const unsigned int bits, const unsigned int generator, typename valuetype>
 __device__ inline GaloisCu<bits,generator,valuetype> GaloisCu<bits,generator,valuetype>::operator * (const GaloisCu<bits,generator,valuetype> &right) const
 {
-  unsigned int sum = d_table<bits,generator,valuetype>->log[value] + d_table<bits,generator,valuetype>->log[right.value];
+  if(value == 0 || right.Value == 0) return 0;
+  unsigned int sum = D_TABLE->log[value] + D_TABLE->log[right.value];
   if (sum >= Limit)
   {
-    return d_table<bits,generator,valuetype>->antilog[sum - Limit];
+    return D_TABLE->antilog[sum - Limit];
   }
   else
   {
-    return d_table<bits,generator,valuetype>->antilog[sum];
+    return D_TABLE->antilog[sum];
   }
 }
 
 template <const unsigned int bits, const unsigned int generator, typename valuetype>
 __device__ inline GaloisCu<bits,generator,valuetype>& GaloisCu<bits,generator,valuetype>::operator *= (const GaloisCu<bits,generator,valuetype> &right)
 {
-  if (value == 0 || right.value == 0)
+  if(value == 0 || right.Value == 0)
   {
     value = 0;
   }
   else
   {
-    unsigned int sum = table.log[value] + table.log[right.value];
+    unsigned int sum = D_TABLE->log[value] + D_TABLE->log[right.value];
     if (sum >= Limit)
     {
-      value = table.antilog[sum-Limit];
+      value = D_TABLE->antilog[sum-Limit];
     }
     else
     {
-      value = table.antilog[sum];
+      value = D_TABLE->antilog[sum];
     }
   }
 
@@ -183,14 +199,14 @@ __device__ inline GaloisCu<bits,generator,valuetype> GaloisCu<bits,generator,val
   assert(right.value != 0);
   if (right.value == 0) {return 0;} // Division by 0!
 
-  int sum = table.log[value] - table.log[right.value];
+  int sum = D_TABLE->log[value] - D_TABLE->log[right.value];
   if (sum < 0)
   {
-    return table.antilog[sum+Limit];
+    return D_TABLE->antilog[sum+Limit];
   }
   else
   {
-    return table.antilog[sum];
+    return D_TABLE->antilog[sum];
   }
 }
 
@@ -202,14 +218,14 @@ __device__ inline GaloisCu<bits,generator,valuetype>& GaloisCu<bits,generator,va
   assert(right.value != 0);
   if (right.value == 0) {return *this;} // Division by 0!
 
-  int sum = table.log[value] - table.log[right.value];
+  int sum = D_TABLE->log[value] - D_TABLE->log[right.value];
   if (sum < 0)
   {
-    value = table.antilog[sum+Limit];
+    value = D_TABLE->antilog[sum+Limit];
   }
   else
   {
-    value = table.antilog[sum];
+    value = D_TABLE->antilog[sum];
   }
 
   return *this;
@@ -221,16 +237,16 @@ __device__ inline GaloisCu<bits,generator,valuetype> GaloisCu<bits,generator,val
   if (right == 0) return 1;
   if (value == 0) return 0;
 
-  unsigned int sum = table.log[value] * right;
+  unsigned int sum = D_TABLE->log[value] * right;
 
   sum = (sum >> Bits) + (sum & Limit);
   if (sum >= Limit)
   {
-    return table.antilog[sum-Limit];
+    return D_TABLE->antilog[sum-Limit];
   }
   else
   {
-    return table.antilog[sum];
+    return D_TABLE->antilog[sum];
   }
 }
 
@@ -240,16 +256,16 @@ __device__ inline GaloisCu<bits,generator,valuetype> GaloisCu<bits,generator,val
   if (right == 0) return 1;
   if (value == 0) return 0;
 
-  unsigned int sum = table.log[value] * right;
+  unsigned int sum = D_TABLE->log[value] * right;
 
   sum = (sum >> Bits) + (sum & Limit);
   if (sum >= Limit)
   {
-    return table.antilog[sum-Limit];
+    return D_TABLE->antilog[sum-Limit];
   }
   else
   {
-    return table.antilog[sum];
+    return D_TABLE->antilog[sum];
   }
 }
 
@@ -259,16 +275,16 @@ __device__ inline GaloisCu<bits,generator,valuetype>& GaloisCu<bits,generator,va
   if (right == 0) {value = 1; return *this;}
   if (value == 0) return *this;
 
-  unsigned int sum = table.log[value] * right;
+  unsigned int sum = D_TABLE->log[value] * right;
 
   sum = (sum >> Bits) + (sum & Limit);
   if (sum >= Limit)
   {
-    value = table.antilog[sum-Limit];
+    value = D_TABLE->antilog[sum-Limit];
   }
   else
   {
-    value = table.antilog[sum];
+    value = D_TABLE->antilog[sum];
   }
 
   return *this;
@@ -277,13 +293,13 @@ __device__ inline GaloisCu<bits,generator,valuetype>& GaloisCu<bits,generator,va
 template <const unsigned int bits, const unsigned int generator, typename valuetype>
 __device__ inline valuetype GaloisCu<bits,generator,valuetype>::Log(void) const
 {
-  return table.log[value];
+  return D_TABLE->log[value];
 }
 
 template <const unsigned int bits, const unsigned int generator, typename valuetype>
 __device__ inline valuetype GaloisCu<bits,generator,valuetype>::ALog(void) const
 {
-  return table.antilog[value];
+  return D_TABLE->antilog[value];
 }
 
 #ifdef LONGMULTIPLY
