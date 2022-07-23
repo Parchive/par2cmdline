@@ -61,5 +61,9 @@ perf.*
 \#*#
 .~lock.*#
 
+# vscode settings
+.vscode/
+src/.vscode
+
 # profiling workspace
 profiling/
