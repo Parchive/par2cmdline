@@ -78,8 +78,8 @@ public:
   __device__ GaloisCu& operator ^= (unsigned int right);
 
   // Cast to value and value access
-  __device__ operator ValueType(void) const {return value;}
-  __device__ ValueType Value(void) const {return value;}
+  __device__ __host__ operator ValueType(void) const {return value;}
+  __device__ __host__ ValueType Value(void) const {return value;}
 
   // Direct log and antilog
   __device__ ValueType Log(void) const;
