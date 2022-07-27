@@ -53,8 +53,8 @@ public:
   __device__ __host__ GaloisCu(const Galois<bits, generator, valuetype> g);
 
   // Copy and assignment
-  __device__ GaloisCu(const GaloisCu &right) {value = right.value;}
-  __device__ GaloisCu& operator = (const GaloisCu &right) { value = right.value; return *this;}
+  __device__ __host__ GaloisCu(const GaloisCu &right) {value = right.value;}
+  __device__ __host__ GaloisCu& operator = (const GaloisCu &right) { value = right.value; return *this;}
 
   // Addition
   __device__ GaloisCu operator + (const GaloisCu &right) const { return (value ^ right.value); }
@@ -156,7 +156,7 @@ __device__ __host__ inline GaloisCu<bits,generator,valuetype>::GaloisCu(Galois<b
 template <const unsigned int bits, const unsigned int generator, typename valuetype>
 __device__ inline GaloisCu<bits,generator,valuetype> GaloisCu<bits,generator,valuetype>::operator * (const GaloisCu<bits,generator,valuetype> &right) const
 {
-  if(value == 0 || right.Value == 0) return 0;
+  if(value == 0 || right.value == 0) return 0;
   unsigned int sum = D_TABLE->log[value] + D_TABLE->log[right.value];
   if (sum >= Limit)
   {
@@ -171,7 +171,7 @@ __device__ inline GaloisCu<bits,generator,valuetype> GaloisCu<bits,generator,val
 template <const unsigned int bits, const unsigned int generator, typename valuetype>
 __device__ inline GaloisCu<bits,generator,valuetype>& GaloisCu<bits,generator,valuetype>::operator *= (const GaloisCu<bits,generator,valuetype> &right)
 {
-  if(value == 0 || right.Value == 0)
+  if(value == 0 || right.value == 0)
   {
     value = 0;
   }
