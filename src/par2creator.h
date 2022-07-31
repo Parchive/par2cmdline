@@ -98,6 +98,16 @@ protected:
   // Close all files.
   bool CloseFiles(void);
 
+
+#ifdef __NVCC__
+  // ProcessData, but on CUDA device.
+  bool ProcessDataCu(u64 blockoffset, size_t blocklength);
+
+  // Allocate pinned (page locked) memory buffers for reading and writing data to disk.
+  // This enables faster data transfer between host and CUDA device.
+  bool AllocateBuffersPinned(void);
+#endif
+
 #ifdef _OPENMP
   static u32                          GetFileThreads(void) {return filethreads;}
 #endif

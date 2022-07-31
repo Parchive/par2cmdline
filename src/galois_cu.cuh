@@ -215,7 +215,7 @@ __device__ inline GaloisCu<bits,generator,valuetype>& GaloisCu<bits,generator,va
 {
   if (value == 0) return *this;
 
-  assert(right.value != 0);
+  assert(right.value);
   if (right.value == 0) {return *this;} // Division by 0!
 
   int sum = D_TABLE->log[value] - D_TABLE->log[right.value];
