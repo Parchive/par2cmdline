@@ -20,7 +20,7 @@ bool Par2Creator::AllocateBuffersPinned(void)
   if ( err != cudaSuccess )
     return AllocateBuffers();
   
-  err = cudaMallocHost( ( void** ) &outputbuffer, chunksize * recoveryblockcount );
+  err = cudaMallocHost( (void**)&outputbuffer, chunksize * recoveryblockcount );
 
   // If pinned mem allocation failed, fall back to pageable memory.
   if ( err != cudaSuccess )

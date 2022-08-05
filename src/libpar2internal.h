@@ -215,6 +215,9 @@ using namespace std;
 
 #include "letype.h"
 
+#ifdef __NVCC__
+#include "galois_cu.cuh"
+#endif
 #include "galois.h"
 #include "crc.h"
 #include "md5.h"

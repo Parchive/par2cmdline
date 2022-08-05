@@ -98,7 +98,6 @@ protected:
   // Close all files.
   bool CloseFiles(void);
 
-
 #ifdef __NVCC__
   // ProcessData, but on CUDA device.
   bool ProcessDataCu(u64 blockoffset, size_t blocklength);

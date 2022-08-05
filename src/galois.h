@@ -101,6 +101,7 @@ public:
     Bits  = GaloisTable<bits,generator,valuetype>::Bits,
     Count = GaloisTable<bits,generator,valuetype>::Count,
     Limit = GaloisTable<bits,generator,valuetype>::Limit,
+    Generator = generator,
   };
 
 protected:

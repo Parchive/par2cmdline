@@ -92,6 +92,7 @@ void KerMult(__restrict__ GaloisCu16 *vars, __restrict__ GaloisCu16 *res)
     res[ outStartIdx + i ] = left * vars[ outRowIdx + i ];
   }
   
+  
 }
 
 void TestMult()

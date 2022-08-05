@@ -68,10 +68,15 @@ public:
                u32 outputindex,         // The row in the RS matrix
                void *outputbuffer);     // Buffer containing output data
 
-  /* Below member functions are for CUDA route. */
-#ifdef __CUDACC__
-  // Compute the RS Matrix on CUDA device.
-  bool ComputeToCuda(NoiseLevel noiselevel, std::ostream &sout, std::ostream &serr);
+#ifdef __NVCC__
+  // Process a block of data for output blocks [outputIdxStart, outputIdxEnd] on a CUDA device.
+  bool ProcessCu(size_t size,           // The size of the block of data
+                 u32 inputIdxStart,     // The index of the first input block to be processed
+                 u32 inputIdxEnd,       // The index of the last input block to be processed
+                 const void *inputBuf,  // Buffer containing input data
+                 u32 outputIdxStart,    // The row for the first output block to process in RS matrix
+                 u32 outputIdxEnd,      // The row for the last output block to process in RS matrix
+                 void *outputBuf);      // Buffer containing output data
 #endif
 
 
