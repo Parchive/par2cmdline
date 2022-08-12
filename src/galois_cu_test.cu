@@ -31,7 +31,6 @@ int main()
   // u16 ub = 65521;
   // GaloisCu16 da(ua), db(ub);
   // Galois16 a(ua), b(ub);
-
   // printf("%hu\n", (a * b).Value());
   // GaloisCu16 *dap, *dbp;
   // cudaMalloc((void**) &dap, 2);
