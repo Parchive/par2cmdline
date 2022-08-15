@@ -3,6 +3,11 @@
 #include "libpar2internal.h"
 #include "helper_cuda.cuh"
 
+#define TBLOCK_SZ = 256
+#define MAX_THREAD = 1024
+#define INPUT_W = 32
+#define SHARED_MEM_SZ = 65536
+
 template <typename G>
 __global__ void ProcessKer( const int chunkSz,
                             const int inputCount,
@@ -20,18 +25,27 @@ bool ReedSolomon<g>::ProcessCu(size_t size, u32 inputIdxStart, u32 inputIdxEnd, 
 {
   // CUDA Device compatible Galois type.
   typedef GaloisCu<G::Bits, G::Generator, G::ValueType> Gd;
-  cudaDeviceSetCacheConfig( cudaFuncCachePreferL1 );
-  u32 outCount = outputIdxEnd - outputIdxStart + 1;
   /* 
   * size: chunk size
   * VRam footprint: (inputcount + outCount) * size + (inputcount + outCount) * sizeof(g) + sizeof(g::GaloisTable)
   *                 <input buffer and output buffer>          <base and exponent>            <Galois log tables>
   * 
-  * Align sharedBufSz to 4 bytes
+  * Assume the total VRam footprint can be fitted into device vram.
   * Align chunkSz to 4 bytes
   * 
   */
+
+  u32 outCount = outputIdxEnd - outputIdxStart + 1;
+  u32 inCount = inputIdxEnd - inputIdxStart + 1;
+  u32 batchSz = TBLOCK_SZ * SHARED_MEM_SZ / ( MAX_THREAD * INPUT_W * sizeof(Gd) ) - 1;
+  u32 streamCount = inCount / INPUT_W + ( inCount % INPUT_W != 0 );
   
+  // TODO :
+  // Allocate device memory for input and output (INPUT_W)
+  // Launch CUDA Streams
+  // Accumulate results using vectorized XOR.
+  // Save results to output buffer.
+ 
 }
 
 template <typename G>
