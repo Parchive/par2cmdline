@@ -191,7 +191,7 @@ char *strchr(), *strrchr();
 
 #define _FILE_THREADS 2
 
-#define LONGMULTIPLY
+// #define LONGMULTIPLY
 
 // STL includes
 #include <list>
