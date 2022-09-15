@@ -18,10 +18,23 @@ __global__ void ReduceKer( const u32 * __restrict__ input,       // Countains re
                            const int tileCount                   // Number of input tiles
                           );
 
-#define TBLOCK_SZ 256
+void CUDART_CB WriteOutputCB( void *data );
+
+typedef struct
+{
+    size_t batchSz;
+    size_t wordPerChunk;
+    size_t wordPerBatch;
+    size_t batchIdx;
+    size_t outCount;
+    Galois16 *finalOutput;
+    Galois16 *batchOutput;
+} workload;
+
+#define TBLOCK_SZ 512
 #define MAX_THREAD 1024
-#define TILE_WIDTH 32
-#define SHARED_MEM_SZ 65536
+#define TILE_WIDTH 16
+#define SHARED_MEM_SZ 32768
 
 // Calculate the contribution of words contained in inputBuf to specified output blocks.
 template <>
@@ -35,6 +48,8 @@ bool ReedSolomon<Galois16>::ProcessCu( const size_t size,          // size of on
 {
   // CUDA Device compatible Galois type.
   typedef GaloisCu<G::Bits, G::Generator, G::ValueType> Gd;
+  Gd::uploadTable();
+  cudaFuncSetCacheConfig(ProcessKer, cudaFuncCachePreferL1);
 
   const u32 inCount = inputIdxEnd - inputIdxStart + 1;
   const u32 outCount = outputIdxEnd - outputIdxStart + 1;
@@ -43,6 +58,14 @@ bool ReedSolomon<Galois16>::ProcessCu( const size_t size,          // size of on
   const u32 wordPerBatch = (TBLOCK_SZ * SHARED_MEM_SZ / ( MAX_THREAD * TILE_WIDTH * sizeof(Gd) ) - 1) & ~1;
   const u32 tileCount = inCount / TILE_WIDTH + ( inCount % TILE_WIDTH != 0 );
   const u32 batchCount = ceil( (float) wordPerChunk / wordPerBatch );
+
+  // cout << "inCount: " << inCount << endl;
+  // cout << "outCount: " << outCount << endl;
+  // cout << "wordPerChunk: " << wordPerChunk << endl;
+  // cout << "wordPerBatch: " << wordPerBatch << endl;
+  // cout << "tileCount: " << tileCount << endl;
+  // cout << "batchCount: " << batchCount << endl;
+
 
   /* 
   * size: chunk size
@@ -56,10 +79,8 @@ bool ReedSolomon<Galois16>::ProcessCu( const size_t size,          // size of on
   */
 
   // Allocate GPU memory buffers
-  Gd *d_input, *d_intermediate, *d_output, *d_bases, *d_exponents;
-  cudaErrchk( cudaMalloc( (void**) &d_input, inCount * wordPerBatch * sizeof(Gd) ) );
-  cudaErrchk( cudaMalloc( (void**) &d_intermediate, tileCount * wordPerBatch * outCount * sizeof(Gd) ) );
-  cudaErrchk( cudaMalloc( (void**) &d_output, outCount * wordPerBatch * sizeof(Gd) ) );
+  Gd *d_bases, *d_exponents;
+
   cudaErrchk( cudaMalloc( (void**) &d_bases, inCount * sizeof(Gd) ) );
   cudaErrchk( cudaMalloc( (void**) &d_exponents, outCount * sizeof(Gd) ) );
 
@@ -70,55 +91,118 @@ bool ReedSolomon<Galois16>::ProcessCu( const size_t size,          // size of on
     exponents[i - outputIdxStart] = outputrows[i].exponent;
   }
 
-  cudaErrchk( cudaMemcpy( d_bases, baseOffset, inCount * sizeof(Gd), cudaMemcpyHostToDevice ) );
-  cudaErrchk( cudaMemcpy( d_exponents, exponents, outCount * sizeof(u16), cudaMemcpyHostToDevice ) );
+  cudaErrchk( cudaMemcpyAsync( d_bases, baseOffset, inCount * sizeof(Gd), cudaMemcpyHostToDevice ) );
+  cudaErrchk( cudaMemcpyAsync( d_exponents, exponents, outCount * sizeof(u16), cudaMemcpyHostToDevice ) );
+  cudaErrchk( cudaDeviceSynchronize() );
   delete [] exponents;
 
   // Set kernel launch parameters
   dim3 dimGrid( tileCount );
   dim3 dimBlock( TBLOCK_SZ );
 
+  // Create stream
+  cudaStream_t *stream = new cudaStream_t[batchCount];
+  for ( u32 i = 0; i < batchCount; ++i ) {
+    cudaErrchk( cudaStreamCreateWithFlags( &stream[i], cudaStreamNonBlocking ) );
+  }
 
-  // Sequential kernel invoking
+  G *batchInput, *batchOutput;
+  cudaErrchk( cudaMallocHost( (void**) &batchInput, inCount * wordPerBatch * sizeof(G) ) );
+  cudaErrchk( cudaMallocHost( (void**) &batchOutput, outCount * wordPerBatch * sizeof(G) ) );
+
+  cudaEvent_t written, upload;
+  cudaErrchk( cudaEventCreate( &written, cudaEventDisableTiming ) );
+  cudaErrchk( cudaEventCreate( &upload, cudaEventBlockingSync ) );
+
+  // Concurrent kernel invoking
   for ( u32 batchIdx = 0; batchIdx < batchCount; ++batchIdx ) {
-
     int batchSz = wordPerBatch;
     if ( batchIdx == batchCount - 1 ) {
       batchSz = wordPerChunk - batchIdx * wordPerBatch;
     }
     int batchSzAligned = batchSz + (batchSz & 1);
 
+    // Allocate memory
+    Gd *d_input, *d_intermediate, *d_output;
+    cudaErrchk( cudaMallocAsync( (void**) &d_input, inCount * batchSz * sizeof(Gd), stream[batchIdx] ) );
+    cudaErrchk( cudaMallocAsync( (void**) &d_intermediate, tileCount * batchSzAligned * outCount * sizeof(Gd), stream[batchIdx] ) );
+    cudaErrchk( cudaMallocAsync( (void**) &d_output, outCount * batchSzAligned * sizeof(Gd), stream[batchIdx] ) );
+
+    // Wait until the last iteration has sent all input data to GPU.
+    cudaErrchk( cudaEventSynchronize( upload ) );
+
     // Copy input data to GPU
     for ( int i = 0; i < inCount; ++i ) {
       void *inputBufOffset = (char*) inputBuf + i * size + batchIdx * wordPerBatch * sizeof(G);
-      void *d_inputBufOffset = (char*) d_input + i * batchSz * sizeof(G);
-      cudaErrchk( cudaMemcpyAsync( d_inputBufOffset, inputBufOffset, batchSz * sizeof(G), cudaMemcpyHostToDevice ) );
+      void *batchInputOffset = (char*) batchInput + i * batchSz * sizeof(G);
+      memcpy( batchInputOffset, inputBufOffset, batchSz * sizeof(G) );
     }
 
+    cudaErrchk( cudaMemcpyAsync( d_input, batchInput, inCount * batchSz * sizeof(G), cudaMemcpyHostToDevice, stream[batchIdx] ) );
+    cudaErrchk( cudaEventRecord( upload, stream[batchIdx] ) );
+
     // Lauch Compute Kernel
-    ProcessKer<<<dimGrid, dimBlock, (batchSzAligned + 1) * TILE_WIDTH * sizeof(G)>>> ( batchSz,
-                                                                                       d_input,
-                                                                                       d_bases,
-                                                                                       inCount,
-                                                                                       outCount,
-                                                                                       d_intermediate,
-                                                                                       d_exponents
-                                                                                      );
+    ProcessKer<<<dimGrid, dimBlock, (batchSzAligned + 1) * TILE_WIDTH * sizeof(G), stream[batchIdx]>>> 
+    ( batchSz,
+      d_input,
+      d_bases,
+      inCount,
+      outCount,
+      d_intermediate,
+      d_exponents
+    );
+
     // Lauch Reduce Kernel
     dim3 dimBlockReduce( 32 );
     dim3 dimGridReduce( ceil( outCount / (float) dimBlockReduce.x ), batchSzAligned / 2 );
-    ReduceKer<<<dimGridReduce, dimBlockReduce>>>( (u32*) d_intermediate, (u32*) d_output, outCount, tileCount );
+    ReduceKer<<<dimGridReduce, dimBlockReduce, 0, stream[batchIdx]>>>
+    ( (u32*) d_intermediate,
+      (u32*) d_output,
+      outCount,
+      tileCount
+    );
 
-    // Copy Result to output buffer
-    for ( int i = 0; i < outCount; ++i ){
-      cudaErrchk( cudaMemcpyAsync( &((G*) outputBuf)[wordPerChunk * i + wordPerBatch * batchIdx],
-                                   &d_output[batchSzAligned * i],
-                                   batchSz * sizeof(GaloisCu16),
-                                   cudaMemcpyDeviceToHost ) );
-    }
-    cudaErrchk( cudaDeviceSynchronize() );
+    // Wait until output from the last iteration has already
+    // been written to actual output buffer.
+    cudaErrchk( cudaStreamWaitEvent( stream[batchIdx], written) );
+
+    // Copy Result to batch output buffer
+    cudaErrchk( cudaMemcpyAsync( batchOutput,
+                                 d_output,
+                                 batchSzAligned * outCount * sizeof(Gd),
+                                 cudaMemcpyDeviceToHost,
+                                 stream[batchIdx]
+                                ) );
+    
+    // Copy result in batch output buffer to actual output buffer
+    workload *work = new workload;
+    work->batchSz = batchSz;
+    work->wordPerChunk = wordPerChunk;
+    work->wordPerBatch = wordPerBatch;
+    work->batchIdx = batchIdx;
+    work->outCount = outCount;
+    work->finalOutput = (G*) outputBuf;
+    work->batchOutput = batchOutput;
+    cudaErrchk( cudaLaunchHostFunc( stream[batchIdx], WriteOutputCB, work ) );
+    cudaErrchk( cudaEventRecord( written, stream[batchIdx] ) );
+
+    cudaErrchk( cudaFreeAsync( d_input, stream[batchIdx] ) );
+    cudaErrchk( cudaFreeAsync( d_intermediate, stream[batchIdx] ) );
+    cudaErrchk( cudaFreeAsync( d_output, stream[batchIdx] ) );
 
   }
+  cudaErrchk( cudaDeviceSynchronize() );
+
+  // Destroy stream
+  for ( u32 i = 0; i < batchCount; ++i ) {
+    cudaErrchk( cudaStreamDestroy( stream[i] ) );
+  }
+
+  cudaFree( d_bases );
+  cudaFree( d_exponents );
+  cudaFreeHost( batchInput );
+  cudaFreeHost( batchOutput );
+  delete[] stream;
  
 }
 
@@ -279,3 +363,17 @@ __global__ void ReduceKer( const u32 * __restrict__ input,       // Countains re
 
   output[gridDim.y * ox + blockIdx.y] = acc;
 }
+
+void CUDART_CB WriteOutputCB( void *data ) {
+  // Write output from batch output buffer into actual output buffer.
+  workload *work = (workload *) data;
+  size_t batchSzAligned = work->batchSz + (work->batchSz & 1);
+  for ( int i = 0; i < work->outCount; ++i ){
+    memcpy( &work->finalOutput[work->wordPerChunk * i + work->wordPerBatch * work->batchIdx],
+            &work->batchOutput[batchSzAligned * i],
+            work->batchSz * sizeof(Galois16)
+          );
+  }
+  delete work;
+}
+
