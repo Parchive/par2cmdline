@@ -39,6 +39,9 @@ public:
 		 const u32 nthreads,
 		 const u32 filethreads,
 #endif
+#ifdef __NVCC__
+     const bool useCuda,
+#endif
 		 const string &parfilename,
 		 const vector<string> &extrafiles,
 		 const u64 blocksize,
@@ -83,6 +86,11 @@ protected:
   // Read source data, process it through the RS matrix and write it to disk.
   bool ProcessData(u64 blockoffset, size_t blocklength);
 
+#ifdef __NVCC__
+  // ProcessData, but on CUDA device.
+  bool ProcessDataCu(void);
+#endif
+
   // Finish computation of the recovery packets and write the headers to disk.
   bool WriteRecoveryPacketHeaders(void);
 
@@ -98,15 +106,6 @@ protected:
   // Close all files.
   bool CloseFiles(void);
 
-#ifdef __NVCC__
-  // ProcessData, but on CUDA device.
-  bool ProcessDataCu(u64 blockoffset, size_t blocklength);
-
-  // Allocate pinned (page locked) memory buffers for reading and writing data to disk.
-  // This enables faster data transfer between host and CUDA device.
-  bool AllocateBuffersPinned(void);
-#endif
-
 #ifdef _OPENMP
   static u32                          GetFileThreads(void) {return filethreads;}
 #endif
@@ -119,6 +118,10 @@ protected:
 
 #ifdef _OPENMP
   static u32 filethreads;      // Number of threads for file processing
+#endif
+
+#ifdef __NVCC__
+  static bool useCuda;
 #endif
 
   u64 blocksize;      // The size of each block.

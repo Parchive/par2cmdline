@@ -62,6 +62,7 @@ perf.*
 .~lock.*#
 
 # vscode settings
+.vscode/settings
 .vscode/
 src/.vscode
 

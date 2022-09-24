@@ -21,6 +21,10 @@
 // This is included here, so that cout and cerr are not used elsewhere.
 #include<iostream>
 #include<algorithm>
+#ifdef __NVCC__
+  #include <cuda_runtime.h>
+  #include "helper_cuda.cuh"
+#endif
 #include "commandline.h"
 using namespace std;
 
@@ -46,6 +50,9 @@ CommandLine::CommandLine(void)
 #ifdef _OPENMP
 , nthreads(0) // 0 means use default number
 , filethreads( _FILE_THREADS ) // default from header file
+#endif
+#ifdef __NVCC__
+, useCuda(false)
 #endif
 , parfilename()
 , rawfilenames()
@@ -209,20 +216,20 @@ bool CommandLine::ReadArgs(int argc, const char * const *argv)
     {
       if (argv[0] == string("-h") || argv[0] == string("--help"))
       {
-	usage();
-	return true;
+        usage();
+        return true;
       }
       else if (argv[0] == string("-V") || argv[0] == string("--version"))
       {
-	showversion();
-	return true;
+        showversion();
+        return true;
       }
       else if (argv[0] == string("-VV"))
       {
-	showversion();
-	cout << endl;
-	banner();
-	return true;
+        showversion();
+        cout << endl;
+        banner();
+        return true;
       }
     }
   }
@@ -425,6 +432,18 @@ bool CommandLine::ReadArgs(int argc, const char * const *argv)
               cerr << "Invalid file-thread option: " << argv[0] << endl;
               return false;
             }
+          }
+          break;
+#endif
+#ifdef __NVCC__
+        case 'C':
+          {
+            if (operation != opCreate)
+            {
+              cerr << "As of now, CUDA acceleration is only supported on creating." << endl;
+              return false;
+            }
+            useCuda = true;
           }
           break;
 #endif
@@ -935,10 +954,15 @@ bool CommandLine::CheckValuesAndSetDefaults() {
     noiselevel = nlNormal;
   }
 
-  // Default memorylimit of 128MB
+  // Default memorylimit of half physical memory
   if (memorylimit == 0)
   {
     u64 TotalPhysicalMemory = GetTotalPhysicalMemory();
+#ifdef __NVCC__
+    cudaDeviceProp prop;
+    cudaErrchk(cudaGetDeviceProperties(&prop, 0));
+    u64 TotalVideoMemory = prop.totalGlobalMem;
+#endif
 
     if (TotalPhysicalMemory == 0)
     {
@@ -949,8 +973,12 @@ bool CommandLine::CheckValuesAndSetDefaults() {
 
     // Half of total physical memory
     memorylimit = (size_t)(TotalPhysicalMemory / 1048576 / 2);
+#ifdef __NVCC__
+    // 3/4 of total vram or half of total ram, whichever is smaller.
+    memorylimit = min(memorylimit, (size_t) (TotalVideoMemory * 3 / 4 / 1048576));
+#endif
   }
-  // convert to megabytes
+  // convert from megabytes
   memorylimit *= 1048576;
 
   if (noiselevel >= nlDebug)

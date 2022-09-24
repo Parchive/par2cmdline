@@ -96,6 +96,9 @@ Result Par2Creator::Process(
 			    const u32 nthreads,
 			    const u32 _filethreads,
 #endif
+#ifdef __NVCC__
+          const bool _useCuda,
+#endif
 			    const string &parfilename,
 			    const vector<string> &_extrafiles,
 			    const u64 _blocksize,
@@ -106,6 +109,10 @@ Result Par2Creator::Process(
 {
 #ifdef _OPENMP
   filethreads = _filethreads;
+#endif
+
+#ifdef __NVCC__
+  useCuda = _useCuda;
 #endif
 
   // Get information from commandline
@@ -188,20 +195,31 @@ Result Par2Creator::Process(
     // Set the total amount of data to be processed.
     progress = 0;
     totaldata = blocksize * sourceblockcount * recoveryblockcount;
+  
+  #ifdef __NVCC__
+    if (!useCuda) {
+  #endif
+      // Start at an offset of 0 within a block.
+      u64 blockoffset = 0;
+      while (blockoffset < blocksize) // Continue until the end of the block.
+      {
+        // Work out how much data to process this time.
+        size_t blocklength = (size_t)min((u64)chunksize, blocksize-blockoffset);
 
-    // Start at an offset of 0 within a block.
-    u64 blockoffset = 0;
-    while (blockoffset < blocksize) // Continue until the end of the block.
-    {
-      // Work out how much data to process this time.
-      size_t blocklength = (size_t)min((u64)chunksize, blocksize-blockoffset);
+        // Read source data, process it through the RS matrix and write it to disk.
+        if (!ProcessData(blockoffset, blocklength))
+          return eFileIOError;
 
-      // Read source data, process it through the RS matrix and write it to disk.
-      if (!ProcessData(blockoffset, blocklength))
+        blockoffset += blocklength;
+      }
+  #ifdef __NVCC__
+    } else {
+      // Read source data, process it through the RS matrix using GPU and write it to disk.
+      if (!ProcessDataCu()) {
         return eFileIOError;
-
-      blockoffset += blocklength;
+      }
     }
+  #endif
 
     if (noiselevel > nlQuiet)
       sout << "Writing recovery packets" << endl;
@@ -299,10 +317,26 @@ bool Par2Creator::CalculateProcessBlockSize(size_t memorylimit)
   else
   {
     // Would single pass processing use too much memory
-    if (blocksize * recoveryblockcount > memorylimit)
+    u64 memoryNeed = blocksize * (recoveryblockcount + 1);
+
+#ifdef __NVCC__
+    if (useCuda) {
+      memoryNeed = blocksize * (recoveryblockcount + sourceblockcount);
+    }
+#endif
+
+    if (memoryNeed > memorylimit)
     {
       // Pick a size that is small enough
-      chunksize = ~3 & (memorylimit / recoveryblockcount);
+#ifdef __NVCC__
+      if (!useCuda) {
+#endif
+        chunksize = ~3 & (memorylimit / (recoveryblockcount + 1));
+#ifdef __NVCC__
+      } else {
+        chunksize = ~3 & (memorylimit / (recoveryblockcount + sourceblockcount));
+      }
+#endif
 
       deferhashcomputation = false;
     }
@@ -705,7 +739,16 @@ bool Par2Creator::InitialiseOutputFiles(const string &parfilename)
 // Allocate memory buffers for reading and writing data to disk.
 bool Par2Creator::AllocateBuffers(void)
 {
-  inputbuffer = new u8[chunksize];
+#ifdef __NVCC__
+  if (!useCuda) {
+#endif
+    inputbuffer = new u8[chunksize];
+#ifdef __NVCC__
+  } else {
+    inputbuffer = new u8[chunksize * sourceblockcount];
+  }
+#endif
+
   outputbuffer = new u8[chunksize * recoveryblockcount];
 
   if (inputbuffer == NULL || outputbuffer == NULL)

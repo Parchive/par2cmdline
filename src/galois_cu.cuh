@@ -86,9 +86,9 @@ public:
   __device__ ValueType ALog(void) const;
 
   // Upload Galois Table to CUDA device
-  static void uploadTable(void)
+  static bool uploadTable(void)
   {
-    if (D_TABLE) return;
+    if (D_TABLE) return true;
 
     GaloisTable<bits,generator,valuetype> table, *d;
 
@@ -99,6 +99,7 @@ public:
 #ifdef _DEBUG
     printf("Copied Galois table to device.\n");
 #endif // _DEBUG
+    return true;
   }
 
   // Free Galois Table from CUDA device memory.

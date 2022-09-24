@@ -9,77 +9,110 @@ static char THIS_FILE[]=__FILE__;
 #endif
 #endif
 
-// Allocate pinned (page locked) memory buffers for reading and writing data to disk.
-// This enables faster data transfer between host and CUDA device.
-bool Par2Creator::AllocateBuffersPinned(void)
-{
-  cudaError_t err = cudaSuccess;
-  err = cudaMallocHost( ( void** ) &inputbuffer, chunksize );
-
-  // If pinned mem allocation failed, fall back to pageable memory.
-  if ( err != cudaSuccess )
-    return AllocateBuffers();
-  
-  err = cudaMallocHost( (void**)&outputbuffer, chunksize * recoveryblockcount );
-
-  // If pinned mem allocation failed, fall back to pageable memory.
-  if ( err != cudaSuccess )
-    return AllocateBuffers();
-
-  return true;
-}
-
 // ProcessData, but on CUDA device.
-bool Par2Creator::ProcessDataCu(u64 blockoffset, size_t blocklength)
+bool Par2Creator::ProcessDataCu()
 {
-  // Clear the output buffer
-  memset(outputbuffer, 0, chunksize * recoveryblockcount);
+  // Start at an offset of 0 within a block.
+  // Continue until the end of the block.
+  u64 blockOffset = 0;
+  while (blockOffset < blocksize) {
+    // Work out how much data to process this time.
+    size_t blockLen = (size_t) min((u64) chunksize, blocksize - blockOffset);
 
-  // If we have deferred computation of the file hash and block crc and hashes
-  // sourcefile and sourceindex will be used to update them during
-  // the main recovery block computation
-  vector<Par2CreatorSourceFile*>::iterator sourcefile = sourcefiles.begin();
-  u32 sourceindex = 0;
+    // Clear the output buffer
+    memset(outputbuffer, 0, chunksize * recoveryblockcount);
 
-  vector<DataBlock>::iterator sourceblock;
-  u32 inputblock;
+    // If we have deferred computation of the file hash and block crc and hashes
+    // sourcefile and sourceindex will be used to update them during
+    // the main recovery block computation
+    vector<Par2CreatorSourceFile*>::iterator sourcefile = sourcefiles.begin();
+    u32 sourceindex = 0;
 
-  DiskFile *lastopenfile = NULL;
+    vector<DataBlock>::iterator sourceblock;
+    u32 inputIdx;
 
-  // For each input block
-  for ((sourceblock=sourceblocks.begin()),(inputblock=0);
-       sourceblock != sourceblocks.end();
-       ++sourceblock, ++inputblock)
-  {
-    // Are we reading from a new file?
-    if (lastopenfile != (*sourceblock).GetDiskFile())
+    DiskFile *lastopenfile = NULL;
+
+    // Read blockLen bytes of each input block into inputbuffer
+    for ((sourceblock=sourceblocks.begin()),(inputIdx=0);
+        sourceblock != sourceblocks.end();
+        ++sourceblock, ++inputIdx)
     {
-      // Close the last file
-      if (lastopenfile != NULL)
+      // Are we reading from a new file?
+      if (lastopenfile != (*sourceblock).GetDiskFile())
       {
-        lastopenfile->Close();
+        // Close the last file
+        if (lastopenfile != NULL)
+        {
+          lastopenfile->Close();
+        }
+
+        // Open the new file
+        lastopenfile = (*sourceblock).GetDiskFile();
+        if (!lastopenfile->Open())
+        {
+          return false;
+        }
       }
 
-      // Open the new file
-      lastopenfile = (*sourceblock).GetDiskFile();
-      if (!lastopenfile->Open())
-      {
+      // Read data from the current input block
+      if (!sourceblock->ReadData(blockOffset, blockLen, &((u8*) inputbuffer)[blockLen * inputIdx]))
         return false;
+
+      if (deferhashcomputation)
+      {
+        assert(blockOffset == 0 && blockLen == blocksize);
+        assert(sourcefile != sourcefiles.end());
+
+        (*sourcefile)->UpdateHashes(sourceindex, inputbuffer, blockLen);
+      }
+
+      // Work out which source file the next block belongs to
+      if (++sourceindex >= (*sourcefile)->BlockCount())
+      {
+        sourceindex = 0;
+        ++sourcefile;
       }
     }
 
-    // Read data from the current input block
-    if (!sourceblock->ReadData(blockoffset, blocklength, inputbuffer))
-      return false;
-
-    if (deferhashcomputation)
+    // Close the last file
+    if (lastopenfile != NULL)
     {
-      assert(blockoffset == 0 && blocklength == blocksize);
-      assert(sourcefile != sourcefiles.end());
-
-      (*sourcefile)->UpdateHashes(sourceindex, inputbuffer, blocklength);
+      lastopenfile->Close();
     }
 
+    // Process the data through the RS matrix on GPU
+    if (!rs.ProcessCu(blockLen, 0, sourceblockcount - 1, inputbuffer, 0, recoveryblockcount - 1, outputbuffer)) {
+      return false;
+    }
 
+    if (noiselevel > nlQuiet)
+    {
+      // Update a progress indicator
+      u32 oldfraction = (u32)(1000 * progress / totaldata);
+      progress += blockLen * sourceblockcount * recoveryblockcount;
+      u32 newfraction = (u32)(1000 * progress / totaldata);
+
+      if (oldfraction != newfraction)
+      {
+        sout << "Processing: " << newfraction/10 << '.' << newfraction%10 << "%\r" << flush;
+      }
+    }
+
+    // For each output block
+    for (u32 outputblock=0; outputblock<recoveryblockcount;outputblock++)
+    {
+      // Select the appropriate part of the output buffer
+      u8 *outbuf = &((u8*) outputbuffer)[chunksize * outputblock];
+
+      // Write the data to the recovery packet
+      if (!recoverypackets[outputblock].WriteData(blockOffset, blockLen, outbuf))
+        return false;
+    }
+
+    if (noiselevel > nlQuiet)
+      sout << "Wrote " << recoveryblockcount * blockLen << " bytes to disk" << endl;
+
+    blockOffset += blockLen;
   }
 }

@@ -91,13 +91,13 @@ public:
   u32                    GetFirstRecoveryBlock(void) const {return firstblock;}
   u32                    GetRecoveryFileCount(void) const  {return recoveryfilecount;}
   u32                    GetRecoveryBlockCount(void) const {return recoveryblockcount;}
-  Scheme    GetRecoveryFileScheme(void) const {return recoveryfilescheme;}
+  Scheme                 GetRecoveryFileScheme(void) const {return recoveryfilescheme;}
   size_t                 GetMemoryLimit(void) const        {return memorylimit;}
-  NoiseLevel GetNoiseLevel(void) const        {return noiselevel;}
+  NoiseLevel             GetNoiseLevel(void)  const        {return noiselevel;}
 
   string                              GetParFilename(void) const {return parfilename;}
   string                              GetBasePath(void) const    {return basepath;}
-  const vector<string>& GetExtraFiles(void) const  {return extrafiles;}
+  const vector<string>&               GetExtraFiles(void) const  {return extrafiles;}
   bool                                GetPurgeFiles(void) const  {return purgefiles;}
   bool                                GetRecursive(void) const   {return recursive;}
   bool                                GetSkipData(void) const    {return skipdata;}
@@ -105,6 +105,10 @@ public:
 #ifdef _OPENMP
   u32                          GetNumThreads(void) {return nthreads;}
   u32                          GetFileThreads(void) {return filethreads;}
+#endif
+
+#ifdef __NVCC__
+  bool                  GetUseCuda(void) const            {return useCuda;}
 #endif
 
 
@@ -152,6 +156,10 @@ protected:
 #ifdef _OPENMP
   u32 nthreads;         // Default number of threads
   u32 filethreads;      // Number of threads for file processing
+#endif
+
+#ifdef __NVCC__
+  bool useCuda;
 #endif
   // NOTE: using the "-t" option to set the number of threads does not
   // end up here, but results in a direct call to "omp_set_num_threads"

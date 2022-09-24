@@ -48,7 +48,7 @@ bool ReedSolomon<Galois16>::ProcessCu( const size_t size,          // size of on
 {
   // CUDA Device compatible Galois type.
   typedef GaloisCu<G::Bits, G::Generator, G::ValueType> Gd;
-  Gd::uploadTable();
+  if ( !Gd::uploadTable() ) return false;
   cudaFuncSetCacheConfig(ProcessKer, cudaFuncCachePreferL1);
 
   const u32 inCount = inputIdxEnd - inputIdxStart + 1;
@@ -59,17 +59,9 @@ bool ReedSolomon<Galois16>::ProcessCu( const size_t size,          // size of on
   const u32 tileCount = inCount / TILE_WIDTH + ( inCount % TILE_WIDTH != 0 );
   const u32 batchCount = ceil( (float) wordPerChunk / wordPerBatch );
 
-  // cout << "inCount: " << inCount << endl;
-  // cout << "outCount: " << outCount << endl;
-  // cout << "wordPerChunk: " << wordPerChunk << endl;
-  // cout << "wordPerBatch: " << wordPerBatch << endl;
-  // cout << "tileCount: " << tileCount << endl;
-  // cout << "batchCount: " << batchCount << endl;
-
-
   /* 
   * size: chunk size
-  * VRam footprint: (inputcount + outCount) * size + (inputcount + outCount) * sizeof(g) + sizeof(g::GaloisTable)
+  * VRam footprint: (inCount + outCount) * size + (inputcount + outCount) * sizeof(g) + sizeof(g::GaloisTable)
   *                 <input buffer and output buffer>          <base and exponent>            <Galois log tables>
   * 
   * Assume the total VRam footprint can be fitted into device vram.
@@ -203,7 +195,8 @@ bool ReedSolomon<Galois16>::ProcessCu( const size_t size,          // size of on
   cudaFreeHost( batchInput );
   cudaFreeHost( batchOutput );
   delete[] stream;
- 
+  
+  return true;
 }
 
 __global__ void ProcessKer( const int batchSz,

@@ -68,6 +68,9 @@ int main(int argc, char *argv[])
 			    commandline->GetNumThreads(),
 			    commandline->GetFileThreads(),
 #endif
+#ifdef __NVCC__
+					commandline->GetUseCuda(),
+#endif
 			    commandline->GetParFilename(),
 			    commandline->GetExtraFiles(),
 
