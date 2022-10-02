@@ -68,3 +68,6 @@ src/.vscode
 
 # profiling workspace
 profiling/
+
+# cmake build dir
+build_cmake/
