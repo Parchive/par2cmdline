@@ -28,7 +28,7 @@ Result par2create(std::ostream &sout,
 		  const u32 nthreads,
 		  const u32 filethreads,
 #endif
-#ifdef __NVCC__
+#ifdef ENABLE_CUDA
 			const bool useCuda,
 #endif
 		  const string &parfilename,
@@ -48,7 +48,7 @@ Result par2create(std::ostream &sout,
 				  nthreads,
 				  filethreads,
 #endif
-#ifdef __NVCC__
+#ifdef ENABLE_CUDA
 					useCuda,
 #endif
 				  parfilename,

@@ -68,7 +68,7 @@ public:
                u32 outputindex,         // The row in the RS matrix
                void *outputbuffer);     // Buffer containing output data
 
-#ifdef __NVCC__
+#ifdef ENABLE_CUDA
   // Process a block of data for output blocks [outputIdxStart, outputIdxEnd] on a CUDA device.
   bool ProcessCu( const size_t size,           // The size of the block of data
                   const u32 inputIdxStart,     // The index of the first input block to be processed

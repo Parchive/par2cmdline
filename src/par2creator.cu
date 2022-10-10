@@ -1,5 +1,5 @@
 #include "libpar2internal.h"
-#include "helper_cuda.cuh"
+#include <iostream>
 
 #ifdef _MSC_VER
 #ifdef _DEBUG
@@ -64,7 +64,7 @@ bool Par2Creator::ProcessDataCu()
         assert(blockOffset == 0 && blockLen == blocksize);
         assert(sourcefile != sourcefiles.end());
 
-        (*sourcefile)->UpdateHashes(sourceindex, inputbuffer, blockLen);
+        (*sourcefile)->UpdateHashes(sourceindex, &((u8*) inputbuffer)[blockLen * inputIdx], blockLen);
       }
 
       // Work out which source file the next block belongs to
@@ -82,6 +82,7 @@ bool Par2Creator::ProcessDataCu()
     }
 
     // Process the data through the RS matrix on GPU
+    std::cout << "blockLen: " << blockLen << "; Sourceblockcount: " << sourceblockcount << " Recoveryblockcount: " << recoveryblockcount << std::endl;
     if (!rs.ProcessCu(blockLen, 0, sourceblockcount - 1, inputbuffer, 0, recoveryblockcount - 1, outputbuffer)) {
       return false;
     }
@@ -115,4 +116,6 @@ bool Par2Creator::ProcessDataCu()
 
     blockOffset += blockLen;
   }
+
+  return true;
 }

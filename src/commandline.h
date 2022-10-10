@@ -107,7 +107,7 @@ public:
   u32                          GetFileThreads(void) {return filethreads;}
 #endif
 
-#ifdef __NVCC__
+#ifdef ENABLE_CUDA
   bool                  GetUseCuda(void) const            {return useCuda;}
 #endif
 
@@ -158,7 +158,7 @@ protected:
   u32 filethreads;      // Number of threads for file processing
 #endif
 
-#ifdef __NVCC__
+#ifdef ENABLE_CUDA
   bool useCuda;
 #endif
   // NOTE: using the "-t" option to set the number of threads does not

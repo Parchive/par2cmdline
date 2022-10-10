@@ -19,10 +19,6 @@
 
 #pragma once
 
-#include "galois.h"
-#include "helper_cuda.cuh"
-#include <assert.h>
-
 // This source file defines the CUDA version of Galois object for carrying out
 // arithmetic in GF(2^16) using the generator 0x1100B on CUDA device.
 
@@ -33,7 +29,7 @@
 
 // CUDA Device global galois log/antilog table object
 template <const unsigned int bits, const unsigned int generator, typename valuetype>
-__device__ static GaloisTable<bits,generator,valuetype> *d_table;
+__device__ GaloisTable<bits,generator,valuetype> *d_table;
 
 // For readability
 #define D_TABLE d_table<bits, generator, valuetype>
@@ -88,7 +84,7 @@ public:
   // Upload Galois Table to CUDA device
   static bool uploadTable(void)
   {
-    if (D_TABLE) return true;
+    if (uploaded) return true;
 
     GaloisTable<bits,generator,valuetype> table, *d;
 
@@ -106,9 +102,9 @@ public:
   // To be called at the end of the program.
   static void freeTable(void)
   {
-    if (!D_TABLE) return;
+    if (!uploaded) return;
     cudaFree(D_TABLE);
-    D_TABLE = nullptr;
+    uploaded = false;
   }
 
   enum
@@ -120,7 +116,7 @@ public:
 
 protected:
   ValueType value;
-
+  static bool uploaded;
 };
 
 #ifdef LONGMULTIPLY

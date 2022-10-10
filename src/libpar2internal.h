@@ -215,9 +215,6 @@ using namespace std;
 
 #include "letype.h"
 
-#ifdef __NVCC__
-#include "galois_cu.cuh"
-#endif
 #include "galois.h"
 #include "crc.h"
 #include "md5.h"
@@ -247,6 +244,11 @@ using namespace std;
 #include "par1fileformat.h"
 #include "par1repairersourcefile.h"
 #include "par1repairer.h"
+
+#ifdef __NVCC__
+  #include "helper_cuda.cuh"
+  #include "galois_cu.cuh"
+#endif
 
 // Heap checking
 #ifdef _MSC_VER

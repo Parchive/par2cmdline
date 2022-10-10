@@ -145,8 +145,8 @@ Result par2create(std::ostream &sout,
 			  const u32 nthreads,
 			  const u32 filethreads,
 #endif
-#ifdef __NVCC__
-			const bool useCuda,
+#ifdef ENABLE_CUDA
+				const bool useCuda,
 #endif
 			  const std::string &parfilename,
 			  const std::vector<std::string> &extrafiles,

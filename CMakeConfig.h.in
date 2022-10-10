@@ -78,8 +78,10 @@
    backward compatibility; new code need not use it. */
 #cmakedefine STDC_HEADERS 1
 
+#cmakedefine ENABLE_CUDA 1
+
 /* Name of package */
 #define PACKAGE "@PROJECT_NAME@"
 
 /* Version number of package */
-#define VERSION "@par2_VERSION@"
+#define VERSION "@PROJECT_VERSION@"

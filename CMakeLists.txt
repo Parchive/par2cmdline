@@ -1,16 +1,33 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.18)
 
-project(par2 VERSION 0.9)
+project(par2cmdline VERSION 0.9.0 LANGUAGES CXX)
 
-set(CMAKE_CXX_STANDARD 11)
+# Optionally enable CUDA
+option(ENABLE_CUDA "Enable CUDA" OFF)
+
+if (ENABLE_CUDA)
+    # Check if CUDA is available
+    include(CheckLanguage)
+    check_language(CUDA)
+    if (CMAKE_CUDA_COMPILER)
+        enable_language(CUDA)
+        find_package(CUDA REQUIRED)
+        include_directories("${CUDA_INCLUDE_DIRS}")
+    else ()
+        message(STATUS "No CUDA compiler found")
+    endif ()
+endif (ENABLE_CUDA)
+
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CUDA_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
+set(CMAKE_CUDA_STANDARD_REQUIRED True)
 
-add_compile_options(
-    -Wall -pipe -fstack-protector-strong
-    $<$<CONFIG:RELEASE>:-Ofast>
-    $<$<CONFIG:DEBUG>:-O0>
-    $<$<CONFIG:DEBUG>:-g>
-)
+if(NOT (CMAKE_BUILD_TYPE OR DEFINED ENV{CMAKE_BUILD_TYPE}))
+  set(CMAKE_BUILD_TYPE Release)
+  message(STATUS ${CMAKE_BUILD_TYPE})
+endif(NOT (CMAKE_BUILD_TYPE OR DEFINED ENV{CMAKE_BUILD_TYPE}))
+message(STATUS ${CMAKE_BUILD_TYPE})
 
 # Check existing headers and generate config.h
 # for multi-platform support
@@ -67,10 +84,27 @@ test_big_endian(WORDS_BIGENDIAN)
 # generate config.h
 configure_file(CMakeConfig.h.in ${PROJECT_BINARY_DIR}/config.h)
 
+add_compile_options(
+    -Wall -pipe -fstack-protector-strong
+    # $<$<CONFIG:RELEASE>:-O3>
+    $<$<CONFIG:DEBUG>:-O0>
+    $<$<CONFIG:DEBUG>:-g>
+)
 
-# build libpar2
+# function to convert cxx compiler flags to nvcc flags
+function(CUDA_CONVERT_FLAGS EXISTING_TARGET)
+    get_property(old_flags TARGET ${EXISTING_TARGET} PROPERTY INTERFACE_COMPILE_OPTIONS)
+    if(NOT "${old_flags}" STREQUAL "")
+        string(REPLACE ";" "," CUDA_flags "${old_flags}")
+        set_property(TARGET ${EXISTING_TARGET} PROPERTY INTERFACE_COMPILE_OPTIONS
+            "$<$<BUILD_INTERFACE:$<COMPILE_LANGUAGE:CXX>>:${old_flags}>$<$<BUILD_INTERFACE:$<COMPILE_LANGUAGE:CUDA>>:-Xcompiler=${CUDA_flags}>"
+            )
+    endif()
+endfunction()
+
+
 set(CMAKE_STATIC_LIBRARY_PREFIX "")
-add_library(libpar2 STATIC
+set(LIBPAR2SRC 
     src/crc.cpp
     src/creatorpacket.cpp
     src/criticalpacket.cpp
@@ -96,15 +130,31 @@ add_library(libpar2 STATIC
     src/libpar2.cpp
 )
 
-# build par2
-add_executable(par2
+set(PAR2SRC
     src/par2cmdline.cpp
     src/commandline.cpp
 )
 
+# add cuda source files if enabled cuda
+if (ENABLE_CUDA AND NOT "${CMAKE_CUDA_COMPILER}" STREQUAL "")
+    set(LIBPAR2SRC
+        ${LIBPAR2SRC}
+        src/galois_cu.cu
+        src/par2creator.cu
+        src/reedsolomon.cu
+    )
+    # set_source_files_properties(${PAR2SRC} PROPERTIES LANGUAGE CUDA)
+    message(STATUS "${LIBPAR2SRC}")
+
+endif (ENABLE_CUDA AND NOT "${CMAKE_CUDA_COMPILER}" STREQUAL "")
+
+# build libpar2
+add_library(libpar2 STATIC ${LIBPAR2SRC})
+
+# build par2
+add_executable(par2 ${PAR2SRC})
+
 add_compile_definitions(HAVE_CONFIG_H)
-# target_compile_definitions(par2 PRIVATE HAVE_CONFIG_H)
-# target_compile_definitions(libpar2 PRIVATE HAVE_CONFIG_H)
 
 include_directories(${CMAKE_BINARY_DIR})
 
@@ -113,9 +163,18 @@ target_link_libraries(par2 PRIVATE libpar2)
 # If OpenMP is installed, link against openmp
 find_package(OpenMP)
 if (OPENMP_CXX_FOUND)
+    target_compile_options(libpar2 PRIVATE ${OpenMP_CXX_FLAGS})
     target_link_libraries(par2 PRIVATE OpenMP::OpenMP_CXX)
     target_link_libraries(libpar2 PRIVATE OpenMP::OpenMP_CXX)
 endif()
+
+if (ENABLE_CUDA AND NOT "${CMAKE_CUDA_COMPILER}" STREQUAL "")
+    set_target_properties(libpar2 PROPERTIES CUDA_ARCHITECTURES "75")
+endif (ENABLE_CUDA AND NOT "${CMAKE_CUDA_COMPILER}" STREQUAL "")
+
+get_property(old_flags TARGET libpar2 PROPERTY COMPILE_OPTIONS)
+message(NOTICE ${old_flags})
+
 
 # ===========================
 # Testing

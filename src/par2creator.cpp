@@ -96,7 +96,7 @@ Result Par2Creator::Process(
 			    const u32 nthreads,
 			    const u32 _filethreads,
 #endif
-#ifdef __NVCC__
+#ifdef ENABLE_CUDA
           const bool _useCuda,
 #endif
 			    const string &parfilename,
@@ -111,7 +111,7 @@ Result Par2Creator::Process(
   filethreads = _filethreads;
 #endif
 
-#ifdef __NVCC__
+#ifdef ENABLE_CUDA
   useCuda = _useCuda;
 #endif
 
@@ -196,7 +196,7 @@ Result Par2Creator::Process(
     progress = 0;
     totaldata = blocksize * sourceblockcount * recoveryblockcount;
   
-  #ifdef __NVCC__
+  #ifdef ENABLE_CUDA
     if (!useCuda) {
   #endif
       // Start at an offset of 0 within a block.
@@ -212,7 +212,7 @@ Result Par2Creator::Process(
 
         blockoffset += blocklength;
       }
-  #ifdef __NVCC__
+  #ifdef ENABLE_CUDA
     } else {
       // Read source data, process it through the RS matrix using GPU and write it to disk.
       if (!ProcessDataCu()) {
@@ -319,7 +319,7 @@ bool Par2Creator::CalculateProcessBlockSize(size_t memorylimit)
     // Would single pass processing use too much memory
     u64 memoryNeed = blocksize * (recoveryblockcount + 1);
 
-#ifdef __NVCC__
+#ifdef ENABLE_CUDA
     if (useCuda) {
       memoryNeed = blocksize * (recoveryblockcount + sourceblockcount);
     }
@@ -328,11 +328,11 @@ bool Par2Creator::CalculateProcessBlockSize(size_t memorylimit)
     if (memoryNeed > memorylimit)
     {
       // Pick a size that is small enough
-#ifdef __NVCC__
+#ifdef ENABLE_CUDA
       if (!useCuda) {
 #endif
         chunksize = ~3 & (memorylimit / (recoveryblockcount + 1));
-#ifdef __NVCC__
+#ifdef ENABLE_CUDA
       } else {
         chunksize = ~3 & (memorylimit / (recoveryblockcount + sourceblockcount));
       }
@@ -739,11 +739,11 @@ bool Par2Creator::InitialiseOutputFiles(const string &parfilename)
 // Allocate memory buffers for reading and writing data to disk.
 bool Par2Creator::AllocateBuffers(void)
 {
-#ifdef __NVCC__
+#ifdef ENABLE_CUDA
   if (!useCuda) {
 #endif
     inputbuffer = new u8[chunksize];
-#ifdef __NVCC__
+#ifdef ENABLE_CUDA
   } else {
     inputbuffer = new u8[chunksize * sourceblockcount];
   }

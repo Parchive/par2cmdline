@@ -21,11 +21,12 @@
 // This is included here, so that cout and cerr are not used elsewhere.
 #include<iostream>
 #include<algorithm>
-#ifdef __NVCC__
+#include "commandline.h"
+#ifdef ENABLE_CUDA
   #include <cuda_runtime.h>
+  #include <cuda.h>
   #include "helper_cuda.cuh"
 #endif
-#include "commandline.h"
 using namespace std;
 
 #ifdef _MSC_VER
@@ -51,7 +52,7 @@ CommandLine::CommandLine(void)
 , nthreads(0) // 0 means use default number
 , filethreads( _FILE_THREADS ) // default from header file
 #endif
-#ifdef __NVCC__
+#ifdef ENABLE_CUDA
 , useCuda(false)
 #endif
 , parfilename()
@@ -143,7 +144,7 @@ void CommandLine::usage(void)
     "  -l       : Limit size of recovery files (don't use both -u and -l)\n"
     "  -n<n>    : Number of recovery files (don't use both -n and -l)\n"
     "  -R       : Recurse into subdirectories\n"
-#ifdef __NVCC__
+#ifdef ENABLE_CUDA
     "  -C       : Use CUDA device to accelerate recovery files creation\n"
 #endif
     "\n";
@@ -435,7 +436,7 @@ bool CommandLine::ReadArgs(int argc, const char * const *argv)
           }
           break;
 #endif
-#ifdef __NVCC__
+#ifdef ENABLE_CUDA
         case 'C':
           {
             if (operation != opCreate)
@@ -958,7 +959,7 @@ bool CommandLine::CheckValuesAndSetDefaults() {
   if (memorylimit == 0)
   {
     u64 TotalPhysicalMemory = GetTotalPhysicalMemory();
-#ifdef __NVCC__
+#ifdef ENABLE_CUDA
     cudaDeviceProp prop;
     cudaErrchk(cudaGetDeviceProperties(&prop, 0));
     u64 TotalVideoMemory = prop.totalGlobalMem;
@@ -973,7 +974,7 @@ bool CommandLine::CheckValuesAndSetDefaults() {
 
     // Half of total physical memory
     memorylimit = (size_t)(TotalPhysicalMemory / 1048576 / 2);
-#ifdef __NVCC__
+#ifdef ENABLE_CUDA
     // 3/4 of total vram or half of total ram, whichever is smaller.
     memorylimit = min(memorylimit, (size_t) (TotalVideoMemory * 3 / 4 / 1048576));
 #endif
