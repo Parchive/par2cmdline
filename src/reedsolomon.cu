@@ -46,6 +46,7 @@ bool ReedSolomon<Galois16>::ProcessCu( const size_t size,          // size of on
                                 const u32 outputIdxEnd,
                                 void *outputBuf )           // outputCount * size
 {
+  // BUG: Doesn't really respect memory limit for VRAM.
   // CUDA Device compatible Galois type.
   typedef GaloisCu<G::Bits, G::Generator, G::ValueType> Gd;
   if ( !Gd::uploadTable() ) return false;

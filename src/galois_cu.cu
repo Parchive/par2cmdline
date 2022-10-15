@@ -1,7 +1,12 @@
 #include "libpar2internal.h"
 
-// template <const unsigned int bits, const unsigned int generator, typename valuetype>
-// __device__ GaloisTable<bits,generator,valuetype> *d_table;
+#ifdef _MSC_VER
+#ifdef _DEBUG
+#undef THIS_FILE
+static char THIS_FILE[]=__FILE__;
+#define new DEBUG_NEW
+#endif
+#endif
 
 template<>
 bool GaloisCu16::uploaded = false;

@@ -1,5 +1,4 @@
 #include "libpar2internal.h"
-#include <iostream>
 
 #ifdef _MSC_VER
 #ifdef _DEBUG
@@ -82,7 +81,6 @@ bool Par2Creator::ProcessDataCu()
     }
 
     // Process the data through the RS matrix on GPU
-    std::cout << "blockLen: " << blockLen << "; Sourceblockcount: " << sourceblockcount << " Recoveryblockcount: " << recoveryblockcount << std::endl;
     if (!rs.ProcessCu(blockLen, 0, sourceblockcount - 1, inputbuffer, 0, recoveryblockcount - 1, outputbuffer)) {
       return false;
     }
@@ -104,7 +102,7 @@ bool Par2Creator::ProcessDataCu()
     for (u32 outputblock=0; outputblock<recoveryblockcount;outputblock++)
     {
       // Select the appropriate part of the output buffer
-      u8 *outbuf = &((u8*) outputbuffer)[chunksize * outputblock];
+      u8 *outbuf = &((u8*) outputbuffer)[blockLen * outputblock];
 
       // Write the data to the recovery packet
       if (!recoverypackets[outputblock].WriteData(blockOffset, blockLen, outbuf))

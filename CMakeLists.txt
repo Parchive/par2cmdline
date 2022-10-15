@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.18)
 
-project(par2cmdline VERSION 0.9.0 LANGUAGES CXX)
+project(par2cmdline VERSION 0.8.1 LANGUAGES CXX)
 
 # Optionally enable CUDA
 option(ENABLE_CUDA "Enable CUDA" OFF)
@@ -25,7 +25,6 @@ set(CMAKE_CUDA_STANDARD_REQUIRED True)
 
 if(NOT (CMAKE_BUILD_TYPE OR DEFINED ENV{CMAKE_BUILD_TYPE}))
   set(CMAKE_BUILD_TYPE Release)
-  message(STATUS ${CMAKE_BUILD_TYPE})
 endif(NOT (CMAKE_BUILD_TYPE OR DEFINED ENV{CMAKE_BUILD_TYPE}))
 message(STATUS ${CMAKE_BUILD_TYPE})
 
@@ -56,7 +55,7 @@ check_include_files(unistd.h HAVE_UNISTD_H)
 check_include_files("stdlib.h;stdarg.h;string.h;float.h" StandardHeadersExist)
 if(StandardHeadersExist)
 
-    check_symbol_exists(memchr string.h memchrExists)
+    check_function_exists(memchr memchrExists)
     if(memchrExists)
 
         check_symbol_exists(free stdlib.h freeExists)
@@ -87,22 +86,11 @@ configure_file(CMakeConfig.h.in ${PROJECT_BINARY_DIR}/config.h)
 add_compile_options(
     -Wall -pipe -fstack-protector-strong
     # $<$<CONFIG:RELEASE>:-O3>
-    $<$<CONFIG:DEBUG>:-O0>
-    $<$<CONFIG:DEBUG>:-g>
+    # $<$<CONFIG:DEBUG>:-O0>
+    # $<$<CONFIG:DEBUG>:-g>
 )
 
-# function to convert cxx compiler flags to nvcc flags
-function(CUDA_CONVERT_FLAGS EXISTING_TARGET)
-    get_property(old_flags TARGET ${EXISTING_TARGET} PROPERTY INTERFACE_COMPILE_OPTIONS)
-    if(NOT "${old_flags}" STREQUAL "")
-        string(REPLACE ";" "," CUDA_flags "${old_flags}")
-        set_property(TARGET ${EXISTING_TARGET} PROPERTY INTERFACE_COMPILE_OPTIONS
-            "$<$<BUILD_INTERFACE:$<COMPILE_LANGUAGE:CXX>>:${old_flags}>$<$<BUILD_INTERFACE:$<COMPILE_LANGUAGE:CUDA>>:-Xcompiler=${CUDA_flags}>"
-            )
-    endif()
-endfunction()
-
-
+# compile targets
 set(CMAKE_STATIC_LIBRARY_PREFIX "")
 set(LIBPAR2SRC 
     src/crc.cpp
@@ -144,7 +132,7 @@ if (ENABLE_CUDA AND NOT "${CMAKE_CUDA_COMPILER}" STREQUAL "")
         src/reedsolomon.cu
     )
     # set_source_files_properties(${PAR2SRC} PROPERTIES LANGUAGE CUDA)
-    message(STATUS "${LIBPAR2SRC}")
+    # message(STATUS "${LIBPAR2SRC}")
 
 endif (ENABLE_CUDA AND NOT "${CMAKE_CUDA_COMPILER}" STREQUAL "")
 
@@ -171,10 +159,6 @@ endif()
 if (ENABLE_CUDA AND NOT "${CMAKE_CUDA_COMPILER}" STREQUAL "")
     set_target_properties(libpar2 PROPERTIES CUDA_ARCHITECTURES "75")
 endif (ENABLE_CUDA AND NOT "${CMAKE_CUDA_COMPILER}" STREQUAL "")
-
-get_property(old_flags TARGET libpar2 PROPERTY COMPILE_OPTIONS)
-message(NOTICE ${old_flags})
-
 
 # ===========================
 # Testing
