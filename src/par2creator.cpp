@@ -317,6 +317,7 @@ bool Par2Creator::CalculateProcessBlockSize(size_t memorylimit)
   else
   {
     // Would single pass processing use too much memory
+    // recoveryblockcount for outputbuffer and 1 for inputbuffer 
     u64 memoryNeed = blocksize * (recoveryblockcount + 1);
 
 #ifdef ENABLE_CUDA

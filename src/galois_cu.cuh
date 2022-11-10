@@ -119,25 +119,6 @@ protected:
   static bool uploaded;
 };
 
-#ifdef LONGMULTIPLY
-template <class g>
-class GaloisLongMultiplyTable
-{
-public:
-  GaloisLongMultiplyTable(void);
-
-  typedef g G;
-
-  enum
-  {
-    Bytes = ((G::Bits + 7) >> 3),
-    Count = ((Bytes * (Bytes+1)) / 2),
-  };
-
-  G tables[Count * 256 * 256];
-};
-#endif
-
 template <const unsigned int bits, const unsigned int generator, typename valuetype>
 __device__ __host__ inline GaloisCu<bits,generator,valuetype>::GaloisCu(typename GaloisCu<bits,generator,valuetype>::ValueType v)
 {
@@ -298,28 +279,6 @@ __device__ inline valuetype GaloisCu<bits,generator,valuetype>::ALog(void) const
 {
   return D_TABLE->antilog[value];
 }
-
-#ifdef LONGMULTIPLY
-template <class g>
-inline GaloisLongMultiplyTable<g>::GaloisLongMultiplyTable(void)
-{
-  G *table = tables;
-
-  for (unsigned int i=0; i<Bytes; i++)
-  {
-    for (unsigned int j=i; j<Bytes; j++)
-    {
-      for (unsigned int ii=0; ii<256; ii++)
-      {
-        for (unsigned int jj=0; jj<256; jj++)
-        {
-          *table++ = G(ii << (8*i)) * G(jj << (8*j));
-        }
-      }
-    }
-  }
-}
-#endif
 
 typedef GaloisCu<8,0x11D,u8> GaloisCu8;
 typedef GaloisCu<16,0x1100B,u16> GaloisCu16;

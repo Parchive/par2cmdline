@@ -236,3 +236,25 @@ if (BASH_PROGRAM)
     add_test(NAME unit_tests COMMAND ${BASH_PROGRAM} ${CMAKE_BINARY_DIR}/tests/unit_tests)
 
 endif (BASH_PROGRAM)
+
+# ==========================
+# install
+message(STATUS "Install prefix: ${CMAKE_INSTALL_PREFIX}")
+install(TARGETS par2
+        DESTINATION bin)
+
+add_custom_command(
+    TARGET par2
+    POST_BUILD
+    COMMAND ln;-sf;par2${CMAKE_EXECUTABLE_SUFFIX};par2create${CMAKE_EXECUTABLE_SUFFIX}
+    COMMAND ln;-sf;par2${CMAKE_EXECUTABLE_SUFFIX};par2verify${CMAKE_EXECUTABLE_SUFFIX}
+    COMMAND ln;-sf;par2${CMAKE_EXECUTABLE_SUFFIX};par2repair${CMAKE_EXECUTABLE_SUFFIX}
+)
+
+install(
+  FILES
+    ${CMAKE_CURRENT_BINARY_DIR}/par2create${CMAKE_EXECUTABLE_SUFFIX}
+    ${CMAKE_CURRENT_BINARY_DIR}/par2verify${CMAKE_EXECUTABLE_SUFFIX}
+    ${CMAKE_CURRENT_BINARY_DIR}/par2repair${CMAKE_EXECUTABLE_SUFFIX}
+  DESTINATION bin
+)
