@@ -68,6 +68,16 @@ For macOS you can install llvm via homebrew to get OpenMP support.
 
 See *INSTALL* for full details on how to use the *configure* script.
 
+## Compiling par2cmdline with CUDA (NVIDIA GPU) acceleration
+To compile with CUDA option enabled on Linux and other Unix variantes, use the following commands:
+    
+    mkdir build_cmake
+    cd build_cmake
+    cmake -DENABLE_CUDA=ON ..
+    make
+    make check
+    make install
+
 ## Using par2cmdline
 
 The command line parameters for par2cmdline are as follow:
@@ -101,6 +111,7 @@ The command line parameters for par2cmdline are as follow:
     -n<n>    : Number of recovery files (don't use both -n and -l)
     -m<n>    : Memory (in MB) to use
     -t<n>    : Number of threads to use (Auto-detected)
+    -C       : Use CUDA device to accelerate recovery files creation 
     -v [-v]  : Be more verbose
     -q [-q]  : Be more quiet (-qq gives silence)
     -p       : Purge backup files and par files on successful recovery or
