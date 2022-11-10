@@ -1,6 +1,6 @@
-cmake_minimum_required(VERSION 3.18)
+cmake_minimum_required(VERSION 3.23)
 
-project(par2cmdline VERSION 0.8.1 LANGUAGES CXX)
+project(par2cmdline VERSION 0.9.0 LANGUAGES CXX)
 
 # Optionally enable CUDA
 option(ENABLE_CUDA "Enable CUDA" OFF)
@@ -157,7 +157,7 @@ if (OPENMP_CXX_FOUND)
 endif()
 
 if (ENABLE_CUDA AND NOT "${CMAKE_CUDA_COMPILER}" STREQUAL "")
-    set_target_properties(libpar2 PROPERTIES CUDA_ARCHITECTURES "75")
+    set_target_properties(libpar2 PROPERTIES CUDA_ARCHITECTURES "all-major")
 endif (ENABLE_CUDA AND NOT "${CMAKE_CUDA_COMPILER}" STREQUAL "")
 
 # ===========================
