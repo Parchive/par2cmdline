@@ -1,3 +1,9 @@
+# Looking for maintainer
+
+Since I find it hard to make time for this project I would like to find someone who would step in and take over the maintainership of par2cmdline. I still use the program but it does everything I need.
+
+If you are interested please send an email to: ike.devolder@gmail.com
+
 # par2cmdline
 
 **par2cmdline** is a PAR 2.0 compatible file verification and repair tool.
