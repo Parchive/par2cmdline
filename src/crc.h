@@ -32,18 +32,14 @@
 // same size but offset one character later in the buffer.
 
 
-// Construct the CRC32 lookup table from the specified polynomial
-void GenerateCRC32Table(u32 polynomial, u32 (&table)[256]);
-
 // A CRC32 lookup table
 struct crc32table
 {
-  crc32table(u32 polynomial)
-  {
-    GenerateCRC32Table(polynomial, table);
-  }
+  u32 polynom;
+  crc32table(u32 polynomial);
 
   u32 table[256];
+  u32 power[32];
 };
 
 // The one and only CCITT CRC32 lookup table
@@ -72,26 +68,17 @@ inline u32 CRCUpdateBlock(u32 crc, size_t length, const void *buffer)
 }
 
 // Update the CRC using a block of 0s.
-inline u32 CRCUpdateBlock(u32 crc, size_t length)
-{
-  while (length-- > 0)
-  {
-    crc =  ((crc >> 8) & 0x00ffffffL) ^ ccitttable.table[(u8)crc];
-  }
-
-  return crc;
-}
+u32 CRCUpdateBlock(u32 crc, u64 length);
 
 // Construct a CRC32 lookup table for windowing
 void GenerateWindowTable(u64 window, u32 (&windowtable)[256]);
-// Construct the mask value to apply to the CRC when windowing
-u32 ComputeWindowMask(u64 window);
 
 // Slide the CRC along a buffer by one character (removing the old and adding the new).
 // The new character is added using the main CCITT CRC32 table, and the old character
 // is removed using the windowtable.
 inline u32 CRCSlideChar(u32 crc, u8 chNew, u8 chOld, const u32 (&windowtable)[256])
 {
+  crc ^= ~0;
   return ((crc >> 8) & 0x00ffffffL) ^ ccitttable.table[(u8)crc ^ chNew] ^ windowtable[chOld];
 }
 
@@ -104,10 +91,9 @@ inline u32 CRCSlideChar(u32 crc, u8 chNew, u8 chOld, const u32 (&windowtable)[25
 
   u32 windowtable[256];
   GenerateWindowTable(window, windowtable);
-  u32 windowmask = ComputeWindowMask(window);
 
   u32 crc = ~0 ^ CRCUpdateBlock(~0, window, buffer);
-  crc = windowmask ^ CRCSlideChar(windowmask ^ crc, buffer[window], buffer[0], windowtable);
+  crc = CRCSlideChar(crc, buffer[window], buffer[0], windowtable);
 
   assert(crc == ~0 ^ CRCUpdateBlock(~0, window, buffer+1));
 

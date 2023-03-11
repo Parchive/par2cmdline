@@ -186,7 +186,6 @@ protected:
   vector<DataBlock>         targetblocks;            // The DataBlocks that will be written to disk
 
   u32                       windowtable[256];        // Table for sliding CRCs
-  u32                       windowmask;              // Mask for sliding CRCs
 
   bool                            blockverifiable;         // Whether and files can be verified at the block level
   VerificationHashTable           verificationhashtable;   // Hash table for block verification

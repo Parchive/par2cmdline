@@ -170,7 +170,6 @@ int test5() {
 
   u32 windowtable[256];
   GenerateWindowTable(window, windowtable);
-  u32 windowmask = ComputeWindowMask(window);
 
   int result = 0;
 
@@ -186,7 +185,7 @@ int test5() {
     }
 
     // slide window
-    crc = windowmask ^ CRCSlideChar(windowmask ^ crc, buffer[offset + window], buffer[offset], windowtable);
+    crc = CRCSlideChar(crc, buffer[offset + window], buffer[offset], windowtable);
   }
 
   return result;
@@ -197,7 +196,7 @@ int test5() {
 // stolen from:
 // http://www.efg2.com/Lab/Mathematics/CRC.htm
 int test6() {
-  u32 checksum1 = ~0 ^ CRCUpdateBlock(~0, sizeof(ccitttable), &ccitttable);
+  u32 checksum1 = ~0 ^ CRCUpdateBlock(~0, sizeof(ccitttable.table), &ccitttable.table);
   u32 expected = 0x6FCF9E13;
   if (checksum1 != expected) {
       cerr << "error when computing checksum of checksum table " << endl;
