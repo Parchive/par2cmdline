@@ -78,8 +78,8 @@ inline void MD5Context::UpdateState(const unsigned char* current)
 #endif
 
   // Primitive operations
-#define F1(x,y,z)    ( ((x) & (y)) | ((~(x)) & (z)) )
-#define F2(x,y,z)    ( ((x) & (z)) | ((~(z)) & (y)) )
+#define F1(x,y,z)    ( (((y) ^ (z)) & (x)) ^ (z) )
+#define F2(x,y,z)    ((x) & (z)) + ((~(z)) & (y))
 #define F3(x,y,z)    ( (x) ^ (y) ^ (z) )
 #define F4(x,y,z)    ( (y) ^ ( (x) | ~(z) ) )
 
