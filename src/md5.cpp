@@ -201,31 +201,41 @@ void MD5Context::Reset(void)
 // Update using 0 bytes
 void MD5Context::Update(size_t length)
 {
-  u32 wordblock[16];
-  memset(wordblock, 0, sizeof(wordblock));
+  // Update the total amount of data processed.
+  bytes += length;
 
   // If there is already some data in the buffer, update
   // enough 0 bytes to take us to a whole buffer
   if (used > 0)
   {
-    size_t size = min(buffersize-used, length);
-    Update(wordblock, size);
-    length -= size;
+    if (used + length >= buffersize)
+    {
+      size_t have = buffersize - used;
+      memset(&block[used], 0, have);
+      length -= have;
+      UpdateState(block);
+      used = 0;
+    }
+    else
+    {
+      // Don't have enough 0 bytes for a whole buffer
+      memset(&block[used], 0, length);
+      used += length;
+      return;
+    }
   }
 
   // Update as many whole buffers as possible
+  memset(&block[0], 0, buffersize);
   while (length >= buffersize)
   {
-    Update(wordblock, buffersize);
+    UpdateState(block);
 
     length -= buffersize;
   }
 
-  // Update any remainder
-  if (length > 0)
-  {
-    Update(wordblock, length);
-  }
+  // Note down the remainder
+  used = length;
 }
 
 // Update using data from a buffer
