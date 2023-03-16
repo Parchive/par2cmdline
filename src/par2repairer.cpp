@@ -1662,14 +1662,18 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
       printprogress += filechecksummer.Offset() - oldoffset;
       if (printprogress == blocksize || filechecksummer.ShortBlock())
       {
-        u32 oldfraction;
-        u32 newfraction;
-        #pragma omp critical
-        {
-        oldfraction = (u32)(1000 * mttotalprogress / ts);
+        u64 totalprogress;
+#if _OPENMP < 200800
+        totalprogress = mttotalprogress;
+        #pragma omp atomic
         mttotalprogress += printprogress;
-        newfraction = (u32)(1000 * mttotalprogress / ts);
-        }
+        totalprogress += printprogress;
+#else
+        #pragma omp atomic capture
+        totalprogress = mttotalprogress += printprogress;
+#endif
+        u32 oldfraction = (u32)(1000 * (totalprogress - printprogress) / ts);
+        u32 newfraction = (u32)(1000 * totalprogress / ts);
 
         printprogress = 0;
 
