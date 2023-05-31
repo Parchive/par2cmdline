@@ -28,6 +28,9 @@ Result par2create(std::ostream &sout,
 		  const u32 nthreads,
 		  const u32 filethreads,
 #endif
+#ifdef ENABLE_CUDA
+			const bool useCuda,
+#endif
 		  const string &parfilename,
 		  const vector<string> &extrafiles,
 		  const u64 blocksize,
@@ -44,6 +47,9 @@ Result par2create(std::ostream &sout,
 #ifdef _OPENMP
 				  nthreads,
 				  filethreads,
+#endif
+#ifdef ENABLE_CUDA
+					useCuda,
 #endif
 				  parfilename,
 				  extrafiles,

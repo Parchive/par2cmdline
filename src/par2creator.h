@@ -39,6 +39,9 @@ public:
 		 const u32 nthreads,
 		 const u32 filethreads,
 #endif
+#ifdef ENABLE_CUDA
+     const bool useCuda,
+#endif
 		 const string &parfilename,
 		 const vector<string> &extrafiles,
 		 const u64 blocksize,
@@ -83,6 +86,11 @@ protected:
   // Read source data, process it through the RS matrix and write it to disk.
   bool ProcessData(u64 blockoffset, size_t blocklength);
 
+#ifdef ENABLE_CUDA
+  // ProcessData, but on CUDA device.
+  bool ProcessDataCu(void);
+#endif
+
   // Finish computation of the recovery packets and write the headers to disk.
   bool WriteRecoveryPacketHeaders(void);
 
@@ -110,6 +118,10 @@ protected:
 
 #ifdef _OPENMP
   static u32 filethreads;      // Number of threads for file processing
+#endif
+
+#ifdef ENABLE_CUDA
+  bool useCuda;
 #endif
 
   u64 blocksize;      // The size of each block.
