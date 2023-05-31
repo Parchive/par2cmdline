@@ -102,7 +102,8 @@ protected:
   void UpdateHashes(u64 offset, const void *buffer, size_t length);
 
   //// Fill the buffers with more data from disk
-  bool Fill(void);
+  // Set longfill = true to force fill the whole buffer
+  bool Fill(bool longfill = false);
 
 private:
   // private copy constructor to prevent any misuse.
@@ -155,6 +156,11 @@ inline bool FileCheckSummer::Step(void)
     return true;
   }
 
+  // Ensure we have enough data in the buffer
+  if (tailpointer <= inpointer)
+    if(!Fill(true))
+      return false;
+
   // Get the incoming and outgoing characters
   char inch = *inpointer++;
   char outch = *outpointer++;
@@ -169,13 +175,12 @@ inline bool FileCheckSummer::Step(void)
   assert(outpointer == &buffer[blocksize]);
 
   // Copy the data back to the beginning of the buffer
-  memmove(buffer, outpointer, (size_t)blocksize);
+  memcpy(buffer, outpointer, (size_t)blocksize);
   inpointer = outpointer;
   outpointer = buffer;
   tailpointer -= blocksize;
 
-  // Fill the rest of the buffer
-  return Fill();
+  return true;
 }
 
 

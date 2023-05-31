@@ -133,14 +133,20 @@ bool FileCheckSummer::Jump(u64 distance)
 
 // Fill the buffer from disk
 
-bool FileCheckSummer::Fill(void)
+bool FileCheckSummer::Fill(bool longfill)
 {
   // Have we already reached the end of the file
   if (readoffset >= filesize)
     return true;
 
+  // Don't bother filling if we have enough data in the buffer
+  if (tailpointer >= &buffer[blocksize] && !longfill)
+    return true;
+
+  // Try reading at least one block of data
+  const char *target = tailpointer == buffer ? &buffer[blocksize] : &buffer[2*blocksize];
   // How much data can we read into the buffer
-  size_t want = (size_t)min(filesize-readoffset, (u64)(&buffer[2*blocksize]-tailpointer));
+  size_t want = (size_t)min(filesize-readoffset, (u64)(target-tailpointer));
 
   if (want > 0)
   {
@@ -154,7 +160,7 @@ bool FileCheckSummer::Fill(void)
   }
 
   // Did we fill the buffer
-  want = &buffer[2*blocksize] - tailpointer;
+  want = target - tailpointer;
   if (want > 0)
   {
     // Blank the rest of the buffer
