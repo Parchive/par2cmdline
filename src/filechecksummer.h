@@ -39,8 +39,7 @@ class FileCheckSummer
 public:
   FileCheckSummer(DiskFile   *diskfile,
                   u64         blocksize,
-                  const u32 (&windowtable)[256],
-                  u32         windowmask);
+                  const u32 (&windowtable)[256]);
   ~FileCheckSummer(void);
 
   // Start reading the file at the beginning
@@ -79,7 +78,6 @@ protected:
   DiskFile   *diskfile;
   u64         blocksize;
   const u32 (&windowtable)[256];
-  u32         windowmask;
 
   u64         filesize;
 
@@ -162,7 +160,7 @@ inline bool FileCheckSummer::Step(void)
   char outch = *outpointer++;
 
   // Update the checksum
-  checksum = windowmask ^ CRCSlideChar(windowmask ^ checksum, inch, outch, windowtable);
+  checksum = CRCSlideChar(checksum, inch, outch, windowtable);
 
   // Can the window slide further
   if (outpointer < &buffer[blocksize])

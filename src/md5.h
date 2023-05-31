@@ -64,24 +64,9 @@ struct MD5Hash
   u8 hash[16]; // 16 byte MD5 Hash value
 } PACKED;
 
-// Intermediate computation state
-
-class MD5State
-{
-public:
-  MD5State(void);
-  void Reset(void);
-
-public:
-  void UpdateState(const u32 (&block)[16]);
-
-protected:
-  u32 state[4]; // 16 byte MD5 computation state
-};
-
 // MD5 computation context with 64 byte buffer
 
-class MD5Context : public MD5State
+class MD5Context
 {
 public:
   MD5Context(void);
@@ -108,8 +93,12 @@ protected:
   enum {buffersize = 64};
   unsigned char block[buffersize];
   size_t used;
+  u32 state[4]; // 16 byte MD5 computation state
 
   u64 bytes;
+
+private:
+  void UpdateState(const unsigned char* current);
 };
 
 // Compare hash values

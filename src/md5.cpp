@@ -58,26 +58,28 @@ string MD5Hash::print(void) const
   return buffer;
 }
 
-MD5State::MD5State(void)
-{
-  Reset();
-}
-
-// Initialise the 16 byte state
-void MD5State::Reset(void)
-{
-  state[0] = 0x67452301;
-  state[1] = 0xefcdab89;
-  state[2] = 0x98badcfe;
-  state[3] = 0x10325476;
-}
-
 // Update the state using 64 bytes of new data
-void MD5State::UpdateState(const u32 (&block)[16])
+inline void MD5Context::UpdateState(const unsigned char* current)
 {
+#if __BYTE_ORDER != __LITTLE_ENDIAN
+  u32 wordblock[16];
+  for (int i=0; i<16; i++)
+  {
+    // Convert source data from little endian format to internal format if different
+    wordblock[i] = ( ((u32)current[i*4+3]) << 24 ) |
+                   ( ((u32)current[i*4+2]) << 16 ) |
+                   ( ((u32)current[i*4+1]) <<  8 ) |
+                   ( ((u32)current[i*4+0]) <<  0 );
+  }
+#  define ROUND(f,w,x,y,z,k,s,ti)   w = x + ROL(w + f(x,y,z) + wordblock[k] + ti, s)
+#else
+  u32 input;
+#  define ROUND(f,w,x,y,z,k,s,ti)   memcpy(&input, &current[(k)*4], 4); w = x + ROL(w + f(x,y,z) + input + ti, s)
+#endif
+
   // Primitive operations
-#define F1(x,y,z)    ( ((x) & (y)) | ((~(x)) & (z)) )
-#define F2(x,y,z)    ( ((x) & (z)) | ((~(z)) & (y)) )
+#define F1(x,y,z)    ( (((y) ^ (z)) & (x)) ^ (z) )
+#define F2(x,y,z)    ((x) & (z)) + ((~(z)) & (y))
 #define F3(x,y,z)    ( (x) ^ (y) ^ (z) )
 #define F4(x,y,z)    ( (y) ^ ( (x) | ~(z) ) )
 
@@ -85,7 +87,6 @@ void MD5State::UpdateState(const u32 (&block)[16])
 //#define ROL(x,y)   ( ((x) << (y)) | (((unsigned int)x) >> (32-y)) )
 #define ROL(x,y)     ( ((x) << (y)) | (((x) >> (32-y)) & ((1<<y)-1)))
 
-#define ROUND(f,w,x,y,z,k,s,ti)   w = x + ROL(w + f(x,y,z) + block[k] + ti, s)
 
   u32 a = state[0];
   u32 b = state[1];
@@ -179,16 +180,20 @@ void MD5State::UpdateState(const u32 (&block)[16])
 }
 
 MD5Context::MD5Context(void)
-: MD5State()
-, used(0)
+: used(0)
 , bytes(0)
 {
   memset(block, 0, buffersize);
+  Reset();
 }
 
+// Initialise the 16 byte state
 void MD5Context::Reset(void)
 {
-  MD5State::Reset();
+  state[0] = 0x67452301;
+  state[1] = 0xefcdab89;
+  state[2] = 0x98badcfe;
+  state[3] = 0x10325476;
   used = 0;
   bytes = 0;
 }
@@ -196,31 +201,41 @@ void MD5Context::Reset(void)
 // Update using 0 bytes
 void MD5Context::Update(size_t length)
 {
-  u32 wordblock[16];
-  memset(wordblock, 0, sizeof(wordblock));
+  // Update the total amount of data processed.
+  bytes += length;
 
   // If there is already some data in the buffer, update
   // enough 0 bytes to take us to a whole buffer
   if (used > 0)
   {
-    size_t size = min(buffersize-used, length);
-    Update(wordblock, size);
-    length -= size;
+    if (used + length >= buffersize)
+    {
+      size_t have = buffersize - used;
+      memset(&block[used], 0, have);
+      length -= have;
+      UpdateState(block);
+      used = 0;
+    }
+    else
+    {
+      // Don't have enough 0 bytes for a whole buffer
+      memset(&block[used], 0, length);
+      used += length;
+      return;
+    }
   }
 
   // Update as many whole buffers as possible
+  memset(&block[0], 0, buffersize);
   while (length >= buffersize)
   {
-    Update(wordblock, buffersize);
+    UpdateState(block);
 
     length -= buffersize;
   }
 
-  // Update any remainder
-  if (length > 0)
-  {
-    Update(wordblock, length);
-  }
+  // Note down the remainder
+  used = length;
 }
 
 // Update using data from a buffer
@@ -231,8 +246,8 @@ void MD5Context::Update(const void *buffer, size_t length)
   // Update the total amount of data processed.
   bytes += length;
 
-  // Process any whole blocks
-  while (used + length >= buffersize)
+  // Process first whole block if we have something in the buffer
+  if (used && used + length >= buffersize)
   {
     size_t have = buffersize - used;
 
@@ -241,19 +256,17 @@ void MD5Context::Update(const void *buffer, size_t length)
     current += have;
     length -= have;
 
-    u32 wordblock[16];
-    for (int i=0; i<16; i++)
-    {
-      // Convert source data from little endian format to internal format if different
-      wordblock[i] = ( ((u32)block[i*4+3]) << 24 ) |
-                     ( ((u32)block[i*4+2]) << 16 ) |
-                     ( ((u32)block[i*4+1]) <<  8 ) |
-                     ( ((u32)block[i*4+0]) <<  0 );
-    }
-
-    MD5State::UpdateState(wordblock);
+    UpdateState(block);
 
     used = 0;
+  }
+
+  // Process all subsequent whole blocks
+  while (length >= buffersize)
+  {
+    UpdateState(current);
+    current += buffersize;
+    length -= buffersize;
   }
 
   // Store any remainder
@@ -301,10 +314,10 @@ void MD5Context::Final(MD5Hash &output)
   for (int i = 0; i < 4; i++)
   {
     // Read out the state and convert it from internal format to little endian format
-    output.hash[4*i+3] = (u8)((MD5State::state[i] >> 24) & 0xFF);
-    output.hash[4*i+2] = (u8)((MD5State::state[i] >> 16) & 0xFF);
-    output.hash[4*i+1] = (u8)((MD5State::state[i] >>  8) & 0xFF);
-    output.hash[4*i+0] = (u8)((MD5State::state[i] >>  0) & 0xFF);
+    output.hash[4*i+3] = (u8)((state[i] >> 24) & 0xFF);
+    output.hash[4*i+2] = (u8)((state[i] >> 16) & 0xFF);
+    output.hash[4*i+1] = (u8)((state[i] >>  8) & 0xFF);
+    output.hash[4*i+0] = (u8)((state[i] >>  0) & 0xFF);
   }
 }
 
@@ -316,10 +329,10 @@ MD5Hash MD5Context::Hash(void) const
   for (unsigned int i = 0; i < 4; i++)
   {
     // Read out the state and convert it from internal format to little endian format
-    output.hash[4*i+3] = (unsigned char)((MD5State::state[i] >> 24) & 0xFF);
-    output.hash[4*i+2] = (unsigned char)((MD5State::state[i] >> 16) & 0xFF);
-    output.hash[4*i+1] = (unsigned char)((MD5State::state[i] >>  8) & 0xFF);
-    output.hash[4*i+0] = (unsigned char)((MD5State::state[i] >>  0) & 0xFF);
+    output.hash[4*i+3] = (unsigned char)((state[i] >> 24) & 0xFF);
+    output.hash[4*i+2] = (unsigned char)((state[i] >> 16) & 0xFF);
+    output.hash[4*i+1] = (unsigned char)((state[i] >>  8) & 0xFF);
+    output.hash[4*i+0] = (unsigned char)((state[i] >>  0) & 0xFF);
   }
 
   return output;

@@ -32,12 +32,10 @@ static char THIS_FILE[]=__FILE__;
 
 FileCheckSummer::FileCheckSummer(DiskFile   *_diskfile,
                                  u64         _blocksize,
-                                 const u32 (&_windowtable)[256],
-                                 u32         _windowmask)
+                                 const u32 (&_windowtable)[256])
 : diskfile(_diskfile)
 , blocksize(_blocksize)
 , windowtable(_windowtable)
-, windowmask(_windowmask)
 , filesize(_diskfile->FileSize())
 , currentoffset(0)
 , buffer(0)
