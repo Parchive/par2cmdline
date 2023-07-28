@@ -397,7 +397,7 @@ std::unique_ptr< list<string> > DiskFile::FindFiles(string path, string wildcard
       {
         matches->push_back(path + fd.cFileName);
       }
-      else if (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+      else if (recursive == true)
       {
         if (fd.cFileName[0] == '.') {
           continue;
@@ -407,6 +407,10 @@ std::unique_ptr< list<string> > DiskFile::FindFiles(string path, string wildcard
 	std::unique_ptr< list<string> > dirmatches(
 						 DiskFile::FindFiles(path + fd.cFileName, nwwildcard, true)
 						 );
+
+        // sort both lists before merge
+        matches->sort();
+        dirmatches->sort();
 
         matches->merge(*dirmatches);
       }
