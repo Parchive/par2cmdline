@@ -38,6 +38,7 @@ public:
 		 const vector<string> &extrafiles,
 		 const bool dorepair,   // derived from operation
 		 const bool purgefiles,
+		 const bool renameonly,
 		 const bool skipdata,
 		 const u64 skipleaway
 		 );
@@ -87,10 +88,10 @@ protected:
   bool VerifySourceFiles(const std::string& basepath, std::vector<string>& extrafiles);
 
   // Scan any extra files specified on the command line
-  bool VerifyExtraFiles(const vector<string> &extrafiles, const string &basepath);
+  bool VerifyExtraFiles(const vector<string> &extrafiles, const string &basepath, const bool renameonly);
 
   // Attempt to match the data in the DiskFile with the source file
-  bool VerifyDataFile(DiskFile *diskfile, Par2RepairerSourceFile *sourcefile, const string &basepath);
+  bool VerifyDataFile(DiskFile *diskfile, Par2RepairerSourceFile *sourcefile, const string &basepath, const bool renameonly = false);
 
   // Perform a sliding window scan of the DiskFile looking for blocks of data that
   // might belong to any of the source files (for which a verification packet was
@@ -99,6 +100,7 @@ protected:
   // found is for a different source file then "sourcefile" is changed accordingly.
   bool ScanDataFile(DiskFile                *diskfile,   // [in]     The file being scanned
                     string                  basepath,    // [in]
+		    const bool              renameonly,  // [in]					 //
                     Par2RepairerSourceFile* &sourcefile, // [in/out] The source file matched
                     MatchType               &matchtype,  // [out]    The type of match
                     MD5Hash                 &hashfull,   // [out]    The full hash of the file
