@@ -168,6 +168,7 @@ Result par2repair(std::ostream &sout,
 		  const std::vector<std::string> &extrafiles,
 		  const bool dorepair,   // derived from operation
 		  const bool purgefiles,
+		  const bool renameonly,
 		  const bool skipdata,
 		  const u64 skipleaway
 		  );

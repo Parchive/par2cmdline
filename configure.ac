@@ -22,8 +22,8 @@ dnl  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 dnl                                               -*- Autoconf -*-
 dnl Process this file with autoconf to produce a configure script.
 
-AC_PREREQ(2.62)
-AC_INIT([par2cmdline], [0.8.1], [ike.devolder@gmail.com])
+AC_PREREQ([2.71])
+AC_INIT([par2cmdline],[0.8.1],[ike.devolder@gmail.com])
 AC_CONFIG_SRCDIR([src/par2cmdline.cpp])
 
 AC_CANONICAL_HOST
@@ -48,7 +48,15 @@ AC_LANG(C++)
 dnl Checks for header files.
 AC_HEADER_DIRENT
 AC_HEADER_STDBOOL
-AC_HEADER_STDC
+m4_warn([obsolete],
+[The preprocessor macro `STDC_HEADERS' is obsolete.
+  Except in unusual embedded environments, you can safely include all
+  ISO C90 headers unconditionally.])dnl
+# Autoupdate added the next two lines to ensure that your configure
+# script's behavior did not change.  They are probably safe to remove.
+AC_CHECK_INCLUDES_DEFAULT
+AC_PROG_EGREP
+
 AC_CHECK_HEADERS([stdio.h] [endian.h])
 AC_CHECK_HEADERS([getopt.h] [limits.h])
 
