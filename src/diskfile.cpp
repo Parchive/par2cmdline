@@ -204,6 +204,8 @@ bool DiskFile::Write(u64 _offset, const void *buffer, size_t length, LengthType 
     offset += wrote;
     length -= wrote;
     buffer = ((char *) buffer) + wrote;
+	  
+	  cout << buffer << endl;
 
     if (filesize < offset)
     {
