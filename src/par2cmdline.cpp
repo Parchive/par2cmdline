@@ -32,11 +32,40 @@ static char THIS_FILE[]=__FILE__;
 #endif
 #endif
 
-int main(int argc, char *argv[])
+#if defined(_MSC_VER)
+extern int __cdecl realmain(int argc, char* argv[]);
+
+int wmain(int argc, wchar_t* argv[])
+{
+  char** args;
+  int bytesneeded = sizeof(char*) * (argc + 1);
+  HANDLE heap = GetProcessHeap();
+
+  for (int i = 0; i < argc; ++i)
+    bytesneeded += WideCharToMultiByte(CP_UTF8, 0, argv[i], -1, NULL, 0, NULL, NULL);
+
+  args = static_cast<char**>(HeapAlloc(heap, 0, bytesneeded));
+  args[0] = (char*)(args + argc + 1);
+
+  for (int i = 0; i < argc; ++i)
+    args[i + 1] = args[i] + WideCharToMultiByte(CP_UTF8, 0, argv[i], -1, args[i], bytesneeded, NULL, NULL);
+
+  args[argc] = NULL;
+
+  argc = realmain(argc, args);
+  HeapFree(heap, 0, args);
+  return argc;
+}
+
+int realmain(int argc, char* argv[])
+#else 
+int main(int argc, char* argv[])
+#endif
 {
 #ifdef _MSC_VER
   // Memory leak checking
   _CrtSetDbgFlag(_CrtSetDbgFlag(_CRTDBG_REPORT_FLAG) | _CRTDBG_ALLOC_MEM_DF | /*_CRTDBG_CHECK_CRT_DF | */_CRTDBG_DELAY_FREE_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+  SetConsoleOutputCP(CP_UTF8);
 #endif
 
   // check sizeof integers

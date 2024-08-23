@@ -46,7 +46,8 @@ libpar2_a_SOURCES = src/crc.cpp src/crc.h \
 	src/reedsolomon.cpp src/reedsolomon.h \
 	src/verificationhashtable.cpp src/verificationhashtable.h \
 	src/verificationpacket.cpp src/verificationpacket.h \
-	src/libpar2.cpp src/libpar2.h src/libpar2internal.h
+	src/libpar2.cpp src/libpar2.h src/libpar2internal.h \
+	src/utf8.cpp src/utf8.h
 
 
 bin_PROGRAMS = par2
@@ -117,6 +118,7 @@ tests_crc_test_SOURCES = src/crc_test.cpp src/crc.cpp src/crc.h
 tests_md5_test_SOURCES = src/md5_test.cpp src/md5.cpp src/md5.h
 
 tests_diskfile_test_SOURCES = src/diskfile_test.cpp src/diskfile.cpp src/diskfile.h
+tests_diskfile_test_LDADD = libpar2.a
 
 tests_libpar2_test_SOURCES = src/libpar2_test.cpp src/libpar2.h
 tests_libpar2_test_LDADD = libpar2.a

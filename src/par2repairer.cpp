@@ -352,7 +352,7 @@ bool Par2Repairer::LoadPacketsFromFile(string filename)
     string path;
     string name;
     DiskFile::SplitFilename(filename, path, name);
-    sout << "Loading \"" << name << "\"." << endl;
+    sout << "Loading \"" << utf8::console(name) << "\"." << endl;
   }
 
   // How many useable packets have we found
@@ -1295,7 +1295,7 @@ bool Par2Repairer::VerifySourceFiles(const std::string& basepath, std::vector<st
         if (noiselevel > nlSilent)
         {
           #pragma omp critical
-          sout << "Target: \"" << name << "\" - missing." << endl;
+          sout << "Target: \"" << utf8::console(name) << "\" - missing." << endl;
         }
       }
     }
@@ -1578,12 +1578,12 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
       if (originalsourcefile != 0)
       {
         #pragma omp critical
-        sout << "Target: \"" << name << "\" - empty." << endl;
+        sout << "Target: \"" << utf8::console(name) << "\" - empty." << endl;
       }
       else
       {
         #pragma omp critical
-        sout << "File: \"" << name << "\" - empty." << endl;
+        sout << "File: \"" << utf8::console(name) << "\" - empty." << endl;
       }
     }
     return true;
@@ -1893,7 +1893,7 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
           {
             #pragma omp critical
             sout << "Target: \""
-              << name
+              << utf8::console(name)
               << "\" - damaged, found "
               << count
               << " data blocks from several target files."
@@ -1903,7 +1903,7 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
           {
             #pragma omp critical
             sout << "File: \""
-              << name
+              << utf8::console(name)
               << "\" - found "
               << count
               << " data blocks from several target files."
@@ -1917,7 +1917,7 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
           {
             #pragma omp critical
             sout << "Target: \""
-              << name
+              << utf8::console(name)
               << "\" - damaged. Found "
               << count
               << " of "
@@ -1933,13 +1933,13 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
 
             #pragma omp critical
             sout << "Target: \""
-              << name
+              << utf8::console(name)
               << "\" - damaged. Found "
               << count
               << " of "
               << sourcefile->GetVerificationPacket()->BlockCount()
               << " data blocks from \""
-              << targetname
+              << utf8::console(targetname)
               << "\"."
               << endl;
           }
@@ -1950,13 +1950,13 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
 
             #pragma omp critical
             sout << "File: \""
-              << name
+              << utf8::console(name)
               << "\" - found "
               << count
               << " of "
               << sourcefile->GetVerificationPacket()->BlockCount()
               << " data blocks from \""
-              << targetname
+              << utf8::console(targetname)
               << "\"."
               << endl;
           }
@@ -1979,7 +1979,7 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
         if (originalsourcefile == sourcefile)
         {
           #pragma omp critical
-          sout << "Target: \"" << name << "\" - found." << endl;
+          sout << "Target: \"" << utf8::console(name) << "\" - found." << endl;
         }
         // Were we scanning the target file or an extra file
         else if (originalsourcefile != 0)
@@ -1989,9 +1989,9 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
 
           #pragma omp critical
           sout << "Target: \""
-            << name
+            << utf8::console(name)
             << "\" - is a match for \""
-            << targetname
+            << utf8::console(targetname)
             << "\"."
             << endl;
         }
@@ -2002,9 +2002,9 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
 
           #pragma omp critical
           sout << "File: \""
-            << name
+            << utf8::console(name)
             << "\" - is a match for \""
-            << targetname
+            << utf8::console(targetname)
             << "\"."
             << endl;
         }
@@ -2023,7 +2023,7 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
       {
         #pragma omp critical
         sout << "File: \""
-          << name
+          << utf8::console(name)
           << "\" - found "
           << duplicatecount
           << " duplicate data blocks."
@@ -2033,7 +2033,7 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
       {
         #pragma omp critical
         sout << "File: \""
-          << name
+          << utf8::console(name)
           << "\" - no data found."
           << endl;
       }
@@ -2743,7 +2743,7 @@ bool Par2Repairer::RemoveBackupFiles(void)
       string name;
       string path;
       DiskFile::SplitFilename((*bf)->FileName(), path, name);
-      sout << "Remove \"" << name << "\"." << endl;
+      sout << "Remove \"" << utf8::console(name) << "\"." << endl;
     }
 
     if ((*bf)->IsOpen())
@@ -2775,7 +2775,7 @@ bool Par2Repairer::RemoveParFiles(void)
         string name;
         string path;
         DiskFile::SplitFilename((*s), path, name);
-        sout << "Remove \"" << name << "\"." << endl;
+        sout << "Remove \"" << utf8::console(name) << "\"." << endl;
       }
 
       if (diskfile->IsOpen())

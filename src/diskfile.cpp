@@ -69,14 +69,14 @@ bool DiskFile::CreateParentDirectory(string _pathname)
   {
     string path = filename.substr(0, where);
 
-    struct stat st;
-    if (stat(path.c_str(), &st) == 0)
+    struct struct_stat st;
+    if (stat(utf8::widen(path).c_str(), &st) == 0)
       return true; // let the caller deal with non-directories
 
     if (!DiskFile::CreateParentDirectory(path))
       return false;
 
-    if (!CreateDirectory(path.c_str(), NULL))
+    if (!CreateDirectory(utf8::widen(path).c_str(), NULL))
     {
       DWORD error = ::GetLastError();
 
@@ -101,7 +101,7 @@ bool DiskFile::Create(string _filename, u64 _filesize)
     return false;
 
   // Create the file
-  hFile = ::CreateFileA(_filename.c_str(), GENERIC_READ | GENERIC_WRITE, 0, NULL, CREATE_NEW, 0, NULL);
+  hFile = ::CreateFile(utf8::widen(_filename).c_str(), GENERIC_READ | GENERIC_WRITE, 0, NULL, CREATE_NEW, 0, NULL);
   if (hFile == INVALID_HANDLE_VALUE)
   {
     DWORD error = ::GetLastError();
@@ -126,7 +126,7 @@ bool DiskFile::Create(string _filename, u64 _filesize)
 
       ::CloseHandle(hFile);
       hFile = INVALID_HANDLE_VALUE;
-      ::DeleteFile(_filename.c_str());
+      ::DeleteFile(utf8::widen(_filename).c_str());
 
       return false;
     }
@@ -140,7 +140,7 @@ bool DiskFile::Create(string _filename, u64 _filesize)
 
       ::CloseHandle(hFile);
       hFile = INVALID_HANDLE_VALUE;
-      ::DeleteFile(_filename.c_str());
+      ::DeleteFile(utf8::widen(_filename).c_str());
 
       return false;
     }
@@ -223,7 +223,7 @@ bool DiskFile::Open(const string &_filename, u64 _filesize)
   filename = _filename;
   filesize = _filesize;
 
-  hFile = ::CreateFileA(_filename.c_str(), GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
+  hFile = ::CreateFile(utf8::widen(_filename).c_str(), GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
   if (hFile == INVALID_HANDLE_VALUE)
   {
     DWORD error = ::GetLastError();
@@ -315,43 +315,49 @@ void DiskFile::Close(void)
 
 string DiskFile::GetCanonicalPathname(string filename)
 {
-  char fullname[MAX_PATH];
-  char *filepart;
+#ifdef UNICODE
+	typedef wstring TSTRING;
+#else
+	typedef string TSTRING;
+#endif
+
+  TCHAR fullname[MAX_PATH];
+  TCHAR *filepart;
 
   // Resolve a relative path to a full path
-  unsigned int length = ::GetFullPathName(filename.c_str(), sizeof(fullname), fullname, &filepart);
-  if (length <= 0 || sizeof(fullname) < length)
+  unsigned int length = ::GetFullPathName(utf8::widen(filename).c_str(), sizeof(fullname)/sizeof(TCHAR), fullname, &filepart);
+  if (length <= 0 || (sizeof(fullname)/sizeof(TCHAR)) < length)
     return filename;
 
   // Make sure the drive letter is upper case.
   fullname[0] = toupper(fullname[0]);
 
   // Translate all /'s to \'s
-  char *current = strchr(fullname, '/');
+  TCHAR *current = _tcschr(fullname, '/');
   while (current)
   {
     *current++ = '\\';
-    current  = strchr(current, '/');
+    current  = _tcschr(current, '/');
   }
 
   // Copy the root directory to the output string
-  string longname(fullname, 3);
+  TSTRING longname(fullname, 3);
 
   // Start processing at the first path component
   current = &fullname[3];
-  char *limit = &fullname[length];
+  TCHAR *limit = &fullname[length];
 
   // Process until we reach the end of the full name
   while (current < limit)
   {
-    char *tail;
+    TCHAR *tail;
 
     // Find the next \, or the end of the string
-    (tail = strchr(current, '\\')) || (tail = limit);
+    (tail = _tcschr(current, '\\')) || (tail = limit);
     *tail = 0;
 
     // Create a wildcard to search for the path
-    string wild = longname + current;
+    TSTRING wild = longname + current;
     WIN32_FIND_DATA finddata;
     HANDLE hFind = ::FindFirstFile(wild.c_str(), &finddata);
     if (hFind == INVALID_HANDLE_VALUE)
@@ -373,7 +379,7 @@ string DiskFile::GetCanonicalPathname(string filename)
       longname += '\\';
   }
 
-  return longname;
+  return utf8::narrow(longname.c_str());
 }
 
 std::unique_ptr< list<string> > DiskFile::FindFiles(string path, string wildcard, bool recursive)
@@ -388,14 +394,14 @@ std::unique_ptr< list<string> > DiskFile::FindFiles(string path, string wildcard
 
   wildcard = path + wildcard;
   WIN32_FIND_DATA fd;
-  HANDLE h = ::FindFirstFile(wildcard.c_str(), &fd);
+  HANDLE h = ::FindFirstFile(utf8::widen(wildcard).c_str(), &fd);
   if (h != INVALID_HANDLE_VALUE)
   {
     do
     {
       if (0 == (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
       {
-        matches->push_back(path + fd.cFileName);
+        matches->push_back(path + utf8::narrow(fd.cFileName));
       }
       else if (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
       {
@@ -405,7 +411,7 @@ std::unique_ptr< list<string> > DiskFile::FindFiles(string path, string wildcard
 
         string nwwildcard="*";
 	std::unique_ptr< list<string> > dirmatches(
-						 DiskFile::FindFiles(path + fd.cFileName, nwwildcard, true)
+						 DiskFile::FindFiles(path + utf8::narrow(fd.cFileName), nwwildcard, true)
 						 );
 
         matches->merge(*dirmatches);
@@ -419,8 +425,8 @@ std::unique_ptr< list<string> > DiskFile::FindFiles(string path, string wildcard
 
 u64 DiskFile::GetFileSize(string filename)
 {
-  struct _stati64 st;
-  if ((0 == _stati64(filename.c_str(), &st)) && (0 != (st.st_mode & S_IFREG)))
+  struct struct_stat st;
+  if ((0 == stat(utf8::widen(filename).c_str(), &st)) && (0 != (st.st_mode & S_IFREG)))
   {
     return st.st_size;
   }
@@ -432,8 +438,8 @@ u64 DiskFile::GetFileSize(string filename)
 
 bool DiskFile::FileExists(string filename)
 {
-  struct _stati64 st;
-  return ((0 == _stati64(filename.c_str(), &st)) && (0 != (st.st_mode & S_IFREG)));
+  struct struct_stat st;
+  return ((0 == stat(utf8::widen(filename).c_str(), &st)) && (0 != (st.st_mode & S_IFREG)));
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1000,7 +1006,11 @@ bool DiskFile::Rename(void)
   char newname[_MAX_PATH+1];
   u32 index = 0;
 
+#ifdef _WIN32
+  struct struct_stat st;
+#else
   struct stat st;
+#endif
 
   do
   {
@@ -1016,7 +1026,7 @@ bool DiskFile::Rename(void)
       return false;
     }
     newname[length] = 0;
-  } while (stat(newname, &st) == 0);
+  } while (stat(utf8::widen(newname).c_str(), &st) == 0);
 
   return Rename(newname);
 }
@@ -1029,7 +1039,7 @@ bool DiskFile::Rename(string _filename)
   assert(file == 0);
 #endif
 
-  if (::rename(filename.c_str(), _filename.c_str()) == 0)
+  if (::rename(utf8::widen(filename).c_str(), utf8::widen(_filename).c_str()) == 0)
   {
     filename = _filename;
 

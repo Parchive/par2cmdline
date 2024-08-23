@@ -36,12 +36,21 @@
 #include <io.h>
 #include <fcntl.h>
 #include <assert.h>
+#include <tchar.h>
 
 #define snprintf _snprintf_s
 #define sprintf  sprintf_s
 #define stricmp  _stricmp
 #define unlink   _unlink
-#define stat _stat
+
+#ifdef UNICODE
+#define stat _wstati64
+#define struct_stat _stati64
+#define rename _wrename
+#else
+#define stat _stati64
+#define struct_stat _stati64
+#endif
 
 #define __LITTLE_ENDIAN 1234
 #define __BIG_ENDIAN    4321
@@ -194,6 +203,7 @@ char *strchr(), *strrchr();
 #define LONGMULTIPLY
 
 // STL includes
+#include <string>
 #include <list>
 #include <map>
 #include <algorithm>
@@ -244,6 +254,8 @@ using namespace std;
 #include "par1fileformat.h"
 #include "par1repairersourcefile.h"
 #include "par1repairer.h"
+
+#include "utf8.h"
 
 // Heap checking
 #ifdef _MSC_VER

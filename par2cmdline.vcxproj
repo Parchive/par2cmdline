@@ -31,17 +31,17 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
-    <CharacterSet>MultiByte</CharacterSet>
+    <CharacterSet>Unicode</CharacterSet>
     <PlatformToolset>v141_xp</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
-    <CharacterSet>MultiByte</CharacterSet>
+    <CharacterSet>Unicode</CharacterSet>
     <PlatformToolset>v141_xp</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
-    <CharacterSet>MultiByte</CharacterSet>
+    <CharacterSet>Unicode</CharacterSet>
     <PlatformToolset>v141_xp</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
@@ -200,6 +200,7 @@
     <ClCompile Include="src\par2repairersourcefile.cpp" />
     <ClCompile Include="src\recoverypacket.cpp" />
     <ClCompile Include="src\reedsolomon.cpp" />
+    <ClCompile Include="src\utf8.cpp" />
     <ClCompile Include="src\verificationhashtable.cpp" />
     <ClCompile Include="src\verificationpacket.cpp" />
   </ItemGroup>
@@ -228,6 +229,7 @@
     <ClInclude Include="src\par2repairersourcefile.h" />
     <ClInclude Include="src\recoverypacket.h" />
     <ClInclude Include="src\reedsolomon.h" />
+    <ClInclude Include="src\utf8.h" />
     <ClInclude Include="src\verificationhashtable.h" />
     <ClInclude Include="src\verificationpacket.h" />
   </ItemGroup>
