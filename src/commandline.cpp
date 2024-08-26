@@ -1320,10 +1320,17 @@ bool CommandLine::ComputeRecoveryBlockCount(u32 *recoveryblockcount,
 bool CommandLine::SetParFilename(string filename)
 {
   bool result = false;
+  string::size_type position = 0;
   string::size_type where;
 
-  if ((where = filename.find_first_of('*')) != string::npos ||
-      (where = filename.find_first_of('?')) != string::npos)
+#ifdef _WIN32
+  if (filename.rfind(R"(\\?\)", 0) == 0) {
+    position = strlen(R"(\\?\)");
+  }
+#endif
+
+  if ((where = filename.find_first_of('*', position)) != string::npos ||
+    (where = filename.find_first_of('?', position)) != string::npos)
   {
     cerr << "par2 file must not have a wildcard in it." << endl;
     return result;

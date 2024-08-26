@@ -321,6 +321,11 @@ string DiskFile::GetCanonicalPathname(string filename)
 	typedef string TSTRING;
 #endif
 
+  if (filename.rfind(R"(\\?\)", 0) == 0)
+  {
+    return filename;
+  }
+
   TCHAR fullname[MAX_PATH];
   TCHAR *filepart;
 
