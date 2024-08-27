@@ -49,41 +49,10 @@ std::string console(const std::string& str)
 {
 	return narrow(widen(str), ::GetConsoleOutputCP());
 }
-
-// Translate PAR filename Extended ASCII to UTF8
-std::string compatible(const std::string& str)
-{
-	int size_needed = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, str.c_str(), -1, NULL, 0);
-	if (size_needed != 0)
-	  return str;
-
-	size_needed = MultiByteToWideChar(CP_ACP, MB_ERR_INVALID_CHARS, str.c_str(), -1, NULL, 0);
-	if (size_needed == 0)
-		return str;
-
-	WCHAR* utf8Buffer = new WCHAR[size_needed];
-	MultiByteToWideChar(CP_ACP, 0, str.c_str(), -1, utf8Buffer, size_needed);	
-	size_needed = WideCharToMultiByte(CP_UTF8, 0, utf8Buffer, -1, NULL, 0, NULL, NULL);
-	if (size_needed == 0)
-	{
-		delete[] utf8Buffer;
-		return str;
-	}
-
-	char* utf8Char = new char[size_needed];
-	WideCharToMultiByte(CP_UTF8, 0, utf8Buffer, -1, utf8Char, size_needed, NULL, NULL);
-	std::string strResult(utf8Char);
-
-	delete[] utf8Buffer;
-	delete[] utf8Char;
-
-	return strResult;
-}
 #else
   std::string narrow(std::string wstr, unsigned int cp) { return wstr; }
   std::string narrow(std::string wstr) { return wstr; }
   std::string widen(std::string str) { return str; }
   std::string console(std::string str) { return str; }
-  std::string compatible(std::string strData) { return strData; }
 #endif
 }

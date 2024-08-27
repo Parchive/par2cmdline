@@ -33,12 +33,10 @@ namespace utf8 {
   std::string narrow(const std::wstring& wstr);
   std::wstring widen(const std::string& str);
   std::string console(const std::string& str);
-  std::string compatible(const std::string& strData);
 #else
   std::string narrow(std::string wstr, unsigned int cp);
   std::string narrow(std::string wstr);
   std::string widen(std::string str);
   std::string console(std::string str);
-  std::string compatible(std::string strData);
 #endif
 }
