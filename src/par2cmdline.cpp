@@ -20,7 +20,6 @@
 
 #include "libpar2.h"
 #include "commandline.h"
-
 // This is included here, so that cout and cerr are not used elsewhere.
 #include <iostream>
 
@@ -32,11 +31,26 @@ static char THIS_FILE[]=__FILE__;
 #endif
 #endif
 
-int main(int argc, char *argv[])
+#if defined(_MSC_VER)
+
+#include "utf8.h"
+
+int wmain(int argc, wchar_t* wargv[])
+
+#else
+
+int main(int argc, char* argv[])
+
+#endif
 {
 #ifdef _MSC_VER
   // Memory leak checking
   _CrtSetDbgFlag(_CrtSetDbgFlag(_CRTDBG_REPORT_FLAG) | _CRTDBG_ALLOC_MEM_DF | /*_CRTDBG_CHECK_CRT_DF | */_CRTDBG_DELAY_FREE_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+
+  SetConsoleOutputCP(CP_UTF8);
+
+  utf8::WideToUtf8ArgsAdapter wargsAdapter{ argc, wargv };
+  auto argv = wargsAdapter.GetUtf8Args();
 #endif
 
   // check sizeof integers
