@@ -31,7 +31,7 @@ static char THIS_FILE[]=__FILE__;
 #endif
 #endif
 
-#if defined(_MSC_VER)
+#ifdef _WIN32
 
 #include "utf8.h"
 
