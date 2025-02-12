@@ -1,7 +1,7 @@
 //  This file is part of par2cmdline (a PAR 2.0 compatible file verification and
 //  repair tool). See https://parchive.sourceforge.net for details of PAR 2.0.
 //
-//  Copyright (c) 2024 Denis <denis@nzbget.com>
+//  Copyright (c) 2024-2025 Denis <denis@nzbget.com>
 //
 //  par2cmdline is free software; you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License as published by
@@ -19,29 +19,64 @@
 
 #include "libpar2internal.h"
 
-#include <codecvt>
-#include <iostream>
 #include <cstring>
+#include <iostream>
 #include <exception>
+
 #include "utf8.h"
 
 namespace utf8
 {
-  constexpr int MAX_ARGS = 128;
-  static std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> UTF8_CONVERTER;
+  const int MAX_ARGS = 128;
+  const size_t MAX_DIR_PATH = 248;
+  std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> UTF8_CONVERTER;
 
   std::wstring Utf8ToWide(const std::string& str)
   {
-    if (str.empty()) return std::wstring();
+    if (str.empty())
+      return L"";
 
-    return UTF8_CONVERTER.from_bytes(str.c_str());
+    try
+    {
+      std::wstring wpath = UTF8_CONVERTER.from_bytes(str.c_str());
+
+      if (wpath.size() > MAX_DIR_PATH &&
+        wpath.find(L"\\\\?\\") == std::wstring::npos &&
+        wpath.find(L"\\\\?\\UNC") == std::wstring::npos)
+      {
+        if (std::wcsncmp(wpath.c_str(), L"\\\\", 2) == 0)
+        {
+          wpath = L"\\\\?\\UNC" + wpath;
+        }
+        else
+        {
+          wpath = L"\\\\?\\" + wpath;
+        }
+      }
+
+      return wpath;
+    }
+    catch (const std::exception& e)
+    {
+      std::cerr << "Failed to convert UTF-8 to wide string: " << e.what() << std::endl;
+      return L"";
+    }
   }
 
   std::string WideToUtf8(const std::wstring& str)
   {
-    if (str.empty()) return std::string();
+    if (str.empty())
+      return "";
 
-    return UTF8_CONVERTER.to_bytes(str.c_str());
+    try
+    {
+      return UTF8_CONVERTER.to_bytes(str.c_str());
+    }
+    catch (const std::exception& e)
+    {
+      std::cerr << "Failed to convert wide to UTF-8 string: " << e.what() << std::endl;
+      return "";
+    }
   }
 
   WideToUtf8ArgsAdapter::WideToUtf8ArgsAdapter(int argc, wchar_t* wargv[]) noexcept(false)

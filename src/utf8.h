@@ -1,7 +1,7 @@
 //  This file is part of par2cmdline (a PAR 2.0 compatible file verification and
 //  repair tool). See https://parchive.sourceforge.net for details of PAR 2.0.
 //
-//  Copyright (c) 2024 Denis <denis@nzbget.com>
+//  Copyright (c) 2024-2025 Denis <denis@nzbget.com>
 //
 //  par2cmdline is free software; you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License as published by
@@ -21,9 +21,14 @@
 #define __UTF8_H__
 
 #include <string>
+#include <codecvt>
 
 namespace utf8
 {
+  extern const int MAX_ARGS;
+  extern const size_t MAX_DIR_PATH;
+  extern std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> UTF8_CONVERTER;
+
   std::wstring Utf8ToWide(const std::string& str);
   std::string WideToUtf8(const std::wstring& str);
 
