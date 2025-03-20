@@ -132,6 +132,7 @@ bool ComputeRecoveryFileCount(std::ostream &sout,
 			      u64 largestfilesize,
 			      u64 blocksize)
 {
+  (void)sout;
   // Are we computing any recovery blocks
   if (recoveryblockcount == 0)
   {

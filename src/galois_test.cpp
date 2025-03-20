@@ -297,7 +297,7 @@ int test4() {
 // and 2^pow != 0 for any pow
 
 template<typename gtype, typename utype>
-int test_powers(const gtype two, const gtype zero, int max_value) {
+int test_powers(const gtype two, int max_value) {
   gtype g = two;
 
   int used[256*256];
@@ -331,11 +331,11 @@ int test_powers(const gtype two, const gtype zero, int max_value) {
 
 
 int test5() {
-  return test_powers<Galois8, u8>(Galois8(2), Galois8(0), 256);
+  return test_powers<Galois8, u8>(Galois8(2), 256);
 }
 
 int test6() {
-  return test_powers<Galois16, u16>(Galois16(2), Galois16(0), 256*256);
+  return test_powers<Galois16, u16>(Galois16(2), 256*256);
 }
 
 

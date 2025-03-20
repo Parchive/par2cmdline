@@ -240,7 +240,7 @@ public:
   void SetLimit(u32 limit);
 
   // Load the data from the verification packet
-  void Load(Par2RepairerSourceFile *sourcefile, u64 blocksize);
+  void Load(Par2RepairerSourceFile *sourcefile);
 
   // Try to find a match.
   //   nextentry   - The entry which we expect to find next. This is used

@@ -1120,7 +1120,7 @@ bool Par2Repairer::PrepareVerificationHashTable(void)
       if (0 != sourcefile->GetVerificationPacket())
       {
         // Yes. Load the verification entries into the hash table
-        verificationhashtable.Load(sourcefile, blocksize);
+        verificationhashtable.Load(sourcefile);
 
         blockverifiable = true;
       }

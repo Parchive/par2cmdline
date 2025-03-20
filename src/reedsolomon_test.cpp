@@ -508,7 +508,7 @@ int test4(int NUM_IN, int *expected_bases) {
   for (int i = 0; i < NUM_IN; i++) {
     // read little-endian value
     utype v = 0;
-    for (int byte_index = 0; byte_index < sizeof(utype); byte_index++) {
+    for (long unsigned int byte_index = 0; byte_index < sizeof(utype); byte_index++) {
       u8 byte = data[NUM_IN+0][sizeof(utype)*i + byte_index];
       v |= (((utype)byte) << (byte_index*8));
     }

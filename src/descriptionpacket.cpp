@@ -149,6 +149,7 @@ string DescriptionPacket::UrlEncodeChar(char c)
 // system, we don't want to change the filenames.
 string DescriptionPacket::TranslateFilenameFromLocalToPar2(std::ostream &sout, std::ostream &serr, const NoiseLevel noiselevel, string local_filename)
 {
+  (void)sout;
   string par2_encoded_filename;
 
   string::iterator p = local_filename.begin();
@@ -260,6 +261,7 @@ string DescriptionPacket::TranslateFilenameFromLocalToPar2(std::ostream &sout, s
 // sure that anything can be done here for that.
 string DescriptionPacket::TranslateFilenameFromPar2ToLocal(std::ostream &sout, std::ostream &serr, const NoiseLevel noiselevel, string par2_encoded_filename)
 {
+  (void)sout;
   string local_filename;
 
   string::iterator p = par2_encoded_filename.begin();

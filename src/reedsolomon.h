@@ -247,21 +247,25 @@ inline bool ReedSolomon<g>::Compute(NoiseLevel noiselevel, std::ostream &sout, s
                |(dpi[col])           |             | |(dmi[col])           |           |
                \                     |             / \                     |           /
   */
-
   // Allocate the left hand matrix
-
   leftmatrix = new G[outcount * incount];
-  memset(leftmatrix, 0, outcount * incount * sizeof(G));
 
-  // Allocate the right hand matrix only if we are recovering
-
-  G *rightmatrix = 0;
-  if (datamissing > 0)
-  {
-    rightmatrix = new G[outcount * outcount];
-    memset(rightmatrix, 0, outcount *outcount * sizeof(G));
+  // Use value initialization to initialize each element in the matrix to zero (or its default state)
+  for (size_t i = 0; i < outcount * incount; ++i) {
+      leftmatrix[i] = G();  // Default-construct each element (initialize to zero if G's constructor does that)
   }
 
+  // Allocate the right hand matrix only if we are recovering
+  G *rightmatrix = nullptr;
+  if (datamissing > 0)
+  {
+      rightmatrix = new G[outcount * outcount];
+      
+      // Similarly, initialize the rightmatrix elements
+      for (size_t i = 0; i < outcount * outcount; ++i) {
+          rightmatrix[i] = G();  // Default-construct each element
+      }
+  }
   // Fill in the two matrices:
 
   vector<RSOutputRow>::const_iterator outputrow = outputrows.begin();
