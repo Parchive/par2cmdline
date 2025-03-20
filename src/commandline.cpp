@@ -3,7 +3,6 @@
 //
 //  Copyright (c) 2003 Peter Brian Clements
 //  Copyright (c) 2019 Michael D. Nahas
-//  Copyright (c) 2025 Josjuar Lister
 //
 //  par2cmdline is free software; you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License as published by
@@ -82,7 +81,6 @@ void CommandLine::banner(void)
     << "Copyright (C) 2012-2017 Ike Devolder." << endl
     << "Copyright (C) 2014-2017 Jussi Kansanen." << endl
     << "Copyright (C) 2019 Michael Nahas." << endl
-    << "Copyright (C) 2025 Josjuar Lister" << endl
     << endl
     << "par2cmdline comes with ABSOLUTELY NO WARRANTY." << endl
     << endl
