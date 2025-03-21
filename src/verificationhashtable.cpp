@@ -65,7 +65,7 @@ void VerificationHashTable::SetLimit(u32 limit)
 }
 
 // Load data from a verification packet
-void VerificationHashTable::Load(Par2RepairerSourceFile *sourcefile, u64 blocksize)
+void VerificationHashTable::Load(Par2RepairerSourceFile *sourcefile)
 {
   VerificationHashEntry *preventry = 0;
 

@@ -459,8 +459,10 @@ bool CommandLine::ReadArgs(int argc, const char * const *argv)
               {
                 case 'g':
                   redundancysize = redundancysize * 1024;
+                  break;
                 case 'm':
                   redundancysize = redundancysize * 1024;
+                  break;
                 case 'k':
                   redundancysize = redundancysize * 1024;
                   break;

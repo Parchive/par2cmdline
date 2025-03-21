@@ -54,6 +54,8 @@ u32 gcd(u32 a, u32 b)
 
 template <> bool ReedSolomon<Galois8>::SetInput(const vector<bool> &present, std::ostream &sout, std::ostream &serr)
 {
+  (void) sout;
+  (void) serr;
   inputcount = (u32)present.size();
 
   datapresentindex = new u32[inputcount];
@@ -83,6 +85,8 @@ template <> bool ReedSolomon<Galois8>::SetInput(const vector<bool> &present, std
 
 template <> bool ReedSolomon<Galois8>::SetInput(u32 count, std::ostream &sout, std::ostream &serr)
 {
+  (void) sout;
+  (void) serr;
   inputcount = count;
 
   datapresentindex = new u32[inputcount];
@@ -185,6 +189,8 @@ template <> bool ReedSolomon<Galois8>::InternalProcess(const Galois8 &factor, si
 // and compute the base values to use for the vandermonde matrix.
 template <> bool ReedSolomon<Galois16>::SetInput(const vector<bool> &present, std::ostream &sout, std::ostream &serr)
 {
+  (void) sout;
+  (void) serr;
   inputcount = (u32)present.size();
 
   datapresentindex = new u32[inputcount];
@@ -229,6 +235,8 @@ template <> bool ReedSolomon<Galois16>::SetInput(const vector<bool> &present, st
 // and compute the base values to use for the vandermonde matrix.
 template <> bool ReedSolomon<Galois16>::SetInput(u32 count, std::ostream &sout, std::ostream &serr)
 {
+  (void) sout;
+  (void) serr;
   inputcount = count;
 
   datapresentindex = new u32[inputcount];

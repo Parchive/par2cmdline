@@ -60,7 +60,7 @@ public:
   typedef valuetype ValueType;
 
   // Basic constructors
-  Galois(void) {};
+  Galois(void) : value(0) {};
   Galois(ValueType v);
 
   // Copy and assignment
