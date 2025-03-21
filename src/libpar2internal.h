@@ -245,6 +245,11 @@ using namespace std;
 #include "par1repairersourcefile.h"
 #include "par1repairer.h"
 
+#ifdef __NVCC__
+  #include "helper_cuda.cuh"
+  #include "galois_cu.cuh"
+#endif
+
 // Heap checking
 #ifdef _MSC_VER
 #define _CRTDBG_MAP_ALLOC

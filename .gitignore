@@ -60,3 +60,14 @@ perf.*
 .#*
 \#*#
 .~lock.*#
+
+# vscode settings
+.vscode/settings
+.vscode/
+src/.vscode
+
+# profiling workspace
+profiling/
+
+# cmake build dir
+build_cmake/
