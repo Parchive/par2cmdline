@@ -1,0 +1,67 @@
+#!/bin/sh
+
+execdir="$PWD"
+
+# valgrind tests memory usage.
+# wine allow for windows testing on linux
+if [ -n "${PARVALGRINDOPTS+set}" ]
+then
+    PARBINARY="valgrind $PARVALGRINDOPTS $execdir/par2"
+elif [ "`which wine`" != "" ] && [ -f "$execdir/par2.exe" ]
+then
+    PARBINARY="wine $execdir/par2.exe"
+else
+    PARBINARY="$execdir/par2"
+fi
+
+
+if [ -z "$srcdir" ] || [ "." = "$srcdir" ]; then
+  srcdir="$PWD"
+  TESTDATA="$srcdir/tests"
+else
+  srcdir="$PWD/$srcdir"
+  TESTDATA="$srcdir/tests"
+fi
+
+TESTROOT="$PWD"
+
+testname=$(basename $0)
+rm -f "$testname.log"
+rm -rf "run$testname"
+
+mkdir "run$testname" && cd "run$testname" || { echo "ERROR: Could not change to test directory" ; exit 1; } >&2
+
+tar -xzf "$TESTDATA/bug190.tar.gz" || { echo "ERROR: Could not extract data test files" ; exit 1; } >&2
+
+banner="Issue 190, 1 bitflip can't be repaired"
+dashes=`echo "$banner" | sed s/./-/g`
+
+echo $dashes
+echo $banner
+echo $dashes
+
+##### TESTDATA generated with:
+# # fill with zeros
+# dd if=/dev/zero bs=1MB count=9 | tr '\000' '\377' > ./9MBones_crc_ok_bad
+# # replace one bit
+# printf "\xFF" | dd of=9MBones_crc_ok_bad bs=1 seek=20000 count=1 conv=notrunc
+# # store original
+# cp 9MBones_crc_ok_bad 9MBones_crc_ok_orig
+# # replace 1 bit (1->0)
+# printf "\xFE" | dd of="9MBones_crc_ok_bad" bs=1 seek=20000 count=1 conv=notrunc
+##### END TESTDATA
+
+# generate par2 from orig good file, copy that first
+cp 9MBones_crc_ok_orig 9MBones_crc_ok || { echo "ERROR: good copy failed" ; exit 1; } >&2
+# Create PAR2 files
+$PARBINARY c -m500  -r30 -n1 -v '9MBones_crc_ok' || { echo "ERROR: create failed" ; exit 1; } >&2
+
+# replace with bitflipped bad copy
+cp 9MBones_crc_ok_bad 9MBones_crc_ok || { echo "ERROR: bad copy failed" ; exit 1; } >&2
+# Repair bitflip
+$PARBINARY repair  '9MBones_crc_ok.par2' || { echo "ERROR: bitflip repair failed" ; exit 1; } >&2
+
+cd "$TESTROOT"
+rm -rf "run$testname"
+
+exit 0
