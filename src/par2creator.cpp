@@ -143,6 +143,9 @@ Result Par2Creator::Process(
   if (!CalculateProcessBlockSize(memorylimit))
     return eLogicError;
 
+  if (recoveryblockcount > 0 && noiselevel >= nlDebug)
+    sout << "[DEBUG] Process chunk size: " << chunksize << endl;
+
   if (noiselevel > nlQuiet)
   {
     // Display information.
@@ -311,6 +314,12 @@ bool Par2Creator::CalculateProcessBlockSize(size_t memorylimit)
       chunksize = (size_t)blocksize;
 
       deferhashcomputation = true;
+    }
+    
+    if (MAX_CHUNK_SIZE != 0 && chunksize > MAX_CHUNK_SIZE)
+    {
+      chunksize = MAX_CHUNK_SIZE;
+      deferhashcomputation = false;
     }
   }
 

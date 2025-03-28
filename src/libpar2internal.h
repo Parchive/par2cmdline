@@ -190,6 +190,7 @@ char *strchr(), *strrchr();
 #endif
 
 #define _FILE_THREADS 2
+#define MAX_CHUNK_SIZE 32*1048576 // too large chunks are likely detrimental to performance; set to 0 to disable
 
 #define LONGMULTIPLY
 

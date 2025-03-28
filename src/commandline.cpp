@@ -947,6 +947,11 @@ bool CommandLine::CheckValuesAndSetDefaults() {
     // Half of total physical memory
     memorylimit = (size_t)(TotalPhysicalMemory / 1048576 / 2);
   }
+
+  // limit to 1GB on 32-bit platforms to avoid exhausing the addressable memory space
+  if (sizeof(uintptr_t) < 8 && memorylimit > 1024)
+    memorylimit = 1024;
+
   // convert to megabytes
   memorylimit *= 1048576;
 

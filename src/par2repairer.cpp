@@ -2446,6 +2446,12 @@ bool Par2Repairer::AllocateBuffers(size_t memorylimit)
   inputbuffer = new u8[(size_t)chunksize];
   outputbuffer = new u8[(size_t)chunksize * missingblockcount];
 
+  if (MAX_CHUNK_SIZE != 0 && chunksize > MAX_CHUNK_SIZE)
+    chunksize = MAX_CHUNK_SIZE;
+
+  if (noiselevel >= nlDebug)
+    sout << "[DEBUG] Process chunk size: " << chunksize << endl;
+
   if (inputbuffer == NULL || outputbuffer == NULL)
   {
     serr << "Could not allocate buffer memory." << endl;
