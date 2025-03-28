@@ -105,6 +105,34 @@ Set the basepath to use as reference for the datafiles
 .TP
 .B \-\-
 Treat all following arguments as filenames
+.SH EXITCODES
+.TP
+.B 0
+The process completed successfully
+.TP
+.B 1
+Repair is possible, there are sufficient recovery blocks
+.TP
+.B 2
+Repair is *NOT* possible, there are insufficient recovery blocks
+.TP
+.B 3
+The given combination of commandline flags is invalid
+.TP
+.B 4
+Insufficient critical data, probably your par files are corrupted
+.TP
+.B 5
+Repair was completed, but datafiles are still corrupted
+.TP
+.B 6
+Some file IO error while accessing it
+.TP
+.B 7
+An internal logic error occured
+.TP
+.B 8
+Out of memory or other memory error
 .SH EXAMPLES
 With PAR 2.0 you can create PAR2 recovery files for as few as 1 or as many as 32768 files. If you wanted to create PAR1 recovery files for a single file you are forced to split the file into multiple parts and RAR is frequently used for this purpose. You do NOT need to split files with PAR 2.0.
 
