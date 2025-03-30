@@ -74,6 +74,7 @@ EXTRA_DIST = PORTING ROADMAP \
 			 tests/readbeyondeof.tar.gz \
 			 tests/par2-0.6.8-crash.tar.gz \
 			 tests/bug44.tar.gz \
+			 tests/bug128-parfiles.tar.gz \
 			 tests/test1 \
 			 tests/test2 \
 			 tests/test3 \
@@ -104,6 +105,7 @@ EXTRA_DIST = PORTING ROADMAP \
 			 tests/test27 \
 			 tests/test28 \
 			 tests/test29 \
+			 tests/test30 \
 			 tests/test31 \
 			 tests/unit_tests
 
@@ -170,6 +172,7 @@ TESTS = tests/test1 \
 		tests/test27 \
 		tests/test28 \
 		tests/test29 \
+		tests/test30 \
 		tests/test31 \
 		tests/unit_tests
 
