@@ -1564,8 +1564,6 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
   // Remember which file we wanted to match
   Par2RepairerSourceFile *originalsourcefile = sourcefile;
 
-  matchtype = eNoMatch;
-
   string name;
   DiskFile::SplitRelativeFilename(diskfile->FileName(), basepath, name);
 
