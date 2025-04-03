@@ -136,6 +136,7 @@ void CommandLine::usage(void)
     "  -l       : Limit size of recovery files (don't use both -u and -l)\n"
     "  -n<n>    : Number of recovery files (don't use both -n and -l)\n"
     "  -R       : Recurse into subdirectories\n"
+    "             (Be aware of wildcard shell expansion)\n"
     "\n";
   cout <<
     "Example:\n"
