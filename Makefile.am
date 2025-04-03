@@ -104,6 +104,7 @@ EXTRA_DIST = PORTING ROADMAP \
 			 tests/test27 \
 			 tests/test28 \
 			 tests/test29 \
+			 tests/test31 \
 			 tests/unit_tests
 
 
@@ -169,6 +170,7 @@ TESTS = tests/test1 \
 		tests/test27 \
 		tests/test28 \
 		tests/test29 \
+		tests/test31 \
 		tests/unit_tests
 
 install-exec-hook :
