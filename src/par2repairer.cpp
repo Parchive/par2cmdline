@@ -1660,14 +1660,18 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
       printprogress += filechecksummer.Offset() - oldoffset;
       if (printprogress == blocksize || filechecksummer.ShortBlock())
       {
-        u32 oldfraction;
-        u32 newfraction;
-        #pragma omp critical
-        {
-        oldfraction = (u32)(1000 * mttotalprogress / ts);
+        u64 totalprogress;
+#if _OPENMP < 200800
+        totalprogress = mttotalprogress;
+        #pragma omp atomic
         mttotalprogress += printprogress;
-        newfraction = (u32)(1000 * mttotalprogress / ts);
-        }
+        totalprogress += printprogress;
+#else
+        #pragma omp atomic capture
+        totalprogress = mttotalprogress += printprogress;
+#endif
+        u32 oldfraction = (u32)(1000 * (totalprogress - printprogress) / ts);
+        u32 newfraction = (u32)(1000 * totalprogress / ts);
 
         printprogress = 0;
 
@@ -2443,6 +2447,12 @@ bool Par2Repairer::AllocateBuffers(size_t memorylimit)
   // Allocate the two buffers
   inputbuffer = new u8[(size_t)chunksize];
   outputbuffer = new u8[(size_t)chunksize * missingblockcount];
+
+  if (MAX_CHUNK_SIZE != 0 && chunksize > MAX_CHUNK_SIZE)
+    chunksize = MAX_CHUNK_SIZE;
+
+  if (noiselevel >= nlDebug)
+    sout << "[DEBUG] Process chunk size: " << chunksize << endl;
 
   if (inputbuffer == NULL || outputbuffer == NULL)
   {
