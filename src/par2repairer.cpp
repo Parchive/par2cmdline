@@ -1568,21 +1568,17 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
   DiskFile::SplitRelativeFilename(diskfile->FileName(), basepath, name);
 
   // Is the file empty
-  if (diskfile->FileSize() == 0)
+  if (originalsourcefile != 0 && originalsourcefile->GetTargetExists())
+  {
+    // don't check size if target was found
+  }
+  else if (diskfile->FileSize() == 0)
   {
     // If the file is empty, then just return
     if (noiselevel > nlSilent)
     {
-      if (originalsourcefile != 0)
-      {
-        #pragma omp critical
-        sout << "Target: \"" << name << "\" - empty." << endl;
-      }
-      else
-      {
-        #pragma omp critical
-        sout << "File: \"" << name << "\" - empty." << endl;
-      }
+      #pragma omp critical
+      sout << "File: \"" << name << "\" - empty." << endl;
     }
     return true;
   }
