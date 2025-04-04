@@ -33,6 +33,13 @@
     <ConfigurationType>Application</ConfigurationType>
     <CharacterSet>MultiByte</CharacterSet>
     <PlatformToolset>v141_xp</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v142</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v142</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
@@ -43,6 +50,8 @@
     <ConfigurationType>Application</ConfigurationType>
     <CharacterSet>MultiByte</CharacterSet>
     <PlatformToolset>v141_xp</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v142</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -202,6 +211,7 @@
     <ClCompile Include="src\reedsolomon.cpp" />
     <ClCompile Include="src\verificationhashtable.cpp" />
     <ClCompile Include="src\verificationpacket.cpp" />
+    <ClCompile Include="src\utf8.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\commandline.h" />
@@ -230,6 +240,7 @@
     <ClInclude Include="src\reedsolomon.h" />
     <ClInclude Include="src\verificationhashtable.h" />
     <ClInclude Include="src\verificationpacket.h" />
+    <ClInclude Include="src\utf8.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="AUTHORS" />
