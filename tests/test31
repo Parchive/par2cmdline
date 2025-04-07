@@ -108,6 +108,6 @@ rm aaaa-test.data
 $PARBINARY verify aaaa-test.data.par2 || { echo "ERROR: verify of rootpath inclusion failed" ; exit 1; } >&2
 
 cd "$TESTROOT"
-#rm -rf "run$testname"
+rm -rf "run$testname"
 
 exit 0
