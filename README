@@ -121,7 +121,7 @@ The command line parameters for par2cmdline are as follow:
     -f<n>    : First Recovery-Block-Number
     -u       : Uniform recovery file sizes
     -l       : Limit size of recovery files (don't use both -u and -l)
-    -n<n>    : Number of recovery files (don't use both -n and -l)
+    -n<n>    : Number of recovery files (max 31) (don't use both -n and -l)
     -m<n>    : Memory (in MB) to use
     -t<n>    : Number of threads to use (Auto-detected)
     -v [-v]  : Be more verbose

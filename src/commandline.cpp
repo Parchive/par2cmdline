@@ -134,7 +134,7 @@ void CommandLine::usage(void)
     "  -f<n>    : First Recovery-Block-Number\n"
     "  -u       : Uniform recovery file sizes\n"
     "  -l       : Limit size of recovery files (don't use both -u and -l)\n"
-    "  -n<n>    : Number of recovery files (don't use both -n and -l)\n"
+    "  -n<n>    : Number of recovery files (max 31) (don't use both -n and -l)\n"
     "  -R       : Recurse into subdirectories\n"
     "             (Be aware of wildcard shell expansion)\n"
     "\n";
@@ -643,6 +643,19 @@ bool CommandLine::ReadArgs(int argc, const char * const *argv)
               cerr << "Invalid recovery file count option: " << argv[0] << endl;
               return false;
             }
+
+            // cap the maximum number of recovery files
+            // because the number of recovery blocks will be
+            // (2 ^ recoveryfilecount) - 1
+            // the number 32 will overflow the u32 resulting in 1
+            if (recoveryfilecount > 31)
+            {
+              cerr << "Invalid recovery file count option: " << recoveryfilecount << endl;
+              cerr << "  the maximum allowed recovery file count is 31" << endl;
+
+              return false;
+            }
+
           }
           break;
 
