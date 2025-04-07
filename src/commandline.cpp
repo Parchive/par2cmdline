@@ -1102,6 +1102,12 @@ bool CommandLine::CheckValuesAndSetDefaults() {
       parfilename = parfilename.substr(0, parfilename.length()-5);
     }
 
+    if (DiskFile::FileExists(parfilename + ".par2"))
+    {
+      cerr << "Par2 file already exists: " << parfilename << endl;
+      return false;
+    }
+
     // If neither block count not block size is specified
     if (blockcount == 0 && blocksize == 0)
     {
