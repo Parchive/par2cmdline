@@ -7,7 +7,7 @@ on:
     branches: [ "master" ]
 
 jobs:
-  build:
+  build-linux:
 
     runs-on: ubuntu-latest
 
@@ -23,3 +23,15 @@ jobs:
       run: make check
     #- name: make distcheck ## maybe later, currently testing around
       #run: make distcheck
+
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Add MSBuild to PATH
+      uses: microsoft/setup-msbuild@v2
+
+    - name: Build
+      run: msbuild -property:Configuration=Release -property:Platform=x64 par2cmdline.sln
