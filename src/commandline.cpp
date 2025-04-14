@@ -158,12 +158,12 @@ bool CommandLine::Parse(int argc, const char * const *argv)
     if (!ComputeBlockSize())
       return false;
 
-    u64 sourceblockcount = 0;
+    u32 sourceblockcount = 0;
     u64 largestfilesize = 0;
     for (vector<string>::const_iterator i=extrafiles.begin(); i!=extrafiles.end(); i++)
     {
       u64 filesize = filesize_cache.get(*i);
-      sourceblockcount += (filesize + blocksize-1) / blocksize;
+      sourceblockcount += (u32) ((filesize + blocksize-1) / blocksize);
       if (filesize > largestfilesize)
       {
 	largestfilesize = filesize;
@@ -1279,7 +1279,7 @@ bool CommandLine::ComputeRecoveryBlockCount(u32 *recoveryblockcount,
     {
       u32 estimatedFileCount = 15;
       u64 overhead = estimatedFileCount * overhead_per_recovery_file;
-      u64 estimatedrecoveryblockcount;
+      u32 estimatedrecoveryblockcount;
       if (overhead > redundancysize)
       {
         estimatedrecoveryblockcount = 1;  // at least 1
