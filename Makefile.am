@@ -57,7 +57,7 @@ par2_SOURCES = src/par2cmdline.cpp \
 par2_LDADD = libpar2.a
 
 LDADD = -lstdc++
-AM_CXXFLAGS = -Wall -std=c++11 $(OPENMP_CXXFLAGS)
+AM_CXXFLAGS = -Wall -std=c++14 $(OPENMP_CXXFLAGS)
 
 EXTRA_DIST = PORTING ROADMAP \
 			 man/par2.1 \
