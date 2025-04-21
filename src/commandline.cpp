@@ -571,7 +571,7 @@ bool CommandLine::ReadArgs(int argc, const char * const *argv)
               cerr << "Invalid option: " << argv[0] << endl;
               return false;
             }
-            if (recoveryfilescheme != scUnknown)
+            if (recoveryfilescheme != scUnknown && recoveryfilescheme != scUniform)
             {
               cerr << "Cannot specify two recovery file size schemes." << endl;
               return false;
@@ -656,6 +656,10 @@ bool CommandLine::ReadArgs(int argc, const char * const *argv)
               return false;
             }
 
+            // When number of recovery files is used, set the recoveryfilescheme
+            // to uniform, since variable will not always be able to fill all
+            // the files
+            recoveryfilescheme = scUniform;
           }
           break;
 
