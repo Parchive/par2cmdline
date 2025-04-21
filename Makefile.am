@@ -46,7 +46,8 @@ libpar2_a_SOURCES = src/crc.cpp src/crc.h \
 	src/reedsolomon.cpp src/reedsolomon.h \
 	src/verificationhashtable.cpp src/verificationhashtable.h \
 	src/verificationpacket.cpp src/verificationpacket.h \
-	src/libpar2.cpp src/libpar2.h src/libpar2internal.h
+	src/libpar2.cpp src/libpar2.h src/libpar2internal.h \
+	src/utf8.cpp src/utf8.h
 
 
 bin_PROGRAMS = par2
@@ -108,12 +109,13 @@ EXTRA_DIST = PORTING ROADMAP \
 			 tests/test30 \
 			 tests/test31 \
 			 tests/test32 \
+			 tests/utf8_test \
 			 tests/unit_tests
 
 
 # Programs that need to be compiled for the test suite.
 # These are the unit tests.
-check_PROGRAMS = tests/letype_test tests/crc_test tests/md5_test tests/diskfile_test tests/libpar2_test tests/commandline_test tests/descriptionpacket_test tests/criticalpacket_test tests/reedsolomon_test tests/galois_test
+check_PROGRAMS = tests/letype_test tests/crc_test tests/md5_test tests/diskfile_test tests/libpar2_test tests/commandline_test tests/descriptionpacket_test tests/criticalpacket_test tests/reedsolomon_test tests/galois_test tests/utf8_test
 
 tests_letype_test_SOURCES = src/letype_test.cpp src/letype.h
 
@@ -122,6 +124,7 @@ tests_crc_test_SOURCES = src/crc_test.cpp src/crc.cpp src/crc.h
 tests_md5_test_SOURCES = src/md5_test.cpp src/md5.cpp src/md5.h
 
 tests_diskfile_test_SOURCES = src/diskfile_test.cpp src/diskfile.cpp src/diskfile.h
+tests_diskfile_test_LDADD = libpar2.a
 
 tests_libpar2_test_SOURCES = src/libpar2_test.cpp src/libpar2.h
 tests_libpar2_test_LDADD = libpar2.a
@@ -138,6 +141,8 @@ tests_criticalpacket_test_LDADD = libpar2.a
 tests_reedsolomon_test_SOURCES = src/reedsolomon_test.cpp src/reedsolomon.cpp src/reedsolomon.h
 
 tests_galois_test_SOURCES = src/galois_test.cpp src/galois.cpp src/galois.h
+
+tests_utf8_test_SOURCES = src/utf8_test.cpp src/utf8.cpp src/utf8.h
 
 
 # List of all tests.
@@ -176,6 +181,7 @@ TESTS = tests/test1 \
 		tests/test30 \
 		tests/test31 \
 		tests/test32 \
+		tests/utf8_test \
 		tests/unit_tests
 
 install-exec-hook :

@@ -1349,6 +1349,8 @@ bool CommandLine::ComputeRecoveryBlockCount(u32 *recoveryblockcount,
 bool CommandLine::SetParFilename(string filename)
 {
   bool result = false;
+
+#ifndef _WIN32
   string::size_type where;
 
   if ((where = filename.find_first_of('*')) != string::npos ||
@@ -1357,6 +1359,7 @@ bool CommandLine::SetParFilename(string filename)
     cerr << "par2 file must not have a wildcard in it." << endl;
     return result;
   }
+#endif
 
   // If we are verifying or repairing, the PAR2 file must
   // already exist
