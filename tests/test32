@@ -1,0 +1,52 @@
+#!/bin/sh
+
+execdir="$PWD"
+
+# valgrind tests memory usage.
+# wine allow for windows testing on linux
+if [ -n "${PARVALGRINDOPTS+set}" ]
+then
+    PARBINARY="valgrind $PARVALGRINDOPTS $execdir/par2"
+elif [ "`which wine`" != "" ] && [ -f "$execdir/par2.exe" ]
+then
+    PARBINARY="wine $execdir/par2.exe"
+else
+    PARBINARY="$execdir/par2"
+fi
+
+
+if [ -z "$srcdir" ] || [ "." = "$srcdir" ]; then
+  srcdir="$PWD"
+  TESTDATA="$srcdir/tests"
+else
+  srcdir="$PWD/$srcdir"
+  TESTDATA="$srcdir/tests"
+fi
+
+TESTROOT="$PWD"
+
+testname=$(basename $0)
+rm -f "$testname.log"
+rm -rf "run$testname"
+
+mkdir "run$testname" && cd "run$testname" || { echo "ERROR: Could not change to test directory" ; exit 1; } >&2
+
+tar -xzf "$TESTDATA/subdirdata.tar.gz" || { echo "ERROR: Could not extract data test files" ; exit 1; } >&2
+
+banner="Bug 205, Files already exist so no par2 is created"
+dashes=`echo "$banner" | sed s/./-/g`
+
+echo $dashes
+echo $banner
+echo $dashes
+
+mkdir par2
+
+$PARBINARY create -vv -a par2/disk1.par2 -b32768 -n31 -R -v -B./ * || { echo "ERROR: Recursive creation of PAR 2.0 files failed" ; exit 1; } >&2
+
+$PARBINARY verify -B./ par2/disk1.par2 || { echo "ERROR: verify failed" ; exit 1; } >&2
+
+cd "$TESTROOT"
+rm -rf "run$testname"
+
+exit 0
