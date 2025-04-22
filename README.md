@@ -8,7 +8,7 @@ OpenMP multithreading was originally developed by Jussi Kansanen: <https://githu
 
 The original development was done on Sourceforge but stalled.
 
-For more information from the original authors see <http://parchive.sourceforge.net>
+For more information from the original authors see <https://parchive.github.io/>
 
 This is also the place for details on the PAR 2.0 specification and discussion of all things PAR.
 
