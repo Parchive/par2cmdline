@@ -1,9 +1,3 @@
-# Looking for maintainer
-
-Since I find it hard to make time for this project I would like to find someone who would step in and take over the maintainership of par2cmdline. I still use the program but it does everything I need.
-
-If you are interested please send an email to: ike.devolder@gmail.com
-
 # par2cmdline
 
 **par2cmdline** is a PAR 2.0 compatible file verification and repair tool.
@@ -255,3 +249,36 @@ If par2cmdline told you that you needed 10 recovery blocks, then you would need 
 PAR2 uses Reed-Solomon Coding to perform its calculations. For details of this coding technique try the following link:
 
 [**A Tutorial on Reed-Solomon Coding for Fault-Tolerance in RAID-like Systems**](http://web.eecs.utk.edu/~plank/plank/papers/CS-96-332.html)
+
+## Compared to par2cmdline forks
+
+Key changes of these forks, over the original upstream par2cmdline, is performance improvements using a variety of techniques.
+
+**[par2cmdline-tbb](https://web.archive.org/web/20150526072258/http://www.chuchusoft.com/par2_tbb)**
+
+* adds multi-threading via TBB
+* adds MMX optimized routines for GF16 computation (from phpar2)
+* adds support for concurrency during creation/verification/repair
+* adds experimental CUDA (GPU) support
+* async I/O
+* only available on x86 platforms, due to use of [Intel TBB](https://www.intel.com/content/www/us/en/developer/articles/guide/get-started-with-tbb.html) and x86 assembly
+* [archived sources](https://github.com/jcfp/par2tbb-chuchusoft-sources)
+
+**[phpar2](http://www.paulhoule.com/phpar2/index.php)**
+
+* adds multi-threading
+* adds MMX optimized routines for GF16 computation
+* assembly optimized MD5 routine
+* only available on x86 Windows platforms, due to use of x86 assembly and Windows API reliance
+
+**[par2cmdline-turbo](https://github.com/animetosho/par2cmdline-turbo)**
+
+* the above forks were based off the original par2cmdline (0.4?), whereas this fork is based off (at time of writing) the latest ‘mainline’ fork (0.8.1 with unreleased changes)
+* faster GF16 techniques, taking advantage of modern SIMD extensions, are used instead of MMX
+* faster CRC32 implementations
+* uses stitched MD5+CRC32 hashing
+* accelerates matrix inversion
+* does not add support for async I/O, though it might get some due to the async nature of ParPar’s GF16 backend
+* does not add GPU computation (but ParPar has elementary OpenCL support, so might arrive in the future)
+* optimizations for ARM and RISC-V CPUs
+* cross-platform support
