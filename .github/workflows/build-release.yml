@@ -1,0 +1,88 @@
+name: par2cmdline release build
+
+on:
+  push:
+    branches:
+    - 'master'
+
+jobs:
+  build-check-linux:
+    uses: ./.github/workflows/build-check-linux.yml
+
+  build-check-windows:
+    uses: ./.github/workflows/build-check-windows.yml
+
+  build-linux:
+    needs:
+    - build-check-linux
+
+    strategy:
+      matrix:
+        include:
+        - arch: amd64
+          configure_host: 
+          xcc: 
+        - arch: arm64
+          configure_host: --host=aarch64-linux-gnu
+          xcc: aarch64-linux-gnu-
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - uses: cyberjunk/gha-ubuntu-cross@v5
+      with:
+        arch: ${{ matrix.arch }}
+
+    - name: automake
+      run: ./automake.sh
+
+    - name: configure
+      run: ./configure ${{ matrix.configure_host }}
+      env:
+        CC: ${{ matrix.xcc }}gcc
+        CXX: ${{ matrix.xcc }}g++
+        LDFLAGS: -static -s
+
+    - name: make
+      run: make
+
+    - name: Upload binary artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: par2cmdline-linux-${{ matrix.arch }}
+        path: |
+          par2
+        retention-days: 5
+
+  build-windows:
+    needs:
+    - build-check-windows
+
+    strategy:
+      matrix:
+        include:
+        - platform: x64
+          name: x64
+        - platform: ARM64
+          name: arm64
+
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Add MSBuild to PATH
+      uses: microsoft/setup-msbuild@v2
+
+    - name: Build
+      run: msbuild -property:Configuration=Release -property:Platform=${{ matrix.platform }} par2cmdline.sln
+
+    - name: Upload binary artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: par2cmdline-win-${{ matrix.name }}
+        path: |
+          ${{ matrix.platform }}/Release/par2.exe
+        retention-days: 5

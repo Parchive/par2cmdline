@@ -1,0 +1,19 @@
+name: par2cmdline CI windows
+
+on:
+  workflow_call:
+  workflow_dispatch:
+
+jobs:
+  build-check-windows:
+
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Add MSBuild to PATH
+      uses: microsoft/setup-msbuild@v2
+
+    - name: Build
+      run: msbuild -property:Configuration=Release -property:Platform=x64 par2cmdline.sln
