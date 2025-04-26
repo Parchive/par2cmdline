@@ -1,0 +1,23 @@
+name: par2cmdline CI linux
+
+on:
+  workflow_call:
+  workflow_dispatch:
+
+jobs:
+  build-check-linux:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: automake
+      run: ./automake.sh
+    - name: configure
+      run: ./configure
+    - name: make
+      run: make
+    - name: make check
+      run: make check
+    - name: make distcheck
+      run: make distcheck

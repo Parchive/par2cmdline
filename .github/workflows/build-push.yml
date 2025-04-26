@@ -1,0 +1,18 @@
+name: par2cmdline push build
+
+on:
+  push:
+    branches:
+      - '**'
+      - '!master'
+  pull_request:
+    branches:
+      - 'master'
+
+jobs:
+  build-check-linux:
+    uses: ./.github/workflows/build-check-linux.yml
+
+  build-check-windows:
+    uses: ./.github/workflows/build-check-windows.yml
+
