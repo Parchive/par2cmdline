@@ -1,3 +1,68 @@
+30 April 2025 Ike Devolder
+  Support:
+    * #146: build fails in Cygwin
+    * #140: A potential Data Race
+    * #151: Understanding par2cmdline performance
+    * #129: Understanding The Par2 Spec and par2cmdline
+    * #163: performance with hundreds of small files
+    * #166: A better error correcting code
+    * #157: Recover impossible without a .par2 "main" file?
+    * #172: Thread count option not shown on Arm based Mac version
+    * #178: Increase block count limit 32768
+    * #112: Behaviour with insufficient read permissions
+    *  #79: Help to create a compatible implementation!
+    * #171: Flag for automatic Blocksize in commandline
+    * #121: Repair-Files created amount to size twice as high as expected from redundancy
+    * #175: New release?
+  Issues:
+    * #141: syntax error in tests (fixed with PR #142)
+    * #143: test failure in unit_tests on s390x, powerpc (fixed with PR #144)
+    * #145: Core dump on single letter file name (duplicate: #192, #165) (fixed with PR #149)
+    *  #41: prepare code and header files for libpar2 (e4e449f97ff0758029d73af58da66b0f33619741)
+    * #169: Windows version always recurse into subdirectories (duplicate: #173, #111) (fixed with PR #182)
+    * #193: config.guess timestamp = 2015-03-04 ... time for a newer version? (83bb2495c906660fad3a4f85a72f8ce0de05445b)
+    * #190: Cannot recover one-bit flip (duplicate #156?) (fixed with PR #179)
+    * #120: exit codes from par2 executable not documented? (improved with PR #199)
+    * #126: Problem with PACKED little-endian structs (4a4179f1e42bc11bbcc9d24554690d3bc5c31b38)
+    * #150: Recurse option (-R) does not include files in current directory (more documenation)
+    * #128: Problem with empty (0 Bytes) files. (workaround via PR #200)
+    * #152: Fail earlier during creation if the .par2 file already exists (basic check in PR #203)
+    * #113: Hang with -n=256 (limited in PR #204)
+    * #205: Could not create "./Disk 1 (a-m)/.PAR2 (Recovery Disk 1)/disk1.vol34529+00000.par2": File already exists. (6c2fa05a16bd604e54b46a5546c3acb64eb9fed4)
+    * #189: Properly handle UTF8 and long-paths on Windows (implemented by dnzbk for nzbget, rebased in PR #202)
+    * #186: It would be nice if permissions were checked eariler when creating parchive. (basic check in PR #210)
+    * #164: need option to disable following symlinks on "-R" (fixed in PR #211)
+    * #208: Version 1.0.0
+  PRs:
+    * #148: fix: enforce -qq silent
+    * #153: Install relative symlinks instead of absolute ones
+    * #161: Allow Creating Files With Over 100% Redundancy (new PR from #158)
+    * #162: Minor cleanup
+    * #168: fix win32 directory recursion
+    * #179: Avoid copying back memory in FileChecksummer when data is valid
+    * #177: CRC32/MD5 optimisations
+    * #182: enable Recurse flag on Windows OS
+    * #198: enable Recurse flag on Windows OS
+    * #199: add exitcodes to manfile
+    * #201: Issue 150 recursive no files from rootpath
+    * #197: Updates from turbo
+    * #200: Issue 128
+    * #203: Quick bail if the base par2 file already exists
+    * #204: Issue 113
+    * #206: github workflows
+    * #207: When number of recovery files is set, you get "File already exists"
+    * #202: Issue 189 windows utf8
+    * #209: Workflow release
+    * #210: Add simple "permissions" check while creating
+    * #211: diskfile, replace stat use with lstat
+  Skipped:
+    *   #7: command line flags can not be chained
+    *  #91: make use of appveyor for windows
+    * #191: Update diskfile.cpp
+    * #155: Travis-ci: added support for ppc64le
+    * #194: Avoid copying back memory in FileChecksummer when data is valid (superseeded by #202)
+    * #176: Added support for GPU acceleration (CUDA) on recovery file creation.
+
 09 February 2020 Ike Devolder
   * release: 0.8.1
   * Serious rework of internals by Michael Nahas
