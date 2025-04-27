@@ -108,6 +108,9 @@ Result Par2Creator::Process(
   filethreads = _filethreads;
 #endif
 
+  if (!CheckBasepath(parfilename))
+    return eFileIOError;
+
   // Get information from commandline
   blocksize = _blocksize;
   const vector<string> extrafiles = _extrafiles;
@@ -237,6 +240,24 @@ Result Par2Creator::Process(
     sout << "Done" << endl;
 
   return eSuccess;
+}
+
+// Check basepath permission
+bool Par2Creator::CheckBasepath(const string &parfilename)
+{
+  string checkfilename = parfilename + ".check.par2";
+  DiskFile *diskfile = new DiskFile(sout, serr);
+  size_t dummysize = 4096;
+
+  if (!diskfile->Create(checkfilename, dummysize))
+    return false;
+
+  diskfile->Close();
+
+  if (!diskfile->Delete())
+    return false;
+
+  return true;
 }
 
 // Compute block size from block count or vice versa depending on which was
