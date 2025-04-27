@@ -51,6 +51,9 @@ public:
 protected:
   // Steps in the creation process:
 
+  // Check permissions in the basepath
+  bool CheckBasepath(const string &parfilename);
+
   // Compute block size from block count or vice versa depending on which was
   // specified on the command line
   bool ComputeBlockCount(const vector<string> &extrafiles);
