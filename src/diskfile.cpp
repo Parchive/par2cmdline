@@ -778,7 +778,7 @@ std::unique_ptr< list<string> > DiskFile::FindFiles(string path, string wildcard
           {
             struct stat st;
             string fn = path + name;
-            if (stat(fn.c_str(), &st) == 0)
+            if (lstat(fn.c_str(), &st) == 0)
             {
               if (S_ISDIR(st.st_mode) &&
                   recursive == true)
@@ -815,7 +815,7 @@ std::unique_ptr< list<string> > DiskFile::FindFiles(string path, string wildcard
             {
               struct stat st;
               string fn = path + name;
-              if (stat(fn.c_str(), &st) == 0)
+              if (lstat(fn.c_str(), &st) == 0)
               {
                 if (S_ISDIR(st.st_mode) &&
                     recursive == true)
@@ -845,7 +845,7 @@ std::unique_ptr< list<string> > DiskFile::FindFiles(string path, string wildcard
   {
     struct stat st;
     string fn = path + wildcard;
-    if (stat(fn.c_str(), &st) == 0)
+    if (lstat(fn.c_str(), &st) == 0)
     {
       if (S_ISDIR(st.st_mode) &&
           recursive == true)
@@ -870,7 +870,7 @@ std::unique_ptr< list<string> > DiskFile::FindFiles(string path, string wildcard
 u64 DiskFile::GetFileSize(string filename)
 {
   struct stat st;
-  if ((0 == stat(filename.c_str(), &st)) && (0 != (st.st_mode & S_IFREG)))
+  if ((0 == lstat(filename.c_str(), &st)) && (0 != (st.st_mode & S_IFREG)))
   {
     return st.st_size;
   }
@@ -883,7 +883,7 @@ u64 DiskFile::GetFileSize(string filename)
 bool DiskFile::FileExists(string filename)
 {
   struct stat st;
-  return ((0 == stat(filename.c_str(), &st)) && (0 != (st.st_mode & S_IFREG)));
+  return ((0 == lstat(filename.c_str(), &st)) && (0 != (st.st_mode & S_IFREG)));
 }
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 #endif
