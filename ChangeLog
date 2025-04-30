@@ -1,4 +1,11 @@
 30 April 2025 Ike Devolder
+  * release: 1.0.0
+  * release artifacts are all built with github actions
+    * linux static x86_64 and arm64
+    * windows x86_64 and arm64
+    * macos x86_64 and arm64 (experimental, could not test)
+  * Special thanks to everyone for waiting over 5 years for a new release
+
   Support:
     * #146: build fails in Cygwin
     * #140: A potential Data Race
@@ -14,6 +21,7 @@
     * #171: Flag for automatic Blocksize in commandline
     * #121: Repair-Files created amount to size twice as high as expected from redundancy
     * #175: New release?
+
   Issues:
     * #141: syntax error in tests (fixed with PR #142)
     * #143: test failure in unit_tests on s390x, powerpc (fixed with PR #144)
@@ -33,6 +41,7 @@
     * #186: It would be nice if permissions were checked eariler when creating parchive. (basic check in PR #210)
     * #164: need option to disable following symlinks on "-R" (fixed in PR #211)
     * #208: Version 1.0.0
+
   PRs:
     * #148: fix: enforce -qq silent
     * #153: Install relative symlinks instead of absolute ones
@@ -55,6 +64,7 @@
     * #209: Workflow release
     * #210: Add simple "permissions" check while creating
     * #211: diskfile, replace stat use with lstat
+
   Skipped:
     *   #7: command line flags can not be chained
     *  #91: make use of appveyor for windows
