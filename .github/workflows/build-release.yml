@@ -12,6 +12,9 @@ jobs:
   build-check-windows:
     uses: ./.github/workflows/build-check-windows.yml
 
+  build-check-macos:
+    uses: ./.github/workflows/build-check-macos.yml
+
   build-linux:
     needs:
     - build-check-linux
@@ -85,4 +88,41 @@ jobs:
         name: par2cmdline-win-${{ matrix.name }}
         path: |
           ${{ matrix.platform }}/Release/par2.exe
+        retention-days: 5
+
+  build-macos:
+    needs:
+    - build-check-macos
+
+    strategy:
+      matrix:
+        include:
+        - arch: amd64
+          macos_image: macos-13
+        - arch: arm64
+          macos_image: macos-latest
+
+    runs-on: ${{ matrix.macos_image }}
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: prepare
+      run: brew install automake
+
+    - name: automake
+      run: ./automake.sh
+
+    - name: configure
+      run: ./configure
+
+    - name: make
+      run: make
+
+    - name: Upload binary artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: par2cmdline-macos-${{ matrix.arch }}
+        path: |
+          par2
         retention-days: 5

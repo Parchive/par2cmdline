@@ -1,0 +1,30 @@
+name: par2cmdline CI macos
+
+on:
+  workflow_call:
+  workflow_dispatch:
+
+jobs:
+  build-check-macos:
+    runs-on: macos-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: prepare
+      run: brew install automake
+
+    - name: automake
+      run: ./automake.sh
+
+    - name: configure
+      run: ./configure
+
+    - name: make
+      run: make
+
+    - name: make check
+      run: make check
+
+    - name: make distcheck
+      run: make distcheck

@@ -13,3 +13,6 @@ jobs:
   build-check-windows:
     uses: ./.github/workflows/build-check-windows.yml
 
+  build-check-macos:
+    uses: ./.github/workflows/build-check-macos.yml
+
