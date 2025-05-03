@@ -119,6 +119,9 @@ jobs:
     - name: make
       run: make
 
+    - name: strip
+      run: strip par2
+
     - name: Upload binary artifact
       uses: actions/upload-artifact@v4
       with:
