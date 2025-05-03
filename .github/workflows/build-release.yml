@@ -28,6 +28,9 @@ jobs:
         - arch: arm64
           configure_host: --host=aarch64-linux-gnu
           xcc: aarch64-linux-gnu-
+        - arch: armhf
+          configure_host: --host=armv7l-linux-gnueabihf
+          xcc: arm-linux-gnueabihf-
 
     runs-on: ubuntu-latest
 
