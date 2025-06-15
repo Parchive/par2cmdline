@@ -248,8 +248,6 @@ bool Par2CreatorSourceFile::Open(NoiseLevel noiselevel, std::ostream &sout, std:
       verificationpacket->SetBlockHashAndCRC(blocknumber, blockhash, blockcrc);
 
       blocknumber++;
-
-      need = 0;
     }
 
     // Finish computing the file hash.

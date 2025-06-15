@@ -1843,7 +1843,6 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
     {
       #pragma omp critical
       sout << endl;
-      progressline = false;
     }
 
     #pragma omp critical
