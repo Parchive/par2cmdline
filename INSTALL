@@ -16,7 +16,7 @@ which bootstraps, is intended for developers; when building from
 distribution tarballs it does nothing and can be skipped.
 
    The following more-detailed instructions are generic; see the
-‘README’ file for instructions specific to this package.  Some packages
+‘README.md’ file for instructions specific to this package.  Some packages
 provide this ‘INSTALL’ file but do not implement all of the features
 documented below.  The lack of an optional feature in a given package is
 not necessarily a bug.  More recommendations for GNU packages can be
@@ -50,7 +50,7 @@ default to prevent problems with accidental use of stale cache files.
 
    If you need to do unusual things to compile the package, please try
 to figure out how ‘configure’ could check whether to do them, and mail
-diffs or instructions to the address given in the ‘README’ so they can
+diffs or instructions to the address given in the ‘README.md’ so they can
 be considered for the next release.  If you are using the cache, and at
 some point ‘config.cache’ contains results you don’t want to keep, you
 may remove or edit it.
