@@ -618,7 +618,7 @@ bool Par2Creator::InitialiseOutputFiles(const string &parfilename)
         digitsCount++;
       }
 
-      sprintf(filenameformat, "%%s.vol%%0%dd+%%0%dd.par2", (int) digitsLow, (int) digitsCount);
+      snprintf(filenameformat, sizeof(filenameformat), "%%s.vol%%0%dd+%%0%dd.par2", (int) digitsLow, (int) digitsCount);
     }
 
     // Set the filenames

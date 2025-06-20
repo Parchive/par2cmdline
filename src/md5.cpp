@@ -34,7 +34,7 @@ ostream& operator<<(ostream &result, const MD5Hash &h)
 {
   char buffer[33];
 
-  sprintf(buffer,
+  snprintf(buffer, sizeof(buffer),
           "%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X",
           h.hash[15], h.hash[14], h.hash[13], h.hash[12],
           h.hash[11], h.hash[10], h.hash[9],  h.hash[8],
@@ -48,7 +48,7 @@ string MD5Hash::print(void) const
 {
   char buffer[33];
 
-  sprintf(buffer,
+  snprintf(buffer, sizeof(buffer),
           "%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X",
           hash[15], hash[14], hash[13], hash[12],
           hash[11], hash[10], hash[9],  hash[8],
@@ -342,7 +342,7 @@ ostream& operator<<(ostream &result, const MD5Context &c)
 {
   char buffer[50];
 
-  sprintf(buffer,
+  snprintf(buffer, sizeof(buffer),
           "%08X%08X%08X%08X:%08X%08X",
           c.state[3],c.state[2],c.state[1],c.state[0],
           (u32)((c.bytes >> 32) & 0xffffffff),
@@ -355,7 +355,7 @@ string MD5Context::print(void) const
 {
   char buffer[50];
 
-  sprintf(buffer,
+  snprintf(buffer, sizeof(buffer),
           "%08X%08X%08X%08X:%08X%08X",
           state[3],state[2],state[1],state[0],
           (u32)((bytes >> 32) & 0xffffffff),
