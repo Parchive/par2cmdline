@@ -29,7 +29,7 @@ AC_CONFIG_SRCDIR([src/par2cmdline.cpp])
 AC_CANONICAL_HOST
 
 AC_CONFIG_HEADERS([config.h])
-AM_INIT_AUTOMAKE
+AM_INIT_AUTOMAKE([foreign])
 
 
 dnl Checks for programs.
