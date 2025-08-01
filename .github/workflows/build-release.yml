@@ -19,6 +19,8 @@ jobs:
     needs:
     - build-check-linux
 
+    name: build-linux (${{ matrix.arch }})
+
     strategy:
       matrix:
         include:
@@ -66,6 +68,8 @@ jobs:
     needs:
     - build-check-windows
 
+    name: build-windows (${{ matrix.name }})
+
     strategy:
       matrix:
         include:
@@ -97,6 +101,8 @@ jobs:
     needs:
     - build-check-macos
 
+    name: build-macos (${{ matrix.arch }})
+
     strategy:
       matrix:
         include:
@@ -104,7 +110,7 @@ jobs:
           xcxxflags: -arch x86_64 -mmacosx-version-min=10.13
           configure_host: --host=x86_64-apple-darwin
         - arch: arm64
-          xcxxflags: -arch arm64
+          xcxxflags: -mmacosx-version-min=11.0
         - arch: universal
           xcxxflags: -arch x86_64 -arch arm64 -mmacosx-version-min=10.13
 
