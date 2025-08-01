@@ -101,11 +101,14 @@ jobs:
       matrix:
         include:
         - arch: amd64
-          macos_image: macos-13
+          xcxxflags: -arch x86_64 -mmacosx-version-min=10.13
+          configure_host: --host=x86_64-apple-darwin
         - arch: arm64
-          macos_image: macos-latest
+          xcxxflags: -arch arm64
+        - arch: universal
+          xcxxflags: -arch x86_64 -arch arm64 -mmacosx-version-min=10.13
 
-    runs-on: ${{ matrix.macos_image }}
+    runs-on: macos-latest
 
     steps:
     - uses: actions/checkout@v4
@@ -117,7 +120,9 @@ jobs:
       run: ./automake.sh
 
     - name: configure
-      run: ./configure
+      run: ./configure ${{ matrix.configure_host }}
+      env:
+        CXXFLAGS: ${{ matrix.xcxxflags }}
 
     - name: make
       run: make
