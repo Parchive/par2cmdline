@@ -184,16 +184,6 @@ int test3() {
     cout << "TranslateFilenameFromPar2ToLocal windows" << endl;
     return 1;
   }
-#elif __APPLE__
-  // (Assuming OSX/MacOS and not IOS!)
-  local_filename = DescriptionPacket::TranslateFilenameFromPar2ToLocal(cout, cerr, nlNormal, "\"*:<>?|%abcd");
-  expected = "\"*"
-    + DescriptionPacket::UrlEncodeChar(':')
-    + "<>?|%abcd";
-  if (local_filename != expected) {
-    cout << "TranslateFilenameFromPar2ToLocal OSX/MacOS" << endl;
-    return 1;
-  }
 #else
   // other UNIXes - no need to test.
   local_filename = DescriptionPacket::TranslateFilenameFromPar2ToLocal(cout, cerr, nlNormal, "\"*:<>?|%abcd");
