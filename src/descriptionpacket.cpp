@@ -287,12 +287,6 @@ string DescriptionPacket::TranslateFilenameFromPar2ToLocal(std::ostream &sout, s
         ok = false;
       }
     }
-#elif __APPLE__
-    // (Assuming OSX/MacOS and not IOS!)
-    // Does not allow ':'
-    if (ch < 32 || ch == ':') {
-      ok = false;
-    }
 #else
     // other UNIXes allow anything.
     if (ch < 32)
