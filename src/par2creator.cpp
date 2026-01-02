@@ -246,7 +246,7 @@ Result Par2Creator::Process(
 bool Par2Creator::CheckBasepath(const string &parfilename)
 {
   string checkfilename = parfilename + ".check.par2";
-  DiskFile *diskfile = new DiskFile(sout, serr);
+  std::unique_ptr<DiskFile> diskfile(new DiskFile(sout, serr));
   size_t dummysize = 4096;
 
   if (!diskfile->Create(checkfilename, dummysize))
@@ -336,7 +336,7 @@ bool Par2Creator::CalculateProcessBlockSize(size_t memorylimit)
 
       deferhashcomputation = true;
     }
-    
+
     if (MAX_CHUNK_SIZE != 0 && chunksize > MAX_CHUNK_SIZE)
     {
       chunksize = MAX_CHUNK_SIZE;
