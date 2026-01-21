@@ -1014,13 +1014,9 @@ bool CommandLine::CheckValuesAndSetDefaults() {
   }
 
   std::string lastchar = basepath.substr(basepath.length() -1);
-  if ("/" != lastchar && "\\" != lastchar)
+  if (PATHSEP != lastchar && ALTPATHSEP != lastchar)
   {
-#ifdef _WIN32
-    basepath = basepath + "\\";
-#else
-    basepath = basepath + "/";
-#endif
+    basepath = basepath + PATHSEP;
   }
 
   if (noiselevel >= nlDebug)

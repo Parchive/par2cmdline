@@ -61,8 +61,8 @@ Par1RepairerSourceFile::Par1RepairerSourceFile(std::ostream &sout, std::ostream 
 
   // Strip the path from the filename
   std::string::size_type where;
-  if (std::string::npos != (where = filename.find_last_of('\\'))
-      || std::string::npos != (where = filename.find_last_of('/'))
+  if (std::string::npos != (where = filename.find_last_of(PATHSEP))
+      || std::string::npos != (where = filename.find_last_of(ALTPATHSEP))
 #ifdef _WIN32
       || std::string::npos != (where = filename.find_last_of(':'))
 #endif

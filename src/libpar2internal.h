@@ -39,8 +39,6 @@
 #include <assert.h>
 
 #define snprintf _snprintf_s
-#define sprintf  sprintf_s
-#define stricmp  _stricmp
 #define unlink   _unlink
 #define stat _stat
 
@@ -96,14 +94,8 @@ typedef unsigned int     size_t;
 #if STDC_HEADERS
 #  include <string.h>
 #else
-#  if !HAVE_STRCHR
-#    define strchr index
-#    define strrchr rindex
-#  endif
-char *strchr(), *strrchr();
 #  if !HAVE_MEMCPY
 #    define memcpy(d, s, n) bcopy((s), (d), (n))
-#    define memove(d, s, n) bcopy((s), (d), (n))
 #  endif
 #endif
 
@@ -111,11 +103,7 @@ char *strchr(), *strrchr();
 #  include <memory.h>
 #endif
 
-#if !HAVE_STRICMP
-#  if HAVE_STRCASECMP
-#    define stricmp strcasecmp
-#  endif
-#endif
+
 
 #if HAVE_SYS_STAT_H
 #  include <sys/stat.h>
@@ -176,21 +164,11 @@ char *strchr(), *strrchr();
 #include <errno.h>
 
 #define _MAX_PATH 4095
-#define stricmp strcasecmp
 #define _stat stat
 
 #endif
 #endif
 
-#ifdef _WIN32
-#define PATHSEP "\\"
-#define ALTPATHSEP "/"
-#else
-#define PATHSEP "/"
-#define ALTPATHSEP "\\"
-#endif
-
-#define _FILE_THREADS 2
 #define MAX_CHUNK_SIZE 32*1048576 // too large chunks are likely detrimental to performance; set to 0 to disable
 
 #define LONGMULTIPLY
