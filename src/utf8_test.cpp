@@ -111,7 +111,7 @@ int test6()
 
 int test7()
 {
-  wchar_t* wargv[3] = { L"Привет", L"мир", L"!" };
+  wchar_t* wargv[3] = { const_cast<wchar_t*>(L"Привет"), const_cast<wchar_t*>(L"мир"), const_cast<wchar_t*>(L"!") };
   WideToUtf8ArgsAdapter adapter(3, wargv);
   const char* const* utf8Args = adapter.GetUtf8Args();
 
@@ -127,7 +127,7 @@ int test7()
 
 int test8()
 {
-  wchar_t* wargv[3] = { L"arg1", nullptr, L"arg3" };
+  wchar_t* wargv[3] = { const_cast<wchar_t*>(L"arg1"), nullptr, const_cast<wchar_t*>(L"arg3") };
   WideToUtf8ArgsAdapter adapter(3, wargv);
   const char* const* utf8Args = adapter.GetUtf8Args();
   int argc = 3;

@@ -112,7 +112,7 @@ namespace utf8
       std::string arg = WideToUtf8(wargv[i]);
       size_t size = arg.size() + 1;
       m_argv[i] = new char[size];
-      std::strcpy(m_argv[i], arg.c_str());
+      std::memcpy(m_argv[i], arg.c_str(), size);
     }
     m_argv[m_argc] = nullptr;
   }
