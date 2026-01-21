@@ -39,7 +39,6 @@
 #include <assert.h>
 
 #define snprintf _snprintf_s
-#define sprintf  sprintf_s
 #define stricmp  _stricmp
 #define unlink   _unlink
 #define stat _stat
@@ -96,14 +95,8 @@ typedef unsigned int     size_t;
 #if STDC_HEADERS
 #  include <string.h>
 #else
-#  if !HAVE_STRCHR
-#    define strchr index
-#    define strrchr rindex
-#  endif
-char *strchr(), *strrchr();
 #  if !HAVE_MEMCPY
 #    define memcpy(d, s, n) bcopy((s), (d), (n))
-#    define memove(d, s, n) bcopy((s), (d), (n))
 #  endif
 #endif
 
