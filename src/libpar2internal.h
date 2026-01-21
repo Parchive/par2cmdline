@@ -40,7 +40,6 @@
 
 #define snprintf _snprintf_s
 #define unlink   _unlink
-#define stat _stat
 
 #define __LITTLE_ENDIAN 1234
 #define __BIG_ENDIAN    4321
@@ -164,7 +163,6 @@ typedef unsigned int     size_t;
 #include <errno.h>
 
 #define _MAX_PATH 4095
-#define _stat stat
 
 #endif
 #endif
