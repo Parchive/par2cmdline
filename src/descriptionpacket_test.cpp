@@ -23,11 +23,7 @@
 #include "libpar2internal.h"
 
 // The file separator
-#ifdef _WIN32
-std::string fs("\\");
-#else
-std::string fs("/");
-#endif
+std::string fs(PATHSEP);
 
 
 int test1() {

@@ -67,8 +67,8 @@ bool DiskFile::CreateParentDirectory(std::string _pathname)
 {
   // do we have a path separator in the filename ?
   std::string::size_type where;
-  if (std::string::npos != (where = _pathname.find_last_of('/')) ||
-      std::string::npos != (where = _pathname.find_last_of('\\')))
+  if (std::string::npos != (where = _pathname.find_last_of(PATHSEP)) ||
+      std::string::npos != (where = _pathname.find_last_of(ALTPATHSEP)))
   {
     std::string path = filename.substr(0, where);
     std::wstring wpath = utf8::Utf8ToWide(path);
@@ -351,9 +351,9 @@ std::unique_ptr< std::list<std::string> > DiskFile::FindFiles(std::string path, 
 {
   // check path, if not ending with path separator, add one
   char pathend = *path.rbegin();
-  if (pathend != '\\')
+  if (pathend != PATHSEP[0])
   {
-    path += '\\';
+    path += PATHSEP;
   }
   std::list<std::string> *matches = new std::list<std::string>;
 
@@ -456,8 +456,8 @@ bool DiskFile::CreateParentDirectory(std::string _pathname)
 {
   // do we have a path separator in the filename ?
   std::string::size_type where;
-  if (std::string::npos != (where = _pathname.find_last_of('/')) ||
-      std::string::npos != (where = _pathname.find_last_of('\\')))
+  if (std::string::npos != (where = _pathname.find_last_of(PATHSEP)) ||
+      std::string::npos != (where = _pathname.find_last_of(ALTPATHSEP)))
   {
     std::string path = filename.substr(0, where);
 
@@ -967,8 +967,8 @@ void DiskFile::SplitFilename(std::string filename, std::string &path, std::strin
 {
   std::string::size_type where;
 
-  if (std::string::npos != (where = filename.find_last_of('/')) ||
-      std::string::npos != (where = filename.find_last_of('\\')))
+  if (std::string::npos != (where = filename.find_last_of(PATHSEP)) ||
+      std::string::npos != (where = filename.find_last_of(ALTPATHSEP)))
   {
     path = filename.substr(0, where+1);
     name = filename.substr(where+1);

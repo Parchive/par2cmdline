@@ -24,11 +24,7 @@
 
 
 // The file separator
-#ifdef _WIN32
-std::string fs("\\");
-#else
-std::string fs("/");
-#endif
+std::string fs(PATHSEP);
 
 
 // test static functions
