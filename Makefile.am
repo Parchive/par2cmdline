@@ -190,7 +190,16 @@ install-exec-hook :
 	ln -sf par2$(EXEEXT) par2verify$(EXEEXT) && \
 	ln -sf par2$(EXEEXT) par2repair$(EXEEXT)
 
+install-data-hook :
+	cd $(DESTDIR)$(man1dir)/ && \
+	ln -sf par2.1 par2create.1 && \
+	ln -sf par2.1 par2verify.1 && \
+	ln -sf par2.1 par2repair.1
+
 uninstall-hook :
 	rm -f $(DESTDIR)$(bindir)/par2create$(EXEEXT)
 	rm -f $(DESTDIR)$(bindir)/par2verify$(EXEEXT)
 	rm -f $(DESTDIR)$(bindir)/par2repair$(EXEEXT)
+	rm -f $(DESTDIR)$(man1dir)/par2create.1
+	rm -f $(DESTDIR)$(man1dir)/par2verify.1
+	rm -f $(DESTDIR)$(man1dir)/par2repair.1
