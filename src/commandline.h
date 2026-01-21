@@ -37,16 +37,9 @@
 #define DEBUG_NEW new(_NORMAL_BLOCK, THIS_FILE, __LINE__)
 #endif
 
-#define stricmp  _stricmp
-
 #else
 
-#include <string.h>
-#define stricmp strcasecmp
-
 #endif
-
-#define _FILE_THREADS 2
 
 #include "libpar2.h"
 #include "diskfile.h"
