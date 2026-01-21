@@ -84,6 +84,7 @@ bool DiskFile::CreateParentDirectory(string _pathname)
     {
       DWORD error = ::GetLastError();
 
+      #pragma omp critical
       *serr << "Could not create the " << path << " directory: " << ErrorMessage(error) << endl;
 
       return false;
@@ -111,6 +112,7 @@ bool DiskFile::Create(string _filename, u64 _filesize)
   {
     DWORD error = ::GetLastError();
 
+    #pragma omp critical
     *serr << "Could not create \"" << _filename << "\": " << ErrorMessage(error) << endl;
 
     return false;
@@ -127,6 +129,7 @@ bool DiskFile::Create(string _filename, u64 _filesize)
     {
       DWORD error = ::GetLastError();
 
+      #pragma omp critical
       *serr << "Could not set size of \"" << _filename << "\": " << ErrorMessage(error) << endl;
 
       ::CloseHandle(hFile);
@@ -141,6 +144,7 @@ bool DiskFile::Create(string _filename, u64 _filesize)
     {
       DWORD error = ::GetLastError();
 
+      #pragma omp critical
       *serr << "Could not set size of \"" << _filename << "\": " << ErrorMessage(error) << endl;
 
       ::CloseHandle(hFile);
@@ -174,6 +178,7 @@ bool DiskFile::Write(u64 _offset, const void *buffer, size_t length, LengthType 
     {
       DWORD error = ::GetLastError();
 
+      #pragma omp critical
       *serr << "Could not write " << (u64)length << " bytes to \"" << filename << "\" at offset " << _offset << ": " << ErrorMessage(error) << endl;
 
       return false;
@@ -196,6 +201,7 @@ bool DiskFile::Write(u64 _offset, const void *buffer, size_t length, LengthType 
     {
       DWORD error = ::GetLastError();
 
+      #pragma omp critical
       *serr << "Could not write " << write << " bytes to \"" << filename << "\" at offset " << _offset << ": " << ErrorMessage(error) << endl;
 
       return false;
@@ -203,6 +209,7 @@ bool DiskFile::Write(u64 _offset, const void *buffer, size_t length, LengthType 
 
     if (wrote != write)
     {
+      #pragma omp critical
       *serr << "INFO: Incomplete write to \"" << filename << "\" at offset " << _offset << ".  Expected to write " << write << " bytes and wrote " << wrote << " bytes." << endl;
     }
 
@@ -240,6 +247,7 @@ bool DiskFile::Open(const string &_filename, u64 _filesize)
     case ERROR_PATH_NOT_FOUND:
       break;
     default:
+      #pragma omp critical
       *serr << "Could not open \"" << _filename << "\": " << ErrorMessage(error) << endl;
     }
 
@@ -269,6 +277,7 @@ bool DiskFile::Read(u64 _offset, void *buffer, size_t length, LengthType maxleng
     {
       DWORD error = ::GetLastError();
 
+      #pragma omp critical
       *serr << "Could not read " << (u64)length << " bytes from \"" << filename << "\" at offset " << _offset << ": " << ErrorMessage(error) << endl;
 
       return false;
@@ -290,6 +299,7 @@ bool DiskFile::Read(u64 _offset, void *buffer, size_t length, LengthType maxleng
     {
       DWORD error = ::GetLastError();
 
+      #pragma omp critical
       *serr << "Could not read " << (u64)length << " bytes from \"" << filename << "\" at offset " << _offset << ": " << ErrorMessage(error) << endl;
 
       return false;
@@ -297,6 +307,7 @@ bool DiskFile::Read(u64 _offset, void *buffer, size_t length, LengthType maxleng
 
     if (want != got)
     {
+      #pragma omp critical
       *serr << "Incomplete read from \"" << filename << "\" at offset " << offset << ".  Tried to read " << want << " bytes and received " << got << " bytes." << endl;
     }
 
@@ -459,6 +470,7 @@ bool DiskFile::CreateParentDirectory(string _pathname)
 
     if (mkdir(path.c_str(), S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH))
     {
+      #pragma omp critical
       *serr << "Could not create the " << path << " directory: " << strerror(errno) << endl;
       return false;
     }
@@ -482,6 +494,7 @@ bool DiskFile::Create(string _filename, u64 _filesize)
   // the Windows code would error out after too.
   if (FileExists(filename))
   {
+    #pragma omp critical
     *serr << "Could not create \"" << _filename << "\": File already exists." << endl;
     return false;
   }
@@ -489,6 +502,7 @@ bool DiskFile::Create(string _filename, u64 _filesize)
   file = fopen(_filename.c_str(), "wb");
   if (file == 0)
   {
+    #pragma omp critical
     *serr << "Could not create " << _filename << ": " << strerror(errno) << endl;
 
     return false;
@@ -496,6 +510,7 @@ bool DiskFile::Create(string _filename, u64 _filesize)
 
   if (_filesize > (u64)MaxOffset)
   {
+    #pragma omp critical
     *serr << "Requested file size for " << _filename << " is too large." << endl;
     return false;
   }
@@ -504,6 +519,7 @@ bool DiskFile::Create(string _filename, u64 _filesize)
   {
     if (fseek(file, (OffsetType)_filesize-1, SEEK_SET))
     {
+      #pragma omp critical
       *serr << "Could not set end of file of " << _filename << ": " << strerror(errno) << endl;
 
       fclose(file);
@@ -514,6 +530,7 @@ bool DiskFile::Create(string _filename, u64 _filesize)
 
     if (1 != fwrite(&_filesize, 1, 1, file))
     {
+      #pragma omp critical
       *serr << "Could not set end of file of " << _filename << ": " << strerror(errno) << endl;
 
       fclose(file);
@@ -539,6 +556,7 @@ bool DiskFile::Write(u64 _offset, const void *buffer, size_t length, LengthType 
   {
     if (_offset > (u64)MaxOffset)
     {
+        #pragma omp critical
         *serr << "Could not write " << (u64)length << " bytes to " << filename << " at offset " << _offset << endl;
       return false;
     }
@@ -546,6 +564,7 @@ bool DiskFile::Write(u64 _offset, const void *buffer, size_t length, LengthType 
 
     if (fseek(file, (OffsetType)_offset, SEEK_SET))
     {
+      #pragma omp critical
       *serr << "Could not write " << (u64)length << " bytes to " << filename << " at offset " << _offset << ": " << strerror(errno) << endl;
       return false;
     }
@@ -563,6 +582,7 @@ bool DiskFile::Write(u64 _offset, const void *buffer, size_t length, LengthType 
     LengthType wrote = fwrite(buffer, 1, write, file);
     if (wrote != write)
     {
+      #pragma omp critical
       *serr << "Could not write " << (u64)length << " bytes to " << filename << " at offset " << _offset << ": " << strerror(errno) << endl;
       return false;
     }
@@ -591,6 +611,7 @@ bool DiskFile::Open(const string &_filename, u64 _filesize)
 
   if (_filesize > (u64)MaxOffset)
   {
+    #pragma omp critical
     *serr << "File size for " << _filename << " is too large." << endl;
     return false;
   }
@@ -617,6 +638,7 @@ bool DiskFile::Read(u64 _offset, void *buffer, size_t length, LengthType maxleng
   {
     if (_offset > (u64)MaxOffset)
     {
+      #pragma omp critical
       *serr << "Could not read " << (u64)length << " bytes from " << filename << " at offset " << _offset << endl;
       return false;
     }
@@ -624,6 +646,7 @@ bool DiskFile::Read(u64 _offset, void *buffer, size_t length, LengthType maxleng
 
     if (fseek(file, (OffsetType)_offset, SEEK_SET))
     {
+      #pragma omp critical
       *serr << "Could not read " << (u64)length << " bytes from " << filename << " at offset " << _offset << ": " << strerror(errno) << endl;
       return false;
     }
@@ -644,6 +667,7 @@ bool DiskFile::Read(u64 _offset, void *buffer, size_t length, LengthType maxleng
     {
       // NOTE: This can happen on error or when hitting the end-of-file.
 
+      #pragma omp critical
       *serr << "Could not read " << (u64)length << " bytes from " << filename << " at offset " << _offset << ": " << strerror(errno) << endl;
       return false;
     }
@@ -917,6 +941,7 @@ bool DiskFile::Delete(void)
   }
   else
   {
+    #pragma omp critical
     *serr << "Cannot delete " << filename << endl;
 
     return false;
@@ -973,11 +998,13 @@ bool DiskFile::Rename(void)
     int length = snprintf(newname, _MAX_PATH, "%s.%u", filename.c_str(), (unsigned int) ++index);
     if (length < 0)
     {
+      #pragma omp critical
       *serr << filename << " cannot be renamed." << endl;
       return false;
     }
     else if (length > _MAX_PATH)
     {
+      #pragma omp critical
       *serr << filename << " pathlength is more than " << _MAX_PATH << "." << endl;
       return false;
     }
@@ -1028,6 +1055,7 @@ bool DiskFile::Rename(string _filename)
     return true;
   }
 
+  #pragma omp critical
   *serr << filename << " cannot be renamed to " << _filename << endl;
 
   return false;
@@ -1044,6 +1072,7 @@ bool DiskFile::Rename(string _filename)
     return true;
   }
 
+  #pragma omp critical
   *serr << filename << " cannot be renamed to " << _filename << endl;
 
   return false;
