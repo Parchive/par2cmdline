@@ -454,7 +454,9 @@ int test2() {
 	// write blocks
 	for (int i = 0; i < blockcount; i++) {
 	  const u64 offset = blocksize*blockorder[i];
-	  if (!diskfile.Write(offset, input2_contents + offset, blocksize)) {
+	  // Calculate actual bytes to write (last block may be smaller)
+	  size_t write_len = (offset + blocksize > buffer_len) ? (buffer_len - offset) : blocksize;
+	  if (!diskfile.Write(offset, input2_contents + offset, write_len)) {
 	    cout << "Write failed 1" << endl;
 	    delete [] blockorder;
 	    return 1;
