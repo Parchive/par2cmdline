@@ -133,6 +133,7 @@ Result Par2Repairer::Process(
 			     const std::vector<std::string> &_extrafiles,
 			     const bool dorepair,   // derived from operation
 			     const bool purgefiles,
+			     const bool renameonly,
 			     const bool _skipdata,
 			     const u64 _skipleaway
 			     )
@@ -209,7 +210,7 @@ Result Par2Repairer::Process(
   if (completefilecount < mainpacket->RecoverableFileCount())
   {
     // Scan any extra files specified on the command line
-    if (!VerifyExtraFiles(extrafiles, basepath))
+    if (!VerifyExtraFiles(extrafiles, basepath, renameonly))
       return eLogicError;
   }
 
@@ -1308,7 +1309,7 @@ bool Par2Repairer::VerifySourceFiles(const std::string& basepath, std::vector<st
 }
 
 // Scan any extra files specified on the command line
-bool Par2Repairer::VerifyExtraFiles(const std::vector<std::string> &extrafiles, const std::string &basepath)
+bool Par2Repairer::VerifyExtraFiles(const std::vector<std::string> &extrafiles, const std::string &basepath, const bool renameonly)
 {
   if (noiselevel > nlQuiet)
     sout << std::endl << "Scanning extra files:" << std::endl << std::endl;
@@ -1358,7 +1359,7 @@ bool Par2Repairer::VerifyExtraFiles(const std::vector<std::string> &extrafiles, 
           assert(success);
 
           // Do the actual verification
-          VerifyDataFile(diskfile, 0, basepath);
+          VerifyDataFile(diskfile, 0, basepath, renameonly);
           // Ignore errors
 
           // We have finished with the file for now
@@ -1378,7 +1379,7 @@ bool Par2Repairer::VerifyExtraFiles(const std::vector<std::string> &extrafiles, 
 }
 
 // Attempt to match the data in the DiskFile with the source file
-bool Par2Repairer::VerifyDataFile(DiskFile *diskfile, Par2RepairerSourceFile *sourcefile, const std::string &basepath)
+bool Par2Repairer::VerifyDataFile(DiskFile *diskfile, Par2RepairerSourceFile *sourcefile, const std::string &basepath, const bool renameonly)
 {
   MatchType matchtype; // What type of match was made
   MD5Hash hashfull;    // The MD5 Hash of the whole file
@@ -1393,6 +1394,7 @@ bool Par2Repairer::VerifyDataFile(DiskFile *diskfile, Par2RepairerSourceFile *so
 
     if (!ScanDataFile(diskfile,   // [in]      The file to scan
                       basepath,
+		      renameonly,
                       sourcefile, // [in/out]  Modified in the match is for another source file
                       matchtype,  // [out]
                       hashfull,   // [out]
@@ -1404,6 +1406,8 @@ bool Par2Repairer::VerifyDataFile(DiskFile *diskfile, Par2RepairerSourceFile *so
     {
       case eNoMatch:
         // No data was found at all.
+	
+	
 
         // Continue to next test.
         break;
@@ -1555,6 +1559,7 @@ bool Par2Repairer::VerifyDataFile(DiskFile *diskfile, Par2RepairerSourceFile *so
 // found is for a different source file then "sourcefile" is changed accordingly.
 bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
                                 std::string                  basepath,     // [in]
+                                const bool              renameonly,   // [in]
                                 Par2RepairerSourceFile* &sourcefile,  // [in/out]
                                 MatchType               &matchtype,   // [out]
                                 MD5Hash                 &hashfull,    // [out]
@@ -1740,6 +1745,9 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
         if (!currententry->FirstBlock() || filechecksummer.Offset() != 0)
         {
           matchtype = ePartialMatch;
+	  if (renameonly) {
+		  return false;
+	  }
         }
       }
       else
@@ -1750,6 +1758,9 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
         if (currententry != nextentry)
         {
           matchtype = ePartialMatch;
+	  if (renameonly) {
+		  return false;
+	  }
         }
 
         // Is the match from a different source file
@@ -1785,6 +1796,9 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
     {
       // This cannot be a perfect match
       matchtype = ePartialMatch;
+      if (renameonly) {
+	      return false;
+      }
 
       // Was this a duplicate match
       if (duplicate && false) // ignore duplicates

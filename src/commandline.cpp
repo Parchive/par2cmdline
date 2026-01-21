@@ -52,6 +52,7 @@ CommandLine::CommandLine(void)
 , extrafiles()
 , operation(opNone)
 , purgefiles(false)
+, renameonly(false)
 , skipdata(false)
 , skipleaway(0)
 , blockcount(0)
@@ -741,6 +742,16 @@ bool CommandLine::ReadArgs(int argc, const char * const *argv)
               return false;
             }
             purgefiles = true;
+          }
+          break;
+        case 'M':
+          {
+            if (operation != opRepair && operation != opVerify)
+            {
+              cerr << "Cannot specify renameonly unless repairing or verifying." << endl;
+              return false;
+            }
+            renameonly = true;
           }
           break;
 

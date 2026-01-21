@@ -128,6 +128,7 @@ int main(int argc, char* argv[])
 				  commandline->GetExtraFiles(),
 				  commandline->GetOperation() == CommandLine::opRepair,
 				  commandline->GetPurgeFiles(),
+				  commandline->GetRenameOnly(),
 				  commandline->GetSkipData(),
 				  commandline->GetSkipLeaway());
               break;
