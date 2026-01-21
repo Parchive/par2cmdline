@@ -52,6 +52,7 @@ CommandLine::CommandLine(void)
 , extrafiles()
 , operation(opNone)
 , purgefiles(false)
+, renameonly(false)
 , skipdata(false)
 , skipleaway(0)
 , blockcount(0)
@@ -122,6 +123,8 @@ void CommandLine::usage(void)
     "Options: (verify or repair)\n"
     "  -p       : Purge backup files and par files on successful recovery or\n"
     "             when no recovery is needed\n"
+    "  -O       : Rename-only mode (skip files that are not perfect matches,\n"
+    "             useful for quickly fixing renamed files)\n"
     "  -N       : Data skipping (find badly mispositioned data blocks)\n"
     "  -S<n>    : Skip leaway (distance +/- from expected block position, default 64)\n"
     "Options: (create)\n"
@@ -741,6 +744,17 @@ bool CommandLine::ReadArgs(int argc, const char * const *argv)
               return false;
             }
             purgefiles = true;
+          }
+          break;
+
+        case 'O':
+          {
+            if (operation != opRepair && operation != opVerify)
+            {
+              std::cerr << "Cannot specify rename-only unless repairing or verifying." << std::endl;
+              return false;
+            }
+            renameonly = true;
           }
           break;
 

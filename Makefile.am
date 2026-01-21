@@ -110,6 +110,8 @@ EXTRA_DIST = PORTING ROADMAP \
 			 tests/test30 \
 			 tests/test31 \
 			 tests/test32 \
+			 tests/test33 \
+			 tests/test34 \
 			 tests/unit_tests
 
 
@@ -181,6 +183,8 @@ TESTS = tests/test1 \
 		tests/test30 \
 		tests/test31 \
 		tests/test32 \
+		tests/test33 \
+		tests/test34 \
 		tests/utf8_test \
 		tests/unit_tests
 

@@ -94,6 +94,9 @@ Purge backup files and par files on successful recovery or when no recovery is n
 .B \-R
 Recurse into subdirectories (only useful on create)
 .TP
+.B \-O
+Rename-only mode (skip files that are not perfect matches, useful for quickly fixing renamed files)
+.TP
 .B \-N
 data skipping (find badly mispositioned data blocks)
 .TP
@@ -244,6 +247,25 @@ If any of the recovery files or data files have the wrong filename, then par2 wi
 This tells par2 to scan the file called other.mpg to see if it contains any data belonging to the original data files. If one of the extra files specified in this way is an exact match for a data file, then the repair process will rename the file so that it has the correct filename. Because par2 is designed to be able to find good data within a damaged file, it can do the same with incomplete files downloaded from UseNet. If some of the articles for a file are missing, you should still download the file and save it to disk for par2 to scan. If you do this then you may find that you can carry out a repair in a situation where you would not otherwise have sufficient recovery data. You can have par2 scan all files that are in the current directory using a command such as:
 
   par2 r test.mpg.par2 *
+
+RENAME-ONLY MODE
+
+If you have accidentally renamed many files that are protected by PAR2 files, you can use the rename-only mode to quickly identify and fix them. In rename-only mode, par2 will skip files that are not perfect matches (i.e., files that are damaged or have mismatched blocks), which provides a massive speedup when dealing with many renamed files.
+
+For example, if you have files that were accidentally renamed:
+
+  mv file1.dat renamed_a.dat
+  mv file2.dat renamed_b.dat
+  mv file3.dat renamed_c.dat
+
+You can quickly fix them with:
+
+  par2 r -O recovery.par2 renamed_*.dat
+
+Par2 will scan only the first block of each file to determine if it's a perfect match. If it is, the file will be renamed back to its original name. If it's not a perfect match (e.g., the file is damaged), it will be skipped immediately without scanning the entire file.
+
+This is particularly useful when you have hundreds of gigabytes of renamed files protected by multiple PAR2 sets, as it avoids the slow block-by-block scanning that would otherwise be required.
+
 
 WHAT TO DO WHEN YOU ARE TOLD YOU NEED MORE RECOVERY BLOCKS
 
