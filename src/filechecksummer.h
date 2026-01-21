@@ -122,7 +122,7 @@ inline u32 FileCheckSummer::Checksum(void) const
 
 inline u64 FileCheckSummer::BlockLength(void) const
 {
-  return min(blocksize, filesize-currentoffset);
+  return std::min(blocksize, filesize-currentoffset);
 }
 
 // Return whether or not the current block is a short one.

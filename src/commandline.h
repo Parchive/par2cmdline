@@ -22,10 +22,12 @@
 #define __COMMANDLINE_H__
 
 #include <string>
-using std::string;
 
 // This is needed by diskfile.h
 #ifdef _WIN32
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
 #include <windows.h>
 
 // Heap checking
@@ -95,9 +97,9 @@ public:
   size_t                 GetMemoryLimit(void) const        {return memorylimit;}
   NoiseLevel GetNoiseLevel(void) const        {return noiselevel;}
 
-  string                              GetParFilename(void) const {return parfilename;}
-  string                              GetBasePath(void) const    {return basepath;}
-  const vector<string>& GetExtraFiles(void) const  {return extrafiles;}
+  std::string                              GetParFilename(void) const {return parfilename;}
+  std::string                              GetBasePath(void) const    {return basepath;}
+  const std::vector<std::string>& GetExtraFiles(void) const  {return extrafiles;}
   bool                                GetPurgeFiles(void) const  {return purgefiles;}
   bool                                GetRecursive(void) const   {return recursive;}
   bool                                GetSkipData(void) const    {return skipdata;}
@@ -137,7 +139,7 @@ protected:
   // Use values like % recovery data to compute the number of recover blocks
   bool ComputeRecoveryBlockCount();
 
-  bool                         SetParFilename(string filename);
+  bool                         SetParFilename(std::string filename);
 
   FileSizeCache filesize_cache;// Caches the size of each file,
                                // to prevent multiple calls to OS.
@@ -148,7 +150,7 @@ protected:
   size_t memorylimit;          // How much memory is permitted to be used
                                // for the output buffer when creating
                                // or repairing.
-  string basepath;             // the path par2 is run from
+  std::string basepath;             // the path par2 is run from
 #ifdef _OPENMP
   u32 nthreads;         // Default number of threads
   u32 filethreads;      // Number of threads for file processing
@@ -156,14 +158,14 @@ protected:
   // NOTE: using the "-t" option to set the number of threads does not
   // end up here, but results in a direct call to "omp_set_num_threads"
 
-  string parfilename;          // The name of the PAR2 file to create, or
+  std::string parfilename;          // The name of the PAR2 file to create, or
                                // the name of the first PAR2 file to read
                                // when verifying or repairing.
 
-  list<string> rawfilenames;   // The filenames on command-line
+  std::list<std::string> rawfilenames;   // The filenames on command-line
                                // (after expanding wildcards like '*')
 
-  vector<string> extrafiles;   // The filenames that will be used by Par.
+  std::vector<std::string> extrafiles;   // The filenames that will be used by Par.
                                // These have been verified to exist,
                                // have a path-name relative to the
                                // basepath, etc.. When creating, these will be

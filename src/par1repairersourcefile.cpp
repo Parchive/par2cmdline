@@ -28,7 +28,7 @@ static char THIS_FILE[]=__FILE__;
 #endif
 #endif
 
-Par1RepairerSourceFile::Par1RepairerSourceFile(std::ostream &sout, std::ostream &serr, const NoiseLevel noiselevel, PAR1FILEENTRY *fileentry, const string &searchpath)
+Par1RepairerSourceFile::Par1RepairerSourceFile(std::ostream &sout, std::ostream &serr, const NoiseLevel noiselevel, PAR1FILEENTRY *fileentry, const std::string &searchpath)
 : hashfull(fileentry->hashfull)
 , hash16k(fileentry->hash16k)
 {
@@ -60,11 +60,11 @@ Par1RepairerSourceFile::Par1RepairerSourceFile(std::ostream &sout, std::ostream 
   filename = DescriptionPacket::TranslateFilenameFromPar2ToLocal(sout, serr, noiselevel, filename);
 
   // Strip the path from the filename
-  string::size_type where;
-  if (string::npos != (where = filename.find_last_of('\\'))
-      || string::npos != (where = filename.find_last_of('/'))
+  std::string::size_type where;
+  if (std::string::npos != (where = filename.find_last_of('\\'))
+      || std::string::npos != (where = filename.find_last_of('/'))
 #ifdef _WIN32
-      || string::npos != (where = filename.find_last_of(':'))
+      || std::string::npos != (where = filename.find_last_of(':'))
 #endif
      )
   {

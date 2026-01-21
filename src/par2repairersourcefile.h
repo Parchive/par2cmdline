@@ -52,8 +52,8 @@ public:
   // file and set the length of each allocated block correctly.
   void SetBlocks(u32 _blocknumber,
                  u32 _blockcount,
-                 vector<DataBlock>::iterator _sourceblocks,
-                 vector<DataBlock>::iterator _targetblocks,
+                 std::vector<DataBlock>::iterator _sourceblocks,
+                 std::vector<DataBlock>::iterator _targetblocks,
                  u64 blocksize);
 
   // Determine the block count from the file size and block size.
@@ -72,8 +72,8 @@ public:
   DiskFile* GetCompleteFile(void) const;
 
   // Compute/Get the filename for the final repaired version of the file
-  void ComputeTargetFileName(std::ostream &sout, std::ostream &serr, const NoiseLevel noiselevel, const string &path);
-  string TargetFileName(void) const;
+  void ComputeTargetFileName(std::ostream &sout, std::ostream &serr, const NoiseLevel noiselevel, const std::string &path);
+  std::string TargetFileName(void) const;
 
   // Get the number of blocks that the file uses
   u32 BlockCount(void) const {return blockcount;}
@@ -82,10 +82,10 @@ public:
   u32 FirstBlockNumber(void) const {return firstblocknumber;}
 
   // Get the first source DataBlock for the file
-  vector<DataBlock>::iterator SourceBlocks(void) const {return sourceblocks;}
+  std::vector<DataBlock>::iterator SourceBlocks(void) const {return sourceblocks;}
 
   // Get the first target DataBlock for the file
-  vector<DataBlock>::iterator TargetBlocks(void) const {return targetblocks;}
+  std::vector<DataBlock>::iterator TargetBlocks(void) const {return targetblocks;}
 
 #if _OPENMP
   // Set/Get "filesize on disk" needed for mt progress line
@@ -100,14 +100,14 @@ protected:
   u32                          blockcount;          // The number of DataBlocks in the file
   u32                          firstblocknumber;    // The block number of the first DataBlock
 
-  vector<DataBlock>::iterator  sourceblocks;        // The first source DataBlock
-  vector<DataBlock>::iterator  targetblocks;        // The first target DataBlock
+  std::vector<DataBlock>::iterator  sourceblocks;        // The first source DataBlock
+  std::vector<DataBlock>::iterator  targetblocks;        // The first target DataBlock
 
   bool                         targetexists;        // Whether the target file exists
   DiskFile                    *targetfile;          // The final version of the file
   DiskFile                    *completefile;        // A complete version of the file
 
-  string                       targetfilename;      // The filename of the target file
+  std::string                  targetfilename;      // The filename of the target file
 #if _OPENMP
   u64                          diskfilesize;        // The filesize of sourcefile on disk
 #endif

@@ -33,7 +33,7 @@ public:
 
 public:
   // Construct the packet and store the filename and size.
-  bool Create(string _filename, u64 _filesize);
+  bool Create(std::string _filename, u64 _filesize);
 
   // Store the computed Hash values in the packet.
   void Hash16k(const MD5Hash &hash);
@@ -51,7 +51,7 @@ public:
   bool Load(DiskFile *diskfile, u64 offset, PACKET_HEADER &header);
 
   // Return the name of the file
-  string FileName(void) const;
+  std::string FileName(void) const;
 
   // Get the Hash values from the packet
   const MD5Hash& HashFull(void) const;
@@ -59,12 +59,12 @@ public:
 
   // Used to encode characters we do not want, such as "\t" or ":".
   // Function is public for easier testing.
-  static string UrlEncodeChar(char c);
+  static std::string UrlEncodeChar(char c);
 
   // Converts filename from local disk to how it will be encoded
   // in the Par2 file, and back again.
-  static string TranslateFilenameFromLocalToPar2(std::ostream &sout, std::ostream &serr, const NoiseLevel noiselevel, string local_filename);
-  static string TranslateFilenameFromPar2ToLocal(std::ostream &sout, std::ostream &serr, const NoiseLevel noiselevel, string par2_encoded_filename);
+  static std::string TranslateFilenameFromLocalToPar2(std::ostream &sout, std::ostream &serr, const NoiseLevel noiselevel, std::string local_filename);
+  static std::string TranslateFilenameFromPar2ToLocal(std::ostream &sout, std::ostream &serr, const NoiseLevel noiselevel, std::string par2_encoded_filename);
 
 };
 
@@ -89,7 +89,7 @@ inline u64 DescriptionPacket::FileSize(void) const
 // termination character, par2cmdline always allocates a little extra data
 // and fills it with NULLs to allow the filename to be directly read out of
 // the packet.
-inline string DescriptionPacket::FileName(void) const
+inline std::string DescriptionPacket::FileName(void) const
 {
   assert(packetdata != 0);
 

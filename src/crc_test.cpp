@@ -45,8 +45,8 @@ int test1() {
   u32 checksum2 = ~0 ^ CRCUpdateBlock(~0, sizeof(buffer));
 
   if (checksum1 != checksum2) {
-    cerr << "checksum1 = " << checksum1 << endl;
-    cerr << "checksum2 = " << checksum2 << endl;
+    std::cerr << "checksum1 = " << checksum1 << std::endl;
+    std::cerr << "checksum2 = " << checksum2 << std::endl;
     return 1;
   }
 
@@ -64,8 +64,8 @@ int test2() {
   u32 checksum1 = ~0 ^ CRCUpdateBlock(~0, buffer_length, buffer);
 
   if (checksum1 != expected_checksum) {
-    cerr << "checksum was not precalculated value: " << hex << checksum1 << dec << endl;
-    cerr << "   expected " << hex << expected_checksum << dec << endl;
+    std::cerr << "checksum was not precalculated value: " << std::hex << checksum1 << std::dec << std::endl;
+    std::cerr << "   expected " << std::hex << expected_checksum << std::dec << std::endl;
     return 1;
   }
 
@@ -108,8 +108,8 @@ int test3() {
   checksum2 = ~0 ^ checksum2;
 
   if (checksum1 != checksum2) {
-    cerr << "random checksum1 = " << checksum1 << endl;
-    cerr << "random checksum2 = " << checksum2 << endl;
+    std::cerr << "random checksum1 = " << checksum1 << std::endl;
+    std::cerr << "random checksum2 = " << checksum2 << std::endl;
     return 1;
   }
 
@@ -147,8 +147,8 @@ int test4() {
   checksum2 = ~0 ^ checksum2;
 
   if (checksum1 != checksum2) {
-    cerr << "random checksum1 = " << checksum1 << endl;
-    cerr << "random checksum2 = " << checksum2 << endl;
+    std::cerr << "random checksum1 = " << checksum1 << std::endl;
+    std::cerr << "random checksum2 = " << checksum2 << std::endl;
     return 1;
   }
 
@@ -178,9 +178,9 @@ int test5() {
     // compare against reference
     u32 othercrc = ~0 ^ CRCUpdateBlock(~0, window, buffer + offset);
     if (crc != othercrc) {
-      cerr << "error in window at offset " << offset << endl;
-      cerr << "  checksum1 = " << crc << endl;
-      cerr << "  checksum2 = " << othercrc << endl;
+      std::cerr << "error in window at offset " << offset << std::endl;
+      std::cerr << "  checksum1 = " << crc << std::endl;
+      std::cerr << "  checksum2 = " << othercrc << std::endl;
       result = 1;
     }
 
@@ -199,9 +199,9 @@ int test6() {
   u32 checksum1 = ~0 ^ CRCUpdateBlock(~0, sizeof(ccitttable.table), &ccitttable.table);
   u32 expected = 0x6FCF9E13;
   if (checksum1 != expected) {
-      cerr << "error when computing checksum of checksum table " << endl;
-      cerr << "  checksum1 = " << checksum1 << endl;
-      cerr << "  expected = " << expected << endl;
+      std::cerr << "error when computing checksum of checksum table " << std::endl;
+      std::cerr << "  checksum1 = " << checksum1 << std::endl;
+      std::cerr << "  expected = " << expected << std::endl;
       return 0;
   }
 
@@ -214,31 +214,31 @@ int test6() {
 
 int main() {
   if (test1()) {
-    cerr << "FAILED: test1" << endl;
+    std::cerr << "FAILED: test1" << std::endl;
     return 1;
   }
   if (test2()) {
-    cerr << "FAILED: test2" << endl;
+    std::cerr << "FAILED: test2" << std::endl;
     return 1;
   }
   if (test3()) {
-    cerr << "FAILED: test3" << endl;
+    std::cerr << "FAILED: test3" << std::endl;
     return 1;
   }
   if (test4()) {
-    cerr << "FAILED: test4" << endl;
+    std::cerr << "FAILED: test4" << std::endl;
     return 1;
   }
   if (test5()) {
-    cerr << "FAILED: test5" << endl;
+    std::cerr << "FAILED: test5" << std::endl;
     return 1;
   }
   if (test6()) {
-    cerr << "FAILED: test6" << endl;
+    std::cerr << "FAILED: test6" << std::endl;
     return 1;
   }
 
-  cout << "SUCCESS: crc_test complete." << endl;
+  std::cout << "SUCCESS: crc_test complete." << std::endl;
 
   return 0;
 }

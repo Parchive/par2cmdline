@@ -61,7 +61,7 @@ int test1() {
   for (size_t i = 0; i < 11; i++) {
     for (size_t j = 0; j < 11; j++) {
       if (CriticalPacket::CompareLess(criticalpackets + i, criticalpackets + j) != (i < j)) {
-	cout << "CompareLess failed for " << i << " " << j << endl;
+	std::cout << "CompareLess failed for " << i << " " << j << std::endl;
 	return 1;
       }
     }
@@ -73,11 +73,11 @@ int test1() {
 
 int main() {
   if (test1()) {
-    cerr << "FAILED: test1" << endl;
+    std::cerr << "FAILED: test1" << std::endl;
     return 1;
   }
 
-  cout << "SUCCESS: criticalpacket_test complete." << endl;
+  std::cout << "SUCCESS: criticalpacket_test complete." << std::endl;
 
   return 0;
 }

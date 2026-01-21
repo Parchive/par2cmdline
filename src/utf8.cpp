@@ -58,7 +58,7 @@ namespace utf8
     }
     catch (const std::exception& e)
     {
-      std::cerr << "Failed to convert UTF-8 to wide string: " << e.what() << std::endl;
+      std::cerr << "Failed to convert UTF-8 to wide std::string: " << e.what() << std::endl;
       return L"";
     }
   }
@@ -74,7 +74,7 @@ namespace utf8
     }
     catch (const std::exception& e)
     {
-      std::cerr << "Failed to convert wide to UTF-8 string: " << e.what() << std::endl;
+      std::cerr << "Failed to convert wide to UTF-8 std::string: " << e.what() << std::endl;
       return "";
     }
   }

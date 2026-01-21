@@ -54,8 +54,8 @@ bool DataBlock::ReadData(u64    position, // Position within the block
   {
     // Compute the file offset and how much data to physically read from disk
     u64    fileoffset = offset + position;
-    size_t want       = (size_t)min(
-        min((u64)size, length - position),
+    size_t want       = (size_t)std::min(
+        std::min((u64)size, length - position),
         diskfile->FileSize() - fileoffset
     );
 
@@ -97,7 +97,7 @@ bool DataBlock::WriteData(u64         position, // Position within the block
   {
     // Compute the file offset and how much data to physically write to disk
     u64    fileoffset = offset + position;
-    size_t have       = (size_t)min((u64)size, length - position);
+    size_t have       = (size_t)std::min((u64)size, length - position);
 
     // Write the data from the buffer to disk
     if (!diskfile->Write(fileoffset, buffer, have))

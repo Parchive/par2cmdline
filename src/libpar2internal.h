@@ -24,6 +24,7 @@
 #ifdef _WIN32
 // Windows includes
 #define WIN32_LEAN_AND_MEAN
+#define NOMINMAX
 #include <windows.h>
 
 // System includes
@@ -197,15 +198,16 @@ char *strchr(), *strrchr();
 // STL includes
 #include <list>
 #include <map>
+#include <vector>
+#include <string>
 #include <algorithm>
+#include <memory>
 
 #include <ctype.h>
 #include <iomanip>
 #include <codecvt>
 
 #include <cassert>
-
-using namespace std;
 
 #ifdef offsetof
 #undef offsetof

@@ -34,13 +34,13 @@ public:
 
   // Create recovery files from the source files specified on the command line
   Result Process(const size_t memorylimit,
-		 const string &basepath,
+		 const std::string &basepath,
 #ifdef _OPENMP
 		 const u32 nthreads,
 		 const u32 filethreads,
 #endif
-		 const string &parfilename,
-		 const vector<string> &extrafiles,
+		 const std::string &parfilename,
+		 const std::vector<std::string> &extrafiles,
 		 const u64 blocksize,
 		 const u32 firstblock,
 		 const Scheme recoveryfilescheme,
@@ -52,18 +52,18 @@ protected:
   // Steps in the creation process:
 
   // Check permissions in the basepath
-  bool CheckBasepath(const string &parfilename);
+  bool CheckBasepath(const std::string &parfilename);
 
   // Compute block size from block count or vice versa depending on which was
   // specified on the command line
-  bool ComputeBlockCount(const vector<string> &extrafiles);
+  bool ComputeBlockCount(const std::vector<std::string> &extrafiles);
 
   // Determine how much recovery data can be computed on one pass
   bool CalculateProcessBlockSize(size_t memorylimit);
 
   // Open all of the source files, compute the Hashes and CRC values, and store
   // the results in the file verification and file description packets.
-  bool OpenSourceFiles(const vector<string> &extrafiles, string basepath);
+  bool OpenSourceFiles(const std::vector<std::string> &extrafiles, std::string basepath);
 
   // Create the main packet and determine the set_id_hash to use with all packets
   bool CreateMainPacket(void);
@@ -75,7 +75,7 @@ protected:
   bool CreateSourceBlocks(void);
 
   // Create all of the output files and allocate all packets to appropriate file offsets.
-  bool InitialiseOutputFiles(const string &par2filename);
+  bool InitialiseOutputFiles(const std::string &par2filename);
 
   // Allocate memory buffers for reading and writing data to disk.
   bool AllocateBuffers(void);
@@ -140,17 +140,17 @@ protected:
   MainPacket    *mainpacket;    // The main packet
   CreatorPacket *creatorpacket; // The creator packet
 
-  vector<Par2CreatorSourceFile*> sourcefiles;  // Array containing details of the source files
+  std::vector<Par2CreatorSourceFile*> sourcefiles;  // Array containing details of the source files
                                                // as well as the file verification and file
                                                // description packets for them.
 
-  vector<DataBlock>          sourceblocks;     // Array with one entry for every source block.
+  std::vector<DataBlock>          sourceblocks;     // Array with one entry for every source block.
 
-  vector<DiskFile>           recoveryfiles;    // Array with one entry for every recovery file.
-  vector<RecoveryPacket>     recoverypackets;  // Array with one entry for every recovery packet.
+  std::vector<DiskFile>           recoveryfiles;    // Array with one entry for every recovery file.
+  std::vector<RecoveryPacket>     recoverypackets;  // Array with one entry for every recovery packet.
 
-  list<CriticalPacket*>      criticalpackets;  // A list of all of the critical packets.
-  list<CriticalPacketEntry>  criticalpacketentries; // A list of which critical packet will
+  std::list<CriticalPacket*>      criticalpackets;  // A list of all of the critical packets.
+  std::list<CriticalPacketEntry>  criticalpacketentries; // A list of which critical packet will
                                                     // be written to which recovery file.
 
   ReedSolomon<Galois16> rs;   // The Reed Solomon matrix.

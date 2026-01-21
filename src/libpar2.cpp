@@ -23,13 +23,13 @@ Result par2create(std::ostream &sout,
 		  std::ostream &serr,
 		  const NoiseLevel noiselevel,
 		  const size_t memorylimit,
-		  const string &basepath,
+		  const std::string &basepath,
 #ifdef _OPENMP
 		  const u32 nthreads,
 		  const u32 filethreads,
 #endif
-		  const string &parfilename,
-		  const vector<string> &extrafiles,
+		  const std::string &parfilename,
+		  const std::vector<std::string> &extrafiles,
 		  const u64 blocksize,
 		  const u32 firstblock,
 		  const Scheme recoveryfilescheme,
@@ -61,13 +61,13 @@ Result par2repair(std::ostream &sout,
 		  std::ostream &serr,
 		  const NoiseLevel noiselevel,
 		  const size_t memorylimit,
-		  const string &basepath,
+		  const std::string &basepath,
 #ifdef _OPENMP
 		  const u32 nthreads,
 		  const u32 filethreads,
 #endif
-		  const string &parfilename,
-		  const vector<string> &extrafiles,
+		  const std::string &parfilename,
+		  const std::vector<std::string> &extrafiles,
 		  const bool dorepair,   // derived from operation
 		  const bool purgefiles,
 		  const bool skipdata,
@@ -102,8 +102,8 @@ Result par1repair(std::ostream &sout,
 		  const u32 nthreads,
 		  // filethreads is not used by Par1
 #endif
-		  const string &parfilename,
-		  const vector<string> &extrafiles,
+		  const std::string &parfilename,
+		  const std::vector<std::string> &extrafiles,
 		  const bool dorepair,   // derived from operation
 		  const bool purgefiles
 		  // skipdata is not used by Par1
@@ -144,7 +144,7 @@ bool ComputeRecoveryFileCount(std::ostream &sout,
   case scUnknown:
     {
       //assert(false);
-      serr << "Scheme unspecified (create, verify, or repair)." << endl;
+      serr << "Scheme unspecified (create, verify, or repair)." << std::endl;
       return false;
     }
     break;
@@ -168,7 +168,7 @@ bool ComputeRecoveryFileCount(std::ostream &sout,
       {
         // You cannot have more recovery files than there are recovery blocks
         // to put in them.
-        serr << "Too many recovery files specified." << endl;
+        serr << "Too many recovery files specified." << std::endl;
         return false;
       }
     }

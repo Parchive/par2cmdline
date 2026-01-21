@@ -43,54 +43,54 @@ template<typename gtype, typename utype>
 int test_field(const gtype a, const gtype b, const gtype c, const gtype zero, const gtype one, int max_value) {
 
   if ( (a+b)+c != a+(b+c) ) {
-    cerr << "addative associativity fails for "
+    std::cerr << "addative associativity fails for "
 	 << ((int) (utype) a) << ","
 	 << ((int) (utype) b) << ","
-	 << ((int) (utype) c) << endl;
+	 << ((int) (utype) c) << std::endl;
     return 1;
   }
 
   if ( (a*b)*c != a*(b*c) ) {
-    cerr << "multiplicative associativity fails for "
+    std::cerr << "multiplicative associativity fails for "
 	 << ((int) (utype) a) << ","
 	 << ((int) (utype) b) << ","
-	 << ((int) (utype) c) << endl;
+	 << ((int) (utype) c) << std::endl;
     return 1;
   }
 
 
   if ( a+b != b+a ) {
-    cerr << "addative commutivity fails for "
+    std::cerr << "addative commutivity fails for "
 	 << ((int) (utype) a) << ","
-	 << ((int) (utype) b) << endl;
+	 << ((int) (utype) b) << std::endl;
     return 1;
   }
 
   if ( a*b != b*a ) {
-    cerr << "multiplicative commutivity fails for "
+    std::cerr << "multiplicative commutivity fails for "
 	 << ((int) (utype) a) << ","
-	 << ((int) (utype) b) << endl;
+	 << ((int) (utype) b) << std::endl;
     return 1;
   }
 
   if ( a*(b+c) != (a*b)+(a*c) ) {
-    cerr << "addative associativity fails for "
+    std::cerr << "addative associativity fails for "
 	 << ((int) (utype) a) << ","
 	 << ((int) (utype) b) << ","
-	 << ((int) (utype) c) << endl;
+	 << ((int) (utype) c) << std::endl;
     return 1;
   }
 
 
   if ( a+zero != a || zero+a != a ) {
-    cerr << "addative identity fails for "
-	 << ((int) (utype) a) << endl;
+    std::cerr << "addative identity fails for "
+	 << ((int) (utype) a) << std::endl;
     return 1;
   }
 
   if ( a*one != a || one*a != a ) {
-    cerr << "multiplicative identity fails for "
-	 << ((int) (utype) a) << endl;
+    std::cerr << "multiplicative identity fails for "
+	 << ((int) (utype) a) << std::endl;
     return 1;
   }
 
@@ -101,13 +101,13 @@ int test_field(const gtype a, const gtype b, const gtype c, const gtype zero, co
   for (int i = 0; i < max_value; i++) {
     const gtype other(i);
 
-    //cout << ((int) (utype) a) << " + " << ((int) (utype) other) << " = " << ((int) (utype) (a + other)) << endl;
-    //cout << ((a + other == zero) ? "true" : "false") << endl;
+    //std::cout << ((int) (utype) a) << " + " << ((int) (utype) other) << " = " << ((int) (utype) (a + other)) << std::endl;
+    //std::cout << ((a + other == zero) ? "true" : "false") << std::endl;
 
     if (a + other == zero) {
       if (addative_inverse != -1) {
-	cerr << "value " << ((int) (utype) a) << " has two addative inverses" << endl;
-	cerr << "   at " << addative_inverse << " and " << i << endl;
+	std::cerr << "value " << ((int) (utype) a) << " has two addative inverses" << std::endl;
+	std::cerr << "   at " << addative_inverse << " and " << i << std::endl;
 	return 1;
       }
       addative_inverse = i;
@@ -115,19 +115,19 @@ int test_field(const gtype a, const gtype b, const gtype c, const gtype zero, co
 
     if (a * other == one) {
       if (multiplicative_inverse != -1) {
-	cerr << "value " << ((int) (utype) a) << " has two multiplicative inverses" << endl;
-	cerr << "   at " << multiplicative_inverse << " and " << i << endl;
+	std::cerr << "value " << ((int) (utype) a) << " has two multiplicative inverses" << std::endl;
+	std::cerr << "   at " << multiplicative_inverse << " and " << i << std::endl;
 	return 1;
       }
       multiplicative_inverse = i;
     }
   }
   if (addative_inverse == -1) {
-    cerr << "value " << ((int) (utype) a) << " has no addative inverse!" << endl;
+    std::cerr << "value " << ((int) (utype) a) << " has no addative inverse!" << std::endl;
     return 1;
   }
   if (multiplicative_inverse == -1 && a != zero) {
-    cerr << "value " << ((int) (utype) a) << " has no multiplicative inverse!" << endl;
+    std::cerr << "value " << ((int) (utype) a) << " has no multiplicative inverse!" << std::endl;
     return 1;
   }
 
@@ -166,51 +166,51 @@ int test_operators(const gtype a, const gtype b, const gtype zero, const gtype o
   c = a;
   c += b;
   if ( c != a+b ) {
-    cerr << "+= fails for "
+    std::cerr << "+= fails for "
 	 << ((int) (utype) a) << ","
 	 << ((int) (utype) b) << ","
-	 << ((int) (utype) c) << endl;
+	 << ((int) (utype) c) << std::endl;
     return 1;
   }
 
   if (a-a != zero ) {
-    cerr << "- fails for "
-	 << ((int) (utype) a) << endl;
+    std::cerr << "- fails for "
+	 << ((int) (utype) a) << std::endl;
     return 1;
   }
 
   c = a;
   c -= a;
   if ( c != zero ) {
-    cerr << "-= fails for "
+    std::cerr << "-= fails for "
 	 << ((int) (utype) a) << ","
-	 << ((int) (utype) c) << endl;
+	 << ((int) (utype) c) << std::endl;
     return 1;
   }
 
   c = a;
   c *= b;
   if ( c != a*b ) {
-    cerr << "*= fails for "
+    std::cerr << "*= fails for "
 	 << ((int) (utype) a) << ","
 	 << ((int) (utype) b) << ","
-	 << ((int) (utype) c) << endl;
+	 << ((int) (utype) c) << std::endl;
     return 1;
   }
 
   if (a != zero) {
     if ( a/a != one ) {
-      cerr << "/ fails for "
-	   << ((int) (utype) a) << endl;
+      std::cerr << "/ fails for "
+	   << ((int) (utype) a) << std::endl;
       return 1;
     }
 
     c = a;
     c /= a;
     if ( c != one ) {
-      cerr << "/= fails for "
+      std::cerr << "/= fails for "
 	   << ((int) (utype) a) << ","
-	   << ((int) (utype) c) << endl;
+	   << ((int) (utype) c) << std::endl;
       return 1;
     }
   }
@@ -221,45 +221,45 @@ int test_operators(const gtype a, const gtype b, const gtype zero, const gtype o
     c *= a;
   }
   if ((a^power) != c) {
-    cerr << "^ fails for "
+    std::cerr << "^ fails for "
 	 << ((int) (utype) a) << ","
-	 << ((int) (utype) c) << endl;
+	 << ((int) (utype) c) << std::endl;
     return 1;
   }
   if (a.pow(power) != c) {
-    cerr << "pow() fails for "
+    std::cerr << "pow() fails for "
 	 << ((int) (utype) a) << ","
-	 << ((int) (utype) c) << endl;
+	 << ((int) (utype) c) << std::endl;
     return 1;
   }
 
   c = a;
   c ^= power;
   if (c != (a^power)) {
-    cerr << "^= fails for "
+    std::cerr << "^= fails for "
 	 << ((int) (utype) a) << ","
 	 << power << ","
-	 << ((int) (utype) c) << endl;
+	 << ((int) (utype) c) << std::endl;
     return 1;
   }
 
   if (a != zero && b != zero) {
     if ( (a.Log() + b.Log()) % (max_value-1) != (a*b).Log() ) {
-      cerr << "Log = fails for "
+      std::cerr << "Log = fails for "
 	   << ((int) (utype) a) << ","
 	   << ((int) (utype) b) << ","
 	   << ((int) a.Log()) << ","
 	   << ((int) b.Log()) << ","
-	   << ((int) (a*b).Log()) << endl;
+	   << ((int) (a*b).Log()) << std::endl;
       return 1;
     }
   }
 
   c = gtype(gtype(a.Log()).ALog());
   if (c != a) {
-    cerr << "ALog fails for "
+    std::cerr << "ALog fails for "
 	 << ((int) (utype) a) << ","
-	 << ((int) (utype) c) << endl;
+	 << ((int) (utype) c) << std::endl;
     return 1;
   }
 
@@ -310,8 +310,8 @@ int test_powers(const gtype two, const gtype zero, int max_value) {
   for (int power = 1; power < max_value; power++) {
     int index = (int) (utype) g;
     if (used[index] != 0) {
-      cerr << "error at power " << power << " was already used by power " << used[index] << endl;
-      cerr << "g = " << ((int) (utype) g) << endl;
+      std::cerr << "error at power " << power << " was already used by power " << used[index] << std::endl;
+      std::cerr << "g = " << ((int) (utype) g) << std::endl;
       return 1;
     }
 
@@ -320,9 +320,9 @@ int test_powers(const gtype two, const gtype zero, int max_value) {
   }
 
   if (g != two) {
-    cerr << "error after power " << max_value << endl;
-    cerr << "g = " << ((int) (utype) g) << endl;
-    cerr << "two = " << ((int) (utype) two) << endl;
+    std::cerr << "error after power " << max_value << std::endl;
+    std::cerr << "g = " << ((int) (utype) g) << std::endl;
+    std::cerr << "two = " << ((int) (utype) two) << std::endl;
     return 1;
   }
 
@@ -342,31 +342,31 @@ int test6() {
 
 int main() {
   if (test1()) {
-    cerr << "FAILED: test1" << endl;
+    std::cerr << "FAILED: test1" << std::endl;
     return 1;
   }
   if (test2()) {
-    cerr << "FAILED: test2" << endl;
+    std::cerr << "FAILED: test2" << std::endl;
     return 1;
   }
   if (test3()) {
-    cerr << "FAILED: test3" << endl;
+    std::cerr << "FAILED: test3" << std::endl;
     return 1;
   }
   if (test4()) {
-    cerr << "FAILED: test4" << endl;
+    std::cerr << "FAILED: test4" << std::endl;
     return 1;
   }
   if (test5()) {
-    cerr << "FAILED: test5" << endl;
+    std::cerr << "FAILED: test5" << std::endl;
     return 1;
   }
   if (test6()) {
-    cerr << "FAILED: test6" << endl;
+    std::cerr << "FAILED: test6" << std::endl;
     return 1;
   }
 
-  cout << "SUCCESS: galois_test complete." << endl;
+  std::cout << "SUCCESS: galois_test complete." << std::endl;
 
   return 0;
 }
