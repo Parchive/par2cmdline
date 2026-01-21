@@ -73,8 +73,8 @@ bool DiskFile::CreateParentDirectory(string _pathname)
     string path = filename.substr(0, where);
     wstring wpath = utf8::Utf8ToWide(path);
 
-    struct _stat st;
-    if (_wstat(wpath.c_str(), &st) == 0)
+    struct _stati64 st;
+    if (_wstati64(wpath.c_str(), &st) == 0)
       return true; // let the caller deal with non-directories
 
     if (!DiskFile::CreateParentDirectory(path))
