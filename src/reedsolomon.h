@@ -251,7 +251,7 @@ inline bool ReedSolomon<g>::Compute(NoiseLevel noiselevel, std::ostream &sout, s
   // Allocate the left hand matrix
 
   leftmatrix = new G[outcount * incount];
-  memset(leftmatrix, 0, outcount * incount * sizeof(G));
+  std::fill(leftmatrix, leftmatrix + outcount * incount, G(0));
 
   // Allocate the right hand matrix only if we are recovering
 
@@ -259,7 +259,7 @@ inline bool ReedSolomon<g>::Compute(NoiseLevel noiselevel, std::ostream &sout, s
   if (datamissing > 0)
   {
     rightmatrix = new G[outcount * outcount];
-    memset(rightmatrix, 0, outcount *outcount * sizeof(G));
+    std::fill(rightmatrix, rightmatrix + outcount * outcount, G(0));
   }
 
   // Fill in the two matrices:
