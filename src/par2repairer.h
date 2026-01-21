@@ -29,13 +29,13 @@ public:
   ~Par2Repairer(void);
 
   Result Process(const size_t memorylimit,
-		 const string &basepath,
+		 const std::string &basepath,
 #ifdef _OPENMP
 		 const u32 nthreads,
 		 const u32 filethreads,
 #endif
-		 string parfilename,
-		 const vector<string> &extrafiles,
+		 std::string parfilename,
+		 const std::vector<std::string> &extrafiles,
 		 const bool dorepair,   // derived from operation
 		 const bool purgefiles,
 		 const bool skipdata,
@@ -46,7 +46,7 @@ protected:
   // Steps in verifying and repairing files:
 
   // Load packets from the specified file
-  bool LoadPacketsFromFile(string filename);
+  bool LoadPacketsFromFile(std::string filename);
   // Finish loading a recovery packet
   bool LoadRecoveryPacket(DiskFile *diskfile, u64 offset, PACKET_HEADER &header);
   // Finish loading a file description packet
@@ -59,10 +59,10 @@ protected:
   bool LoadCreatorPacket(DiskFile *diskfile, u64 offset, PACKET_HEADER &header);
 
   // Load packets from other PAR2 files with names based on the original PAR2 file
-  bool LoadPacketsFromOtherFiles(string filename);
+  bool LoadPacketsFromOtherFiles(std::string filename);
 
   // Load packets from any other PAR2 files whose names are given on the command line
-  bool LoadPacketsFromExtraFiles(const vector<string> &extrafiles);
+  bool LoadPacketsFromExtraFiles(const std::vector<std::string> &extrafiles);
 
   // Check that the packets are consistent and discard any that are not
   bool CheckPacketConsistency(void);
@@ -84,13 +84,13 @@ protected:
   bool ComputeWindowTable(void);
 
   // Attempt to verify all of the source files
-  bool VerifySourceFiles(const std::string& basepath, std::vector<string>& extrafiles);
+  bool VerifySourceFiles(const std::string& basepath, std::vector<std::string>& extrafiles);
 
   // Scan any extra files specified on the command line
-  bool VerifyExtraFiles(const vector<string> &extrafiles, const string &basepath);
+  bool VerifyExtraFiles(const std::vector<std::string> &extrafiles, const std::string &basepath);
 
   // Attempt to match the data in the DiskFile with the source file
-  bool VerifyDataFile(DiskFile *diskfile, Par2RepairerSourceFile *sourcefile, const string &basepath);
+  bool VerifyDataFile(DiskFile *diskfile, Par2RepairerSourceFile *sourcefile, const std::string &basepath);
 
   // Perform a sliding window scan of the DiskFile looking for blocks of data that
   // might belong to any of the source files (for which a verification packet was
@@ -98,7 +98,7 @@ protected:
   // the one specified by the "sourcefile" parameter. If the first data block
   // found is for a different source file then "sourcefile" is changed accordingly.
   bool ScanDataFile(DiskFile                *diskfile,   // [in]     The file being scanned
-                    string                  basepath,    // [in]
+                    std::string             basepath,    // [in]
                     Par2RepairerSourceFile* &sourcefile, // [in/out] The source file matched
                     MatchType               &matchtype,  // [out]    The type of match
                     MD5Hash                 &hashfull,   // [out]    The full hash of the file
@@ -130,7 +130,7 @@ protected:
   bool ProcessData(u64 blockoffset, size_t blocklength);
 
   // Verify that all of the reconstructed target files are now correct
-  bool VerifyTargetFiles(const string &basepath);
+  bool VerifyTargetFiles(const std::string &basepath);
 
   // Delete all of the partly reconstructed files
   bool DeleteIncompleteTargetFiles(void);
@@ -149,7 +149,7 @@ protected:
 
   const NoiseLevel noiselevel;              // OnScreen display
 
-  string                    searchpath;              // Where to find files on disk
+  std::string               searchpath;              // Where to find files on disk
 
   std::string               basepath;
 
@@ -163,17 +163,17 @@ protected:
   bool                      firstpacket;             // Whether or not a valid packet has been found.
   MD5Hash                   setid;                   // The SetId extracted from the first packet.
 
-  map<u32, RecoveryPacket*> recoverypacketmap;       // One recovery packet for each exponent value.
+  std::map<u32, RecoveryPacket*> recoverypacketmap;       // One recovery packet for each exponent value.
   MainPacket               *mainpacket;              // One copy of the main packet.
   CreatorPacket            *creatorpacket;           // One copy of the creator packet.
 
   DiskFileMap               diskFileMap;
 
-  map<MD5Hash,Par2RepairerSourceFile*> sourcefilemap;// Map from FileId to SourceFile
-  vector<Par2RepairerSourceFile*>      sourcefiles;  // The source files
-  vector<Par2RepairerSourceFile*>      verifylist;   // Those source files that are being repaired
-  vector<DiskFile*>                    backuplist;   // Those source files backups
-  list<string>                         par2list;     // list of par2 files
+  std::map<MD5Hash,Par2RepairerSourceFile*> sourcefilemap;// Map from FileId to SourceFile
+  std::vector<Par2RepairerSourceFile*>      sourcefiles;  // The source files
+  std::vector<Par2RepairerSourceFile*>      verifylist;   // Those source files that are being repaired
+  std::vector<DiskFile*>                    backuplist;   // Those source files backups
+  std::list<std::string>                    par2list;     // list of par2 files
 
   u64                       blocksize;               // The block size.
   u64                       chunksize;               // How much of a block can be processed.
@@ -182,23 +182,23 @@ protected:
   u32                       missingblockcount;       // How many blocks are missing
 
   bool                      blocksallocated;         // Whether or not the DataBlocks have been allocated
-  vector<DataBlock>         sourceblocks;            // The DataBlocks that will be read from disk
-  vector<DataBlock>         targetblocks;            // The DataBlocks that will be written to disk
+  std::vector<DataBlock>    sourceblocks;            // The DataBlocks that will be read from disk
+  std::vector<DataBlock>    targetblocks;            // The DataBlocks that will be written to disk
 
   u32                       windowtable[256];        // Table for sliding CRCs
 
   bool                            blockverifiable;         // Whether and files can be verified at the block level
   VerificationHashTable           verificationhashtable;   // Hash table for block verification
-  list<Par2RepairerSourceFile*>   unverifiablesourcefiles; // Files that are not block verifiable
+  std::list<Par2RepairerSourceFile*>   unverifiablesourcefiles; // Files that are not block verifiable
 
   u32                       completefilecount;       // How many files are fully verified
   u32                       renamedfilecount;        // How many files are verified but have the wrong name
   u32                       damagedfilecount;        // How many files exist but are damaged
   u32                       missingfilecount;        // How many files are completely missing
 
-  vector<DataBlock*>        inputblocks;             // Which DataBlocks will be read from disk
-  vector<DataBlock*>        copyblocks;              // Which DataBlocks will copied back to disk
-  vector<DataBlock*>        outputblocks;            // Which DataBlocks have to calculated using RS
+  std::vector<DataBlock*>   inputblocks;             // Which DataBlocks will be read from disk
+  std::vector<DataBlock*>   copyblocks;              // Which DataBlocks will copied back to disk
+  std::vector<DataBlock*>   outputblocks;            // Which DataBlocks have to calculated using RS
 
   ReedSolomon<Galois16>     rs;                      // The Reed Solomon matrix.
 

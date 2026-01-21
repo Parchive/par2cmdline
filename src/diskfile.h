@@ -35,11 +35,8 @@
 
 
 #include <list>
-using std::list;
 #include <map>
-using std::map;
 #include <vector>
-using std::vector;
 #include <memory>
 
 // A disk file can be any type of file that par2cmdline needs
@@ -52,10 +49,10 @@ public:
   ~DiskFile(void);
 
   // Ensures the specified path's parent directory exists
-  bool CreateParentDirectory(string pathname);
+  bool CreateParentDirectory(std::string pathname);
 
   // Create a file and set its length
-  bool Create(string filename, u64 filesize);
+  bool Create(std::string filename, u64 filesize);
 
   // Write some data to the file
   // maxlength should be the default value, except during testing.
@@ -64,8 +61,8 @@ public:
 
   // Open the file
   bool Open(void);
-  bool Open(const string &filename);
-  bool Open(const string &filename, u64 filesize);
+  bool Open(const std::string &filename);
+  bool Open(const std::string &filename, u64 filesize);
 
   // Check to see if the file is open
 #ifdef _WIN32
@@ -86,23 +83,23 @@ public:
   u64 FileSize(void) const {return filesize;}
 
   // Get the name of the file
-  string FileName(void) const {return filename;}
+  std::string FileName(void) const {return filename;}
 
   // Does the file exist
   bool Exists(void) const {return exists;}
 
   // Rename the file
   bool Rename(void); // Pick a filename automatically
-  bool Rename(string filename);
+  bool Rename(std::string filename);
 
   // Delete the file
   bool Delete(void);
 
 public:
-  static string GetCanonicalPathname(string filename);
+  static std::string GetCanonicalPathname(std::string filename);
 
-  static void SplitFilename(string filename, string &path, string &name);
-  static void SplitRelativeFilename(string filename, string basepath, string &name);
+  static void SplitFilename(std::string filename, std::string &path, std::string &name);
+  static void SplitRelativeFilename(std::string filename, std::string basepath, std::string &name);
   static std::string SplitRelativeFilename(const std::string& filename, const std::string& basepath)
   {
     std::string ret;
@@ -110,12 +107,12 @@ public:
     return ret;
   }
 
-  static bool FileExists(string filename);
-  static u64 GetFileSize(string filename);
+  static bool FileExists(std::string filename);
+  static u64 GetFileSize(std::string filename);
 
   // Search the specified path for files which match the specified wildcard
   // and return their names in a list.
-  static std::unique_ptr< list<string> > FindFiles(string path, string wildcard, bool recursive);
+  static std::unique_ptr< std::list<std::string> > FindFiles(std::string path, std::string wildcard, bool recursive);
 
 protected:
   // NOTE: These are pointers so that the operator= works correctly.
@@ -124,7 +121,7 @@ protected:
   std::ostream *sout; // stream for output (for commandline, this is cout)
   std::ostream *serr; // stream for errors (for commandline, this is cerr)
 
-  string filename;
+  std::string filename;
   u64    filesize;
 
   // OS file handle
@@ -142,7 +139,7 @@ protected:
 
 protected:
 #ifdef _WIN32
-  static string ErrorMessage(DWORD error);
+  static std::string ErrorMessage(DWORD error);
 #endif
 };
 
@@ -157,19 +154,19 @@ public:
 
   bool Insert(DiskFile *diskfile);
   void Remove(DiskFile *diskfile);
-  DiskFile* Find(string filename) const;
+  DiskFile* Find(std::string filename) const;
 
 protected:
-  map<string, DiskFile*>    diskfilemap;             // Map from filename to DiskFile
+  std::map<std::string, DiskFile*>    diskfilemap;             // Map from filename to DiskFile
 };
 
 class FileSizeCache
 {
 public:
   FileSizeCache();
-  u64 get(const string &filename);
+  u64 get(const std::string &filename);
 protected:
-  map<string, u64> cache;
+  std::map<std::string, u64> cache;
 };
 
 #endif // __DISKFILE_H__

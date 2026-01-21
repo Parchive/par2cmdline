@@ -151,7 +151,7 @@ public:
 	return i;
       v = (valuetype) ((2l*v)%prime);
     }
-    cerr << "Did not find multiplicative inverse for " << value << endl;
+    std::cerr << "Did not find multiplicative inverse for " << value << std::endl;
   }
   ValueType ALog(void) const { return (valuetype) (((long) std::pow((double) 2, (double) value)) % prime); }
 
@@ -170,7 +170,7 @@ protected:
       if ((i*v) % prime == 1)
 	return i;
     }
-    cerr << "Did not find multiplicative inverse for " << v << endl;
+    std::cerr << "Did not find multiplicative inverse for " << v << std::endl;
   }
 
   ValueType value;
@@ -204,25 +204,25 @@ int generate_data(unsigned int seed, u8 data[][BUF_SIZE], int in_count, int reco
 
   ReedSolomon<gtype> rs_creator;
 
-  //cout << "creator.setinput" << in_count << endl;
-  if (!rs_creator.SetInput(in_count, cout, cerr)) {
-    cerr << "rs_creator.SetInput returned false";
+  //std::cout << "creator.setinput" << in_count << std::endl;
+  if (!rs_creator.SetInput(in_count, std::cout, std::cerr)) {
+    std::cerr << "rs_creator.SetInput returned false";
     return 1;
   }
-  //cout << "creator.setoutput" << low_exponent << " " << high_exponent << endl;
+  //std::cout << "creator.setoutput" << low_exponent << " " << high_exponent << std::endl;
   if (!rs_creator.SetOutput(false, low_exponent, high_exponent)) {
-    cerr << "rs_creator.SetOutput returned false";
+    std::cerr << "rs_creator.SetOutput returned false";
     return 1;
   }
-  //cout << "creator.compute" << endl;
-  if (!rs_creator.Compute(nlSilent, cout, cerr)) {
-    cerr << "rs_creator.Compute returned false";
+  //std::cout << "creator.compute" << std::endl;
+  if (!rs_creator.Compute(nlSilent, std::cout, std::cerr)) {
+    std::cerr << "rs_creator.Compute returned false";
     return 1;
   }
 
   for (int i = 0; i < in_count; i++) {
     for (int j = 0; j < recovery_count; j++) {
-	//cout << "creator.process " << BUF_SIZE << " " << i << " " << j << endl;
+	//std::cout << "creator.process " << BUF_SIZE << " " << i << " " << j << std::endl;
 	rs_creator.Process(BUF_SIZE, i, &(data[i][0]), j, &(data[in_count + j][0]));
     }
   }
@@ -232,30 +232,30 @@ int generate_data(unsigned int seed, u8 data[][BUF_SIZE], int in_count, int reco
 
 
 template<typename gtype, typename utype>
-int init_repair_rs(ReedSolomon<gtype> &rs_repair, vector<bool> &in_present, vector<bool> &recovery_present, int low_exponent) {
+int init_repair_rs(ReedSolomon<gtype> &rs_repair, std::vector<bool> &in_present, std::vector<bool> &recovery_present, int low_exponent) {
 
-  //cout << "Repairer.SetInput " << in_present.size();
+  //std::cout << "Repairer.SetInput " << in_present.size();
   //for (unsigned int z = 0; z < in_present.size(); z++)
-  //  cout << (in_present[z] ? " true": " false");
-  //cout << endl;
-  if (!rs_repair.SetInput(in_present, cout, cerr)) {
-    cerr << "rs_repair.SetInput returned false";
+  //  std::cout << (in_present[z] ? " true": " false");
+  //std::cout << std::endl;
+  if (!rs_repair.SetInput(in_present, std::cout, std::cerr)) {
+    std::cerr << "rs_repair.SetInput returned false";
     return 1;
   }
 
   for (unsigned int j = 0; j < recovery_present.size(); j++) {
-    //cout << "Repair.SetOutput true " << j << endl;
+    //std::cout << "Repair.SetOutput true " << j << std::endl;
     if (recovery_present[j]) {
       if (!rs_repair.SetOutput(true, low_exponent + j)) {
-	cerr << "rs_repair.SetOutput returned false for " << j;
+	std::cerr << "rs_repair.SetOutput returned false for " << j;
 	return 1;
       }
     }
   }
 
-  //cout << "Repair.compute" << endl;
-  if (!rs_repair.Compute(nlSilent, cout, cerr)) {
-    cerr << "rs_repair.Compute returned false";
+  //std::cout << "Repair.compute" << std::endl;
+  if (!rs_repair.Compute(nlSilent, std::cout, std::cerr)) {
+    std::cerr << "rs_repair.Compute returned false";
     return 1;
   }
 
@@ -266,20 +266,20 @@ int init_repair_rs(ReedSolomon<gtype> &rs_repair, vector<bool> &in_present, vect
 // Strange that "missing place" is 0,1,2,3...
 // no matter what exponent or which in_present are false.
 template<typename gtype, typename utype>
-int recover_data(ReedSolomon<gtype> &rs_repair, int missing_place, u8 *buffer, u8 data[][BUF_SIZE], vector<bool> &in_present, vector<bool> &recovery_present) {
+int recover_data(ReedSolomon<gtype> &rs_repair, int missing_place, u8 *buffer, u8 data[][BUF_SIZE], std::vector<bool> &in_present, std::vector<bool> &recovery_present) {
   memset(buffer, 0, BUF_SIZE);
 
   int index = 0;
   for (unsigned int i = 0; i < in_present.size(); i++) {
     if (in_present[i]) {
-      //cout << "repair.process " << BUF_SIZE << " " << index << " " << 0 << endl;
+      //std::cout << "repair.process " << BUF_SIZE << " " << index << " " << 0 << std::endl;
       rs_repair.Process(BUF_SIZE, index, &(data[i][0]), missing_place, buffer);
       index++;
     }
   }
   for (unsigned int j = 0; j < recovery_present.size(); j++) {
     if (recovery_present[j]) {
-      //cout << "repair.process " << BUF_SIZE << " " << index << " " << 0 << endl;
+      //std::cout << "repair.process " << BUF_SIZE << " " << index << " " << 0 << std::endl;
       rs_repair.Process(BUF_SIZE, index, &(data[in_present.size() + j][0]), missing_place, buffer);
       index++;
     }
@@ -292,9 +292,9 @@ int recover_data(ReedSolomon<gtype> &rs_repair, int missing_place, u8 *buffer, u
 int compare_buffer(u8 *buffer, u8 *expected, const char *error_prefix) {
   for (int k = 0; k < BUF_SIZE; k++) {
     if (buffer[k] != expected[k]) {
-      cerr << error_prefix << " mismatch at place " << k << endl;
-      cerr << "  buffer had " << ((int) buffer[k]) << endl;
-      cerr << "  expected " << ((int) expected[k]) << endl;
+      std::cerr << error_prefix << " mismatch at place " << k << std::endl;
+      std::cerr << "  buffer had " << ((int) buffer[k]) << std::endl;
+      std::cerr << "  expected " << ((int) expected[k]) << std::endl;
       return 1;
     }
   }
@@ -320,11 +320,11 @@ int test1() {
   for (int missing1 = 0; missing1 < NUM_IN; missing1++) {
     for (int missing2 = missing1+1; missing2 < NUM_IN; missing2++) {
 
-      vector<bool> in_present;
+      std::vector<bool> in_present;
       for (int i = 0; i < NUM_IN; i++) {
 	in_present.push_back(i != missing1 && i != missing2);
       }
-      vector<bool> recovery_present;
+      std::vector<bool> recovery_present;
       for (int i = 0; i < NUM_REC; i++) {
 	recovery_present.push_back(true);
       }
@@ -363,11 +363,11 @@ int test2() {
   if (generate_data<gtype, utype>(873945932, data, NUM_IN, NUM_REC, LOW_EXPONENT))
     return 1;
 
-  vector<bool> in_present;
+  std::vector<bool> in_present;
   for (int i = 0; i < NUM_IN; i++) {
     in_present.push_back(false);
   }
-  vector<bool> recovery_present;
+  std::vector<bool> recovery_present;
   for (int i = 0; i < NUM_REC; i++) {
     recovery_present.push_back(true);
   }
@@ -404,13 +404,13 @@ int test3() {
 
   // loop over missing input blocks
   for (int missing1 = 0; missing1 < NUM_IN; missing1++) {
-    cerr << "Processing " << missing1 << endl;
+    std::cerr << "Processing " << missing1 << std::endl;
 
-    vector<bool> in_present;
+    std::vector<bool> in_present;
     for (int i = 0; i < NUM_IN; i++) {
       in_present.push_back(i != missing1);
     }
-    vector<bool> recovery_present;
+    std::vector<bool> recovery_present;
     for (int i = 0; i < NUM_REC; i++) {
       recovery_present.push_back(true);
     }
@@ -479,25 +479,25 @@ int test4(int NUM_IN, int *expected_bases) {
 
   ReedSolomon<gtype> rs_creator;
 
-  //cout << "creator.setinput" << NUM_IN << endl;
-  if (!rs_creator.SetInput(NUM_IN, cout, cerr)) {
-    cerr << "rs_creator.SetInput returned false";
+  //std::cout << "creator.setinput" << NUM_IN << std::endl;
+  if (!rs_creator.SetInput(NUM_IN, std::cout, std::cerr)) {
+    std::cerr << "rs_creator.SetInput returned false";
     return 1;
   }
-  //cout << "creator.setoutput" << LOW_EXPONENT << " " << high_exponent << endl;
+  //std::cout << "creator.setoutput" << LOW_EXPONENT << " " << high_exponent << std::endl;
   if (!rs_creator.SetOutput(false, LOW_EXPONENT, high_exponent)) {
-    cerr << "rs_creator.SetOutput returned false";
+    std::cerr << "rs_creator.SetOutput returned false";
     return 1;
   }
-  //cout << "creator.compute" << endl;
-  if (!rs_creator.Compute(nlSilent, cout, cerr)) {
-    cerr << "rs_creator.Compute returned false";
+  //std::cout << "creator.compute" << std::endl;
+  if (!rs_creator.Compute(nlSilent, std::cout, std::cerr)) {
+    std::cerr << "rs_creator.Compute returned false";
     return 1;
   }
 
   for (int i = 0; i < NUM_IN; i++) {
     for (int j = 0; j < NUM_REC; j++) {
-	//cout << "creator.process " << BUF_SIZE << " " << i << " " << j << endl;
+	//std::cout << "creator.process " << BUF_SIZE << " " << i << " " << j << std::endl;
 	rs_creator.Process(BUF_SIZE, i, &(data[i][0]), j, &(data[NUM_IN + j][0]));
     }
   }
@@ -514,9 +514,9 @@ int test4(int NUM_IN, int *expected_bases) {
     }
     int base = v;
     if (base != expected_bases[i]) {
-      cerr << "base at location " << i << " did not match expected." << endl;
-      cerr << "   base     = " << base << endl;
-      cerr << "   expected = " << expected_bases[i] << endl;
+      std::cerr << "base at location " << i << " did not match expected." << std::endl;
+      std::cerr << "   base     = " << base << std::endl;
+      std::cerr << "   expected = " << expected_bases[i] << std::endl;
       return 1;
     }
   }
@@ -528,40 +528,40 @@ int test4(int NUM_IN, int *expected_bases) {
 
 int main() {
   if (test1<Galois8,u8>()) {
-    cerr << "FAILED: test1(8)" << endl;
+    std::cerr << "FAILED: test1(8)" << std::endl;
     return 1;
   }
   if (test1<Galois16,u16>()) {
-    cerr << "FAILED: test1(16)" << endl;
+    std::cerr << "FAILED: test1(16)" << std::endl;
     return 1;
   }
 
   if (test2<Galois8,u8>()) {
-    cerr << "FAILED: test2(8)" << endl;
+    std::cerr << "FAILED: test2(8)" << std::endl;
     return 1;
   }
   if (test2<Galois16,u16>()) {
-    cerr << "FAILED: test2(16)" << endl;
+    std::cerr << "FAILED: test2(16)" << std::endl;
     return 1;
   }
 
   // test3 used more parity blocks than missing source blocks.
   // The code should either work or not allow it.
   // Probably not allow it.
-  //if (test3<Galois8,u8>()) return 1;  cout << "finished test 3(8)" << endl;
-  //if (test3<Galois16,u16>()) return 1;  cout << "finished test 3(16)" << endl;
+  //if (test3<Galois8,u8>()) return 1;  std::cout << "finished test 3(8)" << std::endl;
+  //if (test3<Galois16,u16>()) return 1;  std::cout << "finished test 3(16)" << std::endl;
 
   // the values for Par1
   int expected_bases8[10] = {1,2,3,4,5,6,7,8,9,10};
   if (test4<Galois8,u8>(10, expected_bases8)) {
-    cerr << "FAILED: test4(8)" << endl;
+    std::cerr << "FAILED: test4(8)" << std::endl;
     return 1;
   }
 
   // from the Par2 standard
   int expected_bases16[10] = {2, 4, 16, 128, 256, 2048, 8192, 16384, 4107, 32856};
   if (test4<Galois16,u16>(10, expected_bases16)) {
-    cerr << "FAILED: test4(16)" << endl;
+    std::cerr << "FAILED: test4(16)" << std::endl;
     return 1;
   }
 

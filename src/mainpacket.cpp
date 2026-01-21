@@ -29,7 +29,7 @@ static char THIS_FILE[]=__FILE__;
 
 // Construct the main packet from the source files and the block size
 
-bool MainPacket::Create(vector<Par2CreatorSourceFile*> &sourcefiles, u64 _blocksize)
+bool MainPacket::Create(std::vector<Par2CreatorSourceFile*> &sourcefiles, u64 _blocksize)
 {
   recoverablefilecount = totalfilecount =(u32)sourcefiles.size();
   blocksize = _blocksize;
@@ -51,11 +51,11 @@ bool MainPacket::Create(vector<Par2CreatorSourceFile*> &sourcefiles, u64 _blocks
   // Sort the source files according to their fileid values
   if (totalfilecount > 1)
   {
-    sort(sourcefiles.begin(), sourcefiles.end(), Par2CreatorSourceFile::CompareLess);
+    std::sort(sourcefiles.begin(), sourcefiles.end(), Par2CreatorSourceFile::CompareLess);
   }
 
   // Store the fileid values in the main packet
-  vector<Par2CreatorSourceFile*>::const_iterator sourcefile;
+  std::vector<Par2CreatorSourceFile*>::const_iterator sourcefile;
   MD5Hash *hash;
   for ((sourcefile=sourcefiles.begin()),(hash=packet->fileid);
        sourcefile!=sourcefiles.end();

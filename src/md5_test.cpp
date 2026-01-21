@@ -44,8 +44,8 @@ int test1() {
   context2.Final(hash2);
 
   if (hash1 != hash2) {
-    cerr << "hash1 = " << hash1 << endl;
-    cerr << "hash2 = " << hash2 << endl;
+    std::cerr << "hash1 = " << hash1 << std::endl;
+    std::cerr << "hash2 = " << hash2 << std::endl;
     return 1;
   }
 
@@ -53,8 +53,8 @@ int test1() {
 }
 
 
-// "MD5 of a null string is d41d8cd98f00b204e9800998ecf8427e"
-// "MD5 of a null string is d4 1d 8c d9  8f 00 b2 04  e9 80 09 98  ec f8 42 7e"
+// "MD5 of a null std::string is d41d8cd98f00b204e9800998ecf8427e"
+// "MD5 of a null std::string is d4 1d 8c d9  8f 00 b2 04  e9 80 09 98  ec f8 42 7e"
 // according to https://news.ycombinator.com/item?id=5653698
 int test2() {
 
@@ -82,9 +82,9 @@ int test2() {
 
   for (int i = 0; i < 16; i++) {
     if (hash1.hash[i] != hash2.hash[i]) {
-      cerr << "hash1 and hash2 differ in location " << i << endl;
-      cerr << "  hash1 = " << ((int) hash1.hash[i]) << endl;
-      cerr << "  hash2 = " << ((int) hash2.hash[i]) << endl;
+      std::cerr << "hash1 and hash2 differ in location " << i << std::endl;
+      std::cerr << "  hash1 = " << ((int) hash1.hash[i]) << std::endl;
+      std::cerr << "  hash2 = " << ((int) hash2.hash[i]) << std::endl;
       return 1;
     }
   }
@@ -103,27 +103,27 @@ int test3() {
   hash2 = hash1;
 
   if (!(hash1 == hash2)) {
-    cerr << "equal fail" << endl;
+    std::cerr << "equal fail" << std::endl;
     return 1;
   }
   if (hash1 != hash2) {
-    cerr << "not equal fail" << endl;
+    std::cerr << "not equal fail" << std::endl;
     return 1;
   }
   if (hash1 < hash2) {
-    cerr << "less than fail" << endl;
+    std::cerr << "less than fail" << std::endl;
     return 1;
   }
   if (hash1 > hash2) {
-    cerr << "greater than fail" << endl;
+    std::cerr << "greater than fail" << std::endl;
     return 1;
   }
   if (!(hash1 <= hash2)) {
-    cerr << "less than or equal fail" << endl;
+    std::cerr << "less than or equal fail" << std::endl;
     return 1;
   }
   if (!(hash1 >= hash2)) {
-    cerr << "greater than or equal fail" << endl;
+    std::cerr << "greater than or equal fail" << std::endl;
     return 1;
   }
 
@@ -131,27 +131,27 @@ int test3() {
   hash1.hash[0] = 0x0;
   hash2.hash[0] = 0x1;
   if (hash1 == hash2) {
-    cerr << "equal fail 2" << endl;
+    std::cerr << "equal fail 2" << std::endl;
     return 1;
   }
   if (!(hash1 != hash2)) {
-    cerr << "not equal fail 2" << endl;
+    std::cerr << "not equal fail 2" << std::endl;
     return 1;
   }
   if (!(hash1 < hash2)) {
-    cerr << "less than fail 2" << endl;
+    std::cerr << "less than fail 2" << std::endl;
     return 1;
   }
   if (hash1 > hash2) {
-    cerr << "greater than fail 2" << endl;
+    std::cerr << "greater than fail 2" << std::endl;
     return 1;
   }
   if (!(hash1 <= hash2)) {
-    cerr << "less than or equal fail 2" << endl;
+    std::cerr << "less than or equal fail 2" << std::endl;
     return 1;
   }
   if (hash1 >= hash2) {
-    cerr << "greater than or equal fail 2" << endl;
+    std::cerr << "greater than or equal fail 2" << std::endl;
     return 1;
   }
 
@@ -163,27 +163,27 @@ int test3() {
   hash2.hash[15] = 0x1;
 
   if (hash1 == hash2) {
-    cerr << "equal fail 3" << endl;
+    std::cerr << "equal fail 3" << std::endl;
     return 1;
   }
   if (!(hash1 != hash2)) {
-    cerr << "not equal fail 3" << endl;
+    std::cerr << "not equal fail 3" << std::endl;
     return 1;
   }
   if (!(hash1 < hash2)) {
-    cerr << "less than fail 3" << endl;
+    std::cerr << "less than fail 3" << std::endl;
     return 1;
   }
   if (hash1 > hash2) {
-    cerr << "greater than fail 3" << endl;
+    std::cerr << "greater than fail 3" << std::endl;
     return 1;
   }
   if (!(hash1 <= hash2)) {
-    cerr << "less than or equal fail 3" << endl;
+    std::cerr << "less than or equal fail 3" << std::endl;
     return 1;
   }
   if (hash1 >= hash2) {
-    cerr << "greater than or equal fail 3" << endl;
+    std::cerr << "greater than or equal fail 3" << std::endl;
     return 1;
   }
 
@@ -227,8 +227,8 @@ int test4() {
   context2.Final(hash2);
 
   if (hash1 != hash2) {
-    cerr << "random hash1 = " << hash1 << endl;
-    cerr << "random hash2 = " << hash2 << endl;
+    std::cerr << "random hash1 = " << hash1 << std::endl;
+    std::cerr << "random hash2 = " << hash2 << std::endl;
     return 1;
   }
 
@@ -238,23 +238,23 @@ int test4() {
 
 int main() {
   if (test1()) {
-    cerr << "FAILED: test1" << endl;
+    std::cerr << "FAILED: test1" << std::endl;
     return 1;
   }
   if (test2()) {
-    cerr << "FAILED: test2" << endl;
+    std::cerr << "FAILED: test2" << std::endl;
     return 1;
   }
   if (test3()) {
-    cerr << "FAILED: test3" << endl;
+    std::cerr << "FAILED: test3" << std::endl;
     return 1;
   }
   if (test4()) {
-    cerr << "FAILED: test4" << endl;
+    std::cerr << "FAILED: test4" << std::endl;
     return 1;
   }
 
-  cout << "SUCCESS: md5_test complete." << endl;
+  std::cout << "SUCCESS: md5_test complete." << std::endl;
 
   return 0;
 }

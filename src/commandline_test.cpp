@@ -23,7 +23,7 @@
 #include <stdlib.h>
 
 #include "commandline.h"
-using namespace std;
+
 
 // ComputeRecoveryBlockCount
 // recoveryblockset = true
@@ -40,12 +40,12 @@ int test5() {
 							0,
 							40);
   if (!success) {
-    cerr << "ComputeRecoveryBlockCount failed test5.1" << endl;
+    std::cerr << "ComputeRecoveryBlockCount failed test5.1" << std::endl;
     return 1;
   }
   if (recoveryblockcount != 42) {
-    cerr << "ComputeRecoveryBlockCount should not overwrite recoveryblockcount" << endl;
-    cerr << "   it returned " << recoveryblockcount << endl;
+    std::cerr << "ComputeRecoveryBlockCount should not overwrite recoveryblockcount" << std::endl;
+    std::cerr << "   it returned " << recoveryblockcount << std::endl;
     return 1;
   }
 
@@ -62,7 +62,7 @@ int test5() {
 							0,
 							40);
   if (success) {
-    cerr << "ComputeRecoveryBlockCount should fail for too many blocks" << endl;
+    std::cerr << "ComputeRecoveryBlockCount should fail for too many blocks" << std::endl;
     return 1;
   }
 
@@ -80,7 +80,7 @@ int test5() {
 							0,
 							40);
   if (success) {
-    cerr << "ComputeRecoveryBlockCount should fail for too high a coefficient" << endl;
+    std::cerr << "ComputeRecoveryBlockCount should fail for too high a coefficient" << std::endl;
     return 1;
   }
 
@@ -102,12 +102,12 @@ int test6() {
 							0,
 							40);
   if (!success) {
-    cerr << "ComputeRecoveryBlockCount failed test5.1" << endl;
+    std::cerr << "ComputeRecoveryBlockCount failed test5.1" << std::endl;
     return 1;
   }
   if (recoveryblockcount != 1) {
-    cerr << "ComputeRecoveryBlockCount 1% of 100 is 1" << endl;
-    cerr << "   it returned " << recoveryblockcount << endl;
+    std::cerr << "ComputeRecoveryBlockCount 1% of 100 is 1" << std::endl;
+    std::cerr << "   it returned " << recoveryblockcount << std::endl;
     return 1;
   }
 
@@ -123,12 +123,12 @@ int test6() {
 							0,
 							40);
   if (!success) {
-    cerr << "ComputeRecoveryBlockCount failed test5.1" << endl;
+    std::cerr << "ComputeRecoveryBlockCount failed test5.1" << std::endl;
     return 1;
   }
   if (recoveryblockcount != 50) {
-    cerr << "ComputeRecoveryBlockCount 5% of 1000 is 50" << endl;
-    cerr << "   it returned " << recoveryblockcount << endl;
+    std::cerr << "ComputeRecoveryBlockCount 5% of 1000 is 50" << std::endl;
+    std::cerr << "   it returned " << recoveryblockcount << std::endl;
     return 1;
   }
 
@@ -145,12 +145,12 @@ int test6() {
 							0,
 							40);
   if (!success) {
-    cerr << "ComputeRecoveryBlockCount failed test5.1" << endl;
+    std::cerr << "ComputeRecoveryBlockCount failed test5.1" << std::endl;
     return 1;
   }
   if (recoveryblockcount != 1) {
-    cerr << "ComputeRecoveryBlockCount 1% of 10 is still positive" << endl;
-    cerr << "   it returned " << recoveryblockcount << endl;
+    std::cerr << "ComputeRecoveryBlockCount 1% of 10 is still positive" << std::endl;
+    std::cerr << "   it returned " << recoveryblockcount << std::endl;
     return 1;
   }
 
@@ -187,7 +187,7 @@ int test7_helper(int sourcefilecount, // not used by ComputeRecoveryBlockCount!
 							redundancysize,
 							blocksize);
   if (!success) {
-    cerr << "ComputeRecoveryBlockCount failed test5.1" << endl;
+    std::cerr << "ComputeRecoveryBlockCount failed test5.1" << std::endl;
     return 1;
   }
 
@@ -198,12 +198,12 @@ int test7_helper(int sourcefilecount, // not used by ComputeRecoveryBlockCount!
     + recoveryblockcount * (overhead_perrecoveryblock + blocksize);
   if (usage <= redundancysize - (overhead_perrecoveryblock + blocksize) ||
       usage > redundancysize) {
-    cerr << "ComputeRecoveryBlockCount " << redundancysize << " data limit" << endl;
-    cerr << "   but usage was " << usage << " with " << recoveryblockcount << " blocks" << endl;
-    cerr << "        sourcefilecount=" << sourcefilecount << endl;
-    cerr << "        sourceblockcount=" << sourceblockcount << endl;
-    cerr << "        blocksize=" << blocksize << endl;
-    cerr << "        recoveryfilecount=" << recoveryfilecount << endl;
+    std::cerr << "ComputeRecoveryBlockCount " << redundancysize << " data limit" << std::endl;
+    std::cerr << "   but usage was " << usage << " with " << recoveryblockcount << " blocks" << std::endl;
+    std::cerr << "        sourcefilecount=" << sourcefilecount << std::endl;
+    std::cerr << "        sourceblockcount=" << sourceblockcount << std::endl;
+    std::cerr << "        blocksize=" << blocksize << std::endl;
+    std::cerr << "        recoveryfilecount=" << recoveryfilecount << std::endl;
     return 2;
   }
 
@@ -256,12 +256,12 @@ int test7() {
 							4,  // = redundancysize
 							1024);
   if (!success) {
-    cerr << "ComputeRecoveryBlockCount failed test5.1" << endl;
+    std::cerr << "ComputeRecoveryBlockCount failed test5.1" << std::endl;
     return 1;
   }
   if (recoveryblockcount != 1) {
-    cerr << "ComputeRecoveryBlockCount with small redundancy amount should still return 1" << endl;
-    cerr << "   it returned " << recoveryblockcount << endl;
+    std::cerr << "ComputeRecoveryBlockCount with small redundancy amount should still return 1" << std::endl;
+    std::cerr << "   it returned " << recoveryblockcount << std::endl;
     return 1;
   }
 
@@ -299,19 +299,19 @@ int test8_helper(int sourcefilecount, // not used by ComputeRecoveryBlockCount!
 							redundancysize,
 							blocksize);
   if (!success) {
-    cerr << "ComputeRecoveryBlockCount failed test8.1" << endl;
+    std::cerr << "ComputeRecoveryBlockCount failed test8.1" << std::endl;
     return 1;
   }
 
   u32 recoveryfilecount = 0;
-  success = ComputeRecoveryFileCount(cout, cerr,
+  success = ComputeRecoveryFileCount(std::cout, std::cerr,
 				     &recoveryfilecount,
 				     scVariable,
 				     recoveryblockcount,
 				     blocksize,
 				     blocksize);
   if (!success) {
-    cerr << "ComputeRecoveryBlockCount failed test8.2" << endl;
+    std::cerr << "ComputeRecoveryBlockCount failed test8.2" << std::endl;
     return 1;
   }
 
@@ -322,12 +322,12 @@ int test8_helper(int sourcefilecount, // not used by ComputeRecoveryBlockCount!
     + recoveryblockcount * (overhead_perrecoveryblock + blocksize);
   if (usage <= redundancysize - (overhead_perrecoveryblock + blocksize) ||
       usage > redundancysize) {
-    cerr << "ComputeRecoveryBlockCount " << redundancysize << " data limit" << endl;
-    cerr << "   but usage was " << usage << " with " << recoveryblockcount << " blocks" << endl;
-    cerr << "        sourcefilecount=" << sourcefilecount << endl;
-    cerr << "        sourceblockcount=" << sourceblockcount << endl;
-    cerr << "        blocksize=" << blocksize << endl;
-    cerr << "        recoveryfilecount=" << recoveryfilecount << endl;
+    std::cerr << "ComputeRecoveryBlockCount " << redundancysize << " data limit" << std::endl;
+    std::cerr << "   but usage was " << usage << " with " << recoveryblockcount << " blocks" << std::endl;
+    std::cerr << "        sourcefilecount=" << sourcefilecount << std::endl;
+    std::cerr << "        sourceblockcount=" << sourceblockcount << std::endl;
+    std::cerr << "        blocksize=" << blocksize << std::endl;
+    std::cerr << "        recoveryfilecount=" << recoveryfilecount << std::endl;
     return 2;
   }
 
@@ -392,7 +392,7 @@ int test9_helper(const char *arg)
 
   CommandLine commandline;
   if (commandline.Parse(argc, argv)) {
-    cout << "CommandLine should not have parsed: \"" << arg << "\"" << endl;
+    std::cout << "CommandLine should not have parsed: \"" << arg << "\"" << std::endl;
     return 1;
   }
 
@@ -405,20 +405,20 @@ int test9_helper(const char *arg)
 
 int test9() {
   // create input files, in case they are read.
-  ofstream par2file;
+  std::ofstream par2file;
   par2file.open("foo.par2");
   par2file << "dummy par2 file.  Just has to exist.";
   par2file.close();
-  ofstream par2file_bar;
+  std::ofstream par2file_bar;
   par2file_bar.open("bar.par2");
   par2file_bar << "dummy par2 file.  Just has to exist.";
   par2file_bar.close();
 
-  ofstream input1;
+  std::ofstream input1;
   input1.open("input1.txt");
   input1 << "commandline_test test9 input1.txt\n";
   input1.close();
-  ofstream input2;
+  std::ofstream input2;
   input2.open("input2.txt");
   input2 << "commandline_test test9 input2.txt\n";
   input2.close();
@@ -553,13 +553,13 @@ int test9() {
 int test10_helper(const char *arg,
 		  const NoiseLevel noiselevel,
 		  const size_t memorylimit,
-		  const string &basepath,
+		  const std::string &basepath,
 #ifdef _OPENMP
 		  const u32 nthreads,
 		  const u32 filethreads,
 #endif
-		  const string &parfilename,
-		  const vector<string> &extrafiles,
+		  const std::string &parfilename,
+		  const std::vector<std::string> &extrafiles,
 		  const u64 blocksize,
 		  const u32 firstblock,
 		  const Scheme recoveryfilescheme,
@@ -587,89 +587,89 @@ int test10_helper(const char *arg,
 
   CommandLine commandline;
   if (!commandline.Parse(argc, argv)) {
-    cout << "CommandLine said it was unable to parse \"" << arg << "\"" << endl;
+    std::cout << "CommandLine said it was unable to parse \"" << arg << "\"" << std::endl;
     return 1;
   }
 
   if (commandline.GetVersion() != CommandLine::verPar2) {
-    cout << "test10 fail version  arg=" << arg << endl;
-    cout << commandline.GetVersion() << " != " << CommandLine::verPar2 << endl;
+    std::cout << "test10 fail version  arg=" << arg << std::endl;
+    std::cout << commandline.GetVersion() << " != " << CommandLine::verPar2 << std::endl;
     return 1;
   }
   if (commandline.GetOperation() != CommandLine::opCreate) {
-    cout << "test10 fail operation  arg=" << arg << endl;
-    cout << commandline.GetOperation() << " != " << CommandLine::opCreate << endl;
+    std::cout << "test10 fail operation  arg=" << arg << std::endl;
+    std::cout << commandline.GetOperation() << " != " << CommandLine::opCreate << std::endl;
     return 1;
   }
 
   if (commandline.GetNoiseLevel() != noiselevel) {
-    cout << "test10 fail noiselevel  arg=" << arg << endl;
-    cout << commandline.GetNoiseLevel() << " != " << noiselevel << endl;
+    std::cout << "test10 fail noiselevel  arg=" << arg << std::endl;
+    std::cout << commandline.GetNoiseLevel() << " != " << noiselevel << std::endl;
     return 1;
   }
   if (commandline.GetMemoryLimit() != memorylimit) {
-    cout << "test10 fail memorylimit  arg=" << arg << endl;
-    cout << commandline.GetMemoryLimit() << " != " << memorylimit << endl;
+    std::cout << "test10 fail memorylimit  arg=" << arg << std::endl;
+    std::cout << commandline.GetMemoryLimit() << " != " << memorylimit << std::endl;
     return 1;
   }
   if (commandline.GetBasePath() != basepath) {
-    cout << "test10 fail basepath  arg=" << arg << endl;
-    cout << commandline.GetBasePath() << " != " << basepath << endl;
+    std::cout << "test10 fail basepath  arg=" << arg << std::endl;
+    std::cout << commandline.GetBasePath() << " != " << basepath << std::endl;
     return 1;
   }
 #ifdef _OPENMP
   if (commandline.GetNumThreads() != nthreads) {
-    cout << "test10 fail nthreads  arg=" << arg << endl;
-    cout << commandline.GetNumThreads() << " != " << nthreads << endl;
+    std::cout << "test10 fail nthreads  arg=" << arg << std::endl;
+    std::cout << commandline.GetNumThreads() << " != " << nthreads << std::endl;
     return 1;
   }
   if (commandline.GetFileThreads() != filethreads) {
-    cout << "test10 fail filethreads  arg=" << arg << endl;
-    cout << commandline.GetFileThreads() << " != " << filethreads << endl;
+    std::cout << "test10 fail filethreads  arg=" << arg << std::endl;
+    std::cout << commandline.GetFileThreads() << " != " << filethreads << std::endl;
     return 1;
   }
 #endif
   if (commandline.GetParFilename() != parfilename) {
-    cout << "test10 fail parfilename  arg=" << arg << endl;
-    cout << commandline.GetParFilename() << " != " << parfilename << endl;
+    std::cout << "test10 fail parfilename  arg=" << arg << std::endl;
+    std::cout << commandline.GetParFilename() << " != " << parfilename << std::endl;
     return 1;
   }
-  const vector<string> &extrafiles_returned = commandline.GetExtraFiles();
+  const std::vector<std::string> &extrafiles_returned = commandline.GetExtraFiles();
   if (extrafiles_returned.size() != extrafiles.size()) {
-    cout << "test10 fail extrafiles.size()  arg=" << arg << endl;
-    cout << extrafiles_returned.size() << " != " << extrafiles.size() << endl;
+    std::cout << "test10 fail extrafiles.size()  arg=" << arg << std::endl;
+    std::cout << extrafiles_returned.size() << " != " << extrafiles.size() << std::endl;
     return 1;
   }
   for (unsigned int i = 0; i < extrafiles.size(); i++) {
     if (extrafiles_returned[i] != extrafiles[i]) {
-      cout << "test10 fail extrafiles[" << i << "]  arg=" << arg << endl;
-      cout <<  extrafiles_returned[i] << " != " << extrafiles[i] << endl;
+      std::cout << "test10 fail extrafiles[" << i << "]  arg=" << arg << std::endl;
+      std::cout <<  extrafiles_returned[i] << " != " << extrafiles[i] << std::endl;
       return 1;
     }
   }
   if (commandline.GetBlockSize() != blocksize) {
-    cout << "test10 fail blocksize  arg=" << arg << endl;
-    cout << commandline.GetBlockSize() << " != " << blocksize << endl;
+    std::cout << "test10 fail blocksize  arg=" << arg << std::endl;
+    std::cout << commandline.GetBlockSize() << " != " << blocksize << std::endl;
     return 1;
   }
   if (commandline.GetFirstRecoveryBlock() != firstblock) {
-    cout << "test10 fail firstblock  arg=" << arg << endl;
-    cout << commandline.GetFirstRecoveryBlock() << " != " << firstblock << endl;
+    std::cout << "test10 fail firstblock  arg=" << arg << std::endl;
+    std::cout << commandline.GetFirstRecoveryBlock() << " != " << firstblock << std::endl;
     return 1;
   }
   if (commandline.GetRecoveryFileScheme() != recoveryfilescheme) {
-    cout << "test10 fail recoveryfilescheme  arg=" << arg << endl;
-    cout << commandline.GetRecoveryFileScheme() << " != " << recoveryfilescheme << endl;
+    std::cout << "test10 fail recoveryfilescheme  arg=" << arg << std::endl;
+    std::cout << commandline.GetRecoveryFileScheme() << " != " << recoveryfilescheme << std::endl;
     return 1;
   }
   if (commandline.GetRecoveryFileCount() != recoveryfilecount) {
-    cout << "test10 fail recoveryfilecount  arg=" << arg << endl;
-    cout << commandline.GetRecoveryFileCount() << " != " << recoveryfilecount << endl;
+    std::cout << "test10 fail recoveryfilecount  arg=" << arg << std::endl;
+    std::cout << commandline.GetRecoveryFileCount() << " != " << recoveryfilecount << std::endl;
     return 1;
   }
   if (commandline.GetRecoveryBlockCount() != recoveryblockcount) {
-    cout << "test10 fail recoveryblockcount  arg=" << arg << endl;
-    cout << commandline.GetRecoveryBlockCount() << " != " << recoveryblockcount << endl;
+    std::cout << "test10 fail recoveryblockcount  arg=" << arg << std::endl;
+    std::cout << commandline.GetRecoveryBlockCount() << " != " << recoveryblockcount << std::endl;
     return 1;
   }
 
@@ -684,12 +684,12 @@ int test10_helper(const char *arg,
 // Test calls to "par2 create"
 int test10() {
   // create input files, in case they are read.
-  ofstream input1;
+  std::ofstream input1;
   input1.open("input1.txt");
   const char *input1_contents = "commandline_test test10 input1.txt\n";
   input1 << input1_contents;
   input1.close();
-  ofstream input2;
+  std::ofstream input2;
   input2.open("input2.txt");
   const char *input2_contents = "commandline_test test10 input2.txt\n";
   input2 << input2_contents;
@@ -701,7 +701,7 @@ int test10() {
   const char *argv_for_defaults[5] = {"par2", "create", "foo.par2", "input1.txt", "input2.txt"};
   CommandLine commandline_for_defaults;
   if (!commandline_for_defaults.Parse(argc_for_defaults, argv_for_defaults)) {
-    cout << "CommandLine unable to fetch default values." << endl;
+    std::cout << "CommandLine unable to fetch default values." << std::endl;
     return 1;
   }
 
@@ -710,13 +710,13 @@ int test10() {
   // a non-default value is present in test.)
   const NoiseLevel default_noiselevel = nlNormal;
   const size_t default_memorylimit = commandline_for_defaults.GetMemoryLimit();
-  const string &default_basepath = commandline_for_defaults.GetBasePath();
+  const std::string &default_basepath = commandline_for_defaults.GetBasePath();
 #ifdef _OPENMP
   const u32 default_nthreads = 0;
   const u32 default_filethreads = _FILE_THREADS;
 #endif
-  string default_parfilename = default_basepath + "foo";  // ".par2" is stripped.
-  vector<string> default_extrafiles;
+  std::string default_parfilename = default_basepath + "foo";  // ".par2" is stripped.
+  std::vector<std::string> default_extrafiles;
   default_extrafiles.push_back(default_basepath + "input1.txt");
   default_extrafiles.push_back(default_basepath + "input2.txt");
   const u64 default_blocksize = 4;  // tries to make 2000 blocks ... this is closest blocksize
@@ -913,12 +913,12 @@ int test10() {
     return 1;
   }
   {// scope to hide variables
-    ofstream dashinput2;
+    std::ofstream dashinput2;
     dashinput2.open("-input2.txt");
     dashinput2 << "commandline_test test10 -input2.txt\n";
     dashinput2.close();
 
-    vector<string> extrafiles;
+    std::vector<std::string> extrafiles;
     extrafiles.push_back(default_basepath + "input1.txt");
     extrafiles.push_back(default_basepath + "-input2.txt");
     if (test10_helper("par2 create foo.par2 input1.txt -- -input2.txt",
@@ -959,7 +959,7 @@ int test10() {
 		    default_recoveryblockcount)) {
     return 1;
   }
-  int longestfilelen = max(strlen(input1_contents), strlen(input2_contents));
+  int longestfilelen = std::max(strlen(input1_contents), strlen(input2_contents));
   int longestfilelen_rounded_up = longestfilelen;
   if (longestfilelen_rounded_up % 4 != 0) {
     longestfilelen_rounded_up += 4 - (longestfilelen_rounded_up % 4);
@@ -1038,7 +1038,7 @@ int test10() {
   int usage = optionr_recoveryfilecount * usage_per_recoveryfile
     + optionr_recoveryblockcount * (overhead_perrecoveryblock + default_blocksize);
   if (usage > 1024) {
-    cout << "Test10 -rk1 should fail because usage limit was 1024 bytes.  Actual usage was " << usage << endl;
+    std::cout << "Test10 -rk1 should fail because usage limit was 1024 bytes.  Actual usage was " << usage << std::endl;
     //return 1;
   }
 
@@ -1162,13 +1162,13 @@ int test10() {
 int test11_helper(const char *arg,
 		  const NoiseLevel noiselevel,
 		  const size_t memorylimit,
-		  const string &basepath,
+		  const std::string &basepath,
 #ifdef _OPENMP
 		  const u32 nthreads,
 		  const u32 filethreads,
 #endif
-		  const string &parfilename,
-		  const vector<string> &extrafiles,
+		  const std::string &parfilename,
+		  const std::vector<std::string> &extrafiles,
 		  const CommandLine::Version version,
 		  const CommandLine::Operation operation,
 		  const bool purgefiles,
@@ -1196,83 +1196,83 @@ int test11_helper(const char *arg,
 
   CommandLine commandline;
   if (!commandline.Parse(argc, argv)) {
-    cout << "CommandLine said it was unable to parse \"" << arg << "\"" << endl;
+    std::cout << "CommandLine said it was unable to parse \"" << arg << "\"" << std::endl;
     return 1;
   }
 
 
   if (commandline.GetVersion() != version) {
-    cout << "test11 fail version  arg=" << arg << endl;
-    cout << commandline.GetVersion() << " != " << version << endl;
+    std::cout << "test11 fail version  arg=" << arg << std::endl;
+    std::cout << commandline.GetVersion() << " != " << version << std::endl;
     return 1;
   }
   if (commandline.GetOperation() != operation) {
-    cout << "test11 fail operation  arg=" << arg << endl;
-    cout << commandline.GetOperation() << " != " << operation << endl;
+    std::cout << "test11 fail operation  arg=" << arg << std::endl;
+    std::cout << commandline.GetOperation() << " != " << operation << std::endl;
     return 1;
   }
 
   if (commandline.GetNoiseLevel() != noiselevel) {
-    cout << "test11 fail noiselevel  arg=" << arg << endl;
-    cout << commandline.GetNoiseLevel() << " != " << noiselevel << endl;
+    std::cout << "test11 fail noiselevel  arg=" << arg << std::endl;
+    std::cout << commandline.GetNoiseLevel() << " != " << noiselevel << std::endl;
     return 1;
   }
   if (commandline.GetMemoryLimit() != memorylimit) {
-    cout << "test11 fail memorylimit  arg=" << arg << endl;
-    cout << commandline.GetMemoryLimit() << " != " << memorylimit << endl;
+    std::cout << "test11 fail memorylimit  arg=" << arg << std::endl;
+    std::cout << commandline.GetMemoryLimit() << " != " << memorylimit << std::endl;
     return 1;
   }
   if (commandline.GetBasePath() != basepath) {
-    cout << "test11 fail basepath  arg=" << arg << endl;
-    cout << commandline.GetBasePath() << " != " << basepath << endl;
+    std::cout << "test11 fail basepath  arg=" << arg << std::endl;
+    std::cout << commandline.GetBasePath() << " != " << basepath << std::endl;
     return 1;
   }
 #ifdef _OPENMP
   if (commandline.GetNumThreads() != nthreads) {
-    cout << "test11 fail nthreads  arg=" << arg << endl;
-    cout << commandline.GetNumThreads() << " != " << nthreads << endl;
+    std::cout << "test11 fail nthreads  arg=" << arg << std::endl;
+    std::cout << commandline.GetNumThreads() << " != " << nthreads << std::endl;
     return 1;
   }
   if (commandline.GetFileThreads() != filethreads) {
-    cout << "test11 fail filethreads  arg=" << arg << endl;
-    cout << commandline.GetFileThreads() << " != " << filethreads << endl;
+    std::cout << "test11 fail filethreads  arg=" << arg << std::endl;
+    std::cout << commandline.GetFileThreads() << " != " << filethreads << std::endl;
     return 1;
   }
 #endif
   if (commandline.GetParFilename() != parfilename) {
-    cout << "test11 fail parfilename  arg=" << arg << endl;
-    cout << commandline.GetParFilename() << " != " << parfilename << endl;
+    std::cout << "test11 fail parfilename  arg=" << arg << std::endl;
+    std::cout << commandline.GetParFilename() << " != " << parfilename << std::endl;
     return 1;
   }
-  const vector<string> &extrafiles_returned = commandline.GetExtraFiles();
+  const std::vector<std::string> &extrafiles_returned = commandline.GetExtraFiles();
   if (extrafiles_returned.size() != extrafiles.size()) {
-    cout << "test11 fail extrafiles.size()  arg=" << arg << endl;
-    cout << extrafiles_returned.size() << " != " << extrafiles.size() << endl;
+    std::cout << "test11 fail extrafiles.size()  arg=" << arg << std::endl;
+    std::cout << extrafiles_returned.size() << " != " << extrafiles.size() << std::endl;
     return 1;
   }
   for (unsigned int i = 0; i < extrafiles.size(); i++) {
     if (extrafiles_returned[i] != extrafiles[i]) {
-      cout << "test11 fail extrafiles[" << i << "]  arg=" << arg << endl;
-      cout <<  extrafiles_returned[i] << " != " << extrafiles[i] << endl;
+      std::cout << "test11 fail extrafiles[" << i << "]  arg=" << arg << std::endl;
+      std::cout <<  extrafiles_returned[i] << " != " << extrafiles[i] << std::endl;
       return 1;
     }
   }
 
   if (commandline.GetPurgeFiles() != purgefiles) {
-    cout << "test11 fail purgefiles  arg=" << arg << endl;
-    cout << commandline.GetPurgeFiles() << " != " << purgefiles << endl;
+    std::cout << "test11 fail purgefiles  arg=" << arg << std::endl;
+    std::cout << commandline.GetPurgeFiles() << " != " << purgefiles << std::endl;
     return 1;
   }
 
   if (version == CommandLine::verPar2) {
     if (commandline.GetSkipData() != skipdata) {
-      cout << "test11 fail skipdata  arg=" << arg << endl;
-      cout << commandline.GetSkipData() << " != " << skipdata << endl;
+      std::cout << "test11 fail skipdata  arg=" << arg << std::endl;
+      std::cout << commandline.GetSkipData() << " != " << skipdata << std::endl;
       return 1;
     }
     if (commandline.GetSkipLeaway() != skipleaway) {
-      cout << "test11 fail skipleaway  arg=" << arg << endl;
-      cout << commandline.GetSkipLeaway() << " != " << skipleaway << endl;
+      std::cout << "test11 fail skipleaway  arg=" << arg << std::endl;
+      std::cout << commandline.GetSkipLeaway() << " != " << skipleaway << std::endl;
       return 1;
     }
   }
@@ -1288,17 +1288,17 @@ int test11_helper(const char *arg,
 // test calls to repair/verify
 int test11() {
   // create input files, in case they are read.
-  ofstream par2file;
+  std::ofstream par2file;
   par2file.open("foo.par2");
   par2file << "dummy par2 file.  Just has to exist.";
   par2file.close();
 
-  ofstream input1;
+  std::ofstream input1;
   input1.open("input1.txt");
   const char *input1_contents = "commandline_test test11 input1.txt\n";
   input1 << input1_contents;
   input1.close();
-  ofstream input2;
+  std::ofstream input2;
   input2.open("input2.txt");
   const char *input2_contents = "commandline_test test11 input2.txt\n";
   input2 << input2_contents;
@@ -1309,7 +1309,7 @@ int test11() {
   const char *argv_for_defaults[5] = {"par2", "repair", "foo.par2", "input1.txt", "input2.txt"};
   CommandLine commandline_for_defaults;
   if (!commandline_for_defaults.Parse(argc_for_defaults, argv_for_defaults)) {
-    cout << "CommandLine unable to fetch default values." << endl;
+    std::cout << "CommandLine unable to fetch default values." << std::endl;
     return 1;
   }
 
@@ -1319,13 +1319,13 @@ int test11() {
   // a non-default value is present in test.)
   const NoiseLevel default_noiselevel = nlNormal;
   const size_t default_memorylimit = commandline_for_defaults.GetMemoryLimit();
-  const string &default_basepath = commandline_for_defaults.GetBasePath();
+  const std::string &default_basepath = commandline_for_defaults.GetBasePath();
 #ifdef _OPENMP
   const u32 default_nthreads = 0;
   const u32 default_filethreads = _FILE_THREADS;
 #endif
-  string default_parfilename = "foo.par2"; // relative path, par2 is NOT stripped.
-  vector<string> default_extrafiles;
+  std::string default_parfilename = "foo.par2"; // relative path, par2 is NOT stripped.
+  std::vector<std::string> default_extrafiles;
   default_extrafiles.push_back(default_basepath + "input1.txt");
   default_extrafiles.push_back(default_basepath + "input2.txt");
   bool default_purgefiles = false;
@@ -1512,7 +1512,7 @@ int test11() {
     return 1;
   }
   {// scope to hide variables
-    ofstream dashpar2file;
+    std::ofstream dashpar2file;
     dashpar2file.open("-foo.par2");
     dashpar2file << "anything\n";
     dashpar2file.close();
@@ -1538,12 +1538,12 @@ int test11() {
     remove("-foo.par2");
   }
   { // scope to hide variables
-    ofstream dashinput2;
+    std::ofstream dashinput2;
     dashinput2.open("-input2.txt");
     dashinput2 << "commandline_test test11 -input2.txt\n";
     dashinput2.close();
 
-    vector<string> extrafiles;
+    std::vector<std::string> extrafiles;
     extrafiles.push_back(default_basepath + "input1.txt");
     extrafiles.push_back(default_basepath + "-input2.txt");
 
@@ -1647,7 +1647,7 @@ int test11() {
 
   // Create par1 file.  Do a few tests.
   //
-  ofstream par1file;
+  std::ofstream par1file;
   par1file.open("bar.par");
   par1file << "dummy par1 file.  Just has to exist.";
   par1file.close();
@@ -1700,7 +1700,7 @@ int test12() {
   const char *argv_for_help[5] = {"par2", "--help"};
   CommandLine commandline_for_help;
   if (!commandline_for_help.Parse(argc_for_help, argv_for_help)) {
-    cout << "CommandLine failed for help" << endl;
+    std::cout << "CommandLine failed for help" << std::endl;
     return 1;
   }
 
@@ -1708,7 +1708,7 @@ int test12() {
   const char *argv_for_h[5] = {"par2", "-h"};
   CommandLine commandline_for_h;
   if (!commandline_for_h.Parse(argc_for_h, argv_for_h)) {
-    cout << "CommandLine failed for h." << endl;
+    std::cout << "CommandLine failed for h." << std::endl;
     return 1;
   }
 
@@ -1716,7 +1716,7 @@ int test12() {
   const char *argv_for_help2[5] = {"par2create", "--help"};
   CommandLine commandline_for_help2;
   if (!commandline_for_help2.Parse(argc_for_help2, argv_for_help2)) {
-    cout << "CommandLine failed for help (par2create)." << endl;
+    std::cout << "CommandLine failed for help (par2create)." << std::endl;
     return 1;
   }
 
@@ -1724,7 +1724,7 @@ int test12() {
   const char *argv_for_version[5] = {"par2", "--version"};
   CommandLine commandline_for_version;
   if (!commandline_for_version.Parse(argc_for_version, argv_for_version)) {
-    cout << "CommandLine failed for version." << endl;
+    std::cout << "CommandLine failed for version." << std::endl;
     return 1;
   }
 
@@ -1732,7 +1732,7 @@ int test12() {
   const char *argv_for_V[5] = {"par2", "-V"};
   CommandLine commandline_for_V;
   if (!commandline_for_V.Parse(argc_for_V, argv_for_V)) {
-    cout << "CommandLine failed for v." << endl;
+    std::cout << "CommandLine failed for v." << std::endl;
     return 1;
   }
 
@@ -1740,7 +1740,7 @@ int test12() {
   const char *argv_for_VV[5] = {"par2", "-VV"};
   CommandLine commandline_for_VV;
   if (!commandline_for_VV.Parse(argc_for_VV, argv_for_VV)) {
-    cout << "CommandLine failed for v." << endl;
+    std::cout << "CommandLine failed for v." << std::endl;
     return 1;
   }
 
@@ -1748,7 +1748,7 @@ int test12() {
   const char *argv_for_version2[5] = {"par2create", "--version"};
   CommandLine commandline_for_version2;
   if (!commandline_for_version2.Parse(argc_for_version2, argv_for_version2)) {
-    cout << "CommandLine failed for version (par2create)." << endl;
+    std::cout << "CommandLine failed for version (par2create)." << std::endl;
     return 1;
   }
 
@@ -1758,44 +1758,44 @@ int test12() {
 
 
 int main() {
-  cout << "Tests 1 through 4 were moved to libpar2_test." << endl;
+  std::cout << "Tests 1 through 4 were moved to libpar2_test." << std::endl;
 
 
   if (test5()) {
-    cerr << "FAILED: test5" << endl;
+    std::cerr << "FAILED: test5" << std::endl;
     return 1;
   }
   if (test6()) {
-    cerr << "FAILED: test6" << endl;
+    std::cerr << "FAILED: test6" << std::endl;
     return 1;
   }
   if (test7()) {
-    cerr << "FAILED: test7" << endl;
+    std::cerr << "FAILED: test7" << std::endl;
     return 1;
   }
   if (test8()) {
-    cerr << "FAILED: test8" << endl;
+    std::cerr << "FAILED: test8" << std::endl;
     return 1;
   }
 
   if (test9()) {
-    cerr << "FAILED: test9" << endl;
+    std::cerr << "FAILED: test9" << std::endl;
     return 1;
   }
   if (test10()) {
-    cerr << "FAILED: test10" << endl;
+    std::cerr << "FAILED: test10" << std::endl;
     return 1;
   }
   if (test11()) {
-    cerr << "FAILED: test11" << endl;
+    std::cerr << "FAILED: test11" << std::endl;
     return 1;
   }
   if (test12()) {
-    cerr << "FAILED: test12" << endl;
+    std::cerr << "FAILED: test12" << std::endl;
     return 1;
   }
 
-  cout << "SUCCESS: commandline_test complete." << endl;
+  std::cout << "SUCCESS: commandline_test complete." << std::endl;
 
   return 0;
 }

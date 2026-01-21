@@ -33,10 +33,10 @@ public:
 			 std::ostream &serr,
 			 const NoiseLevel noiselevel,
 			 PAR1FILEENTRY *fileentry,
-			 const string &searchpath);
+			 const std::string &searchpath);
   ~Par1RepairerSourceFile(void);
 
-  string FileName(void) const {return filename;}
+  std::string FileName(void) const {return filename;}
   u64 FileSize(void) const {return filesize;}
   const MD5Hash& HashFull(void) const {return hashfull;}
   const MD5Hash& Hash16k(void) const {return hash16k;}
@@ -60,7 +60,7 @@ public:
 
 
 protected:
-  string       filename;
+  std::string  filename;
   u64          filesize;
   MD5Hash      hashfull;
   MD5Hash      hash16k;

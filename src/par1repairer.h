@@ -33,8 +33,8 @@ public:
 		 const u32 nthreads,
 		 // filethreads is not used by Par1
 #endif
-		 string parfilename,
-		 const vector<string> &extrafiles,
+		 std::string parfilename,
+		 const std::vector<std::string> &extrafiles,
 		 const bool dorepair,   // derived from operation
 		 const bool purgefiles
 		 // skipdata is not used by Par1
@@ -43,20 +43,20 @@ public:
 
 protected:
   // Load the main PAR file
-  bool LoadRecoveryFile(string filename);
+  bool LoadRecoveryFile(std::string filename);
 
   // Load other PAR files related to the main PAR file
-  bool LoadOtherRecoveryFiles(string filename);
+  bool LoadOtherRecoveryFiles(std::string filename);
 
   // Load any extra PAR files specified on the command line
-  bool LoadExtraRecoveryFiles(const vector<string> &extrafiles);
+  bool LoadExtraRecoveryFiles(const std::vector<std::string> &extrafiles);
 
   // Check for the existence of and verify each of the source files
   bool VerifySourceFiles(void);
 
   // Check any other files specified on the command line to see if they are
   // actually copies of the source files that have the wrong filename
-  bool VerifyExtraFiles(const vector<string> &extrafiles);
+  bool VerifyExtraFiles(const std::vector<std::string> &extrafiles);
 
   // Attempt to match the data in the DiskFile with the source file
   bool VerifyDataFile(DiskFile *diskfile, Par1RepairerSourceFile *sourcefile);
@@ -99,10 +99,10 @@ protected:
   std::ostream &serr; // stream for errors (for commandline, this is cerr)
   const NoiseLevel   noiselevel;              // How noisy we should be
 
-  string                    searchpath;              // Where to find files on disk
+  std::string               searchpath;              // Where to find files on disk
   DiskFileMap               diskfilemap;             // Map from filename to DiskFile
 
-  map<u32, DataBlock*>      recoveryblocks;          // The recovery data (mapped by exponent)
+  std::map<u32, DataBlock*> recoveryblocks;          // The recovery data (mapped by exponent)
 
   unsigned char            *filelist;
   u32                       filelistsize;
@@ -110,20 +110,20 @@ protected:
   u64                       blocksize;               // The size of recovery and data blocks
   u64                       chunksize;               // How much of a block can be processed.
 
-  vector<Par1RepairerSourceFile*> sourcefiles;
-  vector<Par1RepairerSourceFile*> extrafiles;
+  std::vector<Par1RepairerSourceFile*> sourcefiles;
+  std::vector<Par1RepairerSourceFile*> extrafiles;
 
   u32                       completefilecount;
   u32                       renamedfilecount;
   u32                       damagedfilecount;
   u32                       missingfilecount;
 
-  list<Par1RepairerSourceFile*> verifylist;
-  vector<DiskFile*>             backuplist;   // Those source files backups
-  list<string>                  parlist;      // list of par files
+  std::list<Par1RepairerSourceFile*> verifylist;
+  std::vector<DiskFile*>             backuplist;   // Those source files backups
+  std::list<std::string>             parlist;      // list of par files
 
-  vector<DataBlock*>        inputblocks;             // Which DataBlocks will be read from disk
-  vector<DataBlock*>        outputblocks;            // Which DataBlocks have to calculated using RS
+  std::vector<DataBlock*>   inputblocks;             // Which DataBlocks will be read from disk
+  std::vector<DataBlock*>   outputblocks;            // Which DataBlocks have to calculated using RS
 
   ReedSolomon<Galois8>      rs;                      // The Reed Solomon matrix.
 

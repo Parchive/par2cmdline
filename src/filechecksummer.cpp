@@ -146,7 +146,7 @@ bool FileCheckSummer::Fill(bool longfill)
   // Try reading at least one block of data
   const char *target = tailpointer == buffer ? &buffer[blocksize] : &buffer[2*blocksize];
   // How much data can we read into the buffer
-  size_t want = (size_t)min(filesize-readoffset, (u64)(target-tailpointer));
+  size_t want = (size_t)std::min(filesize-readoffset, (u64)(target-tailpointer));
 
   if (want > 0)
   {

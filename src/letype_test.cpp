@@ -33,8 +33,8 @@ int test1() {
   u16 output = x;
 
   if (output != expected) {
-    cerr << "output = " << output << endl;
-    cerr << "expected = " << expected << endl;
+    std::cerr << "output = " << output << std::endl;
+    std::cerr << "expected = " << expected << std::endl;
     return 1;
   }
 
@@ -51,8 +51,8 @@ int test2() {
     u16 output = x;
 
     if (output != expected) {
-      cerr << "output = " << output << endl;
-      cerr << "expected = " << expected << endl;
+      std::cerr << "output = " << output << std::endl;
+      std::cerr << "expected = " << expected << std::endl;
       return 1;
     }
   }
@@ -69,8 +69,8 @@ int test3() {
   u32 output = x;
 
   if (output != expected) {
-    cerr << "output = " << output << endl;
-    cerr << "expected = " << expected << endl;
+    std::cerr << "output = " << output << std::endl;
+    std::cerr << "expected = " << expected << std::endl;
     return 1;
   }
 
@@ -95,8 +95,8 @@ int test4() {
     u32 output = x;
 
     if (output != expected) {
-      cerr << "output = " << output << endl;
-      cerr << "expected = " << expected << endl;
+      std::cerr << "output = " << output << std::endl;
+      std::cerr << "expected = " << expected << std::endl;
       return 1;
     }
   }
@@ -113,8 +113,8 @@ int test5() {
   u64 output = x;
 
   if (output != expected) {
-    cerr << "output = " << output << endl;
-    cerr << "expected = " << expected << endl;
+    std::cerr << "output = " << output << std::endl;
+    std::cerr << "expected = " << expected << std::endl;
     return 1;
   }
 
@@ -140,8 +140,8 @@ int test6() {
     u64 output = x;
 
     if (output != expected) {
-      cerr << "output = " << output << endl;
-      cerr << "expected = " << expected << endl;
+      std::cerr << "output = " << output << std::endl;
+      std::cerr << "expected = " << expected << std::endl;
       return 1;
     }
   }
@@ -152,31 +152,31 @@ int test6() {
 
 int main() {
   if (test1()) {
-    cerr << "FAILED: test1" << endl;
+    std::cerr << "FAILED: test1" << std::endl;
     return 1;
   }
   if (test2()) {
-    cerr << "FAILED: test2" << endl;
+    std::cerr << "FAILED: test2" << std::endl;
     return 1;
   }
   if (test3()) {
-    cerr << "FAILED: test3" << endl;
+    std::cerr << "FAILED: test3" << std::endl;
     return 1;
   }
   if (test4()) {
-    cerr << "FAILED: test4" << endl;
+    std::cerr << "FAILED: test4" << std::endl;
     return 1;
   }
   if (test5()) {
-    cerr << "FAILED: test5" << endl;
+    std::cerr << "FAILED: test5" << std::endl;
     return 1;
   }
   if (test6()) {
-    cerr << "FAILED: test6" << endl;
+    std::cerr << "FAILED: test6" << std::endl;
     return 1;
   }
 
-  cout << "SUCCESS: letype_test complete." << endl;
+  std::cout << "SUCCESS: letype_test complete." << std::endl;
 
   return 0;
 }

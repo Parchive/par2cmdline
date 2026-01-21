@@ -44,7 +44,7 @@
 // MD5 Hash value
 
 struct MD5Hash;
-ostream& operator<<(ostream &s, const MD5Hash &hash);
+std::ostream& operator<<(std::ostream &s, const MD5Hash &hash);
 
 struct MD5Hash
 {
@@ -58,8 +58,8 @@ struct MD5Hash
   bool operator<=(const MD5Hash &other) const;
 
   // Convert value to hex
-  friend ostream& operator<<(ostream &s, const MD5Hash &hash);
-  string print(void) const;
+  friend std::ostream& operator<<(std::ostream &s, const MD5Hash &hash);
+  std::string print(void) const;
 
   u8 hash[16]; // 16 byte MD5 Hash value
 } PACKED;
@@ -86,8 +86,8 @@ public:
   MD5Hash Hash(void) const;
   u64 Bytes(void) const {return bytes;}
 
-  friend ostream& operator<<(ostream &s, const MD5Context &context);
-  string print(void) const;
+  friend std::ostream& operator<<(std::ostream &s, const MD5Context &context);
+  std::string print(void) const;
 
 protected:
   enum {buffersize = 64};

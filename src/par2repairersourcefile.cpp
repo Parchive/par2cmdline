@@ -70,15 +70,15 @@ void Par2RepairerSourceFile::SetVerificationPacket(VerificationPacket *_verifica
   verificationpacket = _verificationpacket;
 }
 
-void Par2RepairerSourceFile::ComputeTargetFileName(std::ostream &sout, std::ostream &serr, const NoiseLevel noiselevel, const string &path)
+void Par2RepairerSourceFile::ComputeTargetFileName(std::ostream &sout, std::ostream &serr, const NoiseLevel noiselevel, const std::string &path)
 {
   // Get a version of the filename compatible with the OS
-  string filename = DescriptionPacket::TranslateFilenameFromPar2ToLocal(sout, serr, noiselevel, descriptionpacket->FileName());
+  std::string filename = DescriptionPacket::TranslateFilenameFromPar2ToLocal(sout, serr, noiselevel, descriptionpacket->FileName());
 
   targetfilename = path + filename;
 }
 
-string Par2RepairerSourceFile::TargetFileName(void) const
+std::string Par2RepairerSourceFile::TargetFileName(void) const
 {
   return targetfilename;
 }
@@ -117,8 +117,8 @@ DiskFile* Par2RepairerSourceFile::GetCompleteFile(void) const
 // and set their lengths appropriately
 void Par2RepairerSourceFile::SetBlocks(u32 _blocknumber,
                                        u32 _blockcount,
-                                       vector<DataBlock>::iterator _sourceblocks,
-                                       vector<DataBlock>::iterator _targetblocks,
+                                       std::vector<DataBlock>::iterator _sourceblocks,
+                                       std::vector<DataBlock>::iterator _targetblocks,
                                        u64 blocksize)
 {
   firstblocknumber = _blocknumber;
@@ -130,12 +130,12 @@ void Par2RepairerSourceFile::SetBlocks(u32 _blocknumber,
   {
     u64 filesize = descriptionpacket->FileSize();
 
-    vector<DataBlock>::iterator sb = sourceblocks;
+    std::vector<DataBlock>::iterator sb = sourceblocks;
     for (u32 blocknumber=0; blocknumber<blockcount; ++blocknumber, ++sb)
     {
       DataBlock &datablock = *sb;
 
-      u64 blocklength = min(blocksize, filesize-(u64)blocknumber*blocksize);
+      u64 blocklength = std::min(blocksize, filesize-(u64)blocknumber*blocksize);
 
       datablock.SetFilesize(filesize);
       datablock.SetLength(blocklength);

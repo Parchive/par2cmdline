@@ -22,7 +22,7 @@
 #include <fstream>
 #include <stdlib.h>
 
-using namespace std;
+
 
 #include "libpar2.h"
 
@@ -31,26 +31,26 @@ using namespace std;
 // check when it returns false.
 int test1() {
   u32 recoveryfilecount = 0;
-  bool success = ComputeRecoveryFileCount(cout, cerr,
+  bool success = ComputeRecoveryFileCount(std::cout, std::cerr,
 					  &recoveryfilecount,
 						       scUnknown,
 						       1,
 						       1,
 						       1);
   if (success) {
-    cerr << "ComputeRecoveryFileCount worked for unknown scheme" << endl;
+    std::cerr << "ComputeRecoveryFileCount worked for unknown scheme" << std::endl;
     return 1;
   }
 
   recoveryfilecount = 10;
-  success = ComputeRecoveryFileCount(cout, cerr,
+  success = ComputeRecoveryFileCount(std::cout, std::cerr,
 					  &recoveryfilecount,
 						       scVariable,
 						       4,
 						       4,
 						       4);
   if (success) {
-    cerr << "ComputeRecoveryFileCount worked with more files than blocks!" << endl;
+    std::cerr << "ComputeRecoveryFileCount worked with more files than blocks!" << std::endl;
     return 1;
   }
 
@@ -62,24 +62,24 @@ int test1() {
 // scVariable
 int test2() {
   u32 recoveryfilecount = 0;
-  bool success = ComputeRecoveryFileCount(cout, cerr,
+  bool success = ComputeRecoveryFileCount(std::cout, std::cerr,
 					  &recoveryfilecount,
 						       scVariable,
 						       0,
 						       4,
 						       4);
   if (!success) {
-    cerr << "ComputeRecoveryFileCount failed test2.1" << endl;
+    std::cerr << "ComputeRecoveryFileCount failed test2.1" << std::endl;
     return 1;
   }
   if (recoveryfilecount != 0) {
-    cerr << "ComputeRecoveryFileCount for 0 blocks should return 0" << endl;
-    cerr << "   it returned " << recoveryfilecount << endl;
+    std::cerr << "ComputeRecoveryFileCount for 0 blocks should return 0" << std::endl;
+    std::cerr << "   it returned " << recoveryfilecount << std::endl;
     return 1;
   }
 
   recoveryfilecount = 0;
-  success = ComputeRecoveryFileCount(cout, cerr,
+  success = ComputeRecoveryFileCount(std::cout, std::cerr,
 					  &recoveryfilecount,
 						       scVariable,
 						       8,
@@ -87,17 +87,17 @@ int test2() {
 						       4);
 
   if (!success) {
-    cerr << "ComputeRecoveryFileCount failed test2.1" << endl;
+    std::cerr << "ComputeRecoveryFileCount failed test2.1" << std::endl;
     return 1;
   }
   if (recoveryfilecount != 4) {
-    cerr << "ComputeRecoveryFileCount for 8 blocks should return 4" << endl;
-    cerr << "   it returned " << recoveryfilecount << endl;
+    std::cerr << "ComputeRecoveryFileCount for 8 blocks should return 4" << std::endl;
+    std::cerr << "   it returned " << recoveryfilecount << std::endl;
     return 1;
   }
 
   recoveryfilecount = 0;
-  success = ComputeRecoveryFileCount(cout, cerr,
+  success = ComputeRecoveryFileCount(std::cout, std::cerr,
 					  &recoveryfilecount,
 						       scVariable,
 						       15,
@@ -105,18 +105,18 @@ int test2() {
 						       4);
 
   if (!success) {
-    cerr << "ComputeRecoveryFileCount failed test2.1" << endl;
+    std::cerr << "ComputeRecoveryFileCount failed test2.1" << std::endl;
     return 1;
   }
   if (recoveryfilecount != 4) {
-    cerr << "ComputeRecoveryFileCount for 15 blocks should return 4" << endl;
-    cerr << "   it returned " << recoveryfilecount << endl;
+    std::cerr << "ComputeRecoveryFileCount for 15 blocks should return 4" << std::endl;
+    std::cerr << "   it returned " << recoveryfilecount << std::endl;
     return 1;
   }
 
 
   recoveryfilecount = 0;
-  success = ComputeRecoveryFileCount(cout, cerr,
+  success = ComputeRecoveryFileCount(std::cout, std::cerr,
 					  &recoveryfilecount,
 						       scVariable,
 						       64,
@@ -124,17 +124,17 @@ int test2() {
 						       4);
 
   if (!success) {
-    cerr << "ComputeRecoveryFileCount failed test2.1" << endl;
+    std::cerr << "ComputeRecoveryFileCount failed test2.1" << std::endl;
     return 1;
   }
   if (recoveryfilecount != 7) {
-    cerr << "ComputeRecoveryFileCount for 64 blocks should return 7" << endl;
-    cerr << "   it returned " << recoveryfilecount << endl;
+    std::cerr << "ComputeRecoveryFileCount for 64 blocks should return 7" << std::endl;
+    std::cerr << "   it returned " << recoveryfilecount << std::endl;
     return 1;
   }
 
   recoveryfilecount = 0;
-  success = ComputeRecoveryFileCount(cout, cerr,
+  success = ComputeRecoveryFileCount(std::cout, std::cerr,
 					  &recoveryfilecount,
 						       scVariable,
 						       127,
@@ -142,12 +142,12 @@ int test2() {
 						       4);
 
   if (!success) {
-    cerr << "ComputeRecoveryFileCount failed test2.1" << endl;
+    std::cerr << "ComputeRecoveryFileCount failed test2.1" << std::endl;
     return 1;
   }
   if (recoveryfilecount != 7) {
-    cerr << "ComputeRecoveryFileCount for 127 blocks should return 7" << endl;
-    cerr << "   it returned " << recoveryfilecount << endl;
+    std::cerr << "ComputeRecoveryFileCount for 127 blocks should return 7" << std::endl;
+    std::cerr << "   it returned " << recoveryfilecount << std::endl;
     return 1;
   }
 
@@ -159,24 +159,24 @@ int test2() {
 // Doesn't matter the value - long as it's zero at zero and positive after.
 int test3() {
   u32 recoveryfilecount = 0;
-  bool success = ComputeRecoveryFileCount(cout, cerr,
+  bool success = ComputeRecoveryFileCount(std::cout, std::cerr,
 					  &recoveryfilecount,
 						       scUniform,
 						       0,
 						       4,
 						       4);
   if (!success) {
-    cerr << "ComputeRecoveryFileCount failed test2.1" << endl;
+    std::cerr << "ComputeRecoveryFileCount failed test2.1" << std::endl;
     return 1;
   }
   if (recoveryfilecount != 0) {
-    cerr << "ComputeRecoveryFileCount for 0 blocks should return 0" << endl;
-    cerr << "   it returned " << recoveryfilecount << endl;
+    std::cerr << "ComputeRecoveryFileCount for 0 blocks should return 0" << std::endl;
+    std::cerr << "   it returned " << recoveryfilecount << std::endl;
     return 1;
   }
 
   recoveryfilecount = 0;
-  success = ComputeRecoveryFileCount(cout, cerr,
+  success = ComputeRecoveryFileCount(std::cout, std::cerr,
 					  &recoveryfilecount,
 						       scUniform,
 						       1,
@@ -184,18 +184,18 @@ int test3() {
 						       4);
 
   if (!success) {
-    cerr << "ComputeRecoveryFileCount failed test2.1" << endl;
+    std::cerr << "ComputeRecoveryFileCount failed test2.1" << std::endl;
     return 1;
   }
   if (recoveryfilecount == 0) {
-    cerr << "ComputeRecoveryFileCount for 1 block should a positive value" << endl;
-    cerr << "   it returned " << recoveryfilecount << endl;
+    std::cerr << "ComputeRecoveryFileCount for 1 block should a positive value" << std::endl;
+    std::cerr << "   it returned " << recoveryfilecount << std::endl;
     return 1;
   }
 
 
   recoveryfilecount = 0;
-  success = ComputeRecoveryFileCount(cout, cerr,
+  success = ComputeRecoveryFileCount(std::cout, std::cerr,
 					  &recoveryfilecount,
 						       scUniform,
 						       8,
@@ -203,12 +203,12 @@ int test3() {
 						       4);
 
   if (!success) {
-    cerr << "ComputeRecoveryFileCount failed test2.1" << endl;
+    std::cerr << "ComputeRecoveryFileCount failed test2.1" << std::endl;
     return 1;
   }
   if (recoveryfilecount == 0) {
-    cerr << "ComputeRecoveryFileCount for 8 blocks should a positive value" << endl;
-    cerr << "   it returned " << recoveryfilecount << endl;
+    std::cerr << "ComputeRecoveryFileCount for 8 blocks should a positive value" << std::endl;
+    std::cerr << "   it returned " << recoveryfilecount << std::endl;
     return 1;
   }
 
@@ -222,24 +222,24 @@ int test3() {
 // But differs for smaller ones.
 int test4() {
   u32 recoveryfilecount = 0;
-  bool success = ComputeRecoveryFileCount(cout, cerr,
+  bool success = ComputeRecoveryFileCount(std::cout, std::cerr,
 					  &recoveryfilecount,
 						       scLimited,
 						       0,
 						       4096,
 						       4);
   if (!success) {
-    cerr << "ComputeRecoveryFileCount failed test2.1" << endl;
+    std::cerr << "ComputeRecoveryFileCount failed test2.1" << std::endl;
     return 1;
   }
   if (recoveryfilecount != 0) {
-    cerr << "ComputeRecoveryFileCount for 0 blocks should return 0" << endl;
-    cerr << "   it returned " << recoveryfilecount << endl;
+    std::cerr << "ComputeRecoveryFileCount for 0 blocks should return 0" << std::endl;
+    std::cerr << "   it returned " << recoveryfilecount << std::endl;
     return 1;
   }
 
   recoveryfilecount = 0;
-  success = ComputeRecoveryFileCount(cout, cerr,
+  success = ComputeRecoveryFileCount(std::cout, std::cerr,
 					  &recoveryfilecount,
 						       scLimited,
 						       8,
@@ -247,17 +247,17 @@ int test4() {
 						       4);
 
   if (!success) {
-    cerr << "ComputeRecoveryFileCount failed test2.1" << endl;
+    std::cerr << "ComputeRecoveryFileCount failed test2.1" << std::endl;
     return 1;
   }
   if (recoveryfilecount != 4) {
-    cerr << "ComputeRecoveryFileCount for 8 blocks should return 4" << endl;
-    cerr << "   it returned " << recoveryfilecount << endl;
+    std::cerr << "ComputeRecoveryFileCount for 8 blocks should return 4" << std::endl;
+    std::cerr << "   it returned " << recoveryfilecount << std::endl;
     return 1;
   }
 
   recoveryfilecount = 0;
-  success = ComputeRecoveryFileCount(cout, cerr,
+  success = ComputeRecoveryFileCount(std::cout, std::cerr,
 					  &recoveryfilecount,
 						       scLimited,
 						       15,
@@ -265,18 +265,18 @@ int test4() {
 						       4);
 
   if (!success) {
-    cerr << "ComputeRecoveryFileCount failed test2.1" << endl;
+    std::cerr << "ComputeRecoveryFileCount failed test2.1" << std::endl;
     return 1;
   }
   if (recoveryfilecount != 4) {
-    cerr << "ComputeRecoveryFileCount for 15 blocks should return 4" << endl;
-    cerr << "   it returned " << recoveryfilecount << endl;
+    std::cerr << "ComputeRecoveryFileCount for 15 blocks should return 4" << std::endl;
+    std::cerr << "   it returned " << recoveryfilecount << std::endl;
     return 1;
   }
 
 
   recoveryfilecount = 0;
-  success = ComputeRecoveryFileCount(cout, cerr,
+  success = ComputeRecoveryFileCount(std::cout, std::cerr,
 					  &recoveryfilecount,
 						       scLimited,
 						       64,
@@ -284,17 +284,17 @@ int test4() {
 						       4);
 
   if (!success) {
-    cerr << "ComputeRecoveryFileCount failed test2.1" << endl;
+    std::cerr << "ComputeRecoveryFileCount failed test2.1" << std::endl;
     return 1;
   }
   if (recoveryfilecount != 7) {
-    cerr << "ComputeRecoveryFileCount for 64 blocks should return 7" << endl;
-    cerr << "   it returned " << recoveryfilecount << endl;
+    std::cerr << "ComputeRecoveryFileCount for 64 blocks should return 7" << std::endl;
+    std::cerr << "   it returned " << recoveryfilecount << std::endl;
     return 1;
   }
 
   recoveryfilecount = 0;
-  success = ComputeRecoveryFileCount(cout, cerr,
+  success = ComputeRecoveryFileCount(std::cout, std::cerr,
 					  &recoveryfilecount,
 						       scLimited,
 						       127,
@@ -302,12 +302,12 @@ int test4() {
 						       4);
 
   if (!success) {
-    cerr << "ComputeRecoveryFileCount failed test2.1" << endl;
+    std::cerr << "ComputeRecoveryFileCount failed test2.1" << std::endl;
     return 1;
   }
   if (recoveryfilecount != 7) {
-    cerr << "ComputeRecoveryFileCount for 127 blocks should return 7" << endl;
-    cerr << "   it returned " << recoveryfilecount << endl;
+    std::cerr << "ComputeRecoveryFileCount for 127 blocks should return 7" << std::endl;
+    std::cerr << "   it returned " << recoveryfilecount << std::endl;
     return 1;
   }
 
@@ -315,7 +315,7 @@ int test4() {
   // smaller largest files
   // 1 2 4 8 10 10 10...
   recoveryfilecount = 0;
-  success = ComputeRecoveryFileCount(cout, cerr,
+  success = ComputeRecoveryFileCount(std::cout, std::cerr,
 					  &recoveryfilecount,
 						       scLimited,
 						       8,
@@ -323,17 +323,17 @@ int test4() {
 						       4);
 
   if (!success) {
-    cerr << "ComputeRecoveryFileCount failed test2.1" << endl;
+    std::cerr << "ComputeRecoveryFileCount failed test2.1" << std::endl;
     return 1;
   }
   if (recoveryfilecount != 4) {
-    cerr << "ComputeRecoveryFileCount for 127 blocks should return 7" << endl;
-    cerr << "   it returned " << recoveryfilecount << endl;
+    std::cerr << "ComputeRecoveryFileCount for 127 blocks should return 7" << std::endl;
+    std::cerr << "   it returned " << recoveryfilecount << std::endl;
     return 1;
   }
 
   recoveryfilecount = 0;
-  success = ComputeRecoveryFileCount(cout, cerr,
+  success = ComputeRecoveryFileCount(std::cout, std::cerr,
 					  &recoveryfilecount,
 						       scLimited,
 						       15,
@@ -341,17 +341,17 @@ int test4() {
 						       4);
 
   if (!success) {
-    cerr << "ComputeRecoveryFileCount failed test2.1" << endl;
+    std::cerr << "ComputeRecoveryFileCount failed test2.1" << std::endl;
     return 1;
   }
   if (recoveryfilecount != 4) {
-    cerr << "ComputeRecoveryFileCount for 127 blocks should return 7" << endl;
-    cerr << "   it returned " << recoveryfilecount << endl;
+    std::cerr << "ComputeRecoveryFileCount for 127 blocks should return 7" << std::endl;
+    std::cerr << "   it returned " << recoveryfilecount << std::endl;
     return 1;
   }
 
   recoveryfilecount = 0;
-  success = ComputeRecoveryFileCount(cout, cerr,
+  success = ComputeRecoveryFileCount(std::cout, std::cerr,
 					  &recoveryfilecount,
 						       scLimited,
 						       16,
@@ -359,17 +359,17 @@ int test4() {
 						       4);
 
   if (!success) {
-    cerr << "ComputeRecoveryFileCount failed test2.1" << endl;
+    std::cerr << "ComputeRecoveryFileCount failed test2.1" << std::endl;
     return 1;
   }
   if (recoveryfilecount != 5) {
-    cerr << "ComputeRecoveryFileCount for 127 blocks should return 7" << endl;
-    cerr << "   it returned " << recoveryfilecount << endl;
+    std::cerr << "ComputeRecoveryFileCount for 127 blocks should return 7" << std::endl;
+    std::cerr << "   it returned " << recoveryfilecount << std::endl;
     return 1;
   }
 
   recoveryfilecount = 0;
-  success = ComputeRecoveryFileCount(cout, cerr,
+  success = ComputeRecoveryFileCount(std::cout, std::cerr,
 					  &recoveryfilecount,
 						       scLimited,
 						       25,
@@ -377,17 +377,17 @@ int test4() {
 						       4);
 
   if (!success) {
-    cerr << "ComputeRecoveryFileCount failed test2.1" << endl;
+    std::cerr << "ComputeRecoveryFileCount failed test2.1" << std::endl;
     return 1;
   }
   if (recoveryfilecount != 5) {
-    cerr << "ComputeRecoveryFileCount for 127 blocks should return 7" << endl;
-    cerr << "   it returned " << recoveryfilecount << endl;
+    std::cerr << "ComputeRecoveryFileCount for 127 blocks should return 7" << std::endl;
+    std::cerr << "   it returned " << recoveryfilecount << std::endl;
     return 1;
   }
 
   recoveryfilecount = 0;
-  success = ComputeRecoveryFileCount(cout, cerr,
+  success = ComputeRecoveryFileCount(std::cout, std::cerr,
 					  &recoveryfilecount,
 						       scLimited,
 						       26,
@@ -395,17 +395,17 @@ int test4() {
 						       4);
 
   if (!success) {
-    cerr << "ComputeRecoveryFileCount failed test2.1" << endl;
+    std::cerr << "ComputeRecoveryFileCount failed test2.1" << std::endl;
     return 1;
   }
   if (recoveryfilecount != 6) {
-    cerr << "ComputeRecoveryFileCount for 127 blocks should return 7" << endl;
-    cerr << "   it returned " << recoveryfilecount << endl;
+    std::cerr << "ComputeRecoveryFileCount for 127 blocks should return 7" << std::endl;
+    std::cerr << "   it returned " << recoveryfilecount << std::endl;
     return 1;
   }
 
   recoveryfilecount = 0;
-  success = ComputeRecoveryFileCount(cout, cerr,
+  success = ComputeRecoveryFileCount(std::cout, std::cerr,
 					  &recoveryfilecount,
 						       scLimited,
 						       35,
@@ -413,18 +413,18 @@ int test4() {
 						       4);
 
   if (!success) {
-    cerr << "ComputeRecoveryFileCount failed test2.1" << endl;
+    std::cerr << "ComputeRecoveryFileCount failed test2.1" << std::endl;
     return 1;
   }
   if (recoveryfilecount != 6) {
-    cerr << "ComputeRecoveryFileCount for 127 blocks should return 7" << endl;
-    cerr << "   it returned " << recoveryfilecount << endl;
+    std::cerr << "ComputeRecoveryFileCount for 127 blocks should return 7" << std::endl;
+    std::cerr << "   it returned " << recoveryfilecount << std::endl;
     return 1;
   }
 
 
   recoveryfilecount = 0;
-  success = ComputeRecoveryFileCount(cout, cerr,
+  success = ComputeRecoveryFileCount(std::cout, std::cerr,
 					  &recoveryfilecount,
 						       scLimited,
 						       35 + 100,
@@ -432,12 +432,12 @@ int test4() {
 						       4);
 
   if (!success) {
-    cerr << "ComputeRecoveryFileCount failed test2.1" << endl;
+    std::cerr << "ComputeRecoveryFileCount failed test2.1" << std::endl;
     return 1;
   }
   if (recoveryfilecount != 6 + 10) {
-    cerr << "ComputeRecoveryFileCount for 127 blocks should return 7" << endl;
-    cerr << "   it returned " << recoveryfilecount << endl;
+    std::cerr << "ComputeRecoveryFileCount for 127 blocks should return 7" << std::endl;
+    std::cerr << "   it returned " << recoveryfilecount << std::endl;
     return 1;
   }
 
@@ -448,23 +448,23 @@ int test4() {
 
 int main() {
   if (test1()) {
-    cerr << "FAILED: test1" << endl;
+    std::cerr << "FAILED: test1" << std::endl;
     return 1;
   }
   if (test2()) {
-    cerr << "FAILED: test2" << endl;
+    std::cerr << "FAILED: test2" << std::endl;
     return 1;
   }
   if (test3()) {
-    cerr << "FAILED: test3" << endl;
+    std::cerr << "FAILED: test3" << std::endl;
     return 1;
   }
   if (test4()) {
-    cerr << "FAILED: test4" << endl;
+    std::cerr << "FAILED: test4" << std::endl;
     return 1;
   }
 
-  cout << "SUCCESS: libpar2_test complete." << endl;
+  std::cout << "SUCCESS: libpar2_test complete." << std::endl;
 
   return 0;
 }
