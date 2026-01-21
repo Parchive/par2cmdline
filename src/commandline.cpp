@@ -123,6 +123,8 @@ void CommandLine::usage(void)
     "Options: (verify or repair)\n"
     "  -p       : Purge backup files and par files on successful recovery or\n"
     "             when no recovery is needed\n"
+    "  -O       : Rename-only mode (skip files that are not perfect matches,\n"
+    "             useful for quickly fixing renamed files)\n"
     "  -N       : Data skipping (find badly mispositioned data blocks)\n"
     "  -S<n>    : Skip leaway (distance +/- from expected block position, default 64)\n"
     "Options: (create)\n"
@@ -744,11 +746,12 @@ bool CommandLine::ReadArgs(int argc, const char * const *argv)
             purgefiles = true;
           }
           break;
-        case 'M':
+
+        case 'O':
           {
             if (operation != opRepair && operation != opVerify)
             {
-              cerr << "Cannot specify renameonly unless repairing or verifying." << endl;
+              std::cerr << "Cannot specify rename-only unless repairing or verifying." << std::endl;
               return false;
             }
             renameonly = true;

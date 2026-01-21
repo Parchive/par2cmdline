@@ -1394,7 +1394,7 @@ bool Par2Repairer::VerifyDataFile(DiskFile *diskfile, Par2RepairerSourceFile *so
 
     if (!ScanDataFile(diskfile,   // [in]      The file to scan
                       basepath,
-		      renameonly,
+                      renameonly, // [in]      Only look for perfect matches
                       sourcefile, // [in/out]  Modified in the match is for another source file
                       matchtype,  // [out]
                       hashfull,   // [out]
@@ -1406,8 +1406,6 @@ bool Par2Repairer::VerifyDataFile(DiskFile *diskfile, Par2RepairerSourceFile *so
     {
       case eNoMatch:
         // No data was found at all.
-	
-	
 
         // Continue to next test.
         break;
@@ -1745,9 +1743,12 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
         if (!currententry->FirstBlock() || filechecksummer.Offset() != 0)
         {
           matchtype = ePartialMatch;
-	  if (renameonly) {
-		  return false;
-	  }
+
+          // In rename-only mode, skip files that are not perfect matches
+          if (renameonly)
+          {
+            return true;
+          }
         }
       }
       else
@@ -1758,9 +1759,12 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
         if (currententry != nextentry)
         {
           matchtype = ePartialMatch;
-	  if (renameonly) {
-		  return false;
-	  }
+
+          // In rename-only mode, skip files that are not perfect matches
+          if (renameonly)
+          {
+            return true;
+          }
         }
 
         // Is the match from a different source file
@@ -1796,8 +1800,11 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
     {
       // This cannot be a perfect match
       matchtype = ePartialMatch;
-      if (renameonly) {
-	      return false;
+
+      // In rename-only mode, skip files that are not perfect matches
+      if (renameonly)
+      {
+        return true;
       }
 
       // Was this a duplicate match

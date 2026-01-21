@@ -93,21 +93,21 @@ public:
   u32                    GetFirstRecoveryBlock(void) const {return firstblock;}
   u32                    GetRecoveryFileCount(void) const  {return recoveryfilecount;}
   u32                    GetRecoveryBlockCount(void) const {return recoveryblockcount;}
-  Scheme    GetRecoveryFileScheme(void) const {return recoveryfilescheme;}
+  Scheme                 GetRecoveryFileScheme(void) const {return recoveryfilescheme;}
   size_t                 GetMemoryLimit(void) const        {return memorylimit;}
-  NoiseLevel GetNoiseLevel(void) const        {return noiselevel;}
+  NoiseLevel             GetNoiseLevel(void) const        {return noiselevel;}
 
-  std::string                              GetParFilename(void) const {return parfilename;}
-  std::string                              GetBasePath(void) const    {return basepath;}
-  const std::vector<std::string>& GetExtraFiles(void) const  {return extrafiles;}
+  std::string                         GetParFilename(void) const {return parfilename;}
+  std::string                         GetBasePath(void) const    {return basepath;}
+  const std::vector<std::string>&     GetExtraFiles(void) const  {return extrafiles;}
   bool                                GetPurgeFiles(void) const  {return purgefiles;}
   bool                                GetRenameOnly(void) const  {return renameonly;}
   bool                                GetRecursive(void) const   {return recursive;}
   bool                                GetSkipData(void) const    {return skipdata;}
   u64                                 GetSkipLeaway(void) const  {return skipleaway;}
 #ifdef _OPENMP
-  u32                          GetNumThreads(void) {return nthreads;}
-  u32                          GetFileThreads(void) {return filethreads;}
+  u32                                 GetNumThreads(void) {return nthreads;}
+  u32                                 GetFileThreads(void) {return filethreads;}
 #endif
 
 
@@ -180,7 +180,8 @@ protected:
   // options for verify/repair operation
   bool purgefiles;             // purge backup and par files on success
                                // recovery
-  bool renameonly;             // only attempt to repair via rename			   
+  bool renameonly;             // Only attempt to repair via rename, skip
+                               // files that are not perfect matches
   bool skipdata;               // Whether we should assume that all good
                                // data blocks are within +/- bytes of
                                // where we expect to find them and should

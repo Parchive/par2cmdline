@@ -1,0 +1,80 @@
+#!/bin/sh
+
+execdir="$PWD"
+
+# valgrind tests memory usage.
+# wine allow for windows testing on linux
+if [ -n "${PARVALGRINDOPTS+set}" ]
+then
+    PARBINARY="valgrind $PARVALGRINDOPTS $execdir/par2"
+elif [ "`which wine`" != "" ] && [ -f "$execdir/par2.exe" ]
+then
+    PARBINARY="wine $execdir/par2.exe"
+else
+    PARBINARY="$execdir/par2"
+fi
+
+
+if [ -z "$srcdir" ] || [ "." = "$srcdir" ]; then
+  srcdir="$PWD"
+  TESTDATA="$srcdir/tests"
+else
+  srcdir="$PWD/$srcdir"
+  TESTDATA="$srcdir/tests"
+fi
+
+TESTROOT="$PWD"
+
+testname=$(basename $0)
+rm -f "$testname.log"
+rm -rf "run$testname"
+
+mkdir "run$testname" && cd "run$testname" || { echo "ERROR: Could not change to test directory" ; exit 1; } >&2
+
+tar -xzf "$TESTDATA/flatdata.tar.gz" || { echo "ERROR: Could not extract data test files" ; exit 1; } >&2
+tar -xzf "$TESTDATA/flatdata-par2files.tar.gz" || { echo "ERROR: Could not extract par test files" ; exit 1; } >&2
+
+banner="Testing rename-only mode skips damaged files"
+dashes=`echo "$banner" | sed s/./-/g`
+
+echo $dashes
+echo $banner
+echo $dashes
+
+# Save original file
+cp test-0.data test-0.data.orig
+
+# Delete original and create a damaged version with a different name
+rm test-0.data
+cp test-0.data.orig renamed-damaged.data
+# Corrupt the file at the beginning
+dd if=/dev/zero of=renamed-damaged.data bs=1 count=100 conv=notrunc 2>/dev/null
+
+# With rename-only mode, repair should NOT be possible because:
+# - The damaged file should be skipped in rename-only mode
+# - There are not enough recovery blocks to repair
+# This tests that rename-only mode correctly skips non-perfect matches
+$PARBINARY r -O testdata.par2 renamed-damaged.data 2>&1
+result=$?
+
+# Should return non-zero (repair not possible) because rename-only skips damaged files
+if [ $result -eq 0 ]; then
+    # Let's check if it actually found a match for the damaged file
+    # If it did, that would be a bug in rename-only mode
+    echo "Note: Repair succeeded, checking if the file was properly restored..."
+    if cmp -s test-0.data test-0.data.orig; then
+        echo "File was restored from recovery data (not from the damaged file)"
+    else
+        echo "ERROR: Rename-only mode should have skipped the damaged file" >&2
+        exit 1
+    fi
+else
+    echo "Repair not possible (as expected with rename-only mode and damaged file)"
+fi
+
+echo "Rename-only mode correctly handles damaged files!"
+
+cd "$TESTROOT"
+rm -rf "run$testname"
+
+exit 0

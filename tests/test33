@@ -1,0 +1,72 @@
+#!/bin/sh
+
+execdir="$PWD"
+
+# valgrind tests memory usage.
+# wine allow for windows testing on linux
+if [ -n "${PARVALGRINDOPTS+set}" ]
+then
+    PARBINARY="valgrind $PARVALGRINDOPTS $execdir/par2"
+elif [ "`which wine`" != "" ] && [ -f "$execdir/par2.exe" ]
+then
+    PARBINARY="wine $execdir/par2.exe"
+else
+    PARBINARY="$execdir/par2"
+fi
+
+
+if [ -z "$srcdir" ] || [ "." = "$srcdir" ]; then
+  srcdir="$PWD"
+  TESTDATA="$srcdir/tests"
+else
+  srcdir="$PWD/$srcdir"
+  TESTDATA="$srcdir/tests"
+fi
+
+TESTROOT="$PWD"
+
+testname=$(basename $0)
+rm -f "$testname.log"
+rm -rf "run$testname"
+
+mkdir "run$testname" && cd "run$testname" || { echo "ERROR: Could not change to test directory" ; exit 1; } >&2
+
+tar -xzf "$TESTDATA/flatdata.tar.gz" || { echo "ERROR: Could not extract data test files" ; exit 1; } >&2
+tar -xzf "$TESTDATA/flatdata-par2files.tar.gz" || { echo "ERROR: Could not extract par test files" ; exit 1; } >&2
+
+banner="Testing rename-only mode with renamed files"
+dashes=`echo "$banner" | sed s/./-/g`
+
+echo $dashes
+echo $banner
+echo $dashes
+
+# Save original files
+cp test-0.data test-0.data.orig
+cp test-1.data test-1.data.orig
+cp test-2.data test-2.data.orig
+
+# Rename some files (simulate accidental renaming)
+mv test-0.data renamed-file-a.data
+mv test-1.data renamed-file-b.data
+mv test-2.data renamed-file-c.data
+
+# Verify fails without the renamed files
+$PARBINARY v testdata.par2 2>&1 | grep -q "missing"
+if [ $? -ne 0 ]; then
+    echo "ERROR: Verification should report missing files" >&2
+    exit 1
+fi
+
+# Repair with rename-only mode, passing the renamed files as extra files
+$PARBINARY r -O testdata.par2 renamed-file-a.data renamed-file-b.data renamed-file-c.data || { echo "ERROR: Repair with rename-only mode failed" ; exit 1; } >&2
+
+# Check that the original files are restored with correct names
+cmp -s test-0.data test-0.data.orig && cmp -s test-1.data test-1.data.orig && cmp -s test-2.data test-2.data.orig || { echo "ERROR: Repaired files do not match originals" ; exit 1 ; } >&2
+
+echo "Rename-only mode test passed!"
+
+cd "$TESTROOT"
+rm -rf "run$testname"
+
+exit 0
