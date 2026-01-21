@@ -110,7 +110,7 @@ void CommandLine::usage(void)
     "  -B<path> : Set the basepath to use as reference for the datafiles\n"
     "  -v [-v]  : Be more verbose\n"
     "  -q [-q]  : Be more quiet (-q -q gives silence)\n"
-    "  -m<n>    : Memory (in MB) to use\n";
+    "  -m<n>    : Memory (in MB) to use (default is half of total physical memory)\n";
 #ifdef _OPENMP
   cout <<
     "  -t<n>    : Number of threads used for main processing (" << omp_get_max_threads() << " detected)\n"
@@ -123,16 +123,16 @@ void CommandLine::usage(void)
     "  -p       : Purge backup files and par files on successful recovery or\n"
     "             when no recovery is needed\n"
     "  -N       : Data skipping (find badly mispositioned data blocks)\n"
-    "  -S<n>    : Skip leaway (distance +/- from expected block position)\n"
+    "  -S<n>    : Skip leaway (distance +/- from expected block position, default 64)\n"
     "Options: (create)\n"
     "  -a<file> : Set the main PAR2 archive name\n"
-    "  -b<n>    : Set the Block-Count\n"
+    "  -b<n>    : Set the Block-Count (default 2000)\n"
     "  -s<n>    : Set the Block-Size (don't use both -b and -s)\n"
-    "  -r<n>    : Level of redundancy (%%)\n"
+    "  -r<n>    : Level of redundancy (%, default 5%)\n"
     "  -r<c><n> : Redundancy target size, <c>=g(iga),m(ega),k(ilo) bytes\n"
     "  -c<n>    : Recovery Block-Count (don't use both -r and -c)\n"
-    "  -f<n>    : First Recovery-Block-Number\n"
-    "  -u       : Uniform recovery file sizes\n"
+    "  -f<n>    : First Recovery-Block-Number (default 0)\n"
+    "  -u       : Uniform recovery file sizes (default is variable)\n"
     "  -l       : Limit size of recovery files (don't use both -u and -l)\n"
     "  -n<n>    : Number of recovery files (max 31) (don't use both -n and -l)\n"
     "  -R       : Recurse into subdirectories\n"

@@ -46,14 +46,14 @@ Show version and copyright
 Set the main PAR2 archive name; required on create, optional for verify and repair
 .TP
 .B \-b<n>
-Set the Block\(hyCount
+Set the Block\(hyCount (default 2000 when neither \-b nor \-s is specified)
 .TP
 .B \-s<n>
 .RB "Set the Block\(hySize (don't use both " "\-b" " and " "\-s" ")"
 
 .TP
 .B \-r<n>
-Level of redundancy (percentage)
+Level of redundancy (percentage, default 5%)
 .TP
 .B \-r<c><n>
 Redundancy target size, <c>=g(iga),m(ega),k(ilo) bytes
@@ -62,10 +62,10 @@ Redundancy target size, <c>=g(iga),m(ega),k(ilo) bytes
 .RB "Recovery block count (don't use both " "\-r" " and " "\-c" ")"
 .TP
 .B \-f<n>
-First Recovery\(hyBlock\(hyNumber
+First Recovery\(hyBlock\(hyNumber (default 0)
 .TP
 .B \-u
-Uniform recovery file sizes
+Uniform recovery file sizes (default is variable sizes)
 .TP
 .B \-l
 .RB "Limit size of recovery files (don't use both " "\-u" " and " "\-l" ")"
@@ -74,13 +74,13 @@ Uniform recovery file sizes
 .RB "Number of recovery files (max 31) (don't use both " "\-n" " and " "\-l" ")"
 .TP
 .B \-m<n>
-Memory (in MB) to use
+Memory (in MB) to use (default is half of total physical memory)
 .TP
 .B \-t<n>
-.RB "Number of threads used for main processing (auto-detected)"
+.RB "Number of threads used for main processing (default auto-detected)"
 .TP
 .B \-T<n>
-.RB "Number of files hashed in parallel (during file verification and creation stages, 2 default)"
+.RB "Number of files hashed in parallel (default 2)"
 .TP
 .B \-v [\-v]
 Be more verbose
@@ -98,7 +98,7 @@ Recurse into subdirectories (only useful on create)
 data skipping (find badly mispositioned data blocks)
 .TP
 .B \-S<n>
-Skip leaway (distance +/\- from expected block position)
+Skip leaway (distance +/\- from expected block position, default 64)
 .TP
 .B \-B<path>
 Set the basepath to use as reference for the datafiles
@@ -165,7 +165,7 @@ This would also create 9 PAR2 files, but they would be able to correct up to 269
 
 This specifies the same block size (which is a requirement for additional recovery files), 5% recovery data, and a first block number of 300.
 
-The "-m" option controls how much memory par2 uses. It defaults to 16 MB unless you override it.
+The "-m" option controls how much memory par2 uses. It defaults to half of total physical memory unless you override it.
 
 CREATING PAR2 FILES FOR MULTIPLE DATA FILES
 
