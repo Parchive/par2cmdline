@@ -70,7 +70,16 @@ bool DiskFile::CreateParentDirectory(std::string _pathname)
   if (std::string::npos != (where = _pathname.find_last_of(PATHSEP)) ||
       std::string::npos != (where = _pathname.find_last_of(ALTPATHSEP)))
   {
-    std::string path = filename.substr(0, where);
+    std::string path = _pathname.substr(0, where);
+
+    // Handle Windows root path (e.g., "C:" or empty path from "\file")
+    // If path is empty or is a drive letter (e.g., "C:"), the root already exists
+    if (path.empty() ||
+        (path.length() == 2 && path[1] == ':'))
+    {
+      return true;
+    }
+
     std::wstring wpath = utf8::Utf8ToWide(path);
 
     struct _stati64 st;
@@ -469,7 +478,13 @@ bool DiskFile::CreateParentDirectory(std::string _pathname)
   if (std::string::npos != (where = _pathname.find_last_of(PATHSEP)) ||
       std::string::npos != (where = _pathname.find_last_of(ALTPATHSEP)))
   {
-    std::string path = filename.substr(0, where);
+    std::string path = _pathname.substr(0, where);
+
+    // Handle root path - if path is empty, the root already exists
+    if (path.empty())
+    {
+      return true;
+    }
 
     struct stat st;
     if (stat(path.c_str(), &st) == 0)
