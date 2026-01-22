@@ -450,9 +450,8 @@ int test3() {
 //second input block, etc. Those values are checked against the
 //expected values passed to the function.
 
-template<typename gtype, typename utype>
-int test4(int NUM_IN, int *expected_bases) {
-  //const int NUM_IN  = 10;
+template<typename gtype, typename utype, int NUM_IN>
+int test4(int *expected_bases) {
   const int NUM_REC = 1;  // recovery
   const int LOW_EXPONENT = 1;
 
@@ -553,14 +552,14 @@ int main() {
 
   // the values for Par1
   int expected_bases8[10] = {1,2,3,4,5,6,7,8,9,10};
-  if (test4<Galois8,u8>(10, expected_bases8)) {
+  if (test4<Galois8,u8,10>(expected_bases8)) {
     std::cerr << "FAILED: test4(8)" << std::endl;
     return 1;
   }
 
   // from the Par2 standard
   int expected_bases16[10] = {2, 4, 16, 128, 256, 2048, 8192, 16384, 4107, 32856};
-  if (test4<Galois16,u16>(10, expected_bases16)) {
+  if (test4<Galois16,u16,10>(expected_bases16)) {
     std::cerr << "FAILED: test4(16)" << std::endl;
     return 1;
   }

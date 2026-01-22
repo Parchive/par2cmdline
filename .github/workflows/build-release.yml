@@ -15,6 +15,9 @@ jobs:
   build-check-macos:
     uses: ./.github/workflows/build-check-macos.yml
 
+  build-check-freebsd:
+    uses: ./.github/workflows/build-check-freebsd.yml
+
   build-linux:
     needs:
     - build-check-linux
@@ -25,8 +28,8 @@ jobs:
       matrix:
         include:
         - arch: amd64
-          configure_host: 
-          xcc: 
+          configure_host:
+          xcc:
         - arch: arm64
           configure_host: --host=aarch64-linux-gnu
           xcc: aarch64-linux-gnu-
@@ -43,18 +46,15 @@ jobs:
       with:
         arch: ${{ matrix.arch }}
 
-    - name: automake
-      run: ./automake.sh
-
-    - name: configure
-      run: ./configure ${{ matrix.configure_host }}
+    - name: Build
       env:
         CC: ${{ matrix.xcc }}gcc
         CXX: ${{ matrix.xcc }}g++
         LDFLAGS: -static -s
-
-    - name: make
-      run: make
+      run: |
+        ./automake.sh
+        ./configure ${{ matrix.configure_host }}
+        make
 
     - name: Upload binary artifact
       uses: actions/upload-artifact@v4
@@ -122,24 +122,63 @@ jobs:
     - name: prepare
       run: brew install automake
 
-    - name: automake
-      run: ./automake.sh
-
-    - name: configure
-      run: ./configure ${{ matrix.configure_host }}
+    - name: Build
       env:
         CXXFLAGS: ${{ matrix.xcxxflags }}
-
-    - name: make
-      run: make
-
-    - name: strip
-      run: strip par2
+      run: |
+        ./automake.sh
+        ./configure ${{ matrix.configure_host }}
+        make
+        strip par2
 
     - name: Upload binary artifact
       uses: actions/upload-artifact@v4
       with:
         name: par2cmdline-macos-${{ matrix.arch }}
+        path: |
+          par2
+        retention-days: 5
+
+  build-freebsd:
+    needs:
+    - build-check-freebsd
+
+    name: build-freebsd (${{ matrix.arch }})
+
+    strategy:
+      matrix:
+        include:
+        - arch: x86-64
+          artifact_arch: amd64
+        - arch: arm64
+          artifact_arch: aarch64
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Build on FreeBSD
+      uses: cross-platform-actions/action@v0.32.0
+      env:
+        LDFLAGS: -static -s
+      with:
+        operating_system: freebsd
+        version: '15.0'
+        architecture: ${{ matrix.arch }}
+        environment_variables: LDFLAGS
+        shell: sh
+        run: |
+          sudo pkg install -y autoconf automake libtool
+          ./automake.sh
+          ./configure
+          make
+          strip par2
+
+    - name: Upload binary artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: par2cmdline-freebsd-${{ matrix.artifact_arch }}
         path: |
           par2
         retention-days: 5

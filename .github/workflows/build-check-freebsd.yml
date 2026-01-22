@@ -1,0 +1,26 @@
+name: par2cmdline CI FreeBSD
+
+on:
+  workflow_call:
+  workflow_dispatch:
+
+jobs:
+  build-check-freebsd:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Build and test
+      uses: cross-platform-actions/action@v0.32.0
+      with:
+        operating_system: freebsd
+        version: '15.0'
+        shell: bash
+        run: |
+          sudo pkg install -y autoconf automake libtool
+          ./automake.sh
+          ./configure
+          make
+          make check
+          make distcheck

@@ -1,4 +1,4 @@
-name: par2cmdline CI linux
+name: par2cmdline CI Linux
 
 on:
   workflow_call:
@@ -11,17 +11,10 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: automake
-      run: ./automake.sh
-
-    - name: configure
-      run: ./configure
-
-    - name: make
-      run: make
-
-    - name: make check
-      run: make check
-
-    - name: make distcheck
-      run: make distcheck
+    - name: Build and test
+      run: |
+        ./automake.sh
+        ./configure
+        make
+        make check
+        make distcheck
