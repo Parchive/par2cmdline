@@ -589,8 +589,8 @@ bool Par2Creator::InitialiseOutputFiles(const std::string &parfilename)
     fileallocations[recoveryfilecount].exponent = exponent;
     fileallocations[recoveryfilecount].count = 0;
 
-    // Determine the format to use for filenames of recovery files
-    char filenameformat[_MAX_PATH];
+    // Determine digit widths for recovery filenames
+    u32 digitsLow = 1, digitsCount = 1;
     {
       u32 limitLow = 0;
       u32 limitCount = 0;
@@ -606,29 +606,41 @@ bool Par2Creator::InitialiseOutputFiles(const std::string &parfilename)
         }
       }
 
-      u32 digitsLow = 1;
       for (u32 t=limitLow; t>=10; t/=10)
       {
         digitsLow++;
       }
 
-      u32 digitsCount = 1;
       for (u32 t=limitCount; t>=10; t/=10)
       {
         digitsCount++;
       }
-
-      snprintf(filenameformat, sizeof(filenameformat), "%%s.vol%%0%dd+%%0%dd.par2", (int) digitsLow, (int) digitsCount);
     }
 
     // Set the filenames
     for (u32 filenumber=0; filenumber<recoveryfilecount; filenumber++)
     {
-      char filename[_MAX_PATH];
-      snprintf(filename, sizeof(filename), filenameformat, parfilename.c_str(), fileallocations[filenumber].exponent, fileallocations[filenumber].count);
-      fileallocations[filenumber].filename = filename;
+      std::ostringstream filename;
+      filename << parfilename
+               << ".vol" << std::setw(digitsLow) << std::setfill('0') << fileallocations[filenumber].exponent
+               << "+" << std::setw(digitsCount) << std::setfill('0') << fileallocations[filenumber].count
+               << ".par2";
+
+      if (filename.str().length() > _MAX_PATH)
+      {
+        serr << filename.str() << " pathlength is more than " << _MAX_PATH << "." << std::endl;
+        return false;
+      }
+      fileallocations[filenumber].filename = filename.str();
     }
-    fileallocations[recoveryfilecount].filename = parfilename + ".par2";
+
+    std::string mainpar = parfilename + ".par2";
+    if (mainpar.length() > _MAX_PATH)
+    {
+      serr << mainpar << " pathlength is more than " << _MAX_PATH << "." << std::endl;
+      return false;
+    }
+    fileallocations[recoveryfilecount].filename = mainpar;
   }
 
   // Allocate the recovery files

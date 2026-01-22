@@ -122,7 +122,15 @@ typedef unsigned int     size_t;
 
 #include <errno.h>
 
-#define _MAX_PATH 4095
+#ifdef _WIN32
+// _WIN32: Redefine _MAX_PATH to support Windows long paths (\\?\ prefix)
+// Windows normally defines _MAX_PATH as 260, but with long path support
+// enabled and the \\?\ prefix, paths can be up to 32767 characters
+#   define _MAX_PATH 32767
+#else
+#   define _MAX_PATH 4095
+#endif
+
 
 #if HAVE_ENDIAN_H
 #  include <endian.h>
@@ -176,6 +184,7 @@ typedef unsigned int     size_t;
 #include <map>
 #include <vector>
 #include <string>
+#include <sstream>
 #include <algorithm>
 #include <memory>
 
