@@ -333,12 +333,22 @@ void DiskFile::Close(void)
 std::string DiskFile::GetCanonicalPathname(std::string filename)
 {
   std::wstring wfilename = utf8::Utf8ToWide(filename);
-  auto wfullname = std::make_unique<wchar_t[]>(MAX_PATH); 
 
-  size_t length = GetFullPathName(wfilename.data(), MAX_PATH, wfullname.get(), nullptr);
+  // First call to get required buffer size
+  DWORD length = GetFullPathNameW(wfilename.c_str(), 0, nullptr, nullptr);
   if (length == 0) 
   {
     return filename; 
+  }
+
+  // Allocate buffer with required size
+  auto wfullname = std::make_unique<wchar_t[]>(length);
+
+  // Second call to get the actual path
+  length = GetFullPathNameW(wfilename.c_str(), length, wfullname.get(), nullptr);
+  if (length == 0)
+  {
+    return filename;
   }
 
   wfullname[0] = towupper(wfullname[0]);
@@ -993,33 +1003,58 @@ void DiskFile::SplitRelativeFilename(std::string filename, std::string basepath,
   name.erase(0, basepath.length());
 }
 
+#ifdef _WIN32
 bool DiskFile::Rename(void)
 {
-  char newname[_MAX_PATH+1];
   u32 index = 0;
-
-  struct stat st;
+  std::string newname;
+  std::wstring wnewname;
+  struct _stati64 st;
 
   do
   {
-    int length = snprintf(newname, _MAX_PATH, "%s.%u", filename.c_str(), (unsigned int) ++index);
-    if (length < 0)
-    {
-      #pragma omp critical
-      *serr << filename << " cannot be renamed." << std::endl;
-      return false;
-    }
-    else if (length > _MAX_PATH)
+    // Build the new filename with index suffix
+    newname = filename + "." + std::to_string(++index);
+
+    // Check path length against maximum
+    if (newname.length() > _MAX_PATH)
     {
       #pragma omp critical
       *serr << filename << " pathlength is more than " << _MAX_PATH << "." << std::endl;
       return false;
     }
-    newname[length] = 0;
-  } while (stat(newname, &st) == 0);
+
+    wnewname = utf8::Utf8ToWide(newname);
+
+    // Check if file exists using wide-character stat
+  } while (_wstati64(wnewname.c_str(), &st) == 0);
 
   return Rename(newname);
 }
+#else
+bool DiskFile::Rename(void)
+{
+  u32 index = 0;
+  std::string newname;
+  struct stat st;
+
+  do
+  {
+    // Build the new filename with index suffix
+    newname = filename + "." + std::to_string(++index);
+
+    // Check path length against maximum
+    if (newname.length() > _MAX_PATH)
+    {
+      #pragma omp critical
+      *serr << filename << " pathlength is more than " << _MAX_PATH << "." << std::endl;
+      return false;
+    }
+  } while (stat(newname.c_str(), &st) == 0);
+
+  return Rename(newname);
+}
+#endif
 
 #ifdef _WIN32
 std::string DiskFile::ErrorMessage(DWORD error)
