@@ -48,7 +48,7 @@ AC_LANG(C++)
 dnl Checks for header files.
 AC_HEADER_DIRENT
 AC_HEADER_STDBOOL
-AC_HEADER_STDC
+
 AC_CHECK_HEADERS([stdio.h] [endian.h])
 AC_CHECK_HEADERS([getopt.h] [limits.h])
 
