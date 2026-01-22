@@ -16,3 +16,6 @@ jobs:
   build-check-macos:
     uses: ./.github/workflows/build-check-macos.yml
 
+  build-check-freebsd:
+    uses: ./.github/workflows/build-check-freebsd.yml
+
