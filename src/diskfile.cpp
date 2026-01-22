@@ -930,15 +930,22 @@ bool DiskFile::Delete(void)
 {
 #ifdef _WIN32
   assert(hFile == INVALID_HANDLE_VALUE);
+
+  std::wstring wfilename = utf8::Utf8ToWide(filename);
+  if (filename.size() > 0 && 0 == _wunlink(wfilename.c_str()))
+  {
+    exists = false;
+    return true;
+  }
 #else
   assert(file == 0);
-#endif
 
   if (filename.size() > 0 && 0 == unlink(filename.c_str()))
   {
     exists = false;
     return true;
   }
+#endif
   else
   {
     #pragma omp critical
