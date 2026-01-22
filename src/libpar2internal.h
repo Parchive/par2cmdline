@@ -184,6 +184,7 @@ typedef unsigned int     size_t;
 #include <map>
 #include <vector>
 #include <string>
+#include <sstream>
 #include <algorithm>
 #include <memory>
 
