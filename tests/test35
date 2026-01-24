@@ -1,0 +1,81 @@
+#!/bin/sh
+
+execdir="$PWD"
+
+# valgrind tests memory usage.
+# wine allow for windows testing on linux
+if [ -n "${PARVALGRINDOPTS+set}" ]
+then
+    PARBINARY="valgrind $PARVALGRINDOPTS $execdir/par2"
+elif [ "`which wine`" != "" ] && [ -f "$execdir/par2.exe" ]
+then
+    PARBINARY="wine $execdir/par2.exe"
+else
+    PARBINARY="$execdir/par2"
+fi
+
+
+if [ -z "$srcdir" ] || [ "." = "$srcdir" ]; then
+  srcdir="$PWD"
+  TESTDATA="$srcdir/tests"
+else
+  srcdir="$PWD/$srcdir"
+  TESTDATA="$srcdir/tests"
+fi
+
+TESTROOT="$PWD"
+
+testname=$(basename $0)
+rm -f "$testname.log"
+rm -rf "run$testname"
+
+mkdir "run$testname" && cd "run$testname" || { echo "ERROR: Could not change to test directory" ; exit 1; } >&2
+
+banner="Verify symbolic link handling"
+dashes=`echo "$banner" | sed s/./-/g`
+
+echo $dashes
+echo $banner
+echo $dashes
+
+# generate test data and links
+echo -n '01234567890abcdef' > test_file
+ln -s test_file test_link
+mkdir test_dir
+ln -s $(pwd)/test_file test_dir/test_link
+ln -s test_dir dir_link
+
+
+# links are not followed for non-primary files
+$PARBINARY c test_primary test_link && { echo "ERROR: followed non-primary link" ; exit 1; } >&2
+$PARBINARY c test_primary -R test_dir && { echo "ERROR: followed link in directory" ; exit 1; } >&2
+$PARBINARY c test_primary -R dir_link && { echo "ERROR: followed linked directory" ; exit 1; } >&2
+
+# primary file being a link calculates data for the real file
+cp test_file test_file.bak
+echo "*** Create ***"
+$PARBINARY c -r10 test_link || { echo "ERROR: calculating link data failed" ; exit 1; } >&2
+echo "*** Verify good file link ***"
+$PARBINARY v test_link || { echo "ERROR: verifying good link data failed" ; exit 1; } >&2
+# "damage" real file
+echo -n "!" >> test_file
+echo "*** Verify damaged file link ***"
+$PARBINARY v test_link && { echo "ERROR: verifying damaged link data succeeded" ; exit 1; } >&2
+# repair via link
+echo "*** Repair ***"
+$PARBINARY r test_link || { echo "ERROR: repairing linked data failed" ; exit 1; } >&2
+# link becomes the repaired file
+diff test_link test_file.bak || { echo "ERROR: comparison after repairing linked data failed" ; exit 1; } >&2
+
+# dead links fail
+ln -s NOT_EXISTING dead_link
+$PARBINARY c dead_link && { echo "ERROR: calculating dead link data succeeded" ; exit 1; } >&2
+$PARBINARY v dead_link && { echo "ERROR: verifying dead link data succeeded" ; exit 1; } >&2
+$PARBINARY r dead_link && { echo "ERROR: repairing dead link data succeeded" ; exit 1; } >&2
+
+echo "\nLink tests succeeded!"
+
+cd "$TESTROOT"
+rm -rf "run$testname"
+
+exit 0
