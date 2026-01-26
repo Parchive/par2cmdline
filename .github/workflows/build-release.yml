@@ -66,7 +66,7 @@ jobs:
         make
 
     - name: Upload binary artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       with:
         name: par2cmdline-linux-${{ matrix.arch }}
         path: |
@@ -99,7 +99,7 @@ jobs:
       run: msbuild -property:Configuration=Release -property:Platform=${{ matrix.platform }} par2cmdline.sln
 
     - name: Upload binary artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       with:
         name: par2cmdline-win-${{ matrix.name }}
         path: |
@@ -141,7 +141,7 @@ jobs:
         strip par2
 
     - name: Upload binary artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       with:
         name: par2cmdline-macos-${{ matrix.arch }}
         path: |
@@ -185,7 +185,7 @@ jobs:
           strip par2
 
     - name: Upload binary artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       with:
         name: par2cmdline-freebsd-${{ matrix.artifact_arch }}
         path: |
