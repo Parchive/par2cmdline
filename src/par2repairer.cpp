@@ -815,13 +815,13 @@ bool Par2Repairer::LoadPacketsFromOtherFiles(std::string filename)
     std::unique_ptr< std::list<std::string> > files(
 					DiskFile::FindFiles(path, wildcard, false)
 					);
-    par2list.merge(*files);
+    par2list.splice(par2list.end(), *files);
 
     std::string wildcardu = name.empty() ? "*.PAR2" : name + ".*.PAR2";
     std::unique_ptr< std::list<std::string> > filesu(
 					 DiskFile::FindFiles(path, wildcardu, false)
 					 );
-    par2list.merge(*filesu);
+    par2list.splice(par2list.end(), *filesu);
 
     // Load packets from each file that was found
     for (std::list<std::string>::const_iterator s=par2list.begin(); s!=par2list.end(); ++s)
