@@ -1,3 +1,50 @@
+27 Januari 2026 Ike Devolder
+  * release: 1.1.0
+
+  Release:
+    * #215: Version 1.1.0 (PR #260 Version 1.1.0)
+  Issues:
+    * #216: [1.0.0] amd64 binary tests/utf8_test included in release tarball
+    * #225: restore support for older macOS
+    * #220: BUG: : should be an illegal character only on HFS filesystems
+    * #181: Lack of thread guards in DiskFile (PR #237 Add thread guards in diskfile)
+    * #228: How can I know the default values without looking at the source code, or is --dry-run command available? (PR #238 show defaults in help output and man)
+    * #230: Consider adding manual page symlinks for par2create, par2repair and par2verify (PR #239 create symlinks for the long form manpages as well)
+    * #187: global-buffer-overflow by default in unit test (diskfile_test) (PR #240 calculate size in diskfile unittest to avoid bufferoverflow)
+    * #184: rename only repair mode (quickly skip non matching files) (PR #185 POC for a rename only mode and #243 Issue 184)
+    * #139: test failure because testdata archives preserve ownership info (PR #249 repack test tarballs with tar --owner=0 --group=0)
+    * #231: par2 create cannot handle non-ASCII directory names (e.g. ę) (PR #250 Windows unicode issues)
+    * #233: windows - rename using long path notation (PR #250 Windows unicode issues)
+    * #167: Can not create file in root path on Windows. (PR #251 diskfile CreateParentDirectory, take rootpath behaviour into account)
+    * #244: Regression in V1.0.0 for symbolic links to files. (PR #254 Fix symbolic links as primary file.)
+  PRs:
+    * #213: Strip MacOS binary
+    * #214: Add armhf Linux build
+    * #217: fix manpage typ0
+    * #218: tests/utf8_test is generated before running tests, not needed in dist
+    * #221: Replace deprecated sprintf with snprintf 
+    * #223: Remove unused code
+    * #224: Fix README not found
+    * #226: Reduce the minimum supported macOS version and add a universal macOS binary
+    * #229: Update COPYING with the latest GPL v2 license
+    * #236: Fix memory leak.
+    * #241: Build warnings
+    * #245: Cleanup unused
+    * #246: remove define of stat or _stat
+    * #247: add freebsd ci check
+    * #252: remove obsolete autoconf macro AC_HEADER_STDC
+    * #255: use native ubuntu cross building instead of gha-ubuntu-cross
+    * #257: add dependabot check for github actions updates
+    * #256: Windows integration testing
+    * #258: Bump actions/upload-artifact from 4 to 6
+    * #259: Bump actions/checkout from 4 to 6
+  Skipped:
+    * #101: properly detect openmp on *BSD
+    * #108: Trying to cross-compile with openmp support
+    * #122: How to detect wrong data files against par2 files?
+    * #115: Crashes with "std::bad_alloc" when running more than one instance
+    * #154: Par2cmdline allocation failure.
+
 30 April 2025 Ike Devolder
   * release: 1.0.0
   * release artifacts are all built with github actions
