@@ -17,3 +17,13 @@ jobs:
 
     - name: Build
       run: msbuild -property:Configuration=Release -property:Platform=x64 par2cmdline.sln
+
+    - name: Build Unit Tests
+      shell: pwsh
+      run: |
+        .\tests\build_unit_tests.ps1 -Configuration Release -Platform x64
+
+    - name: Run Tests
+      shell: pwsh
+      run: |
+        .\tests\run_tests.ps1 -Par2Binary ".\x64\Release\par2.exe"
