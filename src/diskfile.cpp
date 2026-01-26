@@ -398,11 +398,8 @@ std::unique_ptr< std::list<std::string> > DiskFile::FindFiles(std::string path, 
 						 DiskFile::FindFiles(path + utf8::WideToUtf8(fd.cFileName), nwwildcard, true)
 						 );
 
-        // sort both lists before merge
-        matches->sort();
-        dirmatches->sort();
-
-        matches->merge(*dirmatches);
+        // append without requiring ordering
+        matches->splice(matches->end(), *dirmatches);
       }
     } while (::FindNextFile(h, &fd));
     ::FindClose(h);
@@ -837,7 +834,7 @@ std::unique_ptr< std::list<std::string> > DiskFile::FindFiles(std::string path, 
                 std::unique_ptr< std::list<std::string> > dirmatches(
 							 DiskFile::FindFiles(fn, nwwildcard, true)
 							 );
-                matches->merge(*dirmatches);
+                matches->splice(matches->end(), *dirmatches);
               }
               else if (S_ISREG(st.st_mode))
               {
@@ -875,7 +872,7 @@ std::unique_ptr< std::list<std::string> > DiskFile::FindFiles(std::string path, 
 							   DiskFile::FindFiles(fn, nwwildcard, true)
 							   );
 
-                  matches->merge(*dirmatches);
+                  matches->splice(matches->end(), *dirmatches);
                 }
                 else if (S_ISREG(st.st_mode))
                 {
@@ -904,7 +901,7 @@ std::unique_ptr< std::list<std::string> > DiskFile::FindFiles(std::string path, 
 						 DiskFile::FindFiles(fn, nwwildcard, true)
 						 );
 
-        matches->merge(*dirmatches);
+        matches->splice(matches->end(), *dirmatches);
       }
       else if (S_ISREG(st.st_mode))
       {

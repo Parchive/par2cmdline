@@ -57,11 +57,12 @@ int test2()
 
 int test3()
 {
-  std::string nonAsciiString = "Привет, мир!";
-  std::wstring expectedWide = L"Привет, мир!";
+  // "Привет, мир!"
+  std::string nonAsciiString = "\xD0\x9F\xD1\x80\xD0\xB8\xD0\xB2\xD0\xB5\xD1\x82, \xD0\xBC\xD0\xB8\xD1\x80!";
+  std::wstring expectedWide = L"\x041F\x0440\x0438\x0432\x0435\x0442, \x043C\x0438\x0440!";
   std::wstring actualWide = Utf8ToWide(nonAsciiString);
 
-  std::string expectedUtf8 = "Привет, мир!";
+  std::string expectedUtf8 = "\xD0\x9F\xD1\x80\xD0\xB8\xD0\xB2\xD0\xB5\xD1\x82, \xD0\xBC\xD0\xB8\xD1\x80!";
   std::string actualUtf8 = WideToUtf8(expectedWide);
 
   if (actualWide == expectedWide && actualUtf8 == expectedUtf8)
@@ -87,11 +88,12 @@ int test4()
 
 int test5()
 {
-  std::string multiLangString = "Привет! こんにちは世界! 안녕하세요!";
-  std::wstring expectedWide = L"Привет! こんにちは世界! 안녕하세요!";
+  // "Привет! こんにちは世界! 안녕하세요!"
+  std::string multiLangString = "\xD0\x9F\xD1\x80\xD0\xB8\xD0\xB2\xD0\xB5\xD1\x82! \xE3\x81\x93\xE3\x82\x93\xE3\x81\xAB\xE3\x81\xA1\xE3\x81\xAF\xE4\xB8\x96\xE7\x95\x8C! \xEC\x95\x88\xEB\x85\x95\xED\x95\x98\xEC\x84\xB8\xEC\x9A\x94!";
+  std::wstring expectedWide = L"\x041F\x0440\x0438\x0432\x0435\x0442! \x3053\x3093\x306B\x3061\x306F\x4E16\x754C! \xC548\xB155\xD558\xC138\xC694!";
   std::wstring actualWide = Utf8ToWide(multiLangString);
 
-  std::string expectedUtf8 = "Привет! こんにちは世界! 안녕하세요!";
+  std::string expectedUtf8 = "\xD0\x9F\xD1\x80\xD0\xB8\xD0\xB2\xD0\xB5\xD1\x82! \xE3\x81\x93\xE3\x82\x93\xE3\x81\xAB\xE3\x81\xA1\xE3\x81\xAF\xE4\xB8\x96\xE7\x95\x8C! \xEC\x95\x88\xEB\x85\x95\xED\x95\x98\xEC\x84\xB8\xEC\x9A\x94!";
   std::string actualUtf8 = WideToUtf8(expectedWide);
 
   if (actualWide == expectedWide && actualUtf8 == expectedUtf8)
@@ -111,7 +113,8 @@ int test6()
 
 int test7()
 {
-  wchar_t* wargv[3] = { const_cast<wchar_t*>(L"Привет"), const_cast<wchar_t*>(L"мир"), const_cast<wchar_t*>(L"!") };
+  // L"Привет", L"мир", L"!"
+  wchar_t* wargv[3] = { const_cast<wchar_t*>(L"\x041F\x0440\x0438\x0432\x0435\x0442"), const_cast<wchar_t*>(L"\x043C\x0438\x0440"), const_cast<wchar_t*>(L"!") };
   WideToUtf8ArgsAdapter adapter(3, wargv);
   const char* const* utf8Args = adapter.GetUtf8Args();
 
