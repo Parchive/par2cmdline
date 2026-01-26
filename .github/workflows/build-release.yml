@@ -42,9 +42,18 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - uses: cyberjunk/gha-ubuntu-cross@v5
-      with:
-        arch: ${{ matrix.arch }}
+    - name: Install cross toolchains
+      if: matrix.arch != 'amd64'
+      run: |
+        sudo apt-get update
+        case "${{ matrix.arch }}" in
+          arm64)
+            sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu libc6-dev-arm64-cross
+            ;;
+          armhf)
+            sudo apt-get install -y gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf libc6-dev-armhf-cross
+            ;;
+        esac
 
     - name: Build
       env:
