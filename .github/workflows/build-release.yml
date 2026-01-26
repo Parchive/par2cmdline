@@ -40,7 +40,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
 
     - name: Install cross toolchains
       if: matrix.arch != 'amd64'
@@ -90,7 +90,7 @@ jobs:
     runs-on: windows-latest
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
 
     - name: Add MSBuild to PATH
       uses: microsoft/setup-msbuild@v2
@@ -126,7 +126,7 @@ jobs:
     runs-on: macos-latest
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
 
     - name: prepare
       run: brew install automake
@@ -165,7 +165,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
 
     - name: Build on FreeBSD
       uses: cross-platform-actions/action@v0.32.0
