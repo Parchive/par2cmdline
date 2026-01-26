@@ -76,10 +76,17 @@ int test1() {
     return 1;
   }
   files = DiskFile::FindFiles(".", "input1?.txt", false);
+#ifdef _WIN32
+  if (files->size() != 1 || *(files->begin()) != "." + fs + "input1.txt") {
+    std::cout << "FindFiles failed on empty ?" << std::endl;
+    return 1;
+  }
+#else
   if (!files->empty()) {
     std::cout << "FindFiles failed on empty ?" << std::endl;
     return 1;
   }
+#endif
   files = DiskFile::FindFiles(".", "input*.txt", false);
   if (files->size() != 2
       || find(files->begin(), files->end(), std::string("." + fs + "input1.txt")) == files->end()
