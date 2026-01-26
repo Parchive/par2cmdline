@@ -919,7 +919,7 @@ std::unique_ptr< std::list<std::string> > DiskFile::FindFiles(std::string path, 
 u64 DiskFile::GetFileSize(std::string filename)
 {
   struct stat st;
-  if ((0 == lstat(filename.c_str(), &st)) && (0 != (st.st_mode & S_IFREG)))
+  if ((0 == stat(filename.c_str(), &st)) && (0 != (st.st_mode & S_IFREG)))
   {
     return st.st_size;
   }
@@ -932,7 +932,7 @@ u64 DiskFile::GetFileSize(std::string filename)
 bool DiskFile::FileExists(std::string filename)
 {
   struct stat st;
-  return ((0 == lstat(filename.c_str(), &st)) && (0 != (st.st_mode & S_IFREG)));
+  return ((0 == stat(filename.c_str(), &st)) && (0 != (st.st_mode & S_IFREG)));
 }
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 #endif
