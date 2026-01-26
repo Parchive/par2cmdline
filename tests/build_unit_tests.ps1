@@ -220,7 +220,7 @@ $libpar2Sources = @(
 # Compiler flags
 $debugFlags = "/Od /MDd /Zi /RTC1"
 $releaseFlags = "/O2 /MD /DNDEBUG"
-$commonFlags = "/EHsc /W3 /nologo /std:c++14 /DWIN32 /D_CONSOLE /DUNICODE /D_UNICODE /DPACKAGE=\`"par2cmdline\`" /DVERSION=\`"1.0.0\`""
+$commonFlags = "/EHsc /W3 /nologo /std:c++14 /DWIN32 /D_CONSOLE /DUNICODE /D_UNICODE /DPACKAGE=\`"par2cmdline\`" /DVERSION=\`"1.1.0\`""
 
 $compilerFlags = if ($Configuration -eq "Debug") { "$commonFlags $debugFlags" } else { "$commonFlags $releaseFlags" }
 
