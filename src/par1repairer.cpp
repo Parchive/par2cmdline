@@ -359,7 +359,7 @@ bool Par1Repairer::LoadRecoveryFile(std::string filename)
           fileheader.filelistsize == 0)
         break;
 
-      // Verify that the file std::list and data offsets are ok
+      // Verify that the file list and data offsets are ok
       if ((fileheader.filelistoffset + fileheader.filelistsize > filesize)
           ||
           (fileheader.datasize && (fileheader.dataoffset < sizeof(fileheader) || fileheader.dataoffset + fileheader.datasize > filesize))
@@ -367,25 +367,25 @@ bool Par1Repairer::LoadRecoveryFile(std::string filename)
           (fileheader.datasize && ((fileheader.filelistoffset <= fileheader.dataoffset && fileheader.dataoffset < fileheader.filelistoffset+fileheader.filelistsize) || (fileheader.dataoffset <= fileheader.filelistoffset && fileheader.filelistoffset < fileheader.dataoffset + fileheader.datasize))))
         break;
 
-      // Check the size of the file std::list
+      // Check the size of the file list
       if (fileheader.filelistsize > 200000)
         break;
 
-      // If we already have a copy of the file std::list, make sure this one has the same size
+      // If we already have a copy of the file list, make sure this one has the same size
       if (filelist != 0 && filelistsize != fileheader.filelistsize)
         break;
 
-      // Allocate a buffer to hold a copy of the file std::list
+      // Allocate a buffer to hold a copy of the file list
       unsigned char *temp = new unsigned char[(size_t)fileheader.filelistsize];
 
-      // Read the file std::list into the buffer
+      // Read the file list into the buffer
       if (!diskfile->Read(fileheader.filelistoffset, temp, (size_t)fileheader.filelistsize))
       {
         delete [] temp;
         break;
       }
 
-      // If we already have a copy of the file std::list, make sure this copy is identical
+      // If we already have a copy of the file list, make sure this copy is identical
       if (filelist != 0)
       {
         bool match = (0 == memcmp(filelist, temp, filelistsize));
@@ -396,7 +396,7 @@ bool Par1Repairer::LoadRecoveryFile(std::string filename)
       }
       else
       {
-        // Prepare to scan the file std::list
+        // Prepare to scan the file list
         unsigned char *current = temp;
         size_t remaining = (size_t)fileheader.filelistsize;
         unsigned int fileindex = 0;
@@ -427,7 +427,7 @@ bool Par1Repairer::LoadRecoveryFile(std::string filename)
           // Copy whole of file entry
           memcpy((void*)fileentry, (void*)current, (size_t)(u64)fileentry->entrysize);
 
-          // Create source file and add it to the appropriate std::list
+          // Create source file and add it to the appropriate list
           Par1RepairerSourceFile *sourcefile = new Par1RepairerSourceFile(sout, serr, noiselevel, fileentry, searchpath);
           if (fileentry->status & INPARITYVOLUME)
           {
@@ -493,7 +493,7 @@ bool Par1Repairer::LoadRecoveryFile(std::string filename)
           datablock->SetLength(blocksize);
           datablock->SetLocation(diskfile, fileheader.dataoffset);
 
-          // Store it in the std::map
+          // Store it in the map
           recoveryblocks.insert(std::pair<u32, DataBlock*>(volumenumber, datablock));
 
           havevolume = true;
@@ -1155,7 +1155,7 @@ bool Par1Repairer::CreateTargetFiles(void)
 
       sourcefile->SetTargetBlock(targetfile);
 
-      // Add the file to the std::list of those that will need to be verified
+      // Add the file to the list of those that will need to be verified
       // once the repair has completed.
       verifylist.push_back(sourcefile);
     }
@@ -1202,7 +1202,7 @@ bool Par1Repairer::ComputeRSmatrix(void)
       // Record that the block was found
       *pres = true;
 
-      // Add the block to the std::list of those which will be read
+      // Add the block to the list of those which will be read
       // as input (and which might also need to be copied).
       *inputblock = sourceblock;
       ++inputblock;
@@ -1212,7 +1212,7 @@ bool Par1Repairer::ComputeRSmatrix(void)
       // Record that the block was missing
       *pres = false;
 
-      // Add the block to the std::list of those to be written
+      // Add the block to the list of those to be written
       *outputblock = targetblock;
       ++outputblock;
     }
@@ -1230,7 +1230,7 @@ bool Par1Repairer::ComputeRSmatrix(void)
   // Start iterating through the available recovery packets
   std::map<u32, DataBlock*>::iterator recoveryiterator = recoveryblocks.begin();
 
-  // Continue to fill the remaining std::list of data blocks to be read
+  // Continue to fill the remaining list of data blocks to be read
   while (inputblock != inputblocks.end())
   {
     // Get the next available recovery block
@@ -1242,7 +1242,7 @@ bool Par1Repairer::ComputeRSmatrix(void)
     {
       return false;
     }
-    // Add the recovery block to the std::list of blocks that will be read
+    // Add the recovery block to the list of blocks that will be read
     *inputblock = recoveryblock;
 
     // Record that the corresponding exponent value is the next one
@@ -1377,7 +1377,7 @@ bool Par1Repairer::VerifyTargetFiles(void)
   // Verify the target files in alphabetical order
 //  std::sort(verifylist.begin(), verifylist.end(), SortSourceFilesByFileName);
 
-  // Iterate through each file in the verification std::list
+  // Iterate through each file in the verification list
   for (std::list<Par1RepairerSourceFile*>::iterator sf = verifylist.begin();
        sf != verifylist.end();
        ++sf)
@@ -1418,7 +1418,7 @@ bool Par1Repairer::DeleteIncompleteTargetFiles(void)
 {
   std::list<Par1RepairerSourceFile*>::iterator sf = verifylist.begin();
 
-  // Iterate through each file in the verification std::list
+  // Iterate through each file in the verification list
   while (sf != verifylist.end())
   {
     Par1RepairerSourceFile *sourcefile = *sf;

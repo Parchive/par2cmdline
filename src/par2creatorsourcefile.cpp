@@ -283,7 +283,7 @@ void Par2CreatorSourceFile::Close(void)
 void Par2CreatorSourceFile::RecordCriticalPackets(std::list<CriticalPacket*> &criticalpackets)
 {
   // Add the file description packet and file verification packet to
-  // the critical packet std::list.
+  // the critical packet list.
   criticalpackets.push_back(descriptionpacket);
   criticalpackets.push_back(verificationpacket);
 }

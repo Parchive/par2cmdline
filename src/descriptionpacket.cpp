@@ -115,7 +115,7 @@ bool DescriptionPacket::Load(DiskFile *diskfile, u64 offset, PACKET_HEADER &head
 
 
 // Returns the URL-style encoding of a character:
-// "%HH" where H is a std::hex-digit.
+// "%HH" where H is a hex-digit.
 std::string DescriptionPacket::UrlEncodeChar(char c)
 {
   std::string result("%");
@@ -185,7 +185,7 @@ std::string DescriptionPacket::TranslateFilenameFromLocalToPar2(std::ostream &so
     }
 
 #ifdef _WIN32
-    // std::replace Windows-slash with HTML-slash
+    // replace Windows-slash with HTML-slash
     if (ch == '\\') {
       ch = '/';
     }
@@ -254,7 +254,7 @@ std::string DescriptionPacket::TranslateFilenameFromLocalToPar2(std::ostream &so
 // to write an absolute path, directories named "..", etc.
 //
 // This implementation changes any illegal char into the URL-style
-// encoding of %HH where H is a std::hex-digit.
+// encoding of %HH where H is a hex-digit.
 //
 // NOTE: Windows limits path names to 255 characters.  I'm not
 // sure that anything can be done here for that.
@@ -295,7 +295,7 @@ std::string DescriptionPacket::TranslateFilenameFromPar2ToLocal(std::ostream &so
     }
 #endif
 
-    // std::replace unix / to windows \ or windows \ to unix /
+    // replace unix / to windows \ or windows \ to unix /
 #ifdef _WIN32
     if (ch == '/')
     {
@@ -323,7 +323,7 @@ std::string DescriptionPacket::TranslateFilenameFromPar2ToLocal(std::ostream &so
       if (noiselevel >= nlQuiet)
       {
 	serr << "INFO: Found illegal character '" << ch << "' in filename.  Changed it to \"" << UrlEncodeChar(ch) << "\"" << std::endl;
-	// convert problem characters to std::hex
+	// convert problem characters to hex
 	local_filename += UrlEncodeChar(ch);
       }
     }
