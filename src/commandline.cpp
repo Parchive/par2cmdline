@@ -79,7 +79,7 @@ void CommandLine::banner(void)
 {
   std::cout << "Copyright (C) 2003-2015 Peter Brian Clements." << std::endl
     << "Copyright (C) 2011-2012 Marcel Partap." << std::endl
-    << "Copyright (C) 2012-2017 Ike Devolder." << std::endl
+    << "Copyright (C) 2012-2026 Ike Devolder." << std::endl
     << "Copyright (C) 2014-2017 Jussi Kansanen." << std::endl
     << "Copyright (C) 2019 Michael Nahas." << std::endl
     << std::endl
