@@ -2,7 +2,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.13.35931.197
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "par2cmdline", "par2cmdline.vcxproj", "{D0A94F83-495E-4FB2-AC33-9A3EC2CC263B}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libpar2", "libpar2.vcxproj", "{D0A94F83-495E-4FB2-AC33-9A3EC2CC263B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

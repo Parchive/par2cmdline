@@ -40,8 +40,8 @@ ar-lib
 Release/
 Debug/
 *.old
-par2cmdline.vcxproj.user
-par2cmdline.suo
+libpar2.vcxproj.user
+libpar2.suo
 .vs/
 
 test.*
