@@ -15,9 +15,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\commandline.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\crc.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -57,9 +54,6 @@
     <ClCompile Include="src\par1repairersourcefile.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\par2cmdline.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\par2creator.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -95,9 +89,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\commandline.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\crc.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -176,25 +167,5 @@
     <ClInclude Include="src\utf8.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="AUTHORS" />
-    <None Include="ChangeLog" />
-    <None Include="config.guess" />
-    <None Include="config.h.in" />
-    <None Include="config.sub" />
-    <None Include="configure.ac" />
-    <None Include="COPYING" />
-    <None Include="depcomp" />
-    <None Include="INSTALL" />
-    <None Include="install-sh" />
-    <None Include="Makefile.am" />
-    <None Include="Makefile.in" />
-    <None Include="missing" />
-    <None Include="mkinstalldirs" />
-    <None Include="NEWS" />
-    <None Include="README.md" />
-    <None Include="ROADMAP" />
-    <None Include="stamp-h.in" />
   </ItemGroup>
 </Project>

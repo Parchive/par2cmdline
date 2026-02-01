@@ -33,79 +33,29 @@
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <CharacterSet>Unicode</CharacterSet>
     <PlatformToolset>v143</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
   </ImportGroup>
+  <ImportGroup Label="PropertySheets">
+    <Import Project="par2cmdline.props" />
+  </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
     <_ProjectFileVersion>10.0.30319.1</_ProjectFileVersion>
-    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)$(Platform)\$(Configuration)\</OutDir>
-    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(Platform)\$(Configuration)\</IntDir>
-    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</LinkIncremental>
-    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</LinkIncremental>
-    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">true</LinkIncremental>
-    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)$(Platform)\$(Configuration)\</OutDir>
-    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(Platform)\$(Configuration)\</IntDir>
-    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</LinkIncremental>
-    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</LinkIncremental>
-    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">false</LinkIncremental>
   </PropertyGroup>
   <PropertyGroup>
-    <TargetName>par2</TargetName>
+    <TargetName>libpar2</TargetName>
   </PropertyGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)'=='Debug'">
+  <ItemDefinitionGroup>
     <ClCompile>
-      <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;PACKAGE="par2cmdline";VERSION="1.1.0";%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <MinimalRebuild>false</MinimalRebuild>
-      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
-      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
-      <OpenMPSupport>true</OpenMPSupport>
-      <PrecompiledHeader>
-      </PrecompiledHeader>
       <PrecompiledHeaderFile>src\libpar2internal.h</PrecompiledHeaderFile>
-      <WarningLevel>Level3</WarningLevel>
-      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
     </ClCompile>
-    <Link>
-      <OutputFile>$(OutDir)par2.exe</OutputFile>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
-      <ProgramDatabaseFile>$(OutDir)par2cmdline.pdb</ProgramDatabaseFile>
-      <SubSystem>Console</SubSystem>
-      <EnableCOMDATFolding>false</EnableCOMDATFolding>
-    </Link>
-  </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)'=='Release'">
-    <ClCompile>
-      <Optimization>MaxSpeed</Optimization>
-      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
-      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
-      <OmitFramePointers>true</OmitFramePointers>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;PACKAGE="par2cmdline";VERSION="1.1.0";%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <StringPooling>true</StringPooling>
-      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <FunctionLevelLinking>true</FunctionLevelLinking>
-      <PrecompiledHeader>
-      </PrecompiledHeader>
-      <PrecompiledHeaderFile>src\libpar2internal.h</PrecompiledHeaderFile>
-      <WarningLevel>Level3</WarningLevel>
-      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <OpenMPSupport>true</OpenMPSupport>
-    </ClCompile>
-    <Link>
-      <OutputFile>$(OutDir)par2.exe</OutputFile>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
-      <SubSystem>Console</SubSystem>
-      <OptimizeReferences>true</OptimizeReferences>
-      <EnableCOMDATFolding>true</EnableCOMDATFolding>
-    </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="src\commandline.cpp" />
     <ClCompile Include="src\crc.cpp" />
     <ClCompile Include="src\creatorpacket.cpp" />
     <ClCompile Include="src\criticalpacket.cpp" />
@@ -120,7 +70,6 @@
     <ClCompile Include="src\par1fileformat.cpp" />
     <ClCompile Include="src\par1repairer.cpp" />
     <ClCompile Include="src\par1repairersourcefile.cpp" />
-    <ClCompile Include="src\par2cmdline.cpp" />
     <ClCompile Include="src\par2creator.cpp" />
     <ClCompile Include="src\par2creatorsourcefile.cpp" />
     <ClCompile Include="src\par2fileformat.cpp" />
@@ -133,7 +82,6 @@
     <ClCompile Include="src\utf8.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\commandline.h" />
     <ClInclude Include="src\crc.h" />
     <ClInclude Include="src\creatorpacket.h" />
     <ClInclude Include="src\criticalpacket.h" />
@@ -160,26 +108,6 @@
     <ClInclude Include="src\verificationhashtable.h" />
     <ClInclude Include="src\verificationpacket.h" />
     <ClInclude Include="src\utf8.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="AUTHORS" />
-    <None Include="ChangeLog" />
-    <None Include="config.guess" />
-    <None Include="config.h.in" />
-    <None Include="config.sub" />
-    <None Include="configure.ac" />
-    <None Include="COPYING" />
-    <None Include="depcomp" />
-    <None Include="INSTALL" />
-    <None Include="install-sh" />
-    <None Include="Makefile.am" />
-    <None Include="Makefile.in" />
-    <None Include="missing" />
-    <None Include="mkinstalldirs" />
-    <None Include="NEWS" />
-    <None Include="README.md" />
-    <None Include="ROADMAP" />
-    <None Include="stamp-h.in" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

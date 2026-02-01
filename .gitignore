@@ -42,6 +42,8 @@ Debug/
 *.old
 libpar2.vcxproj.user
 libpar2.suo
+par2cmdline.vcxproj.user
+par2cmdline.suo
 .vs/
 
 test.*
