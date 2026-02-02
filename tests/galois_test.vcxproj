@@ -27,8 +27,8 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{54348158-1a8a-41af-a76a-0aaad0e43909}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
+    <ProjectGuid>{263deccf-470b-4bd0-b21a-d349b563cf6c}</ProjectGuid>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -40,54 +40,23 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
   </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
   <ImportGroup Label="PropertySheets">
-    <Import Project="par2cmdline.props" />
+    <Import Project="..\par2cmdline.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
-  <PropertyGroup>
-    <_ProjectFileVersion>10.0.30319.1</_ProjectFileVersion>
-  </PropertyGroup>
-  <PropertyGroup>
-    <TargetName>par2</TargetName>
-  </PropertyGroup>
   <ItemDefinitionGroup>
     <Link>
-      <OutputFile>$(OutDir)par2.exe</OutputFile>
-      <ProgramDatabaseFile>$(OutDir)par2cmdline.pdb</ProgramDatabaseFile>
       <SubSystem>Console</SubSystem>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="src\commandline.cpp" />
-    <ClCompile Include="src\par2cmdline.cpp" />
+    <ClCompile Include="..\src\galois.cpp" />
+    <ClCompile Include="..\src\galois_test.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\commandline.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="AUTHORS" />
-    <None Include="ChangeLog" />
-    <None Include="config.guess" />
-    <None Include="config.h.in" />
-    <None Include="config.sub" />
-    <None Include="configure.ac" />
-    <None Include="COPYING" />
-    <None Include="depcomp" />
-    <None Include="INSTALL" />
-    <None Include="install-sh" />
-    <None Include="Makefile.am" />
-    <None Include="Makefile.in" />
-    <None Include="missing" />
-    <None Include="mkinstalldirs" />
-    <None Include="NEWS" />
-    <None Include="README.md" />
-    <None Include="ROADMAP" />
-    <None Include="stamp-h.in" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="libpar2.vcxproj">
-      <Project>{d0a94f83-495e-4fb2-ac33-9a3ec2cc263b}</Project>
-    </ProjectReference>
+    <ClInclude Include="..\src\galois.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

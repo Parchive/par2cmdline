@@ -19,9 +19,7 @@ jobs:
       run: msbuild -property:Configuration=Release -property:Platform=x64 par2cmdline.sln
 
     - name: Build Unit Tests
-      shell: pwsh
-      run: |
-        .\tests\build_unit_tests.ps1 -Configuration Release -Platform x64
+      run: msbuild -property:Configuration=UnitTests-Release -property:Platform=x64 par2cmdline.sln
 
     - name: Run Tests
       shell: pwsh

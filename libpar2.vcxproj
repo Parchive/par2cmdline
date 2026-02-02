@@ -1,0 +1,115 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|ARM64">
+      <Configuration>Debug</Configuration>
+      <Platform>ARM64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|ARM64">
+      <Configuration>Release</Configuration>
+      <Platform>ARM64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{D0A94F83-495E-4FB2-AC33-9A3EC2CC263B}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets">
+    <Import Project="par2cmdline.props" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>10.0.30319.1</_ProjectFileVersion>
+  </PropertyGroup>
+  <PropertyGroup>
+    <TargetName>libpar2</TargetName>
+  </PropertyGroup>
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <PrecompiledHeaderFile>src\libpar2internal.h</PrecompiledHeaderFile>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="src\crc.cpp" />
+    <ClCompile Include="src\creatorpacket.cpp" />
+    <ClCompile Include="src\criticalpacket.cpp" />
+    <ClCompile Include="src\datablock.cpp" />
+    <ClCompile Include="src\descriptionpacket.cpp" />
+    <ClCompile Include="src\diskfile.cpp" />
+    <ClCompile Include="src\filechecksummer.cpp" />
+    <ClCompile Include="src\galois.cpp" />
+    <ClCompile Include="src\libpar2.cpp" />
+    <ClCompile Include="src\mainpacket.cpp" />
+    <ClCompile Include="src\md5.cpp" />
+    <ClCompile Include="src\par1fileformat.cpp" />
+    <ClCompile Include="src\par1repairer.cpp" />
+    <ClCompile Include="src\par1repairersourcefile.cpp" />
+    <ClCompile Include="src\par2creator.cpp" />
+    <ClCompile Include="src\par2creatorsourcefile.cpp" />
+    <ClCompile Include="src\par2fileformat.cpp" />
+    <ClCompile Include="src\par2repairer.cpp" />
+    <ClCompile Include="src\par2repairersourcefile.cpp" />
+    <ClCompile Include="src\recoverypacket.cpp" />
+    <ClCompile Include="src\reedsolomon.cpp" />
+    <ClCompile Include="src\verificationhashtable.cpp" />
+    <ClCompile Include="src\verificationpacket.cpp" />
+    <ClCompile Include="src\utf8.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="src\crc.h" />
+    <ClInclude Include="src\creatorpacket.h" />
+    <ClInclude Include="src\criticalpacket.h" />
+    <ClInclude Include="src\datablock.h" />
+    <ClInclude Include="src\descriptionpacket.h" />
+    <ClInclude Include="src\diskfile.h" />
+    <ClInclude Include="src\filechecksummer.h" />
+    <ClInclude Include="src\galois.h" />
+    <ClInclude Include="src\letype.h" />
+    <ClInclude Include="src\libpar2.h" />
+    <ClInclude Include="src\libpar2internal.h" />
+    <ClInclude Include="src\mainpacket.h" />
+    <ClInclude Include="src\md5.h" />
+    <ClInclude Include="src\par1fileformat.h" />
+    <ClInclude Include="src\par1repairer.h" />
+    <ClInclude Include="src\par1repairersourcefile.h" />
+    <ClInclude Include="src\par2creator.h" />
+    <ClInclude Include="src\par2creatorsourcefile.h" />
+    <ClInclude Include="src\par2fileformat.h" />
+    <ClInclude Include="src\par2repairer.h" />
+    <ClInclude Include="src\par2repairersourcefile.h" />
+    <ClInclude Include="src\recoverypacket.h" />
+    <ClInclude Include="src\reedsolomon.h" />
+    <ClInclude Include="src\verificationhashtable.h" />
+    <ClInclude Include="src\verificationpacket.h" />
+    <ClInclude Include="src\utf8.h" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>
