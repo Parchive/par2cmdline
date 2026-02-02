@@ -28,7 +28,7 @@ static char THIS_FILE[]=__FILE__;
 #endif
 #endif
 
-// Convert hash values to std::hex
+// Convert hash values to hex
 
 std::ostream& operator<<(std::ostream &result, const MD5Hash &h)
 {

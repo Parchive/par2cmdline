@@ -3,7 +3,7 @@ dnl  repair tool). See http://parchive.sourceforge.net for details of PAR 2.0.
 dnl
 dnl  Copyright (c) 2003-2015 Peter Brian Clements
 dnl  Copyright (c) 2011-2012 Marcel Partap
-dnl  Copyright (c) 2012-2015 Ike Devolder
+dnl  Copyright (c) 2012-2026 Ike Devolder
 dnl  Copyright (c) 2019 Michael D. Nahas
 dnl
 dnl  par2cmdline is free software; you can redistribute it and/or modify

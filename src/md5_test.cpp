@@ -53,8 +53,8 @@ int test1() {
 }
 
 
-// "MD5 of a null std::string is d41d8cd98f00b204e9800998ecf8427e"
-// "MD5 of a null std::string is d4 1d 8c d9  8f 00 b2 04  e9 80 09 98  ec f8 42 7e"
+// "MD5 of a null string is d41d8cd98f00b204e9800998ecf8427e"
+// "MD5 of a null string is d4 1d 8c d9  8f 00 b2 04  e9 80 09 98  ec f8 42 7e"
 // according to https://news.ycombinator.com/item?id=5653698
 int test2() {
 

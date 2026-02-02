@@ -73,11 +73,11 @@ int test3()
 
 int test4()
 {
-  std::string specialCharsString = "This std::string has: !@#$%^&*()_+=-`~[]{}:;'<>,.?/";
-  std::wstring expectedWide = L"This std::string has: !@#$%^&*()_+=-`~[]{}:;'<>,.?/";
+  std::string specialCharsString = "This string has: !@#$%^&*()_+=-`~[]{}:;'<>,.?/";
+  std::wstring expectedWide = L"This string has: !@#$%^&*()_+=-`~[]{}:;'<>,.?/";
   std::wstring actualWide = Utf8ToWide(specialCharsString);
 
-  std::string expectedUtf8 = "This std::string has: !@#$%^&*()_+=-`~[]{}:;'<>,.?/";
+  std::string expectedUtf8 = "This string has: !@#$%^&*()_+=-`~[]{}:;'<>,.?/";
   std::string actualUtf8 = WideToUtf8(expectedWide);
 
   if (actualWide == expectedWide && actualUtf8 == expectedUtf8)

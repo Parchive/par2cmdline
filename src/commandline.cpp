@@ -79,7 +79,7 @@ void CommandLine::banner(void)
 {
   std::cout << "Copyright (C) 2003-2015 Peter Brian Clements." << std::endl
     << "Copyright (C) 2011-2012 Marcel Partap." << std::endl
-    << "Copyright (C) 2012-2017 Ike Devolder." << std::endl
+    << "Copyright (C) 2012-2026 Ike Devolder." << std::endl
     << "Copyright (C) 2014-2017 Jussi Kansanen." << std::endl
     << "Copyright (C) 2019 Michael Nahas." << std::endl
     << std::endl
@@ -137,7 +137,7 @@ void CommandLine::usage(void)
     "  -f<n>    : First Recovery-Block-Number (default 0)\n"
     "  -u       : Uniform recovery file sizes (default is variable)\n"
     "  -l       : Limit size of recovery files (don't use both -u and -l)\n"
-    "  -n<n>    : Number of recovery files (std::max 31) (don't use both -n and -l)\n"
+    "  -n<n>    : Number of recovery files (max 31) (don't use both -n and -l)\n"
     "  -R       : Recurse into subdirectories\n"
     "             (Be aware of wildcard shell expansion)\n"
     "\n";
@@ -1097,7 +1097,7 @@ bool CommandLine::CheckValuesAndSetDefaults() {
       if (parfilename.length() > 5 && 0 == stricmp(parfilename.substr(parfilename.length()-5, 5).c_str(), ".par2"))
       {
         // Yes it does.
-        std::cerr << "You must specify a std::list of files when creating." << std::endl;
+        std::cerr << "You must specify a list of files when creating." << std::endl;
         return false;
       }
       else
@@ -1117,7 +1117,7 @@ bool CommandLine::CheckValuesAndSetDefaults() {
         {
           // The file does not exist or it is empty.
 
-          std::cerr << "You must specify a std::list of files when creating." << std::endl;
+          std::cerr << "You must specify a list of files when creating." << std::endl;
           return false;
         }
       }
