@@ -1074,15 +1074,15 @@ std::string DiskFile::ErrorMessage(DWORD error)
   std::string result;
 
   LPVOID lpMsgBuf;
-  if (::FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+  if (::FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
                        NULL,
                        error,
                        MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-                       (LPSTR)&lpMsgBuf,
+                       (LPWSTR)&lpMsgBuf,
                        0,
                        NULL))
   {
-    result = (char*)lpMsgBuf;
+    result = utf8::WideToUtf8((wchar_t*)lpMsgBuf);
     LocalFree(lpMsgBuf);
   }
   else
