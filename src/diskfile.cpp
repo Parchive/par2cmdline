@@ -89,7 +89,7 @@ bool DiskFile::CreateParentDirectory(std::string _pathname)
     if (!DiskFile::CreateParentDirectory(path))
       return false;
 
-    if (!CreateDirectory(wpath.c_str(), NULL))
+    if (!CreateDirectoryW(wpath.c_str(), NULL))
     {
       DWORD error = ::GetLastError();
 
@@ -116,7 +116,7 @@ bool DiskFile::Create(std::string _filename, u64 _filesize)
 
   // Create the file
   std::wstring wfilename = utf8::Utf8ToWide(_filename);
-  hFile = ::CreateFile(wfilename.c_str(), GENERIC_READ | GENERIC_WRITE, 0, NULL, CREATE_NEW, 0, NULL);
+  hFile = ::CreateFileW(wfilename.c_str(), GENERIC_READ | GENERIC_WRITE, 0, NULL, CREATE_NEW, 0, NULL);
   if (hFile == INVALID_HANDLE_VALUE)
   {
     DWORD error = ::GetLastError();
@@ -143,7 +143,7 @@ bool DiskFile::Create(std::string _filename, u64 _filesize)
 
       ::CloseHandle(hFile);
       hFile = INVALID_HANDLE_VALUE;
-      ::DeleteFile(wfilename.c_str());
+      ::DeleteFileW(wfilename.c_str());
 
       return false;
     }
@@ -158,7 +158,7 @@ bool DiskFile::Create(std::string _filename, u64 _filesize)
 
       ::CloseHandle(hFile);
       hFile = INVALID_HANDLE_VALUE;
-      ::DeleteFile(wfilename.c_str());
+      ::DeleteFileW(wfilename.c_str());
 
       return false;
     }
@@ -245,7 +245,7 @@ bool DiskFile::Open(const std::string &_filename, u64 _filesize)
   filesize = _filesize;
 
   std::wstring wfilename = utf8::Utf8ToWide(_filename);
-  hFile = ::CreateFile(wfilename.c_str(), GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
+  hFile = ::CreateFileW(wfilename.c_str(), GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
   if (hFile == INVALID_HANDLE_VALUE)
   {
     DWORD error = ::GetLastError();
@@ -377,8 +377,8 @@ std::unique_ptr< std::list<std::string> > DiskFile::FindFiles(std::string path, 
   std::list<std::string> *matches = new std::list<std::string>;
 
   std::wstring wwildcard = utf8::Utf8ToWide(path + wildcard);
-  WIN32_FIND_DATA fd;
-  HANDLE h = ::FindFirstFile(wwildcard.c_str(), &fd);
+  WIN32_FIND_DATAW fd;
+  HANDLE h = ::FindFirstFileW(wwildcard.c_str(), &fd);
   if (h != INVALID_HANDLE_VALUE)
   {
     do
@@ -401,7 +401,7 @@ std::unique_ptr< std::list<std::string> > DiskFile::FindFiles(std::string path, 
         // append without requiring ordering
         matches->splice(matches->end(), *dirmatches);
       }
-    } while (::FindNextFile(h, &fd));
+    } while (::FindNextFileW(h, &fd));
     ::FindClose(h);
   }
 
@@ -954,7 +954,7 @@ bool DiskFile::Delete(void)
   assert(hFile == INVALID_HANDLE_VALUE);
 
   std::wstring wfilename = utf8::Utf8ToWide(filename);
-  if (filename.size() > 0 && 0 == _wunlink(wfilename.c_str()))
+  if (filename.size() > 0 && ::DeleteFileW(wfilename.c_str()))
   {
     exists = false;
     return true;
@@ -1102,7 +1102,7 @@ bool DiskFile::Rename(std::string _filename)
   std::wstring wfilename = utf8::Utf8ToWide(filename);
   std::wstring _wfilename = utf8::Utf8ToWide(_filename);
 
-  if (::_wrename(wfilename.c_str(), _wfilename.c_str()) == 0)
+  if (::MoveFileW(wfilename.c_str(), _wfilename.c_str()))
   {
     filename.swap(_filename);
 
