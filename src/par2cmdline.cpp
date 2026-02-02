@@ -46,7 +46,9 @@ int main(int argc, char* argv[])
 #ifdef _MSC_VER
   // Memory leak checking
   _CrtSetDbgFlag(_CrtSetDbgFlag(_CRTDBG_REPORT_FLAG) | _CRTDBG_ALLOC_MEM_DF | /*_CRTDBG_CHECK_CRT_DF | */_CRTDBG_DELAY_FREE_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+#endif
 
+#ifdef _WIN32
   SetConsoleOutputCP(CP_UTF8);
 
   utf8::WideToUtf8ArgsAdapter wargsAdapter{ argc, wargv };
