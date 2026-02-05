@@ -1,0 +1,9 @@
+# yaml-language-server: $schema=https://json.schemastore.org/clangd.json
+CompileFlags:
+  Add:
+    - "--include-directory=."
+    - "--include-directory=.."
+    - "--include=config.h"
+Diagnostics:
+  MissingIncludes: Strict
+  UnusedIncludes: Strict
