@@ -1,3 +1,17 @@
+06 February 2026 Ike Devolder
+  * release: 1.1.1
+
+  Release:
+    *  #264: Version 1.1.1 (PR #267 version 1.1.1)
+  Issues:
+    * #248: When repairing a file, if there is not enough disk space, the final error message displays garbled characters. (PR  #263 fix garbled errormessage on windows)
+    * #253: Why does running par2 in the command line environment forcibly switch the code page to CP65001?
+  PRs:
+    * #261: Cleanup/std namespace search replace oops (https://github.com/Parchive/par2cmdline/pull/242#pullrequestreview-3731414581)
+    * #262: Migrate Windows unit tests to Visual C++ projects (https://github.com/Parchive/par2cmdline/pull/256#issuecomment-3827352914)
+    * #265: add .clangd file for additional editor lsp support
+    * #266: Integer definitions consistency
+
 27 Januari 2026 Ike Devolder
   * release: 1.1.0
 
