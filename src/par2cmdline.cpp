@@ -56,10 +56,10 @@ int main(int argc, char* argv[])
 #endif
 
   // check sizeof integers
-  static_assert(sizeof(u8) == 1 || sizeof(i8) == 1
-		|| sizeof(u16) == 2 || sizeof(i16) == 1
-		|| sizeof(u32) == 4 || sizeof(i32) == 1
-		|| sizeof(u64) == 8 || sizeof(i64) == 1,
+  static_assert(sizeof(u8) == 1 && sizeof(i8) == 1
+		&& sizeof(u16) == 2 && sizeof(i16) == 2
+		&& sizeof(u32) == 4 && sizeof(i32) == 4
+		&& sizeof(u64) == 8 && sizeof(i64) == 8,
 		"Error: the assumed sizes of integers is wrong!");
 
 
