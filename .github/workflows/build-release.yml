@@ -168,7 +168,7 @@ jobs:
     - uses: actions/checkout@v6
 
     - name: Build on FreeBSD
-      uses: cross-platform-actions/action@v0.32.0
+      uses: cross-platform-actions/action@v1.0.0
       env:
         LDFLAGS: -static -s
       with:
