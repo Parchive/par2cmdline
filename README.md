@@ -1,9 +1,8 @@
 # par2cmdline
 
-# Difference Between this Version and Main Branch
+** Difference Between this Version and Main Branch **
 This fork provides the capacity to utilize the paramter @filelist.txt to input a list of specific files.
-# eg.
-par2.exe c -t8 -m2048 -B. -s1048576 L:\integrity_check\logs\recovery_data.par2 @L:\integrity_check\logs\files.txt
+ eg. par2.exe c -t8 -m2048 -B. -s1048576 L:\integrity_check\logs\recovery_data.par2 @L:\integrity_check\logs\files.txt
 
 
 **par2cmdline** is a PAR 2.0 compatible file verification and repair tool.
