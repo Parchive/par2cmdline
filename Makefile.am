@@ -77,6 +77,10 @@ EXTRA_DIST = PORTING ROADMAP \
 			 tests/bug44.tar.gz \
 			 tests/bug128-parfiles.tar.gz \
 			 tests/bug190.tar.gz \
+			 tests/flatdata-filelist.txt \
+			 tests/subdirdata-filelist.txt \
+			 tests/subdirdata-partial-filelist.txt \
+			 tests/subdirdata-folder-filelist.txt \
 			 tests/testfuncs.ps1 \
 			 tests/build_unit_tests.ps1 \
 			 tests/run_tests.ps1 \
@@ -152,6 +156,14 @@ EXTRA_DIST = PORTING ROADMAP \
 			 tests/test34.ps1 \
 			 tests/test35 \
 			 tests/test35.ps1 \
+			 tests/test36 \
+			 tests/test36.ps1 \
+			 tests/test37 \
+			 tests/test37.ps1 \
+			 tests/test38 \
+			 tests/test38.ps1 \
+			 tests/test39 \
+			 tests/test39.ps1 \
 			 tests/unit_tests \
 			 tests/unit_tests.ps1
 
@@ -227,6 +239,10 @@ TESTS = tests/test1 \
 		tests/test33 \
 		tests/test34 \
 		tests/test35 \
+		tests/test36 \
+		tests/test37 \
+		tests/test38 \
+		tests/test39 \
 		tests/utf8_test \
 		tests/unit_tests
 
