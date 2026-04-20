@@ -860,9 +860,16 @@ bool CommandLine::ReadArgs(int argc, const char * const *argv)
           }
         }
       } 
-      //START SECTION FOR ADDING @FILELIST FUNCTIONALITY
+//START SECTION FOR ADDING @FILELIST FUNCTIONALITY
       else if (argv[0][0] == '@') // Handle list files
       {
+        // 1. Check if the '@' is followed by a filename
+        if (argv[0][1] == '\0')
+        {
+          std::cerr << "No filename specified after '@' symbol." << std::endl;
+          return false;
+        }
+
         std::ifstream listfile(&argv[0][1]);
         if (!listfile.is_open())
         {
@@ -873,17 +880,21 @@ bool CommandLine::ReadArgs(int argc, const char * const *argv)
         std::string line;
         while (std::getline(listfile, line))
         {
-          if (line.empty()) continue;
+          // 2. Trim whitespace or skip whitespace-only lines
+          // This finds the first non-whitespace character
+          size_t first = line.find_first_not_of(" \t\r\n");
+          if (first == std::string::npos) 
+            continue; // Line is empty or only whitespace
+
+          // 3. Removed the 'parfilename.length() == 0' block.
+          // All files in the list are now treated as source files.
           
-          if (parfilename.length() == 0)
+          std::string lpath, lname;
+          DiskFile::SplitFilename(line, lpath, lname);
+          std::unique_ptr<std::list<std::string>> filenames(DiskFile::FindFiles(lpath, lname, recursive));
+          
+          if (filenames)
           {
-            if (!SetParFilename(line)) return false;
-          }
-          else
-          {
-            std::string lpath, lname;
-            DiskFile::SplitFilename(line, lpath, lname);
-            std::unique_ptr<std::list<std::string>> filenames(DiskFile::FindFiles(lpath, lname, recursive));
             for (auto const& fn : *filenames)
             {
               rawfilenames.push_back(DiskFile::GetCanonicalPathname(fn));
@@ -891,6 +902,7 @@ bool CommandLine::ReadArgs(int argc, const char * const *argv)
           }
         }
       }  //END SECTION FOR ADDING @filelist FUNCTIONALITY
+	  
       else if (parfilename.length() == 0)
       {
         std::string filename = argv[0];
