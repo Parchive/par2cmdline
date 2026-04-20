@@ -22,7 +22,7 @@
 #include<iostream>
 #include<algorithm>
 #include "commandline.h"
-
+#include <fstream>  //ADDED for @FILELIST FUNCTIONALY
 
 #ifdef _MSC_VER
 #ifdef _DEBUG
@@ -140,6 +140,8 @@ void CommandLine::usage(void)
     "  -n<n>    : Number of recovery files (max 31) (don't use both -n and -l)\n"
     "  -R       : Recurse into subdirectories\n"
     "             (Be aware of wildcard shell expansion)\n"
+    "   @       : Process a listing of files specified in a text file \n"
+    "             (eg. @filelist.txt) \n"
     "\n";
   std::cout <<
     "Example:\n"
@@ -289,10 +291,11 @@ bool CommandLine::ReadArgs(int argc, const char * const *argv)
   {
     if (argv[0][0])
     {
-      if (options && argv[0][0] != '-')
+    //MODIFIED FOR @FILELIST FUNCTIONALITY
+      if (options && argv[0][0] != '-' && argv[0][0] != '@')
         options = false;
-
-      if (options)
+    //MODIFIED FOR @FILELIST FUNCTIONALITY
+      if (options && argv[0][0] == '-')
       {
         switch (argv[0][1])
         {
@@ -855,6 +858,51 @@ bool CommandLine::ReadArgs(int argc, const char * const *argv)
           }
         }
       }
+//START SECTION FOR ADDING @FILELIST FUNCTIONALITY
+      else if (argv[0][0] == '@') // Handle list files
+      {
+        // 1. Check if the '@' is followed by a filename
+        if (argv[0][1] == '\0')
+        {
+          std::cerr << "No filename specified after '@' symbol." << std::endl;
+          return false;
+        }
+
+        std::ifstream listfile(&argv[0][1]);
+        if (!listfile.is_open())
+        {
+          std::cerr << "Could not open list file: " << &argv[0][1] << std::endl;
+          return false;
+        }
+
+        std::string line;
+        while (std::getline(listfile, line))
+        {
+          // 2. Trim whitespace or skip whitespace-only lines
+          // This finds the first non-whitespace character
+          size_t first = line.find_first_not_of(" \t\r\n");
+          if (first == std::string::npos)
+            continue; // Line is empty or only whitespace
+
+          // 3. Removed the 'parfilename.length() == 0' block.
+          // All files in the list are now treated as source files.
+
+          std::string lpath, lname;
+          DiskFile::SplitFilename(line, lpath, lname);
+          std::unique_ptr< std::list<std::string> > filenames(
+            DiskFile::FindFiles(lpath, lname, recursive)
+          );
+
+          if (filenames)
+          {
+            for (auto const& fn : *filenames)
+            {
+              rawfilenames.push_back(DiskFile::GetCanonicalPathname(fn));
+            }
+          }
+        }
+      }  //END SECTION FOR ADDING @filelist FUNCTIONALITY
+
       else if (parfilename.length() == 0)
       {
         std::string filename = argv[0];
@@ -871,20 +919,17 @@ bool CommandLine::ReadArgs(int argc, const char * const *argv)
         std::string path;
         std::string name;
         DiskFile::SplitFilename(argv[0], path, name);
-	std::unique_ptr< std::list<std::string> > filenames(
-						DiskFile::FindFiles(path, name, recursive)
-						);
+        std::unique_ptr< std::list<std::string> > filenames(
+          DiskFile::FindFiles(path, name, recursive)
+        );
 
-        std::list<std::string>::iterator fn = filenames->begin();
-        while (fn != filenames->end())
+        if (filenames)
         {
-          // Convert filename from command line into a full path + filename
-          std::string filename = DiskFile::GetCanonicalPathname(*fn);
-          rawfilenames.push_back(filename);
-          ++fn;
+          for (auto const& fn : *filenames)
+          {
+            rawfilenames.push_back(DiskFile::GetCanonicalPathname(fn));
+          }
         }
-
-        // delete filenames;   Taken care of by unique_ptr<>
       }
     }
 
