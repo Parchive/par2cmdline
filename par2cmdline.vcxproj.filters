@@ -42,9 +42,6 @@
     <None Include="Makefile.in" />
     <None Include="missing" />
     <None Include="mkinstalldirs" />
-    <None Include="NEWS" />
     <None Include="README.md" />
-    <None Include="ROADMAP" />
-    <None Include="stamp-h.in" />
   </ItemGroup>
 </Project>
