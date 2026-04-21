@@ -140,8 +140,8 @@ void CommandLine::usage(void)
     "  -n<n>    : Number of recovery files (max 31) (don't use both -n and -l)\n"
     "  -R       : Recurse into subdirectories\n"
     "             (Be aware of wildcard shell expansion)\n"
-    "   @       : Process a listing of files specified in a text file \n"
-    "             (eg. @filelist.txt) \n"
+    "   @       : Process a listing of files specified in text (file) input \n"
+    "             (eg. @filelist.txt, or bare @ to read from stdin) \n"
     "\n";
   std::cout <<
     "Example:\n"
@@ -861,22 +861,28 @@ bool CommandLine::ReadArgs(int argc, const char * const *argv)
 //START SECTION FOR ADDING @FILELIST FUNCTIONALITY
       else if (argv[0][0] == '@') // Handle list files
       {
+        std::istream* input = nullptr;
+        std::ifstream listfile;
+
         // 1. Check if the '@' is followed by a filename
         if (argv[0][1] == '\0')
         {
-          std::cerr << "No filename specified after '@' symbol." << std::endl;
-          return false;
+          // Bare '@' - read filelist from stdin
+          input = &std::cin;
         }
-
-        std::ifstream listfile(&argv[0][1]);
-        if (!listfile.is_open())
+        else
         {
-          std::cerr << "Could not open list file: " << &argv[0][1] << std::endl;
-          return false;
+          listfile.open(&argv[0][1]);
+          if (!listfile.is_open())
+          {
+            std::cerr << "Could not open list file: " << &argv[0][1] << std::endl;
+            return false;
+          }
+          input = &listfile;
         }
 
         std::string line;
-        while (std::getline(listfile, line))
+        while (std::getline(*input, line))
         {
           // 2. Trim whitespace or skip whitespace-only lines
           // This finds the first non-whitespace character
