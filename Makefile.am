@@ -164,6 +164,10 @@ EXTRA_DIST = \
 			 tests/test38.ps1 \
 			 tests/test39 \
 			 tests/test39.ps1 \
+       tests/test40 \
+       tests/test40.ps1 \
+       tests/test41 \
+       tests/test41.ps1 \
 			 tests/unit_tests \
 			 tests/unit_tests.ps1
 
@@ -243,6 +247,8 @@ TESTS = tests/test1 \
 		tests/test37 \
 		tests/test38 \
 		tests/test39 \
+    tests/test40 \
+    tests/test41 \
 		tests/utf8_test \
 		tests/unit_tests
 

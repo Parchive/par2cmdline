@@ -1,0 +1,51 @@
+#!/bin/sh
+
+execdir="$PWD"
+
+# valgrind tests memory usage.
+# wine allow for windows testing on linux
+if [ -n "${PARVALGRINDOPTS+set}" ]
+then
+    PARBINARY="valgrind $PARVALGRINDOPTS $execdir/par2"
+elif [ "`which wine`" != "" ] && [ -f "$execdir/par2.exe" ]
+then
+    PARBINARY="wine $execdir/par2.exe"
+else
+    PARBINARY="$execdir/par2"
+fi
+
+
+if [ -z "$srcdir" ] || [ "." = "$srcdir" ]; then
+  srcdir="$PWD"
+  TESTDATA="$srcdir/tests"
+else
+  srcdir="$PWD/$srcdir"
+  TESTDATA="$srcdir/tests"
+fi
+
+TESTROOT="$PWD"
+
+testname=$(basename $0)
+rm -f "$testname.log"
+rm -rf "run$testname"
+
+mkdir "run$testname" && cd "run$testname" || { echo "ERROR: Could not change to test directory" ; exit 1; } >&2
+
+tar -xzf "$TESTDATA/subdirdata.tar.gz" || { echo "ERROR: Could not extract data test files" ; exit 1; } >&2
+
+banner="Testing subdir data par2 creation with mixed files and stdin filelist"
+dashes=`echo "$banner" | sed s/./-/g`
+
+echo $dashes
+echo $banner
+echo $dashes
+
+cat "$TESTDATA/subdirdata-partial-filelist.txt" | $PARBINARY c recovery.par2 subdir1/test-6.data subdir2/test-7.data @ || { echo "ERROR: failed to create parchive from stdin filelist" ; exit 1; } >&2
+$PARBINARY v recovery.par2 || { echo "ERROR: failed to verify parchive created from stdin filelist" ; exit 1; } >&2
+
+echo "Successfully created and verified par2 recovery with filelist from stdin"
+
+cd "$TESTROOT"
+rm -rf "run$testname"
+
+exit 0
