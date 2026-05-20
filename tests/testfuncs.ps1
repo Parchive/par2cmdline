@@ -94,9 +94,12 @@ function Invoke-Par2 {
     param(
         [Parameter(Mandatory=$true)]
         [string[]]$Arguments,
-        
+
         [Parameter(Mandatory=$false)]
-        [switch]$ReturnObject
+        [switch]$ReturnObject,
+
+        [Parameter(Mandatory=$false)]
+        [string]$RedirectStandardInput
     )
 
     # Get the par2 binary path from environment variable
@@ -110,11 +113,24 @@ function Invoke-Par2 {
 
     try {
         # Use Start-Process with explicit WorkingDirectory for output capture
-        $process = Start-Process -FilePath $par2Path -ArgumentList $Arguments -NoNewWindow -Wait -PassThru -WorkingDirectory $PWD.Path -RedirectStandardOutput $tempOut -RedirectStandardError $tempErr
-        
+        $startProcessParams = @{
+            FilePath = $par2Path
+            ArgumentList = $Arguments
+            NoNewWindow = $true
+            Wait = $true
+            PassThru = $true
+            WorkingDirectory = $PWD.Path
+            RedirectStandardOutput = $tempOut
+            RedirectStandardError = $tempErr
+        }
+        if ($RedirectStandardInput) {
+            $startProcessParams['RedirectStandardInput'] = $RedirectStandardInput
+        }
+        $process = Start-Process @startProcessParams
+
         $stdOutContent = Get-Content $tempOut -Raw
         if ($null -eq $stdOutContent) { $stdOutContent = "" }
-        
+
         $stdErrContent = Get-Content $tempErr -Raw
         if ($null -eq $stdErrContent) { $stdErrContent = "" }
 
@@ -193,7 +209,7 @@ function Initialize-Test {
 
     New-Item -ItemType Directory -Path $script:RunDir -Force | Out-Null
     Set-Location $script:RunDir
-    
+
     # Sync .NET current directory with PowerShell
     [System.IO.Directory]::SetCurrentDirectory($PWD.Path)
 }

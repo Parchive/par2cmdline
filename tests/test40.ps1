@@ -14,7 +14,7 @@ try {
 
     Write-Banner "Testing flat data par2 creation with filelist from stdin"
 
-    $exitCode = Get-Content (Join-Path $TESTDATA "flatdata-filelist.txt") | Invoke-Par2 -Arguments @("c", "recovery.par2", "@")
+    $exitCode = Invoke-Par2 -Arguments @("c", "recovery.par2", "@") -RedirectStandardInput (Join-Path $TESTDATA "flatdata-filelist.txt")
     if ($exitCode -ne 0) {
       Exit-TestWithError "failed to create parchive from stdin filelist"
     }

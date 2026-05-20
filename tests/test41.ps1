@@ -14,7 +14,7 @@ try {
 
     Write-Banner "Testing subdir data par2 creation with mixed files and stdin filelist"
 
-    $exitCode = Get-Content (Join-Path $TESTDATA "subdirdata-partial-filelist.txt") | Invoke-Par2 -Arguments @("c", "recovery.par2", "subdir1\test-6.data", "subdir2\test-7.data", "@")
+    $exitCode = Invoke-Par2 -Arguments @("c", "recovery.par2", "subdir1\test-6.data", "subdir2\test-7.data", "@") -RedirectStandardInput (Join-Path $TESTDATA "subdirdata-partial-filelist.txt")
     if ($exitCode -ne 0) {
       Exit-TestWithError "failed to create parchive from stdin filelist"
     }
