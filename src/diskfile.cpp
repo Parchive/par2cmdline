@@ -33,6 +33,10 @@ static char THIS_FILE[]=__FILE__;
 #define BLKGETSIZE64 DIOCGMEDIASIZE
 #endif
 
+#if !defined(_WIN32) && !defined(O_NOFOLLOW)
+#define O_NOFOLLOW 0
+#endif
+
 
 #ifdef _WIN32
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -512,17 +516,15 @@ bool DiskFile::Create(std::string _filename, u64 _filesize)
   if (!DiskFile::CreateParentDirectory(filename))
     return false;
 
-  // This is after CreateParentDirectory because
-  // the Windows code would error out after too.
-  if (FileExists(filename))
+  if (_filesize > (u64)MaxOffset)
   {
     #pragma omp critical
-    *serr << "Could not create \"" << _filename << "\": File already exists." << std::endl;
+    *serr << "Requested file size for " << _filename << " is too large." << std::endl;
     return false;
   }
 
-  file = fopen(_filename.c_str(), "wb");
-  if (file == 0)
+  int fd = open(_filename.c_str(), O_WRONLY | O_CREAT | O_EXCL | O_NOFOLLOW, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+  if (fd < 0)
   {
     #pragma omp critical
     *serr << "Could not create " << _filename << ": " << strerror(errno) << std::endl;
@@ -530,10 +532,17 @@ bool DiskFile::Create(std::string _filename, u64 _filesize)
     return false;
   }
 
-  if (_filesize > (u64)MaxOffset)
+  file = fdopen(fd, "wb");
+  if (file == 0)
   {
+    int savederrno = errno;
+    close(fd);
+    ::remove(filename.c_str());
+    errno = savederrno;
+
     #pragma omp critical
-    *serr << "Requested file size for " << _filename << " is too large." << std::endl;
+    *serr << "Could not create " << _filename << ": " << strerror(errno) << std::endl;
+
     return false;
   }
 
