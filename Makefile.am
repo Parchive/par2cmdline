@@ -77,6 +77,8 @@ EXTRA_DIST = \
 			 tests/bug44.tar.gz \
 			 tests/bug128-parfiles.tar.gz \
 			 tests/bug190.tar.gz \
+			 tests/block-count-wrap.tar.gz \
+			 tests/generate-block-count-wrap-fixture.py \
 			 tests/flatdata-filelist.txt \
 			 tests/subdirdata-filelist.txt \
 			 tests/subdirdata-partial-filelist.txt \
@@ -169,6 +171,7 @@ EXTRA_DIST = \
        tests/test41 \
        tests/test41.ps1 \
        tests/test42 \
+       tests/test42.ps1 \
 			 tests/unit_tests \
 			 tests/unit_tests.ps1
 

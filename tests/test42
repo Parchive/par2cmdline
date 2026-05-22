@@ -12,10 +12,12 @@ else
     PARBINARY="$execdir/par2"
 fi
 
-if ! command -v python3 >/dev/null 2>&1
-then
-    echo "SKIP: python3 not available"
-    exit 77
+if [ -z "$srcdir" ] || [ "." = "$srcdir" ]; then
+  srcdir="$PWD"
+  TESTDATA="$srcdir/tests"
+else
+  srcdir="$PWD/$srcdir"
+  TESTDATA="$srcdir/tests"
 fi
 
 TESTROOT="$PWD"
@@ -33,71 +35,7 @@ echo $dashes
 echo $banner
 echo $dashes
 
-printf 'aaaa' > a.bin
-printf 'bbbb' > b.bin
-
-$PARBINARY c -q -s4 -r1 recovery.par2 a.bin b.bin || { echo "ERROR: Could not create PAR2 test file" ; exit 1; } >&2
-
-python3 - recovery.par2 <<'PY'
-import hashlib
-import pathlib
-import struct
-import sys
-
-path = pathlib.Path(sys.argv[1])
-data = bytearray(path.read_bytes())
-
-magic = b"PAR2\0PKT"
-main_type = b"PAR 2.0\0Main\0\0\0\0"
-desc_type = b"PAR 2.0\0FileDesc"
-main = None
-descs = []
-off = 0
-
-while True:
-    idx = data.find(magic, off)
-    if idx < 0:
-        break
-    length = struct.unpack_from("<Q", data, idx + 8)[0]
-    ptype = bytes(data[idx + 48:idx + 64])
-    if ptype == main_type:
-        main = (idx, length)
-    elif ptype == desc_type:
-        descs.append((idx, length))
-    off = idx + max(length, 1)
-
-if main is None or len(descs) < 2:
-    raise SystemExit("could not find expected PAR2 packets")
-
-sizes = [0x80000000 * 4, 0x80000001 * 4]
-fileids = []
-
-for (idx, length), size in zip(descs[:2], sizes):
-    length_offset = idx + 64 + 16 + 16 + 16
-    struct.pack_into("<Q", data, length_offset, size)
-
-    name_start = idx + 64 + 16 + 16 + 16 + 8
-    name = bytes(data[name_start:idx + length]).split(b"\0", 1)[0]
-    hash16k = bytes(data[idx + 64 + 16 + 16:idx + 64 + 16 + 16 + 16])
-    fileid = hashlib.md5(hash16k + struct.pack("<Q", size) + name).digest()
-    data[idx + 64:idx + 80] = fileid
-    fileids.append(fileid)
-
-main_idx, main_length = main
-for index, fileid in enumerate(fileids):
-    start = main_idx + 64 + 8 + 4 + index * 16
-    data[start:start + 16] = fileid
-
-setid = hashlib.md5(data[main_idx + 64:main_idx + main_length]).digest()
-for idx, length in [main] + descs[:2]:
-    data[idx + 32:idx + 48] = setid
-for idx, length in [main] + descs[:2]:
-    data[idx + 16:idx + 32] = hashlib.md5(data[idx + 32:idx + length]).digest()
-
-path.write_bytes(data)
-PY
-
-rm a.bin b.bin
+tar -xzf "$TESTDATA/block-count-wrap.tar.gz" || { echo "ERROR: Could not extract PAR2 test file" ; exit 1; } >&2
 
 $PARBINARY r -q recovery.par2 >repair.out 2>repair.err
 result=$?
