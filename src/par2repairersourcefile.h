@@ -57,7 +57,7 @@ public:
                  u64 blocksize);
 
   // Determine the block count from the file size and block size.
-  void SetBlockCount(u64 blocksize);
+  bool SetBlockCount(u64 blocksize);
 
   // Set/Get which DiskFile will contain the final repaired version of the file
   void SetTargetFile(DiskFile *diskfile);

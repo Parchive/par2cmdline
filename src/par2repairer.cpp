@@ -912,7 +912,16 @@ bool Par2Repairer::CheckPacketConsistency(void)
       }
 
       // Compute and store the block count from the filesize and blocksize
-      sf->second->SetBlockCount(blocksize);
+      if (!sf->second->SetBlockCount(blocksize))
+      {
+        serr << "Too many blocks in source file \"" << descriptionpacket->FileName() << "\" discarded" << std::endl;
+
+        delete sf->second;
+        std::map<MD5Hash, Par2RepairerSourceFile*>::iterator x = sf++;
+        sourcefilemap.erase(x);
+
+        continue;
+      }
 
       // Do we have a verification packet
       VerificationPacket *verificationpacket = sf->second->GetVerificationPacket();
@@ -928,12 +937,8 @@ bool Par2Repairer::CheckPacketConsistency(void)
         continue;
       }
 
-      // Work out the block count for the file from the file size
-      // and compare that with the verification packet
-      u64 filesize = descriptionpacket->FileSize();
-      u32 blockcount = verificationpacket->BlockCount();
-
-      if ((filesize + blocksize-1) / blocksize != (u64)blockcount)
+      // Compare the calculated block count with the verification packet.
+      if (sf->second->BlockCount() != verificationpacket->BlockCount())
       {
         // The block counts are different!
 
@@ -1018,7 +1023,14 @@ bool Par2Repairer::AllocateSourceBlocks(void)
     Par2RepairerSourceFile *sourcefile = *sf;
     if (sourcefile)
     {
-      sourceblockcount += sourcefile->BlockCount();
+      u32 blockcount = sourcefile->BlockCount();
+      if (blockcount > ((u32)~0) - sourceblockcount)
+      {
+        serr << "Too many source blocks in recovery set." << std::endl;
+        return false;
+      }
+
+      sourceblockcount += blockcount;
     }
     else
     {
