@@ -73,6 +73,8 @@ typedef unsigned int     size_t;
 #  include <stdio.h>
 #endif
 
+#include <fcntl.h>
+
 #if HAVE_DIRENT_H
 #  include <dirent.h>
 #  define NAMELEN(dirent) strlen((dirent)->d_name)
