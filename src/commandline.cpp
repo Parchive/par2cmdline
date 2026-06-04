@@ -1203,8 +1203,8 @@ bool CommandLine::CheckValuesAndSetDefaults() {
         blocksize = (blocksize + 3) & ~3;
 
         u64 minblocksize = (totalsize + 32767) / 32768; // 32768 = maximum PAR2
-        minblocksize = (minblocksize + 3) & ~3;
         minblocksize = std::max(minblocksize, (u64)4);
+        minblocksize = (minblocksize + 3) & ~3;
 
         if (blocksize < minblocksize)
             blocksize = minblocksize;
