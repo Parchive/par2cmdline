@@ -175,6 +175,12 @@ bool CommandLine::Parse(int argc, const char * const *argv)
       }
     }
 
+    if (sourceblockcount > 32768)
+    {
+      std::cerr << "Too many source blocks (" << sourceblockcount << " > 32768)." << std::endl;
+      return false;
+    }
+
     if (!ComputeRecoveryBlockCount(&recoveryblockcount,
 				   sourceblockcount,
 				   blocksize,
