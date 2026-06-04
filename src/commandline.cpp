@@ -30,6 +30,8 @@
 static char THIS_FILE[]=__FILE__;
 #define new DEBUG_NEW
 #endif
+#else
+#include <unistd.h>
 #endif
 
 // OpenMP
@@ -1015,20 +1017,29 @@ bool CommandLine::CheckValuesAndSetDefaults() {
     noiselevel = nlNormal;
   }
 
-  // Default memorylimit of 128MB
+  // Default memorylimit of 256MB
   if (memorylimit == 0)
   {
     u64 TotalPhysicalMemory = GetTotalPhysicalMemory();
 
     if (TotalPhysicalMemory == 0)
     {
-      // Default/error case:
-      // NOTE: In 2019, Ubuntu's minimum requirements are 256MiB.
-      TotalPhysicalMemory = 256 * 1048576;
-    }
+      if (noiselevel >= nlDebug)
+        std::cout << "[DEBUG] could not detect physical memory" << std::endl;
 
-    // Half of total physical memory
-    memorylimit = (size_t)(TotalPhysicalMemory / 1048576 / 2);
+      // Default/error case:
+      memorylimit = 256;
+    }
+    else
+    {
+      if (noiselevel >= nlDebug)
+        std::cout << "[DEBUG] detected physical memory: " << TotalPhysicalMemory << " bytes" << std::endl;
+
+      // 1/8th of total physical memory or floor to 256MiB if lower:
+      memorylimit = (size_t)(TotalPhysicalMemory / 1048576 / 8);
+      if (memorylimit < 256)
+        memorylimit = 256;
+    }
   }
 
   // limit to 1GB on 32-bit platforms to avoid exhausing the addressable memory space
