@@ -1186,11 +1186,28 @@ bool CommandLine::CheckValuesAndSetDefaults() {
       return false;
     }
 
-    // If neither block count not block size is specified
+    // If neither block count nor block size is specified, derive a default
+    // block size from total source data, targeting ~2000 blocks (as previous
+    // default). This replaces the old hard-coded blockcount=2000 which failed
+    // when file count exceeded 2000, and avoids inflated block sizes when file
+    // sizes vary widely. The minimum is clamped so that the total source block
+    // count stays within the PAR2 limit of 32768.
     if (blockcount == 0 && blocksize == 0)
     {
-      // Use a block count of 2000
-      blockcount = 2000;
+        u64 totalsize = 0;
+        for (auto &f : extrafiles)
+            totalsize += filesize_cache.get(f);
+
+        blocksize = (totalsize + 1999) / 2000; // 2000 = target (previous default)
+        blocksize = std::max(blocksize, (u64)4);
+        blocksize = (blocksize + 3) & ~3;
+
+        u64 minblocksize = (totalsize + 32767) / 32768; // 32768 = maximum PAR2
+        minblocksize = (minblocksize + 3) & ~3;
+        minblocksize = std::max(minblocksize, (u64)4);
+
+        if (blocksize < minblocksize)
+            blocksize = minblocksize;
     }
 
     // If no recovery file size scheme is specified then use Variable
