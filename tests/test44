@@ -1,0 +1,56 @@
+#!/bin/sh
+
+execdir="$PWD"
+
+# valgrind tests memory usage.
+# wine allow for windows testing on linux
+if [ -n "${PARVALGRINDOPTS+set}" ]
+then
+    PARBINARY="valgrind $PARVALGRINDOPTS $execdir/par2"
+elif [ "`which wine`" != "" ] && [ -f "$execdir/par2.exe" ]
+then
+    PARBINARY="wine $execdir/par2.exe"
+else
+    PARBINARY="$execdir/par2"
+fi
+
+if [ -z "$srcdir" ] || [ "." = "$srcdir" ]; then
+  srcdir="$PWD"
+  TESTDATA="$srcdir/tests"
+else
+  srcdir="$PWD/$srcdir"
+  TESTDATA="$srcdir/tests"
+fi
+
+TESTROOT="$PWD"
+
+testname=$(basename $0)
+rm -f "$testname.log"
+rm -rf "run$testname"
+
+mkdir "run$testname" && cd "run$testname" || { echo "ERROR: Could not change to test directory" ; exit 1; } >&2
+
+banner="par2 create works with more than 2000 input files"
+dashes=`echo "$banner" | sed s/./-/g`
+echo $dashes
+echo $banner
+echo $dashes
+
+# Generate 2001 non-empty data files (each 512 bytes).
+# The old hard-coded blockcount=2000 default would fail here because the
+# number of source files exceeded the block count.
+datadir="$TESTROOT/run$testname/manyfiles"
+mkdir -p "$datadir" || { echo "ERROR: Could not create data directory" ; exit 1; } >&2
+
+i=0
+while [ $i -lt 2001 ]; do
+    printf '%0512d' $i > "$datadir/file_$(printf '%04d' $i).data"
+    i=$((i + 1))
+done
+
+$PARBINARY c -B"$datadir" "$datadir"/test.par2 "$datadir"/*.data || { echo "ERROR: create with >2000 files failed" ; exit 1; } >&2
+
+cd "$TESTROOT"
+rm -rf "run$testname"
+
+exit 0
