@@ -1,3 +1,32 @@
+10 June 2026 Ike Devolder
+  * release: 1.2.0
+
+  Security:
+    * GHSA-3c2j-rccw-j2vj: Heap out-of-bounds write in PAR2 repair from unchecked source block count wrap
+    * GHSA-j5pc-g362-c5xp: Repair can follow dangling symlinks and write outside the repair base path
+
+  Release:
+    * #277: Version 1.2.0 (PR #288 version 1.2.0)
+
+  Issues:
+    * #268: Is there any explanation for par2 exit codes? | 有没有 par2 退出码的说明？
+    * #273: Request @filelist.txt (original PR #274, finished in #279)
+    * #270: Remove empty/obsolete files in top-level directory (via PR #278)
+    * #275: par2cmdline defaults to 128MiB of RAM (via PR #286)
+
+  PRs:
+    * #271: Bump actions/upload-artifact from 6 to 7
+    * #272: Bump microsoft/setup-msbuild from 2 to 3
+    * #276: Bump cross-platform-actions/action from 0.32.0 to 1.0.0
+    * #280: Take input files from stdin (standard input)
+    * #284: Bump cross-platform-actions/action from 1.0.0 to 1.2.0
+    * #285: fix: input file count over 2000 failing with defaults + edge case
+    * #287: Improve and sync man+commandline
+
+  Skipped:
+    * #222: Add SPM support
+    * #234: par2 repair and stream to stdout
+
 06 February 2026 Ike Devolder
   * release: 1.1.1
 
@@ -36,7 +65,7 @@
     * #214: Add armhf Linux build
     * #217: fix manpage typ0
     * #218: tests/utf8_test is generated before running tests, not needed in dist
-    * #221: Replace deprecated sprintf with snprintf 
+    * #221: Replace deprecated sprintf with snprintf
     * #223: Remove unused code
     * #224: Fix README not found
     * #226: Reduce the minimum supported macOS version and add a universal macOS binary
