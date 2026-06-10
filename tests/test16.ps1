@@ -17,7 +17,7 @@ try {
 
     Set-Location "subdir1"
 
-    $result = Invoke-Par2 -Arguments @("c", "-r2", "test.par2", "test-0.data", "test-1.data", "test-2.data", "test-3.data", "test-4.data", "..\subdir2\test-5.data", "..\subdir2\test-6.data", "..\subdir2\test-7.data", "..\subdir2\test-8.data", "..\subdir2\test-9.data") -ReturnObject
+    $result = Invoke-Par2 -Arguments @("c", "-r2", "-a", "test.par2", "test-0.data", "test-1.data", "test-2.data", "test-3.data", "test-4.data", "..\subdir2\test-5.data", "..\subdir2\test-6.data", "..\subdir2\test-7.data", "..\subdir2\test-8.data", "..\subdir2\test-9.data") -ReturnObject
     if ($result.ExitCode -ne 0) {
         Exit-TestWithError "creating files using PAR 2.0 failed"
     }

@@ -41,7 +41,7 @@ echo $dashes
 echo $banner
 echo $dashes
 
-$PARBINARY v testdata.par2 || { echo "ERROR: Initial PAR 2.0 verification failed" ; exit 1; } >&2
+$PARBINARY v -a testdata.par2 || { echo "ERROR: Initial PAR 2.0 verification failed" ; exit 1; } >&2
 
 cd "$TESTROOT"
 rm -rf "run$testname"
