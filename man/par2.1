@@ -31,7 +31,7 @@ Also:
 .br
 .SH DESCRIPTION
 par2cmdline is a program for creating and using PAR2 files to detect damage in data files and repair them if necessary. It can be used with any kind of file.
-.SH OPTIONS
+.SH OPTIONS global
 .TP
 .B \-h
 Show this help
@@ -41,16 +41,51 @@ Show version
 .TP
 .B \-VV
 Show version and copyright
+.SH OPTIONS all uses
 .TP
 .BI "\-a <" "file" ">"
 Set the main PAR2 archive name; required on create, optional for verify and repair
+.TP
+.B \-B <" "path" ">"
+Set the basepath to use as reference for the datafiles
+.TP
+.B \-v [\-v]
+Be more verbose
+.TP
+.B \-q [\-q]
+.RB "Be more quiet (" "\-q \-q" " gives silence)"
+.TP
+.B \-m<n>
+Memory (in MB) to use (default is half of total physical memory)
+.TP
+.B \-t<n>
+.RB "Number of threads used for main processing (default auto-detected)"
+.TP
+.B \-T<n>
+.RB "Number of files hashed in parallel (default 2)"
+.TP
+.B \-\-
+Treat all following arguments as filenames
+.SH OPTIONS verify or repair
+.TP
+.B \-p
+Purge backup files and par files on successful recovery or when no recovery is needed
+.TP
+.B \-O
+Rename-only mode (skip files that are not perfect matches, useful for quickly fixing renamed files)
+.TP
+.B \-N
+data skipping (find badly mispositioned data blocks)
+.TP
+.B \-S<n>
+Skip leaway (distance +/\- from expected block position, default 64)
+.SH OPTIONS create
 .TP
 .B \-b<n>
 Set the Block\(hyCount (default 2000 when neither \-b nor \-s is specified)
 .TP
 .B \-s<n>
 .RB "Set the Block\(hySize (don't use both " "\-b" " and " "\-s" ")"
-
 .TP
 .B \-r<n>
 Level of redundancy (percentage, default 5%)
@@ -73,41 +108,11 @@ Uniform recovery file sizes (default is variable sizes)
 .B \-n<n>
 .RB "Number of recovery files (max 31) (don't use both " "\-n" " and " "\-l" ")"
 .TP
-.B \-m<n>
-Memory (in MB) to use (default is half of total physical memory)
-.TP
-.B \-t<n>
-.RB "Number of threads used for main processing (default auto-detected)"
-.TP
-.B \-T<n>
-.RB "Number of files hashed in parallel (default 2)"
-.TP
-.B \-v [\-v]
-Be more verbose
-.TP
-.B \-q [\-q]
-.RB "Be more quiet (" "\-qq" " gives silence)"
-.TP
-.B \-p
-Purge backup files and par files on successful recovery or when no recovery is needed
-.TP
 .B \-R
 Recurse into subdirectories (only useful on create)
 .TP
-.B \-O
-Rename-only mode (skip files that are not perfect matches, useful for quickly fixing renamed files)
-.TP
-.B \-N
-data skipping (find badly mispositioned data blocks)
-.TP
-.B \-S<n>
-Skip leaway (distance +/\- from expected block position, default 64)
-.TP
-.B \-B<path>
-Set the basepath to use as reference for the datafiles
-.TP
-.B \-\-
-Treat all following arguments as filenames
+.B @
+Process a listing of files specified in text (file) input
 .SH EXITCODES
 .TP
 .B 0

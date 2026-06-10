@@ -16,7 +16,7 @@ try {
 
     Write-Banner "Verifying using PAR 2.0 data"
 
-    $exitCode = Invoke-Par2 -Arguments @("v", "testdata.par2")
+    $exitCode = Invoke-Par2 -Arguments @("v", "-a", "testdata.par2")
     if ($exitCode -ne 0) {
         Exit-TestWithError "Initial PAR 2.0 verification failed"
     }

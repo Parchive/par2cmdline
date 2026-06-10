@@ -22,7 +22,7 @@ try {
     Remove-Item "subdir1\test-2.data"
     Remove-Item "subdir2\test-7.data"
 
-    $exitCode = Invoke-Par2 -Arguments @("r", "testdata.par2")
+    $exitCode = Invoke-Par2 -Arguments @("r", "-a", "testdata.par2")
     if ($exitCode -ne 0) {
         Exit-TestWithError "Reconstruction of two files using PAR 2.0 failed"
     }

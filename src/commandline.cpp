@@ -110,6 +110,7 @@ void CommandLine::usage(void)
     "\"par2verify\", or \"par2repair\" instead.\n"
     "\n"
     "Options: (all uses)\n"
+    "  -a<file> : Set the main PAR2 archive name\n"
     "  -B<path> : Set the basepath to use as reference for the datafiles\n"
     "  -v [-v]  : Be more verbose\n"
     "  -q [-q]  : Be more quiet (-q -q gives silence)\n"
@@ -130,7 +131,6 @@ void CommandLine::usage(void)
     "  -N       : Data skipping (find badly mispositioned data blocks)\n"
     "  -S<n>    : Skip leaway (distance +/- from expected block position, default 64)\n"
     "Options: (create)\n"
-    "  -a<file> : Set the main PAR2 archive name\n"
     "  -b<n>    : Set the Block-Count (default 2000)\n"
     "  -s<n>    : Set the Block-Size (don't use both -b and -s)\n"
     "  -r<n>    : Level of redundancy (%, default 5%)\n"
@@ -309,26 +309,23 @@ bool CommandLine::ReadArgs(int argc, const char * const *argv)
         {
         case 'a':
           {
-            if (operation == opCreate)
+            std::string str = argv[0];
+            bool setparfile = false;
+            if (str == "-a")
             {
-              std::string str = argv[0];
-              bool setparfile = false;
-              if (str == "-a")
-              {
-                setparfile = SetParFilename(argv[1]);
-                argc--;
-                argv++;
-              }
-              else
-              {
-                setparfile = SetParFilename(str.substr(2));
-              }
+              setparfile = SetParFilename(argv[1]);
+              argc--;
+              argv++;
+            }
+            else
+            {
+              setparfile = SetParFilename(str.substr(2));
+            }
 
-              if (! setparfile)
-              {
-                std::cerr << "failed to set the main par file" << std::endl;
-                return false;
-              }
+            if (! setparfile)
+            {
+              std::cerr << "failed to set the main par file" << std::endl;
+              return false;
             }
           }
           break;
