@@ -132,8 +132,8 @@ jobs:
     # so -O2 must be passed explicitly or the build ends up unoptimised.
     - name: Build
       env:
-        CFLAGS: -O2 ${{ matrix.xcxxflags }}
-        CXXFLAGS: -O2 ${{ matrix.xcxxflags }}
+        CFLAGS: -O3 ${{ matrix.xcxxflags }}
+        CXXFLAGS: -O3 ${{ matrix.xcxxflags }}
       run: |
         ./automake.sh
         ./configure
