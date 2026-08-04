@@ -18,6 +18,6 @@ jobs:
       run: |
         ./automake.sh
         ./configure
-        make
+        make -j"$(sysctl -n hw.ncpu)"
         make check
         make distcheck

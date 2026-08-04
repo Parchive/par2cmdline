@@ -63,7 +63,7 @@ jobs:
       run: |
         ./automake.sh
         ./configure ${{ matrix.configure_host }}
-        make
+        make -j"$(nproc)"
 
     - name: Upload binary artifact
       uses: actions/upload-artifact@v7
@@ -137,7 +137,7 @@ jobs:
       run: |
         ./automake.sh
         ./configure
-        make
+        make -j"$(sysctl -n hw.ncpu)"
         strip par2
 
     - name: Upload binary artifact

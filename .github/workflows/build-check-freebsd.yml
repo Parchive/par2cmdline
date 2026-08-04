@@ -21,6 +21,6 @@ jobs:
           sudo pkg install -y autoconf automake libtool
           ./automake.sh
           ./configure
-          make
+          make -j"$(nproc)"
           make check
           make distcheck

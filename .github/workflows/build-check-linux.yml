@@ -15,6 +15,6 @@ jobs:
       run: |
         ./automake.sh
         ./configure
-        make
+        make -j"$(nproc)"
         make check
         make distcheck
