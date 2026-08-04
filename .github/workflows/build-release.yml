@@ -117,11 +117,8 @@ jobs:
         include:
         - arch: amd64
           xcxxflags: -arch x86_64 -mmacosx-version-min=10.13
-          configure_host: --host=x86_64-apple-darwin
         - arch: arm64
-          xcxxflags: -mmacosx-version-min=11.0
-        - arch: universal
-          xcxxflags: -arch x86_64 -arch arm64 -mmacosx-version-min=10.13
+          xcxxflags: -arch arm64 -mmacosx-version-min=11.0
 
     runs-on: macos-latest
 
@@ -131,12 +128,15 @@ jobs:
     - name: prepare
       run: brew install automake
 
+    # NOTE: setting CFLAGS/CXXFLAGS suppresses autoconf's default "-g -O2",
+    # so -O2 must be passed explicitly or the build ends up unoptimised.
     - name: Build
       env:
-        CXXFLAGS: ${{ matrix.xcxxflags }}
+        CFLAGS: -O2 ${{ matrix.xcxxflags }}
+        CXXFLAGS: -O2 ${{ matrix.xcxxflags }}
       run: |
         ./automake.sh
-        ./configure ${{ matrix.configure_host }}
+        ./configure
         make
         strip par2
 
@@ -144,6 +144,34 @@ jobs:
       uses: actions/upload-artifact@v7
       with:
         name: par2cmdline-macos-${{ matrix.arch }}
+        path: |
+          par2
+        retention-days: 5
+
+  build-macos-universal:
+    needs:
+    - build-macos
+
+    runs-on: macos-latest
+
+    steps:
+    - name: Download slices
+      uses: actions/download-artifact@v7
+      with:
+        pattern: par2cmdline-macos-*
+
+    - name: Create universal binary
+      run: |
+        lipo -create \
+          par2cmdline-macos-amd64/par2 \
+          par2cmdline-macos-arm64/par2 \
+          -output par2
+        lipo -info par2
+
+    - name: Upload binary artifact
+      uses: actions/upload-artifact@v7
+      with:
+        name: par2cmdline-macos-universal
         path: |
           par2
         retention-days: 5
