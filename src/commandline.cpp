@@ -79,18 +79,18 @@ void CommandLine::showversion(void)
 
 void CommandLine::banner(void)
 {
-  std::cout << "Copyright (C) 2003-2015 Peter Brian Clements." << std::endl
-    << "Copyright (C) 2011-2012 Marcel Partap." << std::endl
-    << "Copyright (C) 2012-2026 Ike Devolder." << std::endl
-    << "Copyright (C) 2014-2017 Jussi Kansanen." << std::endl
-    << "Copyright (C) 2019 Michael Nahas." << std::endl
-    << std::endl
-    << "par2cmdline comes with ABSOLUTELY NO WARRANTY." << std::endl
-    << std::endl
-    << "This is free software, and you are welcome to redistribute it and/or modify" << std::endl
-    << "it under the terms of the GNU General Public License as published by the" << std::endl
-    << "Free Software Foundation; either version 2 of the License, or (at your" << std::endl
-    << "option) any later version. See COPYING for details." << std::endl
+  std::cout << "Copyright (C) 2003-2015 Peter Brian Clements.\n"
+    "Copyright (C) 2011-2012 Marcel Partap.\n"
+    "Copyright (C) 2012-2026 Ike Devolder.\n"
+    "Copyright (C) 2014-2017 Jussi Kansanen.\n"
+    "Copyright (C) 2019 Michael Nahas.\n"
+    "\n"
+    "par2cmdline comes with ABSOLUTELY NO WARRANTY.\n"
+    "\n"
+    "This is free software, and you are welcome to redistribute it and/or modify\n"
+    "it under the terms of the GNU General Public License as published by the\n"
+    "Free Software Foundation; either version 2 of the License, or (at your\n"
+    "option) any later version. See COPYING for details.\n"
     << std::endl;
 }
 
@@ -231,7 +231,7 @@ bool CommandLine::ReadArgs(int argc, const char * const *argv)
       else if (argv[0] == std::string("-VV"))
       {
 	showversion();
-	std::cout << std::endl;
+	std::cout << '\n';
 	banner();
 	return true;
       }

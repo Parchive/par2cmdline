@@ -152,12 +152,12 @@ Result Par2Creator::Process(
   if (noiselevel > nlQuiet)
   {
     // Display information.
-    sout << "Block size: " << blocksize << std::endl;
-    sout << "Source file count: " << sourcefilecount << std::endl;
-    sout << "Source block count: " << sourceblockcount << std::endl;
-    sout << "Recovery block count: " << recoveryblockcount << std::endl;
-    sout << "Recovery file count: " << recoveryfilecount << std::endl;
-    sout << std::endl;
+    sout << "Block size: " << blocksize << "\n"
+      "Source file count: " << sourcefilecount << "\n"
+      "Source block count: " << sourceblockcount << "\n"
+      "Recovery block count: " << recoveryblockcount << "\n"
+      "Recovery file count: " << recoveryfilecount << "\n"
+      << std::endl;
   }
 
   // Open all of the source files, compute the Hashes and CRC values, and store

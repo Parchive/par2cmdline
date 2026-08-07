@@ -91,7 +91,7 @@ namespace utf8
     {
       std::cerr
         << "Too many arguments (" << argc << "/" << MAX_ARGS << ").\n"
-        << "Only " << MAX_ARGS << " will be processed." << std::endl;
+           "Only " << MAX_ARGS << " will be processed." << std::endl;
 
       m_argc = MAX_ARGS;
     }
@@ -103,7 +103,7 @@ namespace utf8
       {
         std::cerr
           << "Invalid argument: encountered nullptr in wargv.\n"
-          << "Skipping " << i << "argument." << std::endl;
+             "Skipping " << i << "argument." << std::endl;
         --m_argc;
         --i;
         continue;

@@ -398,10 +398,11 @@ inline bool ReedSolomon<g>::GaussElim(NoiseLevel noiselevel, std::ostream &sout,
              << (unsigned int)rightmatrix[row*rows+col];
       }
       sout << ((row==0) ? " \\"   : (row==rows-1) ? " /"    : " | |");
-      sout << std::endl;
+      sout << '\n';
 
       sout << std::dec << std::setw(0) << std::setfill(' ');
     }
+    sout << std::flush;
   }
 
   // Because the matrices being operated on are Vandermonde matrices
@@ -533,10 +534,11 @@ inline bool ReedSolomon<g>::GaussElim(NoiseLevel noiselevel, std::ostream &sout,
              << (unsigned int)rightmatrix[row*rows+col];
       }
       sout << ((row==0) ? " \\"   : (row==rows-1) ? " /"    : " | |");
-      sout << std::endl;
+      sout << '\n';
 
       sout << std::dec << std::setw(0) << std::setfill(' ');
     }
+    sout << std::flush;
   }
 
   return true;

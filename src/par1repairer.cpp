@@ -135,7 +135,7 @@ Result Par1Repairer::Process(const size_t memorylimit,
     return eLogicError;
 
   if (noiselevel > nlQuiet)
-    sout << std::endl << "Verifying source files:" << std::endl << std::endl;
+    sout << "\nVerifying source files:\n" << std::endl;
 
   // Check for the existence of and verify each of the source files
   if (!VerifySourceFiles())
@@ -144,7 +144,7 @@ Result Par1Repairer::Process(const size_t memorylimit,
   if (completefilecount<sourcefiles.size())
   {
     if (noiselevel > nlQuiet)
-      sout << std::endl << "Scanning extra files:" << std::endl << std::endl;
+      sout << "\nScanning extra files:\n" << std::endl;
 
     // Check any other files specified on the command line to see if they are
     // actually copies of the source files that have the wrong filename
@@ -156,7 +156,7 @@ Result Par1Repairer::Process(const size_t memorylimit,
   UpdateVerificationResults();
 
   if (noiselevel > nlSilent)
-    sout << std::endl;
+    sout << '\n';
 
   // Check the verification results and report the details
   if (!CheckVerificationResults())
@@ -169,7 +169,7 @@ Result Par1Repairer::Process(const size_t memorylimit,
     if (dorepair)
     {
       if (noiselevel > nlSilent)
-        sout << std::endl;
+        sout << '\n';
 
       // Rename any damaged or missnamed target files.
       if (!RenameTargetFiles())
@@ -200,7 +200,7 @@ Result Par1Repairer::Process(const size_t memorylimit,
           return eMemoryError;
         }
         if (noiselevel > nlSilent)
-          sout << std::endl;
+          sout << '\n';
 
         // Set the total amount of data to be processed.
         progress = 0;
@@ -226,7 +226,7 @@ Result Par1Repairer::Process(const size_t memorylimit,
         }
 
         if (noiselevel > nlSilent)
-          sout << std::endl << "Verifying repaired files:" << std::endl << std::endl;
+          sout << "\nVerifying repaired files:\n" << std::endl;
 
         // Verify that all of the reconstructed target files are now correct
         if (!VerifyTargetFiles())
@@ -246,7 +246,7 @@ Result Par1Repairer::Process(const size_t memorylimit,
       else
       {
         if (noiselevel > nlSilent)
-          sout << std::endl << "Repair complete." << std::endl;
+          sout << "\nRepair complete." << std::endl;
       }
     }
     else
@@ -1033,8 +1033,8 @@ bool Par1Repairer::CheckVerificationResults(void)
     {
       if (noiselevel > nlSilent)
       {
-        sout << "Repair is not possible." << std::endl;
-        sout << "You need " << damagedfilecount+missingfilecount - recoveryblocks.size()
+        sout << "Repair is not possible.\n"
+             "You need " << damagedfilecount+missingfilecount - recoveryblocks.size()
              << " more recovery files to be able to repair." << std::endl;
       }
 
@@ -1454,7 +1454,7 @@ bool Par1Repairer::RemoveBackupFiles(void)
   if (noiselevel > nlSilent
       && bf != backuplist.end())
   {
-    sout << std::endl << "Purge backup files." << std::endl;
+    sout << "\nPurge backup files." << std::endl;
   }
 
   // Iterate through each file in the backuplist
@@ -1483,7 +1483,7 @@ bool Par1Repairer::RemoveParFiles(void)
   if (noiselevel > nlSilent
       && !parlist.empty())
   {
-      sout << std::endl << "Purge par files." << std::endl;
+      sout << "\nPurge par files." << std::endl;
   }
 
   for (std::list<std::string>::const_iterator s=parlist.begin(); s!=parlist.end(); ++s)

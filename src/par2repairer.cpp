@@ -177,7 +177,7 @@ Result Par2Repairer::Process(
     return eLogicError;
 
   if (noiselevel > nlQuiet)
-    sout << std::endl;
+    sout << '\n';
 
   // Check that the packets are consistent and discard any that are not
   if (!CheckPacketConsistency())
@@ -218,7 +218,7 @@ Result Par2Repairer::Process(
   UpdateVerificationResults();
 
   if (noiselevel > nlSilent)
-    sout << std::endl;
+    sout << '\n';
 
   // Check the verification results and report the results
   if (!CheckVerificationResults())
@@ -231,7 +231,7 @@ Result Par2Repairer::Process(
     if (dorepair)
     {
       if (noiselevel > nlSilent)
-        sout << std::endl;
+        sout << '\n';
 
       // Rename any damaged or missnamed target files.
       if (!RenameTargetFiles())
@@ -256,7 +256,7 @@ Result Par2Repairer::Process(
         }
 
         if (noiselevel > nlSilent)
-          sout << std::endl;
+          sout << '\n';
 
         // Allocate memory buffers for reading and writing data to disk.
         if (!AllocateBuffers(memorylimit))
@@ -290,7 +290,7 @@ Result Par2Repairer::Process(
         }
 
         if (noiselevel > nlSilent)
-          sout << std::endl << "Verifying repaired files:" << std::endl << std::endl;
+          sout << "\nVerifying repaired files:\n" << std::endl;
 
         // Verify that all of the reconstructed target files are now correct
         if (!VerifyTargetFiles(basepath))
@@ -310,7 +310,7 @@ Result Par2Repairer::Process(
       else
       {
         if (noiselevel > nlSilent)
-          sout << std::endl << "Repair complete." << std::endl;
+          sout << "\nRepair complete." << std::endl;
       }
     }
     else
@@ -966,10 +966,8 @@ bool Par2Repairer::CheckPacketConsistency(void)
       << mainpacket->RecoverableFileCount()
       << " recoverable files and "
       << mainpacket->TotalFileCount() - mainpacket->RecoverableFileCount()
-      << " other files."
-      << std::endl;
-
-    sout << "The block size used was "
+      << " other files.\n"
+         "The block size used was "
       << blocksize
       << " bytes."
       << std::endl;
@@ -1093,10 +1091,8 @@ bool Par2Repairer::AllocateSourceBlocks(void)
     {
       sout << "There are a total of "
         << sourceblockcount
-        << " data blocks."
-        << std::endl;
-
-      sout << "The total size of the data files is "
+        << " data blocks.\n"
+           "The total size of the data files is "
         << totalsize
         << " bytes."
         << std::endl;
@@ -1174,7 +1170,7 @@ static bool SortSourceFilesByFileName(Par2RepairerSourceFile *low,
 bool Par2Repairer::VerifySourceFiles(const std::string& basepath, std::vector<std::string>& extrafiles)
 {
   if (noiselevel > nlQuiet)
-    sout << std::endl << "Verifying source files:" << std::endl << std::endl;
+    sout << "\nVerifying source files:\n" << std::endl;
 
   bool finalresult = true;
 
@@ -1207,7 +1203,7 @@ bool Par2Repairer::VerifySourceFiles(const std::string& basepath, std::vector<st
       // Was this one of the recoverable files
       if (filenumber < mainpacket->RecoverableFileCount())
       {
-        serr << "No details available for recoverable file number " << filenumber+1 << "." << std::endl << "Recovery will not be possible." << std::endl;
+        serr << "No details available for recoverable file number " << filenumber+1 << ".\nRecovery will not be possible." << std::endl;
 
         // Set error but let verification of other files continue
         finalresult = false;
@@ -1239,10 +1235,10 @@ bool Par2Repairer::VerifySourceFiles(const std::string& basepath, std::vector<st
     {
       #pragma omp critical
       {
-      sout << "[DEBUG] VerifySourceFiles ----" << std::endl;
-      sout << "[DEBUG] file: " << file << std::endl;
-      sout << "[DEBUG] name: " << name << std::endl;
-      sout << "[DEBUG] targ: " << target_pathname << std::endl;
+      sout << "[DEBUG] VerifySourceFiles ----\n"
+        "[DEBUG] file: " << file << "\n"
+        "[DEBUG] name: " << name << "\n"
+        "[DEBUG] targ: " << target_pathname << std::endl;
       }
     }
 
@@ -1324,7 +1320,7 @@ bool Par2Repairer::VerifySourceFiles(const std::string& basepath, std::vector<st
 bool Par2Repairer::VerifyExtraFiles(const std::vector<std::string> &extrafiles, const std::string &basepath, const bool renameonly)
 {
   if (noiselevel > nlQuiet)
-    sout << std::endl << "Scanning extra files:" << std::endl << std::endl;
+    sout << "\nScanning extra files:\n" << std::endl;
 
   if (completefilecount < mainpacket->RecoverableFileCount())
   {
@@ -1735,7 +1731,7 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
         if (progressline)
         {
           #pragma omp critical
-          sout << std::endl;
+          sout << '\n';
           progressline = false;
         }
         #pragma omp critical
@@ -1875,7 +1871,7 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
     if (progressline)
     {
       #pragma omp critical
-      sout << std::endl;
+      sout << '\n';
     }
 
     #pragma omp critical
@@ -1894,9 +1890,9 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
     sout << std::setw(shortname.size()+19) << std::setfill(' ') << "";
 
     if (duplicatecount > 0)
-      sout << "\r[DEBUG] duplicates: " << duplicatecount << std::endl;
-    sout << "\r[DEBUG] matchcount: " << count << std::endl;
-    sout << "[DEBUG] ----------------------" << std::endl;
+      sout << "\r[DEBUG] duplicates: " << duplicatecount << '\n';
+    sout << "\r[DEBUG] matchcount: " << count << "\n"
+      "[DEBUG] ----------------------" << std::endl;
     }
   }
 
@@ -1995,9 +1991,9 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
         if (skippeddata > 0)
         {
           #pragma omp critical
-          sout << skippeddata << " bytes of data were skipped whilst scanning." << std::endl
-            << "If there are not enough blocks found to repair: try again "
-            << "with the -N option." << std::endl;
+          sout << skippeddata << " bytes of data were skipped whilst scanning.\n"
+            "If there are not enough blocks found to repair: try again "
+            "with the -N option." << std::endl;
         }
       }
     }
@@ -2071,9 +2067,9 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
       if (skippeddata > 0)
       {
         #pragma omp critical
-        sout << skippeddata << " bytes of data were skipped whilst scanning." << std::endl
-          << "If there are not enough blocks found to repair: try again "
-          << "with the -N option." << std::endl;
+        sout << skippeddata << " bytes of data were skipped whilst scanning.\n"
+          "If there are not enough blocks found to repair: try again "
+          "with the -N option." << std::endl;
       }
     }
   }
@@ -2165,10 +2161,10 @@ bool Par2Repairer::CheckVerificationResults(void)
       sout << "Repair is required." << std::endl;
     if (noiselevel > nlQuiet)
     {
-      if (renamedfilecount > 0) sout << renamedfilecount << " file(s) have the wrong name." << std::endl;
-      if (missingfilecount > 0) sout << missingfilecount << " file(s) are missing." << std::endl;
-      if (damagedfilecount > 0) sout << damagedfilecount << " file(s) exist but are damaged." << std::endl;
-      if (completefilecount > 0) sout << completefilecount << " file(s) are ok." << std::endl;
+      if (renamedfilecount > 0) sout << renamedfilecount << " file(s) have the wrong name.\n";
+      if (missingfilecount > 0) sout << missingfilecount << " file(s) are missing.\n";
+      if (damagedfilecount > 0) sout << damagedfilecount << " file(s) exist but are damaged.\n";
+      if (completefilecount > 0) sout << completefilecount << " file(s) are ok.\n";
 
       sout << "You have " << availableblockcount
         << " out of " << sourceblockcount
@@ -2204,8 +2200,8 @@ bool Par2Repairer::CheckVerificationResults(void)
     {
       if (noiselevel > nlSilent)
       {
-        sout << "Repair is not possible." << std::endl;
-        sout << "You need " << missingblockcount - recoverypacketmap.size()
+        sout << "Repair is not possible.\n"
+          "You need " << missingblockcount - recoverypacketmap.size()
           << " more recovery blocks to be able to repair." << std::endl;
       }
 
@@ -2768,7 +2764,7 @@ bool Par2Repairer::RemoveBackupFiles(void)
   if (noiselevel > nlSilent
       && bf != backuplist.end())
   {
-    sout << std::endl << "Purge backup files." << std::endl;
+    sout << "\nPurge backup files." << std::endl;
   }
 
   // Iterate through each file in the backuplist
@@ -2797,7 +2793,7 @@ bool Par2Repairer::RemoveParFiles(void)
   if (noiselevel > nlSilent
       && !par2list.empty())
   {
-    sout << std::endl << "Purge par files." << std::endl;
+    sout << "\nPurge par files." << std::endl;
   }
 
   for (std::list<std::string>::const_iterator s=par2list.begin(); s!=par2list.end(); ++s)
