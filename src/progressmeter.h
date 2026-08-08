@@ -25,19 +25,19 @@ class ProgressMeter
 {
   std::ostream &sout;
   std::string message;
-  TValue total;
+  float scale;
   TValue current;
 
   inline u32 CalcThousandths(TValue val)
   {
-    return (u32)(1000 * val / total);
+    return (u32)(scale * val);
   }
 
 public:
   ProgressMeter(std::ostream &sout, std::string &message, TValue total) :
-    sout(sout), message(message), total(total), current(0) {}
+    sout(sout), message(message), scale(1000.0 / total), current(0) {}
   ProgressMeter(std::ostream &sout, const char *message, TValue total) :
-    sout(sout), message(message), total(total), current(0) {}
+    sout(sout), message(message), scale(1000.0 / total), current(0) {}
 
   // NOTE: Update() doesn't always update current value, so don't mix it with Add()
   void Update(TValue newval)
