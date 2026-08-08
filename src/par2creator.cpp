@@ -376,7 +376,7 @@ bool Par2Creator::OpenSourceFiles(const std::vector<std::string> &extrafiles, st
 
     if (noiselevel > nlSilent)
     {
-      #pragma omp critical
+      #pragma omp critical(stdio)
       sout << "Opening: " << name << std::endl;
     }
 
@@ -852,7 +852,7 @@ bool Par2Creator::ProcessData(u64 blockoffset, size_t blocklength)
 
         if (oldfraction != newfraction)
         {
-          #pragma omp critical
+          #pragma omp critical(stdio)
           sout << "Processing: " << newfraction/10 << '.' << newfraction%10 << "%\r" << std::flush;
         }
       }

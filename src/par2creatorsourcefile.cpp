@@ -227,7 +227,7 @@ bool Par2CreatorSourceFile::Open(NoiseLevel noiselevel, std::ostream &sout, std:
 
         if (oldfraction != newfraction)
         {
-          #pragma omp critical
+          #pragma omp critical(stdio)
           sout << newfraction/10 << '.' << newfraction%10 << "%\r" << std::flush;
         }
       }

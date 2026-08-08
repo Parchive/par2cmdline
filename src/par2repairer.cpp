@@ -1233,18 +1233,16 @@ bool Par2Repairer::VerifySourceFiles(const std::string& basepath, std::vector<st
 
     if (noiselevel >= nlDebug)
     {
-      #pragma omp critical
-      {
+      #pragma omp critical(stdio)
       sout << "[DEBUG] VerifySourceFiles ----\n"
         "[DEBUG] file: " << file << "\n"
         "[DEBUG] name: " << name << "\n"
         "[DEBUG] targ: " << target_pathname << std::endl;
-      }
     }
 
     // if the target file is in the list of extra files, we remove it
     // from the extra files.
-    #pragma omp critical
+    #pragma omp critical(extrafiles)
     {
       std::vector<std::string>::iterator it = extrafiles.begin();
       for (; it != extrafiles.end(); ++it)
@@ -1261,12 +1259,12 @@ bool Par2Repairer::VerifySourceFiles(const std::string& basepath, std::vector<st
 
     // Check to see if we have already used this file
     bool b;
-    #pragma omp critical
+    #pragma omp critical(diskFileMap)
     b = diskFileMap.Find(file) != 0;
     if (b)
     {
       // The file has already been used!
-      #pragma omp critical
+      #pragma omp critical(stdio)
       serr << "Source file " << name << " is a duplicate." << std::endl;
 
       finalresult = false;
@@ -1286,7 +1284,7 @@ bool Par2Repairer::VerifySourceFiles(const std::string& basepath, std::vector<st
 
         // Remember that we have processed this file
         bool success;
-        #pragma omp critical
+        #pragma omp critical(diskFileMap)
         success = diskFileMap.Insert(diskfile);
         assert(success);
         // Do the actual verification
@@ -1303,7 +1301,7 @@ bool Par2Repairer::VerifySourceFiles(const std::string& basepath, std::vector<st
 
         if (noiselevel > nlSilent)
         {
-          #pragma omp critical
+          #pragma omp critical(stdio)
           sout << "Target: \"" << name << "\" - missing." << std::endl;
         }
       }
@@ -1347,7 +1345,7 @@ bool Par2Repairer::VerifyExtraFiles(const std::vector<std::string> &extrafiles, 
 
         // Has this file already been dealt with
         bool b;
-        #pragma omp critical
+        #pragma omp critical(diskFileMap)
         b = diskFileMap.Find(filename) == 0;
         if (b)
         {
@@ -1362,7 +1360,7 @@ bool Par2Repairer::VerifyExtraFiles(const std::vector<std::string> &extrafiles, 
 
           // Remember that we have processed this file
           bool success;
-          #pragma omp critical
+          #pragma omp critical(diskFileMap)
           success = diskFileMap.Insert(diskfile);
           assert(success);
 
@@ -1520,7 +1518,7 @@ bool Par2Repairer::VerifyDataFile(DiskFile *diskfile, Par2RepairerSourceFile *so
       {
         if (noiselevel > nlSilent)
         {
-          #pragma omp critical
+          #pragma omp critical(stdio)
           sout << diskfile->FileName() << " is a perfect match for " << sourcefile->GetDescriptionPacket()->FileName() << std::endl;
         }
         // Record that we have a perfect match for this source file
@@ -1588,7 +1586,7 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
     // If the file is empty, then just return
     if (noiselevel > nlSilent)
     {
-      #pragma omp critical
+      #pragma omp critical(stdio)
       sout << "File: \"" << name << "\" - empty." << std::endl;
     }
     return true;
@@ -1648,7 +1646,7 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
 #ifdef _OPENMP
   if (noiselevel > nlQuiet)
   {
-    #pragma omp critical
+    #pragma omp critical(stdio)
     sout << "Opening: \"" << shortname << "\"" << std::endl;
   }
 #endif
@@ -1684,7 +1682,7 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
 
         if (oldfraction != newfraction)
         {
-          #pragma omp critical
+          #pragma omp critical(stdio)
           sout << "Scanning: " << newfraction/10 << '.' << newfraction%10 << "%\r" << std::flush;
 
           progressline = true;
@@ -1730,11 +1728,11 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
       {
         if (progressline)
         {
-          #pragma omp critical
+          #pragma omp critical(stdio)
           sout << '\n';
           progressline = false;
         }
-        #pragma omp critical
+        #pragma omp critical(stdio)
         sout << "No data found between offset " << lastmatchoffset
           << " and " << filechecksummer.Offset() << std::endl;
       }
@@ -1870,11 +1868,11 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
   {
     if (progressline)
     {
-      #pragma omp critical
+      #pragma omp critical(stdio)
       sout << '\n';
     }
 
-    #pragma omp critical
+    #pragma omp critical(stdio)
     sout << "No data found between offset " << lastmatchoffset
       << " and " << filechecksummer.Offset() << std::endl;
   }
@@ -1884,7 +1882,7 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
 
   if (noiselevel >= nlDebug)
   {
-    #pragma omp critical
+    #pragma omp critical(stdio)
     {
     // Clear out old scanning line
     sout << std::setw(shortname.size()+19) << std::setfill(' ') << "";
@@ -1917,7 +1915,7 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
           // Were we scanning the target file or an extra file
           if (originalsourcefile != 0)
           {
-            #pragma omp critical
+            #pragma omp critical(stdio)
             sout << "Target: \""
               << name
               << "\" - damaged, found "
@@ -1927,7 +1925,7 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
           }
           else
           {
-            #pragma omp critical
+            #pragma omp critical(stdio)
             sout << "File: \""
               << name
               << "\" - found "
@@ -1941,7 +1939,7 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
           // Did we find data blocks that belong to the target file
           if (originalsourcefile == sourcefile)
           {
-            #pragma omp critical
+            #pragma omp critical(stdio)
             sout << "Target: \""
               << name
               << "\" - damaged. Found "
@@ -1957,7 +1955,7 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
             std::string targetname;
             DiskFile::SplitRelativeFilename(sourcefile->TargetFileName(), basepath, targetname);
 
-            #pragma omp critical
+            #pragma omp critical(stdio)
             sout << "Target: \""
               << name
               << "\" - damaged. Found "
@@ -1974,7 +1972,7 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
             std::string targetname;
             DiskFile::SplitRelativeFilename(sourcefile->TargetFileName(), basepath, targetname);
 
-            #pragma omp critical
+            #pragma omp critical(stdio)
             sout << "File: \""
               << name
               << "\" - found "
@@ -1990,7 +1988,7 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
 
         if (skippeddata > 0)
         {
-          #pragma omp critical
+          #pragma omp critical(stdio)
           sout << skippeddata << " bytes of data were skipped whilst scanning.\n"
             "If there are not enough blocks found to repair: try again "
             "with the -N option." << std::endl;
@@ -2004,7 +2002,7 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
         // Did we match the target file
         if (originalsourcefile == sourcefile)
         {
-          #pragma omp critical
+          #pragma omp critical(stdio)
           sout << "Target: \"" << name << "\" - found." << std::endl;
         }
         // Were we scanning the target file or an extra file
@@ -2013,7 +2011,7 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
           std::string targetname;
           DiskFile::SplitRelativeFilename(sourcefile->TargetFileName(), basepath, targetname);
 
-          #pragma omp critical
+          #pragma omp critical(stdio)
           sout << "Target: \""
             << name
             << "\" - is a match for \""
@@ -2026,7 +2024,7 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
           std::string targetname;
           DiskFile::SplitRelativeFilename(sourcefile->TargetFileName(), basepath, targetname);
 
-          #pragma omp critical
+          #pragma omp critical(stdio)
           sout << "File: \""
             << name
             << "\" - is a match for \""
@@ -2047,7 +2045,7 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
       // had already found in other files.
       if (duplicatecount > 0)
       {
-        #pragma omp critical
+        #pragma omp critical(stdio)
         sout << "File: \""
           << name
           << "\" - found "
@@ -2057,7 +2055,7 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
       }
       else
       {
-        #pragma omp critical
+        #pragma omp critical(stdio)
         sout << "File: \""
           << name
           << "\" - no data found."
@@ -2066,7 +2064,7 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
 
       if (skippeddata > 0)
       {
-        #pragma omp critical
+        #pragma omp critical(stdio)
         sout << skippeddata << " bytes of data were skipped whilst scanning.\n"
           "If there are not enough blocks found to repair: try again "
           "with the -N option." << std::endl;
@@ -2566,7 +2564,7 @@ bool Par2Repairer::ProcessData(u64 blockoffset, size_t blocklength)
 
           if (oldfraction != newfraction)
           {
-            #pragma omp critical
+            #pragma omp critical(stdio)
             sout << "Repairing: " << newfraction/10 << '.' << newfraction%10 << "%\r" << std::flush;
           }
         }
