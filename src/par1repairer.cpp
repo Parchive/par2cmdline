@@ -54,8 +54,6 @@ Par1Repairer::Par1Repairer(std::ostream &sout, std::ostream &serr, const NoiseLe
 , inputblocks()
 , outputblocks()
 , rs()
-, progress(0)
-, totaldata(0)
 , inputbuffersize(0)
 , inputbuffer(0)
 , outputbufferalignment(0)
@@ -203,8 +201,7 @@ Result Par1Repairer::Process(const size_t memorylimit,
           sout << '\n';
 
         // Set the total amount of data to be processed.
-        progress = 0;
-        totaldata = blocksize * sourcefiles.size() * verifylist.size();
+        ProgressMeter<u64> progress(sout, "Repairing: ", blocksize * sourcefiles.size() * verifylist.size());
 
         // Start at an offset of 0 within a block.
         u64 blockoffset = 0;
@@ -214,7 +211,7 @@ Result Par1Repairer::Process(const size_t memorylimit,
           size_t blocklength = (size_t)std::min((u64)chunksize, blocksize-blockoffset);
 
           // Read source data, process it through the RS matrix and write it to disk.
-          if (!ProcessData(blockoffset, blocklength))
+          if (!ProcessData(blockoffset, blocklength, progress))
           {
             // Delete all of the partly reconstructed files
             DeleteIncompleteTargetFiles();
@@ -810,20 +807,14 @@ bool Par1Repairer::VerifyDataFile(DiskFile *diskfile, Par1RepairerSourceFile *so
       // Compute the MD5 hash of the whole file
       if (filesize > 16384)
       {
-        u64 progress = 0;
         u64 offset = 16384;
+        std::string message = "Scanning: \"";
+        message.append(name).append("\": ");
+        ProgressMeter<u64> progress(sout, message, filesize);
         while (offset < filesize)
         {
           if (noiselevel > nlQuiet)
-          {
-            // Update a progress indicator
-            u32 oldfraction = (u32)(1000 * (progress) / filesize);
-            u32 newfraction = (u32)(1000 * (progress=offset) / filesize);
-            if (oldfraction != newfraction)
-            {
-              sout << "Scanning: \"" << name << "\": " << newfraction/10 << '.' << newfraction%10 << "%\r" << std::flush;
-            }
-          }
+            progress.Update(offset);
 
           want = (size_t)std::min((u64)buffersize, filesize-offset);
 
@@ -1297,7 +1288,7 @@ bool Par1Repairer::AllocateBuffers(size_t memorylimit)
 }
 
 // Read source data, process it through the RS matrix and write it to disk.
-bool Par1Repairer::ProcessData(u64 blockoffset, size_t blocklength)
+bool Par1Repairer::ProcessData(u64 blockoffset, size_t blocklength, ProgressMeter<u64> &progress)
 {
   u64 totalwritten = 0;
   // Clear the output buffer
@@ -1326,17 +1317,7 @@ bool Par1Repairer::ProcessData(u64 blockoffset, size_t blocklength)
         rs.Process(blocklength, inputindex, inputbuffer, outputindex, outbuf);
 
         if (noiselevel > nlQuiet)
-        {
-          // Update a progress indicator
-          u32 oldfraction = (u32)(1000 * progress / totaldata);
-          progress += blocklength;
-          u32 newfraction = (u32)(1000 * progress / totaldata);
-
-          if (oldfraction != newfraction)
-          {
-            sout << "Repairing: " << newfraction/10 << '.' << newfraction%10 << "%\r" << std::flush;
-          }
-        }
+          progress.Add(blocklength);
       }
 
       ++inputblock;

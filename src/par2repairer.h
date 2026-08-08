@@ -91,7 +91,11 @@ protected:
   bool VerifyExtraFiles(const std::vector<std::string> &extrafiles, const std::string &basepath, const bool renameonly);
 
   // Attempt to match the data in the DiskFile with the source file
-  bool VerifyDataFile(DiskFile *diskfile, Par2RepairerSourceFile *sourcefile, const std::string &basepath, const bool renameonly = false);
+#ifdef _OPENMP
+  bool VerifyDataFile(DiskFile *diskfile, Par2RepairerSourceFile *sourcefile, const std::string &basepath, ProgressMeter<u64> &progress, const bool renameonly = false);
+#else
+  bool VerifyDataFile(DiskFile *diskfile, Par2RepairerSourceFile *sourcefile, const std::string &basepath, ProgressMeter<u64> &progress, const bool renameonly = false);
+#endif
 
   // Perform a sliding window scan of the DiskFile looking for blocks of data that
   // might belong to any of the source files (for which a verification packet was
@@ -100,6 +104,9 @@ protected:
   // found is for a different source file then "sourcefile" is changed accordingly.
   bool ScanDataFile(DiskFile                *diskfile,   // [in]     The file being scanned
                     std::string             basepath,    // [in]
+#ifdef _OPENMP
+                    ProgressMeter<u64>      &progress,   // [in]
+#endif
                     const bool              renameonly,  // [in]     Only look for perfect matches
                     Par2RepairerSourceFile* &sourcefile, // [in/out] The source file matched
                     MatchType               &matchtype,  // [out]    The type of match
@@ -129,7 +136,7 @@ protected:
   bool AllocateBuffers(size_t memorylimit);
 
   // Read source data, process it through the RS matrix and write it to disk.
-  bool ProcessData(u64 blockoffset, size_t blocklength);
+  bool ProcessData(u64 blockoffset, size_t blocklength, ProgressMeter<u64> &progress);
 
   // Verify that all of the reconstructed target files are now correct
   bool VerifyTargetFiles(const std::string &basepath);
@@ -206,15 +213,6 @@ protected:
 
   void                     *inputbuffer;             // Buffer for reading DataBlocks (chunksize)
   void                     *outputbuffer;            // Buffer for writing DataBlocks (chunksize * missingblockcount)
-
-  u64                       progress;                // How much data has been processed.
-  u64                       totaldata;               // Total amount of data to be processed.
-#ifdef _OPENMP
-  u64                       mttotalsize;             // Total size of files for mt-progress line
-  u64                       mttotalextrasize;        // Total size of extra files for mt-progress line
-  u64                       mttotalprogress;         // MT total progress
-  bool                      mtprocessingextrafiles;  // Are we currently processing extra files
-#endif
 };
 
 #endif // __PAR2REPAIRER_H__

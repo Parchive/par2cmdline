@@ -63,13 +63,8 @@ Par2Creator::Par2Creator(std::ostream &sout, std::ostream &serr, const NoiseLeve
 , criticalpackets()
 , criticalpacketentries()
 , rs()
-, progress(0)
-, totaldata(0)
 
 , deferhashcomputation(false)
-#ifdef _OPENMP
-, mttotalsize(0)
-#endif
 {
 }
 
@@ -192,8 +187,7 @@ Result Par2Creator::Process(
       return eLogicError;
 
     // Set the total amount of data to be processed.
-    progress = 0;
-    totaldata = blocksize * sourceblockcount * recoveryblockcount;
+    ProgressMeter<u64> progress(sout, "Processing: ", blocksize * sourceblockcount * recoveryblockcount);
 
     // Start at an offset of 0 within a block.
     u64 blockoffset = 0;
@@ -203,7 +197,7 @@ Result Par2Creator::Process(
       size_t blocklength = (size_t)std::min((u64)chunksize, blocksize-blockoffset);
 
       // Read source data, process it through the RS matrix and write it to disk.
-      if (!ProcessData(blockoffset, blocklength))
+      if (!ProcessData(blockoffset, blocklength, progress))
         return eFileIOError;
 
       blockoffset += blocklength;
@@ -354,11 +348,13 @@ bool Par2Creator::OpenSourceFiles(const std::vector<std::string> &extrafiles, st
 {
 #ifdef _OPENMP
   bool openfailed = false;
-  u64 totalprogress = 0;
 
   //Total size of files for mt-progress line
+  u64 mttotalsize = 0;
   for (size_t i=0; i<extrafiles.size(); ++i)
     mttotalsize += DiskFile::GetFileSize(extrafiles[i]);
+
+  ProgressMeter<u64> progress(sout, "", mttotalsize);
 #endif
 
   #pragma omp parallel for schedule(dynamic) num_threads(Par2Creator::GetFileThreads())
@@ -382,7 +378,7 @@ bool Par2Creator::OpenSourceFiles(const std::vector<std::string> &extrafiles, st
 
     // Open the source file and compute its Hashes and CRCs.
 #ifdef _OPENMP
-    if (!sourcefile->Open(noiselevel, sout, serr, extrafiles[i], blocksize, deferhashcomputation, basepath, mttotalsize, totalprogress))
+    if (!sourcefile->Open(noiselevel, sout, serr, extrafiles[i], blocksize, deferhashcomputation, basepath, progress))
 #else
     if (!sourcefile->Open(noiselevel, sout, serr, extrafiles[i], blocksize, deferhashcomputation, basepath))
 #endif
@@ -780,7 +776,7 @@ bool Par2Creator::ComputeRSMatrix(void)
 }
 
 // Read source data, process it through the RS matrix and write it to disk.
-bool Par2Creator::ProcessData(u64 blockoffset, size_t blocklength)
+bool Par2Creator::ProcessData(u64 blockoffset, size_t blocklength, ProgressMeter<u64> &progress)
 {
   // Clear the output buffer
   memset(outputbuffer, 0, chunksize * recoveryblockcount);
@@ -843,19 +839,7 @@ bool Par2Creator::ProcessData(u64 blockoffset, size_t blocklength)
       rs.Process(blocklength, inputblock, inputbuffer, internalOutputblock, outbuf);
 
       if (noiselevel > nlQuiet)
-      {
-        // Update a progress indicator
-        u32 oldfraction = (u32)(1000 * progress / totaldata);
-        #pragma omp atomic
-        progress += blocklength;
-        u32 newfraction = (u32)(1000 * progress / totaldata);
-
-        if (oldfraction != newfraction)
-        {
-          #pragma omp critical(stdio)
-          sout << "Processing: " << newfraction/10 << '.' << newfraction%10 << "%\r" << std::flush;
-        }
-      }
+        progress.Add(blocklength);
     }
 
     // Work out which source file the next block belongs to
