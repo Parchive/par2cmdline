@@ -209,7 +209,7 @@ jobs:
           sudo pkg install -y autoconf automake libtool
           ./automake.sh
           ./configure
-          make
+          make -j"$(nproc)"
           strip par2
 
     - name: Upload binary artifact
