@@ -63,6 +63,9 @@ int main(int argc, char* argv[])
 		"Error: the assumed sizes of integers is wrong!");
 
 
+  // We only output using C++ iostreams
+  std::ios::sync_with_stdio(false);
+
   // Parse the command line
   CommandLine *commandline = new CommandLine;
 
