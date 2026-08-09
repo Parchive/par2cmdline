@@ -28,12 +28,12 @@ class ProgressMeter
   using steady_clock = std::chrono::steady_clock;
 
   std::ostream &sout;
-  std::string message;
-  float scale;
+  const std::string message;
+  const float scale;
   TValue current;
   steady_clock::duration::rep printed;
 
-  inline u32 CalcThousandths(TValue val)
+  inline u32 CalcThousandths(TValue val) const
   {
     return (u32)(scale * val);
   }
@@ -46,7 +46,7 @@ class ProgressMeter
 #endif
     printed = steady_clock::now().time_since_epoch().count();
   }
-  inline bool ShouldUpdate(TValue oldval, TValue newval, u32 &newfraction)
+  inline bool ShouldUpdate(TValue oldval, TValue newval, u32 &newfraction) const
   {
     newfraction = CalcThousandths(newval);
     if (CalcThousandths(oldval) == newfraction)
@@ -60,10 +60,10 @@ class ProgressMeter
   }
 
 public:
-  ProgressMeter(std::ostream &sout, std::string &message, TValue total) :
-    sout(sout), message(message), scale(1000.0 / total), current(0), printed(0) {}
+  ProgressMeter(std::ostream &sout, const std::string &message, TValue total) :
+    sout(sout), message(message), scale(1000.0f / total), current(0), printed(0) {}
   ProgressMeter(std::ostream &sout, const char *message, TValue total) :
-    sout(sout), message(message), scale(1000.0 / total), current(0), printed(0) {}
+    sout(sout), message(message), scale(1000.0f / total), current(0), printed(0) {}
 
   // NOTE: Update() doesn't always update current value, so don't mix it with Add()
   void Update(TValue newval)
