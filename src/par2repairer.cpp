@@ -1671,11 +1671,9 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
     {
       if (lastmatchoffset < filechecksummer.Offset() && noiselevel > nlNormal)
       {
-        progress.ClearLine();
-        #pragma omp critical(stdio)
-        sout << "No data found between offset " << lastmatchoffset
-          << " and " << filechecksummer.Offset() << '\n';
-        progress.Print();
+        progress.PrintLine((std::ostringstream()
+          << "No data found between offset " << lastmatchoffset
+          << " and " << filechecksummer.Offset()).str());
       }
 
       // Is this the first match
@@ -1797,11 +1795,9 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
 
   if (lastmatchoffset < filechecksummer.Offset() && noiselevel > nlNormal)
   {
-    progress.ClearLine();
-    #pragma omp critical(stdio)
-    sout << "No data found between offset " << lastmatchoffset
-      << " and " << filechecksummer.Offset() << std::endl;
-    progress.Print();
+    progress.PrintLine((std::ostringstream()
+      << "No data found between offset " << lastmatchoffset
+      << " and " << filechecksummer.Offset()).str());
   }
 
 #ifdef _OPENMP
@@ -1817,14 +1813,12 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
 
   if (noiselevel >= nlDebug)
   {
-    progress.ClearLine();
-    #pragma omp critical(stdio)
-    {
+    std::ostringstream ss;
     if (duplicatecount > 0)
-      sout << "[DEBUG] duplicates: " << duplicatecount << '\n';
-    sout << "[DEBUG] matchcount: " << count << "\n"
-      "[DEBUG] ----------------------" << std::endl;
-    }
+      ss << "[DEBUG] duplicates: " << duplicatecount << '\n';
+    ss << "[DEBUG] matchcount: " << count << "\n"
+      "[DEBUG] ----------------------";
+    progress.PrintLine(ss.str());
   }
 
   // Did we make any matches at all

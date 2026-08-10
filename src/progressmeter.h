@@ -26,6 +26,7 @@ template<typename TValue>
 class ProgressMeter
 {
   using steady_clock = std::chrono::steady_clock;
+  const std::chrono::milliseconds INTERVAL = std::chrono::milliseconds(50);
 
   std::ostream &sout;
   const std::string message;
@@ -37,26 +38,34 @@ class ProgressMeter
   {
     return (u32)(scale * val);
   }
-  inline void PrintFraction(u32 fraction)
+  inline bool PrintFraction(TValue oldval, TValue newval)
   {
-    #pragma omp critical(stdio)
-    sout << message << fraction/10 << '.' << fraction%10 << "%\r" << std::flush;
-#if defined(_OPENMP) && _OPENMP >= 201107
-    #pragma omp atomic write
-#endif
-    printed = steady_clock::now().time_since_epoch().count();
-  }
-  inline bool ShouldUpdate(TValue oldval, TValue newval, u32 &newfraction) const
-  {
-    newfraction = CalcThousandths(newval);
+    // if the displayed value won't change, don't print
+    u32 newfraction = CalcThousandths(newval);
     if (CalcThousandths(oldval) == newfraction)
       return false;
+
+    // check if enough time has passed
     steady_clock::duration::rep lastprinted;
 #if defined(_OPENMP) && _OPENMP >= 201107
     #pragma omp atomic read
 #endif
     lastprinted = printed;
-    return steady_clock::now() - steady_clock::time_point(steady_clock::duration(lastprinted)) >= std::chrono::milliseconds(50);
+    
+    steady_clock::time_point now = steady_clock::now();
+    steady_clock::time_point lastpoint = steady_clock::time_point(steady_clock::duration(lastprinted));
+    // if enough time has passed, print the current progress, and update the time record
+    if (now - lastpoint >= INTERVAL)
+    {
+      #pragma omp critical(stdio)
+      sout << message << newfraction/10 << '.' << newfraction%10 << "%\r" << std::flush;
+#if defined(_OPENMP) && _OPENMP >= 201107
+      #pragma omp atomic write
+#endif
+      printed = now.time_since_epoch().count();
+      return true;
+    }
+    return false;
   }
 
 public:
@@ -73,10 +82,8 @@ public:
     #pragma omp atomic read
 #endif
     oldval = current;
-    u32 newfraction;
-    if (ShouldUpdate(oldval, newval, newfraction))
+    if (PrintFraction(oldval, newval))
     {
-      PrintFraction(newfraction);
 #if defined(_OPENMP) && _OPENMP >= 201107
       #pragma omp atomic write
 #endif
@@ -94,28 +101,27 @@ public:
     #pragma omp atomic
     current += amount;
 #endif
-    u32 newfraction;
-    if (ShouldUpdate(newval - amount, newval, newfraction))
-      PrintFraction(newfraction);
+    PrintFraction(newval - amount, newval);
   }
   inline void AddSilent(TValue amount)
   {
     #pragma omp atomic
     current += amount;
   }
-  void ClearLine()
-  {
-    #pragma omp critical(stdio)
-    sout << std::setw(message.size()+7) << std::setfill(' ') << "\r";
-  }
-  void Print()
+
+  // print a line whilst progress is still running
+  void PrintLine(const std::string &line)
   {
     TValue val;
 #if defined(_OPENMP) && _OPENMP >= 201107
     #pragma omp atomic read
 #endif
     val = current;
-    PrintFraction(CalcThousandths(val));
+    u32 fraction = CalcThousandths(val);
+    #pragma omp critical(stdio)
+    sout << std::setw(message.size()+7) << std::setfill(' ') << "\r"
+      << line << '\n'
+      << message << fraction/10 << '.' << fraction%10 << "%\r" << std::flush;
   }
 };
 
