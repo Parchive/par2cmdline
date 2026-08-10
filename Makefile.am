@@ -42,6 +42,7 @@ libpar2_a_SOURCES = src/crc.cpp src/crc.h \
 	src/par2fileformat.cpp src/par2fileformat.h \
 	src/par2repairer.cpp src/par2repairer.h \
 	src/par2repairersourcefile.cpp src/par2repairersourcefile.h \
+	src/progressmeter.h \
 	src/recoverypacket.cpp src/recoverypacket.h \
 	src/reedsolomon.cpp src/reedsolomon.h \
 	src/verificationhashtable.cpp src/verificationhashtable.h \
