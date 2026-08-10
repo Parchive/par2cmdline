@@ -28,6 +28,12 @@ static char THIS_FILE[]=__FILE__;
 #endif
 #endif
 
+#ifdef _OPENMP
+#define MT_PROGRESS , progress
+#else
+#define MT_PROGRESS
+#endif
+
 
 // static variable
 #ifdef _OPENMP
@@ -84,16 +90,6 @@ Par2Repairer::Par2Repairer(std::ostream &sout, std::ostream &serr, const NoiseLe
 
   inputbuffer = 0;
   outputbuffer = 0;
-
-  progress = 0;
-  totaldata = 0;
-
-#ifdef _OPENMP
-  mttotalsize = 0;
-  mttotalextrasize = 0;
-  mttotalprogress = 0;
-  mtprocessingextrafiles = false;
-#endif
 }
 
 Par2Repairer::~Par2Repairer(void)
@@ -177,7 +173,7 @@ Result Par2Repairer::Process(
     return eLogicError;
 
   if (noiselevel > nlQuiet)
-    sout << std::endl;
+    sout << '\n';
 
   // Check that the packets are consistent and discard any that are not
   if (!CheckPacketConsistency())
@@ -218,7 +214,7 @@ Result Par2Repairer::Process(
   UpdateVerificationResults();
 
   if (noiselevel > nlSilent)
-    sout << std::endl;
+    sout << '\n';
 
   // Check the verification results and report the results
   if (!CheckVerificationResults())
@@ -231,7 +227,7 @@ Result Par2Repairer::Process(
     if (dorepair)
     {
       if (noiselevel > nlSilent)
-        sout << std::endl;
+        sout << '\n';
 
       // Rename any damaged or missnamed target files.
       if (!RenameTargetFiles())
@@ -256,7 +252,7 @@ Result Par2Repairer::Process(
         }
 
         if (noiselevel > nlSilent)
-          sout << std::endl;
+          sout << '\n';
 
         // Allocate memory buffers for reading and writing data to disk.
         if (!AllocateBuffers(memorylimit))
@@ -267,8 +263,7 @@ Result Par2Repairer::Process(
         }
 
         // Set the total amount of data to be processed.
-        progress = 0;
-        totaldata = blocksize * sourceblockcount * (missingblockcount > 0 ? missingblockcount : 1);
+        ProgressMeter<u64> progress(sout, missingblockcount > 0 ? "Repairing: " : "Processing: ", blocksize * sourceblockcount * (missingblockcount > 0 ? missingblockcount : 1));
 
         // Start at an offset of 0 within a block.
         u64 blockoffset = 0;
@@ -278,7 +273,7 @@ Result Par2Repairer::Process(
           size_t blocklength = (size_t)std::min((u64)chunksize, blocksize-blockoffset);
 
           // Read source data, process it through the RS matrix and write it to disk.
-          if (!ProcessData(blockoffset, blocklength))
+          if (!ProcessData(blockoffset, blocklength, progress))
           {
             // Delete all of the partly reconstructed files
             DeleteIncompleteTargetFiles();
@@ -290,7 +285,7 @@ Result Par2Repairer::Process(
         }
 
         if (noiselevel > nlSilent)
-          sout << std::endl << "Verifying repaired files:" << std::endl << std::endl;
+          sout << "\nVerifying repaired files:\n" << std::endl;
 
         // Verify that all of the reconstructed target files are now correct
         if (!VerifyTargetFiles(basepath))
@@ -310,7 +305,7 @@ Result Par2Repairer::Process(
       else
       {
         if (noiselevel > nlSilent)
-          sout << std::endl << "Repair complete." << std::endl;
+          sout << "\nRepair complete." << std::endl;
       }
     }
     else
@@ -374,7 +369,7 @@ bool Par2Repairer::LoadPacketsFromFile(std::string filename)
     u8 *buffer = new u8[buffersize];
 
     // Progress indicator
-    u64 progress = 0;
+    ProgressMeter<u64> progress(sout, "Loading: ", filesize);
 
     // Start at the beginning of the file
     u64 offset = 0;
@@ -383,16 +378,7 @@ bool Par2Repairer::LoadPacketsFromFile(std::string filename)
     while (offset + sizeof(PACKET_HEADER) <= filesize)
     {
       if (noiselevel > nlQuiet)
-      {
-        // Update a progress indicator
-        u32 oldfraction = (u32)(1000 * progress / filesize);
-        u32 newfraction = (u32)(1000 * offset / filesize);
-        if (oldfraction != newfraction)
-        {
-          sout << "Loading: " << newfraction/10 << '.' << newfraction%10 << "%\r" << std::flush;
-          progress = offset;
-        }
-      }
+        progress.Update(offset);
 
       // Attempt to read the next packet header
       PACKET_HEADER header;
@@ -541,6 +527,8 @@ bool Par2Repairer::LoadPacketsFromFile(std::string filename)
       // Advance to the next packet
       offset += header.length;
     }
+    if (noiselevel > nlQuiet)
+      progress.Update(offset);
 
     delete [] buffer;
   }
@@ -966,10 +954,8 @@ bool Par2Repairer::CheckPacketConsistency(void)
       << mainpacket->RecoverableFileCount()
       << " recoverable files and "
       << mainpacket->TotalFileCount() - mainpacket->RecoverableFileCount()
-      << " other files."
-      << std::endl;
-
-    sout << "The block size used was "
+      << " other files.\n"
+         "The block size used was "
       << blocksize
       << " bytes."
       << std::endl;
@@ -1093,10 +1079,8 @@ bool Par2Repairer::AllocateSourceBlocks(void)
     {
       sout << "There are a total of "
         << sourceblockcount
-        << " data blocks."
-        << std::endl;
-
-      sout << "The total size of the data files is "
+        << " data blocks.\n"
+           "The total size of the data files is "
         << totalsize
         << " bytes."
         << std::endl;
@@ -1174,7 +1158,7 @@ static bool SortSourceFilesByFileName(Par2RepairerSourceFile *low,
 bool Par2Repairer::VerifySourceFiles(const std::string& basepath, std::vector<std::string>& extrafiles)
 {
   if (noiselevel > nlQuiet)
-    sout << std::endl << "Verifying source files:" << std::endl << std::endl;
+    sout << "\nVerifying source files:\n" << std::endl;
 
   bool finalresult = true;
 
@@ -1186,8 +1170,7 @@ bool Par2Repairer::VerifySourceFiles(const std::string& basepath, std::vector<st
   std::vector<Par2RepairerSourceFile*>::iterator sf = sourcefiles.begin();
 
 #ifdef _OPENMP
-  mttotalsize = 0;
-  mttotalprogress = 0;
+  u64 mttotalsize = 0;
 #endif
 
   while (sf != sourcefiles.end())
@@ -1207,7 +1190,7 @@ bool Par2Repairer::VerifySourceFiles(const std::string& basepath, std::vector<st
       // Was this one of the recoverable files
       if (filenumber < mainpacket->RecoverableFileCount())
       {
-        serr << "No details available for recoverable file number " << filenumber+1 << "." << std::endl << "Recovery will not be possible." << std::endl;
+        serr << "No details available for recoverable file number " << filenumber+1 << ".\nRecovery will not be possible." << std::endl;
 
         // Set error but let verification of other files continue
         finalresult = false;
@@ -1222,6 +1205,9 @@ bool Par2Repairer::VerifySourceFiles(const std::string& basepath, std::vector<st
   }
 
   std::sort(sortedfiles.begin(), sortedfiles.end(), SortSourceFilesByFileName);
+#ifdef _OPENMP
+  ProgressMeter<u64> progress(sout, "Scanning: ", mttotalsize);
+#endif
 
   // Start verifying the files
   #pragma omp parallel for schedule(dynamic) num_threads(Par2Repairer::GetFileThreads())
@@ -1237,18 +1223,16 @@ bool Par2Repairer::VerifySourceFiles(const std::string& basepath, std::vector<st
 
     if (noiselevel >= nlDebug)
     {
-      #pragma omp critical
-      {
-      sout << "[DEBUG] VerifySourceFiles ----" << std::endl;
-      sout << "[DEBUG] file: " << file << std::endl;
-      sout << "[DEBUG] name: " << name << std::endl;
-      sout << "[DEBUG] targ: " << target_pathname << std::endl;
-      }
+      #pragma omp critical(stdio)
+      sout << "[DEBUG] VerifySourceFiles ----\n"
+        "[DEBUG] file: " << file << "\n"
+        "[DEBUG] name: " << name << "\n"
+        "[DEBUG] targ: " << target_pathname << std::endl;
     }
 
     // if the target file is in the list of extra files, we remove it
     // from the extra files.
-    #pragma omp critical
+    #pragma omp critical(extrafiles)
     {
       std::vector<std::string>::iterator it = extrafiles.begin();
       for (; it != extrafiles.end(); ++it)
@@ -1265,12 +1249,12 @@ bool Par2Repairer::VerifySourceFiles(const std::string& basepath, std::vector<st
 
     // Check to see if we have already used this file
     bool b;
-    #pragma omp critical
+    #pragma omp critical(diskFileMap)
     b = diskFileMap.Find(file) != 0;
     if (b)
     {
       // The file has already been used!
-      #pragma omp critical
+      #pragma omp critical(stdio)
       serr << "Source file " << name << " is a duplicate." << std::endl;
 
       finalresult = false;
@@ -1290,11 +1274,11 @@ bool Par2Repairer::VerifySourceFiles(const std::string& basepath, std::vector<st
 
         // Remember that we have processed this file
         bool success;
-        #pragma omp critical
+        #pragma omp critical(diskFileMap)
         success = diskFileMap.Insert(diskfile);
         assert(success);
         // Do the actual verification
-        if (!VerifyDataFile(diskfile, sourcefile, basepath))
+        if (!VerifyDataFile(diskfile, sourcefile, basepath MT_PROGRESS))
           finalresult = false;
 
         // We have finished with the file for now
@@ -1307,7 +1291,7 @@ bool Par2Repairer::VerifySourceFiles(const std::string& basepath, std::vector<st
 
         if (noiselevel > nlSilent)
         {
-          #pragma omp critical
+          #pragma omp critical(stdio)
           sout << "Target: \"" << name << "\" - missing." << std::endl;
         }
       }
@@ -1324,18 +1308,17 @@ bool Par2Repairer::VerifySourceFiles(const std::string& basepath, std::vector<st
 bool Par2Repairer::VerifyExtraFiles(const std::vector<std::string> &extrafiles, const std::string &basepath, const bool renameonly)
 {
   if (noiselevel > nlQuiet)
-    sout << std::endl << "Scanning extra files:" << std::endl << std::endl;
+    sout << "\nScanning extra files:\n" << std::endl;
 
   if (completefilecount < mainpacket->RecoverableFileCount())
   {
 #ifdef _OPENMP
     // Total size of extra files for mt-progress line
-    mtprocessingextrafiles = true;
-    mttotalprogress = 0;
-    mttotalextrasize = 0;
-
+    u64 mttotalextrasize = 0;
     for (size_t i=0; i<extrafiles.size(); ++i)
       mttotalextrasize += DiskFile::GetFileSize(extrafiles[i]);
+
+    ProgressMeter<u64> progress(sout, "Scanning: ", mttotalextrasize);
 #endif
 
     #pragma omp parallel for schedule(dynamic) num_threads(Par2Repairer::GetFileThreads())
@@ -1351,7 +1334,7 @@ bool Par2Repairer::VerifyExtraFiles(const std::vector<std::string> &extrafiles, 
 
         // Has this file already been dealt with
         bool b;
-        #pragma omp critical
+        #pragma omp critical(diskFileMap)
         b = diskFileMap.Find(filename) == 0;
         if (b)
         {
@@ -1366,12 +1349,12 @@ bool Par2Repairer::VerifyExtraFiles(const std::vector<std::string> &extrafiles, 
 
           // Remember that we have processed this file
           bool success;
-          #pragma omp critical
+          #pragma omp critical(diskFileMap)
           success = diskFileMap.Insert(diskfile);
           assert(success);
 
           // Do the actual verification
-          VerifyDataFile(diskfile, 0, basepath, renameonly);
+          VerifyDataFile(diskfile, 0, basepath MT_PROGRESS, renameonly);
           // Ignore errors
 
           // We have finished with the file for now
@@ -1383,15 +1366,15 @@ bool Par2Repairer::VerifyExtraFiles(const std::vector<std::string> &extrafiles, 
   // Find out how much data we have found
   UpdateVerificationResults();
 
-#if _OPENMP
-    mtprocessingextrafiles = false;
-#endif
-
   return true;
 }
 
 // Attempt to match the data in the DiskFile with the source file
+#ifdef _OPENMP
+bool Par2Repairer::VerifyDataFile(DiskFile *diskfile, Par2RepairerSourceFile *sourcefile, const std::string &basepath, ProgressMeter<u64> &progress, const bool renameonly)
+#else
 bool Par2Repairer::VerifyDataFile(DiskFile *diskfile, Par2RepairerSourceFile *sourcefile, const std::string &basepath, const bool renameonly)
+#endif
 {
   MatchType matchtype; // What type of match was made
   MD5Hash hashfull;    // The MD5 Hash of the whole file
@@ -1405,7 +1388,8 @@ bool Par2Repairer::VerifyDataFile(DiskFile *diskfile, Par2RepairerSourceFile *so
     // Scan the file at the block level.
 
     if (!ScanDataFile(diskfile,   // [in]      The file to scan
-                      basepath,
+                      basepath
+                      MT_PROGRESS,
                       renameonly, // [in]      Only look for perfect matches
                       sourcefile, // [in/out]  Modified in the match is for another source file
                       matchtype,  // [out]
@@ -1524,7 +1508,7 @@ bool Par2Repairer::VerifyDataFile(DiskFile *diskfile, Par2RepairerSourceFile *so
       {
         if (noiselevel > nlSilent)
         {
-          #pragma omp critical
+          #pragma omp critical(stdio)
           sout << diskfile->FileName() << " is a perfect match for " << sourcefile->GetDescriptionPacket()->FileName() << std::endl;
         }
         // Record that we have a perfect match for this source file
@@ -1568,7 +1552,10 @@ bool Par2Repairer::VerifyDataFile(DiskFile *diskfile, Par2RepairerSourceFile *so
 // the one specified by the "sourcefile" parameter. If the first data block
 // found is for a different source file then "sourcefile" is changed accordingly.
 bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
-                                std::string                  basepath,     // [in]
+                                std::string             basepath,     // [in]
+#ifdef _OPENMP
+                                ProgressMeter<u64>      &progress,    // [in]
+#endif
                                 const bool              renameonly,   // [in]
                                 Par2RepairerSourceFile* &sourcefile,  // [in/out]
                                 MatchType               &matchtype,   // [out]
@@ -1592,7 +1579,7 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
     // If the file is empty, then just return
     if (noiselevel > nlSilent)
     {
-      #pragma omp critical
+      #pragma omp critical(stdio)
       sout << "File: \"" << name << "\" - empty." << std::endl;
     }
     return true;
@@ -1644,81 +1631,35 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
   // Offset of last data that was found
   u64 lastmatchoffset = 0;
 
-  bool progressline = false;
-
   u64 oldoffset = 0;
   u64 printprogress = 0;
 
 #ifdef _OPENMP
   if (noiselevel > nlQuiet)
   {
-    #pragma omp critical
+    #pragma omp critical(stdio)
     sout << "Opening: \"" << shortname << "\"" << std::endl;
   }
+#else
+  std::string message = "Scanning: \"";
+  message.append(shortname).append("\": ");
+  ProgressMeter<u64> progress(sout, message, diskfile->FileSize());
 #endif
 
   // Whilst we have not reached the end of the file
   while (filechecksummer.Offset() < diskfile->FileSize())
   {
-// OPENMP progress line printing
-#ifdef _OPENMP
-    if (noiselevel > nlQuiet)
-    {
-      // Are we processing extrafiles? Use correct total size
-      u64 ts = mtprocessingextrafiles ? mttotalextrasize : mttotalsize;
-
-      // Update progress indicator
-      printprogress += filechecksummer.Offset() - oldoffset;
-      if (printprogress == blocksize || filechecksummer.ShortBlock())
-      {
-        u64 totalprogress;
-#if _OPENMP < 200800
-        totalprogress = mttotalprogress;
-        #pragma omp atomic
-        mttotalprogress += printprogress;
-        totalprogress += printprogress;
-#else
-        #pragma omp atomic capture
-        totalprogress = mttotalprogress += printprogress;
-#endif
-        u32 oldfraction = (u32)(1000 * (totalprogress - printprogress) / ts);
-        u32 newfraction = (u32)(1000 * totalprogress / ts);
-
-        printprogress = 0;
-
-        if (oldfraction != newfraction)
-        {
-          #pragma omp critical
-          sout << "Scanning: " << newfraction/10 << '.' << newfraction%10 << "%\r" << std::flush;
-
-          progressline = true;
-        }
-      }
-      oldoffset = filechecksummer.Offset();
-
-    }
-// NON-OPENMP progress line printing
-#else
     if (noiselevel > nlQuiet)
     {
       // Update progress indicator
       printprogress += filechecksummer.Offset() - oldoffset;
       if (printprogress == blocksize || filechecksummer.ShortBlock())
       {
-        u32 oldfraction = (u32)(1000 * (filechecksummer.Offset() - printprogress) / diskfile->FileSize());
-        u32 newfraction = (u32)(1000 * filechecksummer.Offset() / diskfile->FileSize());
+        progress.Add(printprogress);
         printprogress = 0;
-
-        if (oldfraction != newfraction)
-        {
-          sout << "Scanning: \"" << shortname << "\": " << newfraction/10 << '.' << newfraction%10 << "%\r" << std::flush;
-
-          progressline = true;
-        }
       }
       oldoffset = filechecksummer.Offset();
     }
-#endif
 
     // If we fail to find a match, it might be because it was a duplicate of a block
     // that we have already found.
@@ -1732,15 +1673,9 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
     {
       if (lastmatchoffset < filechecksummer.Offset() && noiselevel > nlNormal)
       {
-        if (progressline)
-        {
-          #pragma omp critical
-          sout << std::endl;
-          progressline = false;
-        }
-        #pragma omp critical
-        sout << "No data found between offset " << lastmatchoffset
-          << " and " << filechecksummer.Offset() << std::endl;
+        progress.PrintLine((std::ostringstream()
+          << "No data found between offset " << lastmatchoffset
+          << " and " << filechecksummer.Offset()).str());
       }
 
       // Is this the first match
@@ -1863,24 +1798,16 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
 #ifdef _OPENMP
   if (noiselevel > nlQuiet)
   {
-    if (filechecksummer.Offset() == diskfile->FileSize()) {
-      #pragma omp atomic
-      mttotalprogress += filechecksummer.Offset() - oldoffset;
-    }
+    if (filechecksummer.Offset() == diskfile->FileSize())
+      progress.Add(filechecksummer.Offset() - oldoffset);
   }
 #endif
 
   if (lastmatchoffset < filechecksummer.Offset() && noiselevel > nlNormal)
   {
-    if (progressline)
-    {
-      #pragma omp critical
-      sout << std::endl;
-    }
-
-    #pragma omp critical
-    sout << "No data found between offset " << lastmatchoffset
-      << " and " << filechecksummer.Offset() << std::endl;
+    progress.PrintLine((std::ostringstream()
+      << "No data found between offset " << lastmatchoffset
+      << " and " << filechecksummer.Offset()).str());
   }
 
   // Get the Full and 16k hash values of the file
@@ -1888,16 +1815,12 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
 
   if (noiselevel >= nlDebug)
   {
-    #pragma omp critical
-    {
-    // Clear out old scanning line
-    sout << std::setw(shortname.size()+19) << std::setfill(' ') << "";
-
+    std::ostringstream ss;
     if (duplicatecount > 0)
-      sout << "\r[DEBUG] duplicates: " << duplicatecount << std::endl;
-    sout << "\r[DEBUG] matchcount: " << count << std::endl;
-    sout << "[DEBUG] ----------------------" << std::endl;
-    }
+      ss << "[DEBUG] duplicates: " << duplicatecount << '\n';
+    ss << "[DEBUG] matchcount: " << count << "\n"
+      "[DEBUG] ----------------------";
+    progress.PrintLine(ss.str());
   }
 
   // Did we make any matches at all
@@ -1921,7 +1844,7 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
           // Were we scanning the target file or an extra file
           if (originalsourcefile != 0)
           {
-            #pragma omp critical
+            #pragma omp critical(stdio)
             sout << "Target: \""
               << name
               << "\" - damaged, found "
@@ -1931,7 +1854,7 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
           }
           else
           {
-            #pragma omp critical
+            #pragma omp critical(stdio)
             sout << "File: \""
               << name
               << "\" - found "
@@ -1945,7 +1868,7 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
           // Did we find data blocks that belong to the target file
           if (originalsourcefile == sourcefile)
           {
-            #pragma omp critical
+            #pragma omp critical(stdio)
             sout << "Target: \""
               << name
               << "\" - damaged. Found "
@@ -1961,7 +1884,7 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
             std::string targetname;
             DiskFile::SplitRelativeFilename(sourcefile->TargetFileName(), basepath, targetname);
 
-            #pragma omp critical
+            #pragma omp critical(stdio)
             sout << "Target: \""
               << name
               << "\" - damaged. Found "
@@ -1978,7 +1901,7 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
             std::string targetname;
             DiskFile::SplitRelativeFilename(sourcefile->TargetFileName(), basepath, targetname);
 
-            #pragma omp critical
+            #pragma omp critical(stdio)
             sout << "File: \""
               << name
               << "\" - found "
@@ -1994,10 +1917,10 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
 
         if (skippeddata > 0)
         {
-          #pragma omp critical
-          sout << skippeddata << " bytes of data were skipped whilst scanning." << std::endl
-            << "If there are not enough blocks found to repair: try again "
-            << "with the -N option." << std::endl;
+          #pragma omp critical(stdio)
+          sout << skippeddata << " bytes of data were skipped whilst scanning.\n"
+            "If there are not enough blocks found to repair: try again "
+            "with the -N option." << std::endl;
         }
       }
     }
@@ -2008,7 +1931,7 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
         // Did we match the target file
         if (originalsourcefile == sourcefile)
         {
-          #pragma omp critical
+          #pragma omp critical(stdio)
           sout << "Target: \"" << name << "\" - found." << std::endl;
         }
         // Were we scanning the target file or an extra file
@@ -2017,7 +1940,7 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
           std::string targetname;
           DiskFile::SplitRelativeFilename(sourcefile->TargetFileName(), basepath, targetname);
 
-          #pragma omp critical
+          #pragma omp critical(stdio)
           sout << "Target: \""
             << name
             << "\" - is a match for \""
@@ -2030,7 +1953,7 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
           std::string targetname;
           DiskFile::SplitRelativeFilename(sourcefile->TargetFileName(), basepath, targetname);
 
-          #pragma omp critical
+          #pragma omp critical(stdio)
           sout << "File: \""
             << name
             << "\" - is a match for \""
@@ -2051,7 +1974,7 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
       // had already found in other files.
       if (duplicatecount > 0)
       {
-        #pragma omp critical
+        #pragma omp critical(stdio)
         sout << "File: \""
           << name
           << "\" - found "
@@ -2061,7 +1984,7 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
       }
       else
       {
-        #pragma omp critical
+        #pragma omp critical(stdio)
         sout << "File: \""
           << name
           << "\" - no data found."
@@ -2070,10 +1993,10 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
 
       if (skippeddata > 0)
       {
-        #pragma omp critical
-        sout << skippeddata << " bytes of data were skipped whilst scanning." << std::endl
-          << "If there are not enough blocks found to repair: try again "
-          << "with the -N option." << std::endl;
+        #pragma omp critical(stdio)
+        sout << skippeddata << " bytes of data were skipped whilst scanning.\n"
+          "If there are not enough blocks found to repair: try again "
+          "with the -N option." << std::endl;
       }
     }
   }
@@ -2165,10 +2088,10 @@ bool Par2Repairer::CheckVerificationResults(void)
       sout << "Repair is required." << std::endl;
     if (noiselevel > nlQuiet)
     {
-      if (renamedfilecount > 0) sout << renamedfilecount << " file(s) have the wrong name." << std::endl;
-      if (missingfilecount > 0) sout << missingfilecount << " file(s) are missing." << std::endl;
-      if (damagedfilecount > 0) sout << damagedfilecount << " file(s) exist but are damaged." << std::endl;
-      if (completefilecount > 0) sout << completefilecount << " file(s) are ok." << std::endl;
+      if (renamedfilecount > 0) sout << renamedfilecount << " file(s) have the wrong name.\n";
+      if (missingfilecount > 0) sout << missingfilecount << " file(s) are missing.\n";
+      if (damagedfilecount > 0) sout << damagedfilecount << " file(s) exist but are damaged.\n";
+      if (completefilecount > 0) sout << completefilecount << " file(s) are ok.\n";
 
       sout << "You have " << availableblockcount
         << " out of " << sourceblockcount
@@ -2204,8 +2127,8 @@ bool Par2Repairer::CheckVerificationResults(void)
     {
       if (noiselevel > nlSilent)
       {
-        sout << "Repair is not possible." << std::endl;
-        sout << "You need " << missingblockcount - recoverypacketmap.size()
+        sout << "Repair is not possible.\n"
+          "You need " << missingblockcount - recoverypacketmap.size()
           << " more recovery blocks to be able to repair." << std::endl;
       }
 
@@ -2492,7 +2415,7 @@ bool Par2Repairer::AllocateBuffers(size_t memorylimit)
 }
 
 // Read source data, process it through the RS matrix and write it to disk.
-bool Par2Repairer::ProcessData(u64 blockoffset, size_t blocklength)
+bool Par2Repairer::ProcessData(u64 blockoffset, size_t blocklength, ProgressMeter<u64> &progress)
 {
   u64 totalwritten = 0;
 
@@ -2561,19 +2484,7 @@ bool Par2Repairer::ProcessData(u64 blockoffset, size_t blocklength)
         rs.Process(blocklength, inputindex, inputbuffer, internalOutputindex, outbuf);
 
         if (noiselevel > nlQuiet)
-        {
-          // Update a progress indicator
-          u32 oldfraction = (u32)(1000 * progress / totaldata);
-          #pragma omp atomic
-          progress += blocklength;
-          u32 newfraction = (u32)(1000 * progress / totaldata);
-
-          if (oldfraction != newfraction)
-          {
-            #pragma omp critical
-            sout << "Repairing: " << newfraction/10 << '.' << newfraction%10 << "%\r" << std::flush;
-          }
-        }
+          progress.Add(blocklength);
       }
 
       ++inputblock;
@@ -2618,17 +2529,7 @@ bool Par2Repairer::ProcessData(u64 blockoffset, size_t blocklength)
       }
 
       if (noiselevel > nlQuiet)
-      {
-        // Update a progress indicator
-        u32 oldfraction = (u32)(1000 * progress / totaldata);
-        progress += blocklength;
-        u32 newfraction = (u32)(1000 * progress / totaldata);
-
-        if (oldfraction != newfraction)
-        {
-          sout << "Processing: " << newfraction/10 << '.' << newfraction%10 << "%\r" << std::flush;
-        }
-      }
+        progress.Add(blocklength);
 
       ++copyblock;
       ++inputblock;
@@ -2675,14 +2576,14 @@ bool Par2Repairer::VerifyTargetFiles(const std::string &basepath)
   std::sort(verifylist.begin(), verifylist.end(), SortSourceFilesByFileName);
 
 #ifdef _OPENMP
-  mttotalsize = 0;
-  mttotalprogress = 0;
+  u64 mttotalsize = 0;
 
   for (size_t i=0; i<verifylist.size(); ++i)
   {
     if (verifylist[i])
       mttotalsize += verifylist[i]->GetDescriptionPacket()->FileSize();
   }
+  ProgressMeter<u64> progress(sout, "Scanning: ", mttotalsize);
 #endif
 
   // Iterate through each file in the verification list
@@ -2715,7 +2616,7 @@ bool Par2Repairer::VerifyTargetFiles(const std::string &basepath)
     }
 
     // Verify the file again
-    if (!VerifyDataFile(targetfile, sourcefile, basepath))
+    if (!VerifyDataFile(targetfile, sourcefile, basepath MT_PROGRESS))
       finalresult = false;
 
     // Close the file again
@@ -2768,7 +2669,7 @@ bool Par2Repairer::RemoveBackupFiles(void)
   if (noiselevel > nlSilent
       && bf != backuplist.end())
   {
-    sout << std::endl << "Purge backup files." << std::endl;
+    sout << "\nPurge backup files." << std::endl;
   }
 
   // Iterate through each file in the backuplist
@@ -2797,7 +2698,7 @@ bool Par2Repairer::RemoveParFiles(void)
   if (noiselevel > nlSilent
       && !par2list.empty())
   {
-    sout << std::endl << "Purge par files." << std::endl;
+    sout << "\nPurge par files." << std::endl;
   }
 
   for (std::list<std::string>::const_iterator s=par2list.begin(); s!=par2list.end(); ++s)

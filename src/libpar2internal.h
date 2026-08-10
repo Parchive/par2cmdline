@@ -205,6 +205,7 @@ typedef unsigned int     size_t;
 #include "libpar2.h"
 
 #include "letype.h"
+#include "progressmeter.h"
 
 #include "galois.h"
 #include "crc.h"

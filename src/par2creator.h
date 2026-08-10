@@ -84,7 +84,7 @@ protected:
   bool ComputeRSMatrix(void);
 
   // Read source data, process it through the RS matrix and write it to disk.
-  bool ProcessData(u64 blockoffset, size_t blocklength);
+  bool ProcessData(u64 blockoffset, size_t blocklength, ProgressMeter<u64> &progress);
 
   // Finish computation of the recovery packets and write the headers to disk.
   bool WriteRecoveryPacketHeaders(void);
@@ -155,16 +155,10 @@ protected:
 
   ReedSolomon<Galois16> rs;   // The Reed Solomon matrix.
 
-  u64 progress;     // How much data has been processed.
-  u64 totaldata;    // Total amount of data to be processed.
-
   bool deferhashcomputation; // If we have enough memory to compute all recovery data
                              // in one pass, then we can defer the computation of
                              // the full file hash and block crc and hashes until
                              // the recovery data is computed.
-#ifdef _OPENMP
-  u64 mttotalsize;           // Total size of files for mt-progress line
-#endif
 };
 
 #endif // __PAR2CREATOR_H__

@@ -103,6 +103,7 @@
     <ClInclude Include="src\par2fileformat.h" />
     <ClInclude Include="src\par2repairer.h" />
     <ClInclude Include="src\par2repairersourcefile.h" />
+    <ClInclude Include="src\progressmeter.h" />
     <ClInclude Include="src\recoverypacket.h" />
     <ClInclude Include="src\reedsolomon.h" />
     <ClInclude Include="src\verificationhashtable.h" />

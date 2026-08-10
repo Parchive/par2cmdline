@@ -82,7 +82,7 @@ protected:
   bool AllocateBuffers(size_t memorylimit);
 
   // Read source data, process it through the RS matrix and write it to disk.
-  bool ProcessData(u64 blockoffset, size_t blocklength);
+  bool ProcessData(u64 blockoffset, size_t blocklength, ProgressMeter<u64> &progress);
 
   // Verify that all of the reconstructed target files are now correct
   bool VerifyTargetFiles(void);
@@ -126,9 +126,6 @@ protected:
   std::vector<DataBlock*>   outputblocks;            // Which DataBlocks have to calculated using RS
 
   ReedSolomon<Galois8>      rs;                      // The Reed Solomon matrix.
-
-  u64                       progress;                // How much data has been processed.
-  u64                       totaldata;               // Total amount of data to be processed.
 
   size_t                    inputbuffersize;
   u8                       *inputbuffer;             // Buffer for reading DataBlocks (chunksize)

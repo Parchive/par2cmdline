@@ -53,7 +53,7 @@ Par2CreatorSourceFile::~Par2CreatorSourceFile(void)
 // in a file description packet and a file verification packet.
 
 #ifdef _OPENMP
-bool Par2CreatorSourceFile::Open(NoiseLevel noiselevel, std::ostream &sout, std::ostream &serr, const std::string &extrafile, u64 blocksize, bool deferhashcomputation, std::string basepath, u64 totalsize, u64 &totalprogress)
+bool Par2CreatorSourceFile::Open(NoiseLevel noiselevel, std::ostream &sout, std::ostream &serr, const std::string &extrafile, u64 blocksize, bool deferhashcomputation, std::string basepath, ProgressMeter<u64> &progress)
 #else
 bool Par2CreatorSourceFile::Open(NoiseLevel noiselevel, std::ostream &sout, std::ostream &serr, const std::string &extrafile, u64 blocksize, bool deferhashcomputation, std::string basepath)
 #endif
@@ -138,6 +138,9 @@ bool Par2CreatorSourceFile::Open(NoiseLevel noiselevel, std::ostream &sout, std:
     MD5Context filecontext;
     MD5Context blockcontext;
     u32        blockcrc = 0;
+#ifndef _OPENMP
+    ProgressMeter<u64> progress(sout, "", filesize);
+#endif
 
     // Whilst we have not reached the end of the file
     while (offset < filesize)
@@ -213,24 +216,7 @@ bool Par2CreatorSourceFile::Open(NoiseLevel noiselevel, std::ostream &sout, std:
       }
 
       if (noiselevel > nlQuiet)
-      {
-        // Display progress
-#ifdef _OPENMP
-        u32 oldfraction = (u32)(1000 * totalprogress / totalsize);
-        #pragma omp atomic
-        totalprogress += want;
-        u32 newfraction = (u32)(1000 * totalprogress / totalsize);
-#else
-        u32 oldfraction = (u32)(1000 * offset / filesize);
-        u32 newfraction = (u32)(1000 * (offset + want) / filesize);
-#endif
-
-        if (oldfraction != newfraction)
-        {
-          #pragma omp critical
-          sout << newfraction/10 << '.' << newfraction%10 << "%\r" << std::flush;
-        }
-      }
+        progress.Add(want);
 
       offset += want;
     }
