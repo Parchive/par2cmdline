@@ -106,7 +106,7 @@ public:
   void ClearLine()
   {
     #pragma omp critical(stdio)
-    sout << std::setw(message.size()+6) << std::setfill(' ') << "\r";
+    sout << std::setw(message.size()+7) << std::setfill(' ') << "\r";
   }
   void Print()
   {

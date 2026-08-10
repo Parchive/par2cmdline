@@ -94,7 +94,7 @@ protected:
 #ifdef _OPENMP
   bool VerifyDataFile(DiskFile *diskfile, Par2RepairerSourceFile *sourcefile, const std::string &basepath, ProgressMeter<u64> &progress, const bool renameonly = false);
 #else
-  bool VerifyDataFile(DiskFile *diskfile, Par2RepairerSourceFile *sourcefile, const std::string &basepath, ProgressMeter<u64> &progress, const bool renameonly = false);
+  bool VerifyDataFile(DiskFile *diskfile, Par2RepairerSourceFile *sourcefile, const std::string &basepath, const bool renameonly = false);
 #endif
 
   // Perform a sliding window scan of the DiskFile looking for blocks of data that
