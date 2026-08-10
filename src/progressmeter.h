@@ -26,13 +26,13 @@ template<typename TValue>
 class ProgressMeter
 {
   using steady_clock = std::chrono::steady_clock;
-  const std::chrono::milliseconds INTERVAL = std::chrono::milliseconds(50);
+  const std::chrono::milliseconds PRINT_INTERVAL = std::chrono::milliseconds(50);
 
-  std::ostream &sout;
-  const std::string message;
-  const float scale;
-  TValue current;
-  steady_clock::duration::rep printed;
+  std::ostream &sout;        // stream for output (for commandline, this is cout)
+  const std::string message; // message to display alongside percentage
+  const float scale;         // pre-computed multiplier to convert progress value into a percentage*10
+  TValue current;            // last known progress value
+  steady_clock::duration::rep printed; // last time progress was outputted
 
   inline u32 CalcThousandths(TValue val) const
   {
@@ -54,8 +54,9 @@ class ProgressMeter
     
     steady_clock::time_point now = steady_clock::now();
     steady_clock::time_point lastpoint = steady_clock::time_point(steady_clock::duration(lastprinted));
+
     // if enough time has passed, print the current progress, and update the time record
-    if (now - lastpoint >= INTERVAL || newfraction == 1000)
+    if (now - lastpoint >= PRINT_INTERVAL || newfraction == 1000)
     {
       #pragma omp critical(stdio)
       sout << message << newfraction/10 << '.' << newfraction%10 << "%\r" << std::flush;
@@ -102,11 +103,6 @@ public:
     current += amount;
 #endif
     PrintFraction(newval - amount, newval);
-  }
-  inline void AddSilent(TValue amount)
-  {
-    #pragma omp atomic
-    current += amount;
   }
 
   // print a line whilst progress is still running

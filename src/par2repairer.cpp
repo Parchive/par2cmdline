@@ -1795,20 +1795,20 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
     }
   }
 
+#ifdef _OPENMP
+  if (noiselevel > nlQuiet)
+  {
+    if (filechecksummer.Offset() == diskfile->FileSize())
+      progress.Add(filechecksummer.Offset() - oldoffset);
+  }
+#endif
+
   if (lastmatchoffset < filechecksummer.Offset() && noiselevel > nlNormal)
   {
     progress.PrintLine((std::ostringstream()
       << "No data found between offset " << lastmatchoffset
       << " and " << filechecksummer.Offset()).str());
   }
-
-#ifdef _OPENMP
-  if (noiselevel > nlQuiet)
-  {
-    if (filechecksummer.Offset() == diskfile->FileSize())
-      progress.AddSilent(filechecksummer.Offset() - oldoffset);
-  }
-#endif
 
   // Get the Full and 16k hash values of the file
   filechecksummer.GetFileHashes(hashfull, hash16k);
