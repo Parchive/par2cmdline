@@ -527,6 +527,8 @@ bool Par2Repairer::LoadPacketsFromFile(std::string filename)
       // Advance to the next packet
       offset += header.length;
     }
+    if (noiselevel > nlQuiet)
+      progress.Update(offset);
 
     delete [] buffer;
   }

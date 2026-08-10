@@ -36,7 +36,7 @@ class ProgressMeter
 
   inline u32 CalcThousandths(TValue val) const
   {
-    return (u32)(scale * val);
+    return (u32)(scale * val + 0.5f);
   }
   inline bool PrintFraction(TValue oldval, TValue newval)
   {
@@ -55,7 +55,7 @@ class ProgressMeter
     steady_clock::time_point now = steady_clock::now();
     steady_clock::time_point lastpoint = steady_clock::time_point(steady_clock::duration(lastprinted));
     // if enough time has passed, print the current progress, and update the time record
-    if (now - lastpoint >= INTERVAL)
+    if (now - lastpoint >= INTERVAL || newfraction == 1000)
     {
       #pragma omp critical(stdio)
       sout << message << newfraction/10 << '.' << newfraction%10 << "%\r" << std::flush;
