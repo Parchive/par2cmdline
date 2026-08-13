@@ -21,6 +21,7 @@
 #define __UTF8_H__
 
 #include <string>
+#include <locale>
 #include <codecvt>
 
 namespace utf8
