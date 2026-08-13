@@ -1,0 +1,25 @@
+name: par2cmdline CI MinGW
+
+on:
+  workflow_call:
+  workflow_dispatch:
+
+jobs:
+  build-check-mingw:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v7
+
+    - name: Install MinGW
+      run: sudo apt-get update && sudo apt-get install -y mingw-w64 autoconf automake libtool
+
+    - name: Build and test
+      run: |
+        export CC=x86_64-w64-mingw32-gcc
+        export CXX=x86_64-w64-mingw32-g++
+        export AR=x86_64-w64-mingw32-ar
+        export RANLIB=x86_64-w64-mingw32-ranlib
+        ./automake.sh
+        ./configure --host=x86_64-w64-mingw32
+        make -j"$(nproc)"

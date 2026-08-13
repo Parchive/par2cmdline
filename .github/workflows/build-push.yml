@@ -10,6 +10,9 @@ jobs:
   build-check-linux:
     uses: ./.github/workflows/build-check-linux.yml
 
+  build-check-mingw:
+    uses: ./.github/workflows/build-check-mingw.yml
+
   build-check-windows:
     uses: ./.github/workflows/build-check-windows.yml
 
@@ -18,4 +21,3 @@ jobs:
 
   build-check-freebsd:
     uses: ./.github/workflows/build-check-freebsd.yml
-
