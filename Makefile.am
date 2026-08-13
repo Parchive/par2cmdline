@@ -61,6 +61,10 @@ par2_LDADD = libpar2.a
 LDADD = -lstdc++
 AM_CXXFLAGS = -Wall -std=c++14 $(OPENMP_CXXFLAGS)
 
+if MINGW
+par2_LDFLAGS = -municode
+endif
+
 EXTRA_DIST = \
 	man/par2.1 \
 	automake.sh \
@@ -209,7 +213,6 @@ tests_reedsolomon_test_SOURCES = src/reedsolomon_test.cpp src/reedsolomon.cpp sr
 tests_galois_test_SOURCES = src/galois_test.cpp src/galois.cpp src/galois.h
 
 tests_utf8_test_SOURCES = src/utf8_test.cpp src/utf8.cpp src/utf8.h
-
 
 # List of all tests.
 # tests/test* are integration tests that use the binary.

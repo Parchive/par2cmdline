@@ -70,5 +70,16 @@ AC_CHECK_FUNCS([strchr] [memcpy])
 
 AC_CHECK_FUNCS([getopt] [getopt_long])
 
+dnl Alternative windows build console application
+case "$host_os" in
+  *mingw* | *msys* | *cygwin*)
+    MINGW_BUILD=yes
+    ;;
+  *)
+    MINGW_BUILD=no
+    ;;
+esac
+AM_CONDITIONAL([MINGW], [test "x$MINGW_BUILD" = "xyes"])
+
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT
