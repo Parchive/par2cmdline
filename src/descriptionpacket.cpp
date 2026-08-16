@@ -304,12 +304,12 @@ std::string DescriptionPacket::TranslateFilenameFromPar2ToLocal(std::ostream &so
 #else
     if (ch == '\\')
     {
+      // This is a legal Par2 character, but assume someone screwed up.
       if (noiselevel >= nlQuiet)
       {
-	// This is a legal Par2 character, but assume someone screwed up.
 	serr << "INFO: Found Windows-style slash in filename.  Changing to UNIX-style slash." << std::endl;
-	ch = '/';
       }
+      ch = '/';
     }
 #endif
 
