@@ -423,12 +423,15 @@ bool Par1Repairer::LoadRecoveryFile(std::string filename)
         // Process until we run out of files or data
         while (remaining > 0 && fileindex < fileheader.numberoffiles)
         {
+          // Check that there is enough data remaining to read the fixed portion
+          if (remaining < sizeof(PAR1FILEENTRY))
+            break;
+
           // Copy fixed portion of file entry
           memcpy((void*)fileentry, (void*)current, sizeof(PAR1FILEENTRY));
 
-          // Is there enough data remaining
-          if (remaining < sizeof(fileentry->entrysize) ||
-              remaining < fileentry->entrysize)
+          // Is the entry's declared size consistent with the remaining data
+          if (remaining < fileentry->entrysize)
             break;
 
           // Check the length of the filename
