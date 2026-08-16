@@ -188,37 +188,60 @@ jobs:
     strategy:
       matrix:
         include:
-        - arch: x86-64
-          artifact_arch: amd64
+        - arch: amd64
+          sysroot_path: amd64
+          triple: x86_64-unknown-freebsd15
         - arch: arm64
-          artifact_arch: aarch64
+          sysroot_path: arm64/aarch64
+          triple: aarch64-unknown-freebsd15
 
     runs-on: ubuntu-latest
+
+    env:
+      FREEBSD_VERSION: "15.0"
 
     steps:
     - uses: actions/checkout@v7
 
-    - name: Build on FreeBSD
-      uses: cross-platform-actions/action@v1.3.0
+    - name: Install cross toolchain
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y clang lld
+
+    - name: Cache FreeBSD sysroot
+      id: sysroot-cache
+      uses: actions/cache@v6
+      with:
+        path: sysroot
+        key: freebsd-sysroot-${{ matrix.sysroot_path }}-${{ env.FREEBSD_VERSION }}
+
+    - name: Fetch FreeBSD sysroot
+      if: steps.sysroot-cache.outputs.cache-hit != 'true'
+      run: |
+        mkdir -p sysroot
+        curl -fsSL "https://download.freebsd.org/releases/${{ matrix.sysroot_path }}/${FREEBSD_VERSION}-RELEASE/base.txz" \
+          | tar -xJ -C sysroot ./usr/include ./usr/lib ./lib
+
+    - name: Build
       env:
         LDFLAGS: -static -s
-      with:
-        operating_system: freebsd
-        version: '15.0'
-        architecture: ${{ matrix.arch }}
-        environment_variables: LDFLAGS
-        shell: sh
-        run: |
-          sudo pkg install -y autoconf automake libtool
-          ./automake.sh
-          ./configure
-          make -j"$(nproc)"
-          strip par2
+      run: |
+        SYSROOT="$PWD/sysroot"
+        ./automake.sh
+        ./configure --host=${{ matrix.triple }} \
+          CC="clang --target=${{ matrix.triple }} --sysroot=$SYSROOT -fuse-ld=lld" \
+          CXX="clang++ --target=${{ matrix.triple }} --sysroot=$SYSROOT -stdlib=libc++ -fuse-ld=lld"
+        make -j"$(nproc)"
+
+    - name: Verify the binary targets FreeBSD
+      run: |
+        file par2
+        file par2 | grep -q "FreeBSD" || { echo "not a FreeBSD binary"; exit 1; }
 
     - name: Upload binary artifact
       uses: actions/upload-artifact@v7
       with:
-        name: par2cmdline-freebsd-${{ matrix.artifact_arch }}
+        name: par2cmdline-freebsd-${{ matrix.arch }}
         path: |
           par2
         retention-days: 5
