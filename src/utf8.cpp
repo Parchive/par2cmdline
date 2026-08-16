@@ -128,7 +128,7 @@ namespace utf8
     {
       for (size_t i = 0; m_argv[i]; ++i)
       {
-        delete m_argv[i];
+        delete[] m_argv[i];
       }
       delete[] m_argv;
     }
