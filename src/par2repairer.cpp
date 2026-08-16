@@ -1201,6 +1201,7 @@ bool Par2Repairer::VerifySourceFiles(const std::string& basepath, std::vector<st
       }
     }
 
+    ++filenumber;
     ++sf;
   }
 
