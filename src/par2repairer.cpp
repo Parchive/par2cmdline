@@ -41,6 +41,23 @@ u32 Par2Repairer::filethreads = _FILE_THREADS;
 #endif
 
 
+// Test whether filename has a .par2 / .PAR2 / .Par2 extension.
+bool Par2Repairer::IsPar2Filename(const std::string &filename)
+{
+  if (filename.size() < 5)
+    return false;
+
+  // Check that filename ends with ".par2" (case-insensitive).
+  const char *ext = filename.c_str() + filename.size() - 5;
+  if (ext[0] != '.')
+    return false;
+
+  return (tolower(static_cast<unsigned char>(ext[1])) == 'p'
+    && tolower(static_cast<unsigned char>(ext[2])) == 'a'
+    && tolower(static_cast<unsigned char>(ext[3])) == 'r'
+    && ext[4] == '2');
+}
+
 Par2Repairer::Par2Repairer(std::ostream &sout, std::ostream &serr, const NoiseLevel noiselevel)
 : sout(sout)
 , serr(serr)
@@ -831,9 +848,8 @@ bool Par2Repairer::LoadPacketsFromExtraFiles(const std::vector<std::string> &ext
   {
     std::string filename = *i;
 
-    // If the filename contains ".par2" anywhere
-    if (std::string::npos != filename.find(".par2") ||
-        std::string::npos != filename.find(".PAR2"))
+    // If the filename has a .par2 / .PAR2 / .Par2 extension
+    if (IsPar2Filename(filename))
     {
       LoadPacketsFromFile(filename);
     }
@@ -1327,9 +1343,8 @@ bool Par2Repairer::VerifyExtraFiles(const std::vector<std::string> &extrafiles, 
     {
       std::string filename = extrafiles[i];
 
-      // If the filename does not include ".par2" we are interested in it.
-      if (std::string::npos == filename.find(".par2") &&
-          std::string::npos == filename.find(".PAR2"))
+      // If the filename does not have a .par2 / .PAR2 / .Par2 extension we are interested in it.
+      if (!IsPar2Filename(filename))
       {
         filename = DiskFile::GetCanonicalPathname(filename);
 

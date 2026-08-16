@@ -62,6 +62,9 @@ protected:
   // Load packets from other PAR2 files with names based on the original PAR2 file
   bool LoadPacketsFromOtherFiles(std::string filename);
 
+  // Test whether a filename has a .par2 / .PAR2 / .Par2 extension
+  static bool IsPar2Filename(const std::string &filename);
+
   // Load packets from any other PAR2 files whose names are given on the command line
   bool LoadPacketsFromExtraFiles(const std::vector<std::string> &extrafiles);
 
