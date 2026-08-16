@@ -1,0 +1,28 @@
+name: par2cmdline CI Linux (valgrind)
+
+on:
+  workflow_call:
+  workflow_dispatch:
+
+jobs:
+  build-check-valgrind:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v7
+
+    - name: Install valgrind
+      run: sudo apt-get update && sudo apt-get install -y valgrind
+
+    - name: Build
+      run: |
+        ./automake.sh
+        ./configure
+        make -j"$(nproc)"
+
+    # Runs tests unit_tests + test1..test44 (integration) via make check.
+    # The shell scripts use the PARVALGRINDOPTS env var when set.
+    - name: Run tests under valgrind
+      env:
+        PARVALGRINDOPTS: --leak-check=full --error-exitcode=1 --errors-for-leak-kinds=all --quiet
+      run: make check

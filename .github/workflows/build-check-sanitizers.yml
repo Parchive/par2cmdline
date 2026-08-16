@@ -1,0 +1,21 @@
+name: par2cmdline CI Linux (ASan+UBSan)
+
+on:
+  workflow_call:
+  workflow_dispatch:
+
+jobs:
+  build-check-sanitizers:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v7
+
+    - name: Build and test (ASan + UBSan)
+      env:
+        CXXFLAGS: -g -O1 -fsanitize=address,undefined -fno-omit-frame-pointer
+      run: |
+        ./automake.sh
+        ./configure
+        make -j"$(nproc)"
+        make check
