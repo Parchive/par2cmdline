@@ -323,9 +323,9 @@ std::string DescriptionPacket::TranslateFilenameFromPar2ToLocal(std::ostream &so
       if (noiselevel >= nlQuiet)
       {
 	serr << "INFO: Found illegal character '" << ch << "' in filename.  Changed it to \"" << UrlEncodeChar(ch) << "\"" << std::endl;
-	// convert problem characters to hex
-	local_filename += UrlEncodeChar(ch);
       }
+      // convert problem characters to hex
+      local_filename += UrlEncodeChar(ch);
     }
 
     ++p;
