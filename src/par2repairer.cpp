@@ -1482,7 +1482,6 @@ bool Par2Repairer::VerifyDataFile(DiskFile *diskfile, Par2RepairerSourceFile *so
       }
 
       // Compute the file hash
-      MD5Hash hashfull;
       context.Final(hashfull);
 
       // If we did not have 16k of data, then the 16k hash
