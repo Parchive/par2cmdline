@@ -2163,27 +2163,29 @@ bool Par2Repairer::RenameTargetFiles(void)
   while (sf != sourcefiles.end() && filenumber < mainpacket->TotalFileCount())
   {
     Par2RepairerSourceFile *sourcefile = *sf;
-
-    // If the target file exists but is not a complete version of the file
-    if (sourcefile->GetTargetExists() &&
-        sourcefile->GetTargetFile() != sourcefile->GetCompleteFile())
+    if (sourcefile)
     {
-      DiskFile *targetfile = sourcefile->GetTargetFile();
+      // If the target file exists but is not a complete version of the file
+      if (sourcefile->GetTargetExists() &&
+          sourcefile->GetTargetFile() != sourcefile->GetCompleteFile())
+      {
+        DiskFile *targetfile = sourcefile->GetTargetFile();
 
-      // Rename it
-      diskFileMap.Remove(targetfile);
+        // Rename it
+        diskFileMap.Remove(targetfile);
 
-      if (!targetfile->Rename())
-        return false;
+        if (!targetfile->Rename())
+          return false;
 
-      backuplist.push_back(targetfile);
+        backuplist.push_back(targetfile);
 
-      bool success = diskFileMap.Insert(targetfile);
-      assert(success);
+        bool success = diskFileMap.Insert(targetfile);
+        assert(success);
 
-      // We no longer have a target file
-      sourcefile->SetTargetExists(false);
-      sourcefile->SetTargetFile(0);
+        // We no longer have a target file
+        sourcefile->SetTargetExists(false);
+        sourcefile->SetTargetFile(0);
+      }
     }
 
     ++sf;
@@ -2197,28 +2199,30 @@ bool Par2Repairer::RenameTargetFiles(void)
   while (sf != sourcefiles.end() && filenumber < mainpacket->TotalFileCount())
   {
     Par2RepairerSourceFile *sourcefile = *sf;
-
-    // If there is no targetfile and there is a complete version
-    if (sourcefile->GetTargetFile() == 0 &&
-        sourcefile->GetCompleteFile() != 0)
+    if (sourcefile)
     {
-      DiskFile *targetfile = sourcefile->GetCompleteFile();
+      // If there is no targetfile and there is a complete version
+      if (sourcefile->GetTargetFile() == 0 &&
+          sourcefile->GetCompleteFile() != 0)
+      {
+        DiskFile *targetfile = sourcefile->GetCompleteFile();
 
-      // Rename it
-      diskFileMap.Remove(targetfile);
+        // Rename it
+        diskFileMap.Remove(targetfile);
 
-      if (!targetfile->Rename(sourcefile->TargetFileName()))
-        return false;
+        if (!targetfile->Rename(sourcefile->TargetFileName()))
+          return false;
 
-      bool success = diskFileMap.Insert(targetfile);
-      assert(success);
+        bool success = diskFileMap.Insert(targetfile);
+        assert(success);
 
-      // This file is now the target file
-      sourcefile->SetTargetExists(true);
-      sourcefile->SetTargetFile(targetfile);
+        // This file is now the target file
+        sourcefile->SetTargetExists(true);
+        sourcefile->SetTargetFile(targetfile);
 
-      // We have one more complete file
-      completefilecount++;
+        // We have one more complete file
+        completefilecount++;
+      }
     }
 
     ++sf;
@@ -2239,47 +2243,49 @@ bool Par2Repairer::CreateTargetFiles(void)
   while (sf != sourcefiles.end() && filenumber < mainpacket->TotalFileCount())
   {
     Par2RepairerSourceFile *sourcefile = *sf;
-
-    // If the file does not exist
-    if (!sourcefile->GetTargetExists())
+    if (sourcefile)
     {
-      DiskFile *targetfile = new DiskFile(sout, serr);
-      std::string filename = sourcefile->TargetFileName();
-      u64 filesize = sourcefile->GetDescriptionPacket()->FileSize();
-
-      // Create the target file
-      if (!targetfile->Create(filename, filesize))
+      // If the file does not exist
+      if (!sourcefile->GetTargetExists())
       {
-        delete targetfile;
-        return false;
+        DiskFile *targetfile = new DiskFile(sout, serr);
+        std::string filename = sourcefile->TargetFileName();
+        u64 filesize = sourcefile->GetDescriptionPacket()->FileSize();
+
+        // Create the target file
+        if (!targetfile->Create(filename, filesize))
+        {
+          delete targetfile;
+          return false;
+        }
+
+        // This file is now the target file
+        sourcefile->SetTargetExists(true);
+        sourcefile->SetTargetFile(targetfile);
+
+        // Remember this file
+        bool success = diskFileMap.Insert(targetfile);
+        assert(success);
+
+        u64 offset = 0;
+        std::vector<DataBlock>::iterator tb = sourcefile->TargetBlocks();
+
+        // Allocate all of the target data blocks
+        while (offset < filesize)
+        {
+          DataBlock &datablock = *tb;
+
+          datablock.SetLocation(targetfile, offset);
+          datablock.SetLength(std::min(blocksize, filesize-offset));
+
+          offset += blocksize;
+          ++tb;
+        }
+
+        // Add the file to the list of those that will need to be verified
+        // once the repair has completed.
+        verifylist.push_back(sourcefile);
       }
-
-      // This file is now the target file
-      sourcefile->SetTargetExists(true);
-      sourcefile->SetTargetFile(targetfile);
-
-      // Remember this file
-      bool success = diskFileMap.Insert(targetfile);
-      assert(success);
-
-      u64 offset = 0;
-      std::vector<DataBlock>::iterator tb = sourcefile->TargetBlocks();
-
-      // Allocate all of the target data blocks
-      while (offset < filesize)
-      {
-        DataBlock &datablock = *tb;
-
-        datablock.SetLocation(targetfile, offset);
-        datablock.SetLength(std::min(blocksize, filesize-offset));
-
-        offset += blocksize;
-        ++tb;
-      }
-
-      // Add the file to the list of those that will need to be verified
-      // once the repair has completed.
-      verifylist.push_back(sourcefile);
     }
 
     ++sf;
