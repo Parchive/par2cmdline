@@ -39,7 +39,8 @@ class FileCheckSummer
 public:
   FileCheckSummer(DiskFile   *diskfile,
                   u64         blocksize,
-                  const u32 (&windowtable)[256]);
+                  const u32 (&windowtable)[256],
+                  bool        computefilehashes = true);
   ~FileCheckSummer(void);
 
   // Start reading the file at the beginning
@@ -68,7 +69,8 @@ public:
   // Return the current file offset
   u64 Offset(void) const;
 
-  // Return the full file hash and the 16k file hash
+  // Return the full file hash and the 16k file hash.
+  // Only valid if the checksummer was constructed with computefilehashes set.
   void GetFileHashes(MD5Hash &hashfull, MD5Hash &hash16k) const;
 
   // Which disk file is this
@@ -80,6 +82,9 @@ protected:
   const u32 (&windowtable)[256];
 
   u64         filesize;
+
+  // Whether to compute the MD5 hash of the whole file and of the first 16k
+  bool        computefilehashes;
 
   u64         currentoffset; // file offset for current window position
   char       *buffer;        // buffer for reading from the file
