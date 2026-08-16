@@ -31,6 +31,9 @@ public:
   CriticalPacket(void);
   ~CriticalPacket(void);
 
+  CriticalPacket(const CriticalPacket&) = delete;
+  CriticalPacket& operator=(const CriticalPacket&) = delete;
+
 public:
   // Write a copy of the packet to the specified file at the specified offset
   bool    WritePacket(DiskFile &diskfile, u64 fileoffset) const;
