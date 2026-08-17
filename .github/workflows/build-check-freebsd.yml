@@ -7,20 +7,25 @@ on:
 jobs:
   build-check-freebsd:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: cpa.sh {0}
 
     steps:
     - uses: actions/checkout@v7
 
-    - name: Build and test
+    - name: Start FreeBSD VM
       uses: cross-platform-actions/action@v1.4.0
       with:
         operating_system: freebsd
         version: '15.0'
         shell: bash
-        run: |
-          sudo pkg install -y autoconf automake libtool
-          ./automake.sh
-          ./configure
-          make -j"$(nproc)"
-          make check
-          make distcheck
+
+    - name: Build and test
+      run: |
+        sudo pkg install -y autoconf automake libtool
+        ./automake.sh
+        ./configure
+        make -j"$(nproc)"
+        make check
+        make distcheck
