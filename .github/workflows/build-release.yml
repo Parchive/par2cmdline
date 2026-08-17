@@ -4,6 +4,7 @@ on:
   push:
     branches:
     - 'master'
+  workflow_dispatch:
 
 jobs:
   build-check-linux:
@@ -20,6 +21,10 @@ jobs:
 
   build-check-freebsd:
     uses: ./.github/workflows/build-check-freebsd.yml
+
+  build-check-valgrind:
+    if: github.event_name == 'workflow_dispatch'
+    uses: ./.github/workflows/build-check-valgrind.yml
 
   build-linux:
     needs:

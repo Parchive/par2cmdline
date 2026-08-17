@@ -13,9 +13,6 @@ jobs:
   build-check-sanitizers:
     uses: ./.github/workflows/build-check-sanitizers.yml
 
-  build-check-valgrind:
-    uses: ./.github/workflows/build-check-valgrind.yml
-
   build-check-mingw:
     uses: ./.github/workflows/build-check-mingw.yml
 

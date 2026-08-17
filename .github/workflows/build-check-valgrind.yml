@@ -2,7 +2,6 @@ name: par2cmdline CI Linux (valgrind)
 
 on:
   workflow_call:
-  workflow_dispatch:
 
 jobs:
   build-check-valgrind:
