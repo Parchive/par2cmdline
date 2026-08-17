@@ -20,9 +20,13 @@ jobs:
         ./configure
         make -j"$(nproc)"
 
-    # Runs tests unit_tests + test1..test44 (integration) via make check.
+    # Runs tests
     # The shell scripts use the PARVALGRINDOPTS env var when set.
     - name: Run tests under valgrind
       env:
         PARVALGRINDOPTS: --leak-check=full --error-exitcode=1 --errors-for-leak-kinds=all --quiet
       run: make check
+
+    - name: Output logs to gain insights
+      if: always()
+      run: find ./tests/ -mindepth 1 -maxdepth 1 -type f -iname '*.log' | sort -V | while read -r logfile; do echo "==="; echo "$logfile"; echo "==="; cat "$logfile"; done
