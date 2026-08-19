@@ -43,8 +43,9 @@ public:
                   bool        computefilehashes = true);
   ~FileCheckSummer(void);
 
-  // Start reading the file at the beginning
-  bool Start(void);
+  // Start reading the file at the beginning, or at the given offset. The
+  // whole file and 16k hashes can only be computed when starting at 0.
+  bool Start(u64 startoffset = 0);
 
   // Jump ahead the specified distance
   bool Jump(u64 distance);

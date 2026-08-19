@@ -39,6 +39,7 @@ static char THIS_FILE[]=__FILE__;
 #ifdef _OPENMP
 u32 Par2Repairer::filethreads = _FILE_THREADS;
 #endif
+std::atomic<u32> Par2Repairer::activeblockscans(0);
 
 
 Par2Repairer::Par2Repairer(std::ostream &sout, std::ostream &serr, const NoiseLevel noiselevel)
@@ -152,6 +153,12 @@ Result Par2Repairer::Process(
   // Set the number of threads
   if (nthreads != 0)
     omp_set_num_threads(nthreads);
+
+  // Files are scanned in parallel, and so are the blocks within one file,
+  // so both levels need to be able to run threads.
+#if _OPENMP >= 200805
+  omp_set_max_active_levels(2);
+#endif
 #endif
 
   // Determine the searchpath from the location of the main PAR2 file
@@ -1546,6 +1553,131 @@ bool Par2Repairer::VerifyDataFile(DiskFile *diskfile, Par2RepairerSourceFile *so
   return true;
 }
 
+// Check every block of a source file at the offset where it is expected to be.
+// Nothing is recorded here: the caller is told which blocks were found.
+bool Par2Repairer::ScanDataFileAligned(DiskFile               *diskfile,   // [in]
+                                       ProgressMeter<u64>     &progress,   // [in]
+                                       Par2RepairerSourceFile *sourcefile, // [in]
+                                       std::vector<char>      &matched,    // [out]
+                                       u32                    &matchcount) // [out]
+{
+  matchcount = 0;
+
+  // We must know which source file the data is supposed to belong to
+  if (0 == sourcefile)
+    return false;
+
+  VerificationPacket *verificationpacket = sourcefile->GetVerificationPacket();
+  if (0 == verificationpacket)
+    return false;
+
+  // A source file which has already been matched must not claim its blocks again
+  if (0 != sourcefile->GetCompleteFile())
+    return false;
+
+  // Unless the file is exactly the right length it cannot be a perfect match
+  const u64 filesize = sourcefile->GetDescriptionPacket()->FileSize();
+  if (diskfile->FileSize() != filesize)
+    return false;
+
+  const u32 blockcount = verificationpacket->BlockCount();
+  if (0 == blockcount)
+    return false;
+
+  matched.assign(blockcount, 0);
+
+  // The file threads are the whole budget, so the threads not being spent on
+  // another file are shared out between the blocks of this one
+#ifdef _OPENMP
+  const u32 budget = filethreads;
+#else
+  const u32 budget = 1;
+#endif
+
+  ++activeblockscans;
+
+  // The file is checked a chunk of blocks at a time, so that the number of
+  // threads can be raised again each time another file finishes
+  u32 blocknumber = 0;
+
+  while (blocknumber < blockcount)
+  {
+    u32 scanning = activeblockscans.load();
+    if (scanning < 1)
+      scanning = 1;
+
+    u32 threads = budget / scanning;
+    if (threads < 1)
+      threads = 1;
+
+    const int first = static_cast<int>(blocknumber);
+    const int last  = static_cast<int>(std::min((u64)blockcount, (u64)blocknumber + threads * 4));
+
+#ifdef _OPENMP
+    #pragma omp parallel num_threads(threads)
+#endif
+    {
+      std::vector<char> buffer((size_t)blocksize);
+
+      // Every block costs the same, so each thread takes a run of consecutive
+      // blocks and its reads stay in order
+#ifdef _OPENMP
+      #pragma omp for schedule(static)
+#endif
+      for (int b=first; b<last; ++b)
+      {
+        const u64 offset = (u64)b * blocksize;
+        const u64 length = std::min(blocksize, filesize - offset);
+
+        bool blockmatched = diskfile->Read(offset, &buffer[0], (size_t)length);
+
+        if (blockmatched)
+        {
+          // The verification entry for the last block of a file covers the
+          // block padded out to the full block size with zeroes
+          if (length < blocksize)
+            memset(&buffer[length], 0, (size_t)(blocksize - length));
+
+          const FILEVERIFICATIONENTRY *entry = verificationpacket->VerificationEntry(b);
+
+          u32 checksum = ~0 ^ CRCUpdateBlock(~0, (size_t)blocksize, &buffer[0]);
+
+          blockmatched = checksum == entry->crc;
+
+          if (blockmatched)
+          {
+            MD5Context context;
+            context.Update(&buffer[0], (size_t)blocksize);
+
+            MD5Hash hash;
+            context.Final(hash);
+
+            blockmatched = hash == entry->hash;
+          }
+        }
+
+        if (!blockmatched)
+          continue;
+
+        matched[b] = 1;
+
+        if (noiselevel > nlQuiet)
+          progress.Add(length);
+      }
+    }
+
+    blocknumber = static_cast<u32>(last);
+  }
+
+  --activeblockscans;
+
+  for (u32 b=0; b<blockcount; ++b)
+    if (matched[b])
+      matchcount++;
+
+  return true;
+}
+
 // Perform a sliding window scan of the DiskFile looking for blocks of data that
 // might belong to any of the source files (for which a verification packet was
 // available). If a block of data might be from more than one source file, prefer
@@ -1595,15 +1727,17 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
     shortname = name;
   }
 
-  // The MD5 hash of the whole file is only needed to match against source
-  // files which have no verification packet. Every block matched below has
-  // had its own MD5 checked, so a full match implies the whole file hash.
-  const bool computefilehashes = !unverifiablesourcefiles.empty();
-
-  // Create the checksummer for the file and start reading from it
-  FileCheckSummer filechecksummer(diskfile, blocksize, windowtable, computefilehashes);
-  if (!filechecksummer.Start())
-    return false;
+#ifdef _OPENMP
+  if (noiselevel > nlQuiet)
+  {
+    #pragma omp critical(stdio)
+    sout << "Opening: \"" << shortname << "\"" << std::endl;
+  }
+#else
+  std::string message = "Scanning: \"";
+  message.append(shortname).append("\": ");
+  ProgressMeter<u64> progress(sout, message, diskfile->FileSize());
+#endif
 
   // Assume we will make a perfect match for the file
   matchtype = eFullMatch;
@@ -1617,8 +1751,87 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
   // Have we found data blocks in this file that belong to more than one target file
   bool multipletargets = false;
 
-  // Which block do we expect to find first
-  const VerificationHashEntry *nextentry = 0;
+  // Total number of bytes that were skipped whilst scanning
+  u64 skippeddata = 0;
+
+  const u64 filesize = diskfile->FileSize();
+
+  std::vector<char> alignedmatch;
+  u32 alignedcount = 0;
+  const bool aligned = ScanDataFileAligned(diskfile, progress, sourcefile,
+                                           alignedmatch, alignedcount);
+
+  // The parts of the file which still have to be searched a byte at a time
+  std::vector<std::pair<u64, u64> > searchranges;
+
+  if (aligned && alignedcount > 0)
+  {
+    const u32 blockcount = (u32)alignedmatch.size();
+
+    // Record the blocks which were found where they were expected. Their
+    // lengths were set when the source file was given its data blocks.
+    std::vector<DataBlock>::iterator sb = sourcefile->SourceBlocks();
+
+    for (u32 blocknumber=0; blocknumber<blockcount; ++blocknumber)
+    {
+      if (alignedmatch[blocknumber])
+      {
+        if (blocksallocated)
+          (*sb).SetLocation(diskfile, (u64)blocknumber * blocksize);
+
+        count++;
+      }
+
+      ++sb;
+    }
+
+    if (alignedcount < blockcount)
+    {
+      matchtype = ePartialMatch;
+
+      // In rename-only mode, skip files that are not perfect matches
+      if (renameonly)
+        return true;
+
+      // Search each run of blocks which was not where it was expected. The
+      // blocks on either side of a run have been claimed already, so nothing
+      // outside these ranges is left to find.
+      for (u32 blocknumber=0; blocknumber<blockcount; )
+      {
+        if (alignedmatch[blocknumber])
+        {
+          ++blocknumber;
+          continue;
+        }
+
+        const u32 gapfirst = blocknumber;
+        while (blocknumber < blockcount && !alignedmatch[blocknumber])
+          ++blocknumber;
+
+        searchranges.push_back(std::make_pair((u64)gapfirst * blocksize,
+                                              std::min(filesize, (u64)blocknumber * blocksize)));
+      }
+    }
+  }
+  else
+  {
+    // Nothing is known about where the data is, so search all of it
+    searchranges.push_back(std::make_pair((u64)0, filesize));
+  }
+
+  if (!searchranges.empty())
+  {
+
+  // The MD5 hash of the whole file is only needed to match against source
+  // files which have no verification packet, and only when no block at all is
+  // found. That can only happen when the whole of the file is being searched.
+  const bool computefilehashes = !unverifiablesourcefiles.empty()
+                                 && 1 == searchranges.size()
+                                 && 0 == searchranges[0].first
+                                 && filesize == searchranges[0].second;
+
+  // Create the checksummer for the file
+  FileCheckSummer filechecksummer(diskfile, blocksize, windowtable, computefilehashes);
 
   // How far will we scan the file (1 byte at a time)
   // before skipping ahead looking for the next block
@@ -1627,32 +1840,29 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
   // Distance to skip forward if we don't find a block
   u64 scanskip = skipdata ? blocksize - scandistance : 0;
 
+  for (size_t range=0; range<searchranges.size(); ++range)
+  {
+  const u64 rangestart = searchranges[range].first;
+  const u64 rangeend = searchranges[range].second;
+
+  if (!filechecksummer.Start(rangestart))
+    return false;
+
+  // Which block do we expect to find first. Nothing is suggested at the start
+  // of a range, just as nothing is suggested after a block is not found.
+  const VerificationHashEntry *nextentry = 0;
+
   // Assume with are half way through scanning
   u64 scanoffset = scandistance >> 1;
 
-  // Total number of bytes that were skipped whilst scanning
-  u64 skippeddata = 0;
-
   // Offset of last data that was found
-  u64 lastmatchoffset = 0;
+  u64 lastmatchoffset = rangestart;
 
-  u64 oldoffset = 0;
+  u64 oldoffset = rangestart;
   u64 printprogress = 0;
 
-#ifdef _OPENMP
-  if (noiselevel > nlQuiet)
-  {
-    #pragma omp critical(stdio)
-    sout << "Opening: \"" << shortname << "\"" << std::endl;
-  }
-#else
-  std::string message = "Scanning: \"";
-  message.append(shortname).append("\": ");
-  ProgressMeter<u64> progress(sout, message, diskfile->FileSize());
-#endif
-
-  // Whilst we have not reached the end of the file
-  while (filechecksummer.Offset() < diskfile->FileSize())
+  // Whilst we have not reached the end of the range
+  while (filechecksummer.Offset() < rangeend)
   {
     if (noiselevel > nlQuiet)
     {
@@ -1784,7 +1994,7 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
         // Have we scanned too far without finding a block?
         if (scanskip > 0
             && ++scanoffset >= scandistance
-            && skipfrom < diskfile->FileSize())
+            && skipfrom < rangeend)
         {
           // Skip forwards to where we think we might find more data
           if (!filechecksummer.Jump(scanskip))
@@ -1803,7 +2013,7 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
 #ifdef _OPENMP
   if (noiselevel > nlQuiet)
   {
-    if (filechecksummer.Offset() == diskfile->FileSize())
+    if (filechecksummer.Offset() >= rangeend)
       progress.Add(filechecksummer.Offset() - oldoffset);
   }
 #endif
@@ -1815,9 +2025,13 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
       << " and " << filechecksummer.Offset()).str());
   }
 
+  }
+
   // Get the Full and 16k hash values of the file
   if (computefilehashes)
     filechecksummer.GetFileHashes(hashfull, hash16k);
+
+  }
 
   if (noiselevel >= nlDebug)
   {

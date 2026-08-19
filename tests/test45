@@ -1,0 +1,101 @@
+#!/bin/sh
+
+execdir="$PWD"
+
+if [ -n "${PARVALGRINDOPTS+set}" ]
+then
+    PARBINARY="valgrind $PARVALGRINDOPTS $execdir/par2"
+elif [ "`which wine`" != "" ] && [ -f "$execdir/par2.exe" ]
+then
+    PARBINARY="wine $execdir/par2.exe"
+else
+    PARBINARY="$execdir/par2"
+fi
+
+if [ -z "$srcdir" ] || [ "." = "$srcdir" ]; then
+  srcdir="$PWD"
+  TESTDATA="$srcdir/tests"
+else
+  srcdir="$PWD/$srcdir"
+  TESTDATA="$srcdir/tests"
+fi
+
+TESTROOT="$PWD"
+
+testname=$(basename $0)
+rm -f "$testname.log"
+rm -rf "run$testname"
+
+mkdir "run$testname" && cd "run$testname" || { echo "ERROR: Could not change to test directory" ; exit 1; } >&2
+
+banner="Scanning the blocks of a file in parallel finds the same data"
+dashes=`echo "$banner" | sed s/./-/g`
+
+echo $dashes
+echo $banner
+echo $dashes
+
+# The -T option only exists when built with thread support
+if ! $PARBINARY -h 2>&1 | grep -q '^  -T<n>'; then
+    echo "Skipping: par2 was built without thread support."
+    cd "$TESTROOT"
+    rm -rf "run$testname"
+    exit 77
+fi
+
+# Build a data file of 64 blocks of 1024 bytes
+i=0
+while [ $i -lt 1024 ]; do
+    printf '%064d' $i
+    i=$((i + 1))
+done > data.bin
+
+$PARBINARY c -q -s1024 -c20 test.par2 data.bin || { echo "ERROR: Could not create PAR2 files" ; exit 1; } >&2
+
+cp data.bin data.bin.orig
+
+# A gap holding nothing: block 3 is corrupt
+printf 'XXXXXXXXXXXXXXXX' | dd of=data.bin bs=1 seek=3072 conv=notrunc 2>/dev/null
+
+# A gap holding data: shift blocks 10 to 19 forward by half a block, so that
+# they are still in the file but not where they are expected. Searching this
+# gap has to find them; only counting the blocks which were where they belong
+# would miss them.
+dd if=data.bin of=region.bin bs=512 skip=20 count=21 2>/dev/null
+dd if=region.bin of=data.bin bs=512 seek=21 conv=notrunc 2>/dev/null
+
+# -T2 is the default and searches the whole file a byte at a time.
+# -T4 checks each block where it is expected first, and only searches
+# what that does not account for. Both must find the same data.
+$PARBINARY v -T2 test.par2 > sequential.out 2>&1
+sequential=$?
+$PARBINARY v -T4 test.par2 > parallel.out 2>&1
+parallel=$?
+
+if [ $sequential -ne $parallel ]
+then
+    echo "ERROR: Exit code differed: -T2 gave $sequential and -T4 gave $parallel" >&2
+    exit 1
+fi
+
+# Strip the progress indicator, which is rewritten in place with \r
+tr '\r' '\n' < sequential.out | grep "data blocks" > sequential.blocks
+tr '\r' '\n' < parallel.out | grep "data blocks" > parallel.blocks
+
+if ! diff sequential.blocks parallel.blocks
+then
+    echo "ERROR: Scanning the blocks in parallel found different data" >&2
+    exit 1
+fi
+
+grep -q "Found 62 of 64 data blocks" parallel.blocks || { echo "ERROR: Expected 62 of 64 blocks to be found" ; cat parallel.blocks ; exit 1; } >&2
+
+# The repair must still work when the blocks were scanned in parallel
+$PARBINARY r -q -T4 test.par2 || { echo "ERROR: Repair failed" ; exit 1; } >&2
+
+cmp data.bin data.bin.orig || { echo "ERROR: Repaired file does not match the original" ; exit 1; } >&2
+
+cd "$TESTROOT"
+rm -rf "run$testname"
+
+exit 0
