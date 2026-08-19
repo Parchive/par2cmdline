@@ -1587,6 +1587,17 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
   // Is the file empty
   if (diskfile->FileSize() == 0)
   {
+    matchtype = eNoMatch;
+    count = 0;
+    // The hash of an empty file is needed to match against source files
+    // which have no verification packet.
+    if (!unverifiablesourcefiles.empty())
+    {
+      MD5Context context;
+      context.Final(hash16k);
+      hashfull = hash16k;
+    }
+
     // If the file is empty, then just return
     if (noiselevel > nlSilent)
     {
@@ -1601,6 +1612,7 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
         sout << "File: \"" << name << "\" - empty." << std::endl;
       }
     }
+
     return true;
   }
 
