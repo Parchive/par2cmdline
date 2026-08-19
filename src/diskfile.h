@@ -76,6 +76,10 @@ public:
   bool Read(u64 offset, void *buffer, size_t length,
 	    LengthType maxlength = MAX_LENGTH);
 
+  // Ask the system to begin reading a range of the file into its cache. This
+  // is only a hint and does nothing on a system which cannot be told.
+  void Prefetch(u64 offset, u64 length);
+
   // Close the file
   void Close(void);
 

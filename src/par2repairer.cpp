@@ -1613,6 +1613,11 @@ bool Par2Repairer::ScanDataFileAligned(DiskFile               *diskfile,   // [i
     const int first = static_cast<int>(blocknumber);
     const int last  = static_cast<int>(std::min((u64)blockcount, (u64)blocknumber + threads * 4));
 
+    // Reading a chunk in one go keeps the disk sequential, where the threads
+    // reading their own parts of it at the same time would not
+    const u64 chunkstart = (u64)first * blocksize;
+    diskfile->Prefetch(chunkstart, std::min(filesize, (u64)last * blocksize) - chunkstart);
+
 #ifdef _OPENMP
     #pragma omp parallel num_threads(threads)
 #endif

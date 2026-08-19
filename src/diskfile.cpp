@@ -273,6 +273,12 @@ bool DiskFile::Open(const std::string &_filename, u64 _filesize)
   return true;
 }
 
+// Ask the system to begin reading a range of the file into its cache
+
+void DiskFile::Prefetch(u64, u64)
+{
+}
+
 // Read some data from disk
 
 bool DiskFile::Read(u64 _offset, void *buffer, size_t length, LengthType maxlength)
@@ -653,6 +659,36 @@ bool DiskFile::Open(const std::string &_filename, u64 _filesize)
   exists = true;
 
   return true;
+}
+
+// Ask the system to begin reading a range of the file into its cache
+
+void DiskFile::Prefetch(u64 _offset, u64 _length)
+{
+  assert(file != 0);
+
+  if (_length == 0)
+    return;
+
+#if defined(HAVE_POSIX_FADVISE)
+  posix_fadvise(fileno(file), (off_t)_offset, (off_t)_length, POSIX_FADV_WILLNEED);
+#elif defined(F_RDADVISE)
+  // The count is only an int, so a longer range has to be asked for in pieces
+  while (_length > 0)
+  {
+    struct radvisory ra;
+    ra.ra_offset = (off_t)_offset;
+    ra.ra_count = (int)std::min(_length, (u64)1 << 30);
+
+    if (fcntl(fileno(file), F_RDADVISE, &ra) == -1)
+      break;
+
+    _offset += (u64)ra.ra_count;
+    _length -= (u64)ra.ra_count;
+  }
+#else
+  (void)_offset;
+#endif
 }
 
 // Read some data from disk
