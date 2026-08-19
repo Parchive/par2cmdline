@@ -131,7 +131,7 @@ protected:
   FILE *file;
 #endif
 
-  // Current offset within the file
+  // Current write offset within the file. Read() neither uses nor updates it.
   u64    offset;
 
   // Does the file exist

@@ -279,25 +279,6 @@ bool DiskFile::Read(u64 _offset, void *buffer, size_t length, LengthType maxleng
 {
   assert(hFile != INVALID_HANDLE_VALUE);
 
-  if (offset != _offset)
-  {
-    LONG* ptroffset = (LONG*)&_offset;
-    LONG lowoffset = ptroffset[0];
-    LONG highoffset = ptroffset[1];
-
-    // Seek to the required offset
-    if (INVALID_SET_FILE_POINTER == SetFilePointer(hFile, lowoffset, &highoffset, FILE_BEGIN))
-    {
-      DWORD error = ::GetLastError();
-
-      #pragma omp critical(stdio)
-      *serr << "Could not read " << (u64)length << " bytes from \"" << filename << "\" at offset " << _offset << ": " << ErrorMessage(error) << std::endl;
-
-      return false;
-    }
-    offset = _offset;
-  }
-
   while (length > 0) {
 
     DWORD want;
@@ -307,8 +288,17 @@ bool DiskFile::Read(u64 _offset, void *buffer, size_t length, LengthType maxleng
       want = (LengthType)length;
     DWORD got = 0;
 
+    // Read from the given position without using the handle's file pointer
+    ULARGE_INTEGER position;
+    position.QuadPart = (ULONGLONG)_offset;
+
+    OVERLAPPED overlapped;
+    memset(&overlapped, 0, sizeof(overlapped));
+    overlapped.Offset = position.LowPart;
+    overlapped.OffsetHigh = position.HighPart;
+
     // Read the data
-    if (!::ReadFile(hFile, buffer, want, &got, NULL))
+    if (!::ReadFile(hFile, buffer, want, &got, &overlapped))
     {
       DWORD error = ::GetLastError();
 
@@ -318,17 +308,23 @@ bool DiskFile::Read(u64 _offset, void *buffer, size_t length, LengthType maxleng
       return false;
     }
 
+    if (got == 0)
+    {
+      #pragma omp critical(stdio)
+      *serr << "Could not read " << (u64)length << " bytes from \"" << filename << "\" at offset " << _offset << ": unexpected end of file." << std::endl;
+
+      return false;
+    }
+
     if (want != got)
     {
       #pragma omp critical(stdio)
-      *serr << "Incomplete read from \"" << filename << "\" at offset " << offset << ".  Tried to read " << want << " bytes and received " << got << " bytes." << std::endl;
+      *serr << "Incomplete read from \"" << filename << "\" at offset " << _offset << ".  Tried to read " << want << " bytes and received " << got << " bytes." << std::endl;
     }
 
-    offset += got;
+    _offset += got;
     length -= got;
     buffer = ((char *) buffer) + got;
-
-    // write updates filesize.  Do we want to do that here?
   }
 
   return true;
@@ -665,25 +661,14 @@ bool DiskFile::Read(u64 _offset, void *buffer, size_t length, LengthType maxleng
 {
   assert(file != 0);
 
-  if (offset != _offset)
+  if (_offset > (u64)MaxOffset)
   {
-    if (_offset > (u64)MaxOffset)
-    {
-      #pragma omp critical(stdio)
-      *serr << "Could not read " << (u64)length << " bytes from " << filename << " at offset " << _offset << std::endl;
-      return false;
-    }
-
-
-    if (fseek(file, (OffsetType)_offset, SEEK_SET))
-    {
-      #pragma omp critical(stdio)
-      *serr << "Could not read " << (u64)length << " bytes from " << filename << " at offset " << _offset << ": " << strerror(errno) << std::endl;
-      return false;
-    }
-    offset = _offset;
+    #pragma omp critical(stdio)
+    *serr << "Could not read " << (u64)length << " bytes from " << filename << " at offset " << _offset << std::endl;
+    return false;
   }
 
+  int fd = fileno(file);
 
   while (length > 0) {
 
@@ -693,8 +678,8 @@ bool DiskFile::Read(u64 _offset, void *buffer, size_t length, LengthType maxleng
     else
       want = length;
 
-    LengthType got = fread(buffer, 1, want, file);
-    if (got != want)
+    ssize_t got = pread(fd, buffer, want, (off_t)_offset);
+    if (got != (ssize_t)want)
     {
       // NOTE: This can happen on error or when hitting the end-of-file.
 
@@ -703,11 +688,9 @@ bool DiskFile::Read(u64 _offset, void *buffer, size_t length, LengthType maxleng
       return false;
     }
 
-    offset += got;
+    _offset += got;
     length -= got;
     buffer = ((char *) buffer) + got;
-
-    // Write() updates filesize.  Should we do that here too?
   }
 
   return true;
