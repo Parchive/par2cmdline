@@ -1873,7 +1873,7 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
     {
       // Update progress indicator
       printprogress += filechecksummer.Offset() - oldoffset;
-      if (printprogress == blocksize || filechecksummer.ShortBlock())
+      if (printprogress >= blocksize || filechecksummer.ShortBlock())
       {
         progress.Add(printprogress);
         printprogress = 0;
