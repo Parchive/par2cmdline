@@ -41,6 +41,23 @@ u32 Par2Repairer::filethreads = _FILE_THREADS;
 #endif
 
 
+// Test whether filename has a .par2 / .PAR2 / .Par2 extension.
+bool Par2Repairer::IsPar2Filename(const std::string &filename)
+{
+  if (filename.size() < 5)
+    return false;
+
+  // Check that filename ends with ".par2" (case-insensitive).
+  const char *ext = filename.c_str() + filename.size() - 5;
+  if (ext[0] != '.')
+    return false;
+
+  return (tolower(static_cast<unsigned char>(ext[1])) == 'p'
+    && tolower(static_cast<unsigned char>(ext[2])) == 'a'
+    && tolower(static_cast<unsigned char>(ext[3])) == 'r'
+    && ext[4] == '2');
+}
+
 Par2Repairer::Par2Repairer(std::ostream &sout, std::ostream &serr, const NoiseLevel noiselevel)
 : sout(sout)
 , serr(serr)
@@ -831,9 +848,8 @@ bool Par2Repairer::LoadPacketsFromExtraFiles(const std::vector<std::string> &ext
   {
     std::string filename = *i;
 
-    // If the filename contains ".par2" anywhere
-    if (std::string::npos != filename.find(".par2") ||
-        std::string::npos != filename.find(".PAR2"))
+    // If the filename has a .par2 / .PAR2 / .Par2 extension
+    if (IsPar2Filename(filename))
     {
       LoadPacketsFromFile(filename);
     }
@@ -1201,6 +1217,7 @@ bool Par2Repairer::VerifySourceFiles(const std::string& basepath, std::vector<st
       }
     }
 
+    ++filenumber;
     ++sf;
   }
 
@@ -1326,9 +1343,8 @@ bool Par2Repairer::VerifyExtraFiles(const std::vector<std::string> &extrafiles, 
     {
       std::string filename = extrafiles[i];
 
-      // If the filename does not include ".par2" we are interested in it.
-      if (std::string::npos == filename.find(".par2") &&
-          std::string::npos == filename.find(".PAR2"))
+      // If the filename does not have a .par2 / .PAR2 / .Par2 extension we are interested in it.
+      if (!IsPar2Filename(filename))
       {
         filename = DiskFile::GetCanonicalPathname(filename);
 
@@ -1482,7 +1498,6 @@ bool Par2Repairer::VerifyDataFile(DiskFile *diskfile, Par2RepairerSourceFile *so
       }
 
       // Compute the file hash
-      MD5Hash hashfull;
       context.Final(hashfull);
 
       // If we did not have 16k of data, then the 16k hash
@@ -1570,18 +1585,34 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
   DiskFile::SplitRelativeFilename(diskfile->FileName(), basepath, name);
 
   // Is the file empty
-  if (originalsourcefile != 0 && originalsourcefile->GetTargetExists())
+  if (diskfile->FileSize() == 0)
   {
-    // don't check size if target was found
-  }
-  else if (diskfile->FileSize() == 0)
-  {
+    matchtype = eNoMatch;
+    count = 0;
+    // The hash of an empty file is needed to match against source files
+    // which have no verification packet.
+    if (!unverifiablesourcefiles.empty())
+    {
+      MD5Context context;
+      context.Final(hash16k);
+      hashfull = hash16k;
+    }
+
     // If the file is empty, then just return
     if (noiselevel > nlSilent)
     {
-      #pragma omp critical(stdio)
-      sout << "File: \"" << name << "\" - empty." << std::endl;
+      if (originalsourcefile != 0)
+      {
+        #pragma omp critical(stdio)
+        sout << "Target: \"" << name << "\" - empty." << std::endl;
+      }
+      else
+      {
+        #pragma omp critical(stdio)
+        sout << "File: \"" << name << "\" - empty." << std::endl;
+      }
     }
+
     return true;
   }
 
@@ -2163,27 +2194,29 @@ bool Par2Repairer::RenameTargetFiles(void)
   while (sf != sourcefiles.end() && filenumber < mainpacket->TotalFileCount())
   {
     Par2RepairerSourceFile *sourcefile = *sf;
-
-    // If the target file exists but is not a complete version of the file
-    if (sourcefile->GetTargetExists() &&
-        sourcefile->GetTargetFile() != sourcefile->GetCompleteFile())
+    if (sourcefile)
     {
-      DiskFile *targetfile = sourcefile->GetTargetFile();
+      // If the target file exists but is not a complete version of the file
+      if (sourcefile->GetTargetExists() &&
+          sourcefile->GetTargetFile() != sourcefile->GetCompleteFile())
+      {
+        DiskFile *targetfile = sourcefile->GetTargetFile();
 
-      // Rename it
-      diskFileMap.Remove(targetfile);
+        // Rename it
+        diskFileMap.Remove(targetfile);
 
-      if (!targetfile->Rename())
-        return false;
+        if (!targetfile->Rename())
+          return false;
 
-      backuplist.push_back(targetfile);
+        backuplist.push_back(targetfile);
 
-      bool success = diskFileMap.Insert(targetfile);
-      assert(success);
+        bool success = diskFileMap.Insert(targetfile);
+        assert(success);
 
-      // We no longer have a target file
-      sourcefile->SetTargetExists(false);
-      sourcefile->SetTargetFile(0);
+        // We no longer have a target file
+        sourcefile->SetTargetExists(false);
+        sourcefile->SetTargetFile(0);
+      }
     }
 
     ++sf;
@@ -2197,28 +2230,30 @@ bool Par2Repairer::RenameTargetFiles(void)
   while (sf != sourcefiles.end() && filenumber < mainpacket->TotalFileCount())
   {
     Par2RepairerSourceFile *sourcefile = *sf;
-
-    // If there is no targetfile and there is a complete version
-    if (sourcefile->GetTargetFile() == 0 &&
-        sourcefile->GetCompleteFile() != 0)
+    if (sourcefile)
     {
-      DiskFile *targetfile = sourcefile->GetCompleteFile();
+      // If there is no targetfile and there is a complete version
+      if (sourcefile->GetTargetFile() == 0 &&
+          sourcefile->GetCompleteFile() != 0)
+      {
+        DiskFile *targetfile = sourcefile->GetCompleteFile();
 
-      // Rename it
-      diskFileMap.Remove(targetfile);
+        // Rename it
+        diskFileMap.Remove(targetfile);
 
-      if (!targetfile->Rename(sourcefile->TargetFileName()))
-        return false;
+        if (!targetfile->Rename(sourcefile->TargetFileName()))
+          return false;
 
-      bool success = diskFileMap.Insert(targetfile);
-      assert(success);
+        bool success = diskFileMap.Insert(targetfile);
+        assert(success);
 
-      // This file is now the target file
-      sourcefile->SetTargetExists(true);
-      sourcefile->SetTargetFile(targetfile);
+        // This file is now the target file
+        sourcefile->SetTargetExists(true);
+        sourcefile->SetTargetFile(targetfile);
 
-      // We have one more complete file
-      completefilecount++;
+        // We have one more complete file
+        completefilecount++;
+      }
     }
 
     ++sf;
@@ -2239,47 +2274,49 @@ bool Par2Repairer::CreateTargetFiles(void)
   while (sf != sourcefiles.end() && filenumber < mainpacket->TotalFileCount())
   {
     Par2RepairerSourceFile *sourcefile = *sf;
-
-    // If the file does not exist
-    if (!sourcefile->GetTargetExists())
+    if (sourcefile)
     {
-      DiskFile *targetfile = new DiskFile(sout, serr);
-      std::string filename = sourcefile->TargetFileName();
-      u64 filesize = sourcefile->GetDescriptionPacket()->FileSize();
-
-      // Create the target file
-      if (!targetfile->Create(filename, filesize))
+      // If the file does not exist
+      if (!sourcefile->GetTargetExists())
       {
-        delete targetfile;
-        return false;
+        DiskFile *targetfile = new DiskFile(sout, serr);
+        std::string filename = sourcefile->TargetFileName();
+        u64 filesize = sourcefile->GetDescriptionPacket()->FileSize();
+
+        // Create the target file
+        if (!targetfile->Create(filename, filesize))
+        {
+          delete targetfile;
+          return false;
+        }
+
+        // This file is now the target file
+        sourcefile->SetTargetExists(true);
+        sourcefile->SetTargetFile(targetfile);
+
+        // Remember this file
+        bool success = diskFileMap.Insert(targetfile);
+        assert(success);
+
+        u64 offset = 0;
+        std::vector<DataBlock>::iterator tb = sourcefile->TargetBlocks();
+
+        // Allocate all of the target data blocks
+        while (offset < filesize)
+        {
+          DataBlock &datablock = *tb;
+
+          datablock.SetLocation(targetfile, offset);
+          datablock.SetLength(std::min(blocksize, filesize-offset));
+
+          offset += blocksize;
+          ++tb;
+        }
+
+        // Add the file to the list of those that will need to be verified
+        // once the repair has completed.
+        verifylist.push_back(sourcefile);
       }
-
-      // This file is now the target file
-      sourcefile->SetTargetExists(true);
-      sourcefile->SetTargetFile(targetfile);
-
-      // Remember this file
-      bool success = diskFileMap.Insert(targetfile);
-      assert(success);
-
-      u64 offset = 0;
-      std::vector<DataBlock>::iterator tb = sourcefile->TargetBlocks();
-
-      // Allocate all of the target data blocks
-      while (offset < filesize)
-      {
-        DataBlock &datablock = *tb;
-
-        datablock.SetLocation(targetfile, offset);
-        datablock.SetLength(std::min(blocksize, filesize-offset));
-
-        offset += blocksize;
-        ++tb;
-      }
-
-      // Add the file to the list of those that will need to be verified
-      // once the repair has completed.
-      verifylist.push_back(sourcefile);
     }
 
     ++sf;

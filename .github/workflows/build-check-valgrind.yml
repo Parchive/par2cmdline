@@ -1,0 +1,34 @@
+name: par2cmdline CI Linux (valgrind)
+
+on:
+  workflow_call:
+
+jobs:
+  build-check-valgrind:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v7
+
+    - name: Install valgrind
+      run: sudo apt-get update && sudo apt-get install -y valgrind
+
+    - name: Build
+      run: |
+        ./automake.sh
+        ./configure
+        make -j"$(nproc)"
+
+    # Runs tests
+    # The shell scripts use the PARVALGRINDOPTS env var when set.
+    #
+    # The suppressions file silences known false positives from the libgomp
+    # (OpenMP) thread pool
+    - name: Run tests under valgrind
+      env:
+        PARVALGRINDOPTS: --leak-check=full --error-exitcode=1 --errors-for-leak-kinds=all --quiet --suppressions=${{ github.workspace }}/valgrind.supp
+      run: make check
+
+    - name: Output logs to gain insights
+      if: always()
+      run: find ./tests/ -mindepth 1 -maxdepth 1 -type f -iname '*.log' | sort -V | while read -r logfile; do echo "==="; echo "$logfile"; echo "==="; cat "$logfile"; done

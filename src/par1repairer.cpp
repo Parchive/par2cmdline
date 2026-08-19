@@ -63,6 +63,24 @@ Par1Repairer::Par1Repairer(std::ostream &sout, std::ostream &serr, const NoiseLe
 {
 }
 
+// Test whether filename has a .PAR / .par / .pNN extension.
+bool Par1Repairer::IsParFilename(const std::string &filename)
+{
+  std::string::size_type where = filename.find_last_of('.');
+  if (where == std::string::npos)
+    return false;
+
+  std::string tail = filename.substr(where + 1);
+  if (tail.size() < 3)
+    return false;
+
+  if (tail[0] != 'P' && tail[0] != 'p')
+    return false;
+
+  return ((tail[1] == 'A' || tail[1] == 'a') && (tail[2] == 'R' || tail[2] == 'r'))
+      || (isdigit(static_cast<unsigned char>(tail[1])) && isdigit(static_cast<unsigned char>(tail[2])));
+}
+
 Par1Repairer::~Par1Repairer(void)
 {
   delete [] (u8*)inputbuffer;
@@ -405,12 +423,15 @@ bool Par1Repairer::LoadRecoveryFile(std::string filename)
         // Process until we run out of files or data
         while (remaining > 0 && fileindex < fileheader.numberoffiles)
         {
+          // Check that there is enough data remaining to read the fixed portion
+          if (remaining < sizeof(PAR1FILEENTRY))
+            break;
+
           // Copy fixed portion of file entry
           memcpy((void*)fileentry, (void*)current, sizeof(PAR1FILEENTRY));
 
-          // Is there enough data remaining
-          if (remaining < sizeof(fileentry->entrysize) ||
-              remaining < fileentry->entrysize)
+          // Is the entry's declared size consistent with the remaining data
+          if (remaining < fileentry->entrysize)
             break;
 
           // Check the length of the filename
@@ -550,20 +571,9 @@ bool Par1Repairer::LoadOtherRecoveryFiles(std::string filename)
 
     // Find the file extension
     where = filename.find_last_of('.');
-    if (where != std::string::npos)
+    if (where != std::string::npos && IsParFilename(filename))
     {
-      std::string tail = filename.substr(where+1);
-
-      // Check the file extension is the correct form
-      if ((tail[0] == 'P' || tail[0] == 'p') &&
-          (
-            ((tail[1] == 'A' || tail[1] == 'a') && (tail[2] == 'R' || tail[2] == 'r'))
-            ||
-            (isdigit(tail[1]) && isdigit(tail[2]))
-          ))
-      {
-        LoadRecoveryFile(filename);
-      }
+      LoadRecoveryFile(filename);
     }
   }
 
@@ -581,20 +591,9 @@ bool Par1Repairer::LoadExtraRecoveryFiles(const std::vector<std::string> &extraf
 
     // Find the file extension
     std::string::size_type where = filename.find_last_of('.');
-    if (where != std::string::npos)
+    if (where != std::string::npos && IsParFilename(filename))
     {
-      std::string tail = filename.substr(where+1);
-
-      // Check the file extension is the correct form
-      if ((tail[0] == 'P' || tail[0] == 'p') &&
-          (
-            ((tail[1] == 'A' || tail[1] == 'a') && (tail[2] == 'R' || tail[2] == 'r'))
-            ||
-            (isdigit(tail[1]) && isdigit(tail[2]))
-          ))
-      {
-        LoadRecoveryFile(filename);
-      }
+      LoadRecoveryFile(filename);
     }
   }
 
@@ -687,20 +686,9 @@ bool Par1Repairer::VerifyExtraFiles(const std::vector<std::string> &extrafiles)
 
     // Find the file extension
     std::string::size_type where = filename.find_last_of('.');
-    if (where != std::string::npos)
+    if (where != std::string::npos && IsParFilename(filename))
     {
-      std::string tail = filename.substr(where+1);
-
-      // Check the file extension is the correct form
-      if ((tail[0] == 'P' || tail[0] == 'p') &&
-          (
-            ((tail[1] == 'A' || tail[1] == 'a') && (tail[2] == 'R' || tail[2] == 'r'))
-            ||
-            (isdigit(tail[1]) && isdigit(tail[2]))
-          ))
-      {
-        skip = true;
-      }
+      skip = true;
     }
 
     if (!skip)

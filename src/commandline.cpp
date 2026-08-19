@@ -1108,7 +1108,7 @@ bool CommandLine::CheckValuesAndSetDefaults() {
       std::cout << "Ignoring non-existent source file: " << filename << std::endl;
     }
     // skip files outside basepath
-    else if (filename.find(basepath) == std::string::npos)
+    else if (filename.compare(0, basepath.size(), basepath) != 0)
     {
       std::cout << "Ignoring out of basepath source file: " << filename << std::endl;
     }

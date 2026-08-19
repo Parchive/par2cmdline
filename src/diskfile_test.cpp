@@ -19,6 +19,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <memory>
 
 #include "libpar2internal.h"
 
@@ -649,18 +650,18 @@ int test6() {
     }
 
     const size_t buffer_len = strlen(input1_contents)+1;  // for end-of-string
-    u8 *buffer = new u8[buffer_len];
+    std::unique_ptr<u8[]> buffer(new u8[buffer_len]);
     // put end-of-string in buffer.
     buffer[buffer_len-1] = '\0';
 
-    if (!diskfile.Read(0, buffer, buffer_len - 1, 2)) {
+    if (!diskfile.Read(0, buffer.get(), buffer_len - 1, 2)) {
       std::cout << "Read whole file returned false" << std::endl;
       return 1;
     }
 
-    if (std::string(input1_contents) != (char *) buffer) {
+    if (std::string(input1_contents) != (char *) buffer.get()) {
       std::cout << "Read did not read contents correctly" << std::endl;
-      std::cout << "read     \"" << buffer << "\"" << std::endl;
+      std::cout << "read     \"" << buffer.get() << "\"" << std::endl;
       std::cout << "expected \"" << input1_contents << "\"" << std::endl;
       return 1;
     }
@@ -704,24 +705,24 @@ int test6() {
     }
 
     const size_t buffer_len = strlen(input2_contents)+1;  // for end-of-string
-    u8 *buffer = new u8[buffer_len];
+    std::unique_ptr<u8[]> buffer(new u8[buffer_len]);
     // put end-of-string in buffer.
     buffer[buffer_len-1] = '\0';
 
 
     size_t midpoint = strlen(input2_contents) - 2;
-    if (!diskfile.Read(midpoint, buffer + midpoint, strlen(input2_contents) - midpoint, 4)) {
+    if (!diskfile.Read(midpoint, buffer.get() + midpoint, strlen(input2_contents) - midpoint, 4)) {
       std::cout << "Read second half of file returned false" << std::endl;
       return 1;
     }
-    if (!diskfile.Read(0, buffer, midpoint, 3)) {
+    if (!diskfile.Read(0, buffer.get(), midpoint, 3)) {
       std::cout << "Read first half of file returned false" << std::endl;
       return 1;
     }
 
-    if (std::string(input2_contents) != (char *) buffer) {
+    if (std::string(input2_contents) != (char *) buffer.get()) {
       std::cout << "Read did not read contents correctly" << std::endl;
-      std::cout << "read     \"" << buffer << "\"" << std::endl;
+      std::cout << "read     \"" << buffer.get() << "\"" << std::endl;
       std::cout << "expected \"" << input2_contents << "\"" << std::endl;
       return 1;
     }

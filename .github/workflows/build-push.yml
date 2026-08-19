@@ -10,6 +10,9 @@ jobs:
   build-check-linux:
     uses: ./.github/workflows/build-check-linux.yml
 
+  build-check-sanitizers:
+    uses: ./.github/workflows/build-check-sanitizers.yml
+
   build-check-mingw:
     uses: ./.github/workflows/build-check-mingw.yml
 

@@ -1,0 +1,14 @@
+# libgomp (the OpenMP runtime) keeps its worker thread pool alive for the
+# lifetime of the process. The TLS/DTV blocks that glibc allocates for the
+# pooled threads (via pthread_create -> _dl_allocate_tls) are only released
+# when the pool is torn down at exit, which valgrind cannot track reliably.
+# These "possibly lost" reports are false positives
+{
+   libgomp_thread_pool_tls
+   Memcheck:Leak
+   match-leak-kinds: possible,reachable
+   fun:calloc
+   ...
+   fun:pthread_create*
+   obj:*/libgomp.so*
+}

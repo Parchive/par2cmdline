@@ -45,6 +45,9 @@ protected:
   // Load the main PAR file
   bool LoadRecoveryFile(std::string filename);
 
+  // Test whether a filename has a .PAR / .par / .pNN extension
+  static bool IsParFilename(const std::string &filename);
+
   // Load other PAR files related to the main PAR file
   bool LoadOtherRecoveryFiles(std::string filename);
 
