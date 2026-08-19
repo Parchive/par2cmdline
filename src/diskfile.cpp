@@ -440,17 +440,15 @@ bool DiskFile::FileExists(std::string filename)
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #ifdef HAVE_FSEEKO
-# define OffsetType off_t
-# define MaxOffset ((off_t)0x7fffffffffffffffULL)
 # define fseek fseeko
+#endif
+
+#define OffsetType off_t
+
+#if defined(HAVE_FSEEKO) || (_FILE_OFFSET_BITS == 64)
+# define MaxOffset ((OffsetType)0x7fffffffffffffffULL)
 #else
-# if _FILE_OFFSET_BITS == 64
-#  define OffsetType unsigned long long
-#  define MaxOffset 0x7fffffffffffffffULL
-# else
-#  define OffsetType long
-#  define MaxOffset 0x7fffffffUL
-# endif
+# define MaxOffset ((OffsetType)0x7fffffffUL)
 #endif
 
 
@@ -671,13 +669,13 @@ void DiskFile::Prefetch(u64 _offset, u64 _length)
     return;
 
 #if defined(HAVE_POSIX_FADVISE)
-  posix_fadvise(fileno(file), (off_t)_offset, (off_t)_length, POSIX_FADV_WILLNEED);
+  posix_fadvise(fileno(file), (OffsetType)_offset, (OffsetType)_length, POSIX_FADV_WILLNEED);
 #elif defined(F_RDADVISE)
   // The count is only an int, so a longer range has to be asked for in pieces
   while (_length > 0)
   {
     struct radvisory ra;
-    ra.ra_offset = (off_t)_offset;
+    ra.ra_offset = (OffsetType)_offset;
     ra.ra_count = (int)std::min(_length, (u64)1 << 30);
 
     if (fcntl(fileno(file), F_RDADVISE, &ra) == -1)
@@ -714,7 +712,7 @@ bool DiskFile::Read(u64 _offset, void *buffer, size_t length, LengthType maxleng
     else
       want = length;
 
-    ssize_t got = pread(fd, buffer, want, (off_t)_offset);
+    ssize_t got = pread(fd, buffer, want, (OffsetType)_offset);
     if (got != (ssize_t)want)
     {
       // NOTE: This can happen on error or when hitting the end-of-file.
