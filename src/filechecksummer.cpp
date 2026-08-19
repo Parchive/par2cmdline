@@ -32,11 +32,13 @@ static char THIS_FILE[]=__FILE__;
 
 FileCheckSummer::FileCheckSummer(DiskFile   *_diskfile,
                                  u64         _blocksize,
-                                 const u32 (&_windowtable)[256])
+                                 const u32 (&_windowtable)[256],
+                                 bool        _computefilehashes)
 : diskfile(_diskfile)
 , blocksize(_blocksize)
 , windowtable(_windowtable)
 , filesize(_diskfile->FileSize())
+, computefilehashes(_computefilehashes)
 , currentoffset(0)
 , buffer(0)
 , outpointer(0)
@@ -154,7 +156,8 @@ bool FileCheckSummer::Fill(bool longfill)
     if (!diskfile->Read(readoffset, tailpointer, want))
       return false;
 
-    UpdateHashes(readoffset, tailpointer, want);
+    if (computefilehashes)
+      UpdateHashes(readoffset, tailpointer, want);
     readoffset += want;
     tailpointer += want;
   }
@@ -203,6 +206,8 @@ void FileCheckSummer::UpdateHashes(u64 offset, const void *buffer, size_t length
 // Return the full file hash and the 16k file hash
 void FileCheckSummer::GetFileHashes(MD5Hash &hashfull, MD5Hash &hash16k) const
 {
+  assert(computefilehashes);
+
   // Compute the hash of the first 16k
   MD5Context context = context16k;
   context.Final(hash16k);

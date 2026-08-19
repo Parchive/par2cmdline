@@ -1559,8 +1559,8 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
                                 const bool              renameonly,   // [in]
                                 Par2RepairerSourceFile* &sourcefile,  // [in/out]
                                 MatchType               &matchtype,   // [out]
-                                MD5Hash                 &hashfull,    // [out]
-                                MD5Hash                 &hash16k,     // [out]
+                                MD5Hash                 &hashfull,    // [out] only set if there are unverifiable source files
+                                MD5Hash                 &hash16k,     // [out] only set if there are unverifiable source files
                                 u32                     &count)       // [out]
 {
   // Remember which file we wanted to match
@@ -1595,8 +1595,13 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
     shortname = name;
   }
 
+  // The MD5 hash of the whole file is only needed to match against source
+  // files which have no verification packet. Every block matched below has
+  // had its own MD5 checked, so a full match implies the whole file hash.
+  const bool computefilehashes = !unverifiablesourcefiles.empty();
+
   // Create the checksummer for the file and start reading from it
-  FileCheckSummer filechecksummer(diskfile, blocksize, windowtable);
+  FileCheckSummer filechecksummer(diskfile, blocksize, windowtable, computefilehashes);
   if (!filechecksummer.Start())
     return false;
 
@@ -1811,7 +1816,8 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
   }
 
   // Get the Full and 16k hash values of the file
-  filechecksummer.GetFileHashes(hashfull, hash16k);
+  if (computefilehashes)
+    filechecksummer.GetFileHashes(hashfull, hash16k);
 
   if (noiselevel >= nlDebug)
   {
@@ -1826,13 +1832,14 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
   // Did we make any matches at all
   if (count > 0)
   {
-    // If this still might be a perfect match, check the
-    // hashes, file size, and number of blocks to confirm.
+    // If this still might be a perfect match, check the file size and
+    // number of blocks to confirm. The file hashes need not be checked:
+    // a full match means every block of the file was matched, in order,
+    // starting at offset 0, and each of those matches required the MD5
+    // hash of the block to be verified.
     if (matchtype            != eFullMatch ||
         count                != sourcefile->GetVerificationPacket()->BlockCount() ||
-        diskfile->FileSize() != sourcefile->GetDescriptionPacket()->FileSize() ||
-        hashfull             != sourcefile->GetDescriptionPacket()->HashFull() ||
-        hash16k              != sourcefile->GetDescriptionPacket()->Hash16k())
+        diskfile->FileSize() != sourcefile->GetDescriptionPacket()->FileSize())
     {
       matchtype = ePartialMatch;
 
