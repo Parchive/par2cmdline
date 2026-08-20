@@ -69,6 +69,12 @@ par2_LDADD = libpar2.a
 
 LDADD = -lstdc++
 AM_CPPFLAGS = -I$(top_srcdir)/include
+
+AM_TESTS_ENVIRONMENT = \
+	CXX='$(CXX)'; \
+	CXXFLAGS='$(CXXFLAGS)'; \
+	PTHREAD_FLAGS='$(PTHREAD_FLAGS)'; \
+	export CXX CXXFLAGS PTHREAD_FLAGS;
 AM_CXXFLAGS = -Wall -std=c++14 $(PTHREAD_FLAGS)
 AM_LDFLAGS = $(PTHREAD_FLAGS)
 
@@ -203,7 +209,9 @@ EXTRA_DIST = \
 	tests/test49 \
 	tests/test49.ps1 \
 	tests/unit_tests \
-	tests/unit_tests.ps1
+	tests/unit_tests.ps1 \
+	tests/consumer_build \
+	tests/consumer.cpp
 
 
 # Programs that need to be compiled for the test suite.
@@ -304,6 +312,7 @@ TESTS = \
 	tests/test48 \
 	tests/test49 \
 	tests/utf8_test \
+	tests/consumer_build \
 	tests/unit_tests
 
 install-exec-hook :
