@@ -86,6 +86,13 @@ protected:
   // Work out what the packets loaded so far describe
   Result PreparePackets(void);
 
+  // Verify the source files and work out whether a repair is needed
+  Result VerifyFiles(const std::string &basepath,
+                     std::vector<std::string> &extrafiles,
+                     const bool renameonly);
+  // Rebuild whatever is missing or damaged
+  Result RepairFiles(const size_t memorylimit, const std::string &basepath);
+
   // Load packets from the specified file
   bool LoadPacketsFromFile(std::string filename);
   // Finish loading a recovery packet
@@ -200,7 +207,7 @@ protected:
 
   // Make the buffers the files being scanned read into, or give them up when
   // no file will have its blocks checked where they are expected to be
-  void ResetScanBuffers(const size_t filecount, const size_t memorylimit);
+  void ResetScanBuffers(const size_t filecount);
 
   // The number of files to read at once, which is what limits how many are
   // open at a time rather than how much of the work they get
