@@ -1,8 +1,8 @@
 #!/bin/sh
 
-# Build a program against the public header and the static library the way an
-# embedding application does: only the public include directory on the include
-# path, and no config.h.
+# Build and run a program against the public header and the static library the
+# way an embedding application does: only the public include directory on the
+# include path, and no config.h.
 
 execdir="$PWD"
 
@@ -50,8 +50,19 @@ $CXX $CXXFLAGS -std=c++17 -I"$srcdir/include" \
      "$execdir/libpar2.a" $PTHREAD_FLAGS $LIBS \
   || { echo "ERROR: could not build against <par2/libpar2.h>" ; exit 1; } >&2
 
-./consumer \
-  || { echo "ERROR: the program built against <par2/libpar2.h> failed" ; exit 1; } >&2
+# A program built for another platform can only be run through wine
+if [ -n "$EXEEXT" ] && [ "`which wine`" = "" ]; then
+    echo "Skipping the run: the program was built for another platform."
+    cd "$execdir"
+    rm -rf "run$testname"
+    exit 77
+fi
+
+if [ -n "$EXEEXT" ]; then
+    wine ./consumer || { echo "ERROR: the consumer reported a failure" ; exit 1; } >&2
+else
+    ./consumer || { echo "ERROR: the consumer reported a failure" ; exit 1; } >&2
+fi
 
 cd "$execdir"
 rm -rf "run$testname"
