@@ -167,7 +167,9 @@ Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
 
 # Find all test*.ps1 files (excluding testfuncs.ps1, unit_tests.ps1, run_tests.ps1, build_unit_tests.ps1)
-$testScripts = Get-ChildItem -Path $script:ScriptDir -Filter "test*.ps1" |
+# plus consumer_build.ps1, which is an integration test under a name of its own
+$testScripts = @(Get-ChildItem -Path $script:ScriptDir -Filter "test*.ps1") +
+    @(Get-ChildItem -Path $script:ScriptDir -Filter "consumer_build.ps1") |
     Where-Object {
         $_.Name -ne "testfuncs.ps1" -and
         $_.Name -notlike "*_test*.ps1" -and
