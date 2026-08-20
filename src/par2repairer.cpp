@@ -57,6 +57,7 @@ Par2Repairer::Par2Repairer(std::ostream &sout, std::ostream &serr, const NoiseLe
 , backends(backends)
 , observer(0)
 , cancelled(false)
+, packetsloaded(0)
 , searchpath()
 , basepath()
 , totalthreads(default_threads())
@@ -68,6 +69,8 @@ Par2Repairer::Par2Repairer(std::ostream &sout, std::ostream &serr, const NoiseLe
 , totaldatasize(0)
 , recoverypacketmap()
 , diskFileMap()
+, packetfiles()
+, emptypar2files()
 , sourcefilemap()
 , sourcefiles()
 , verifylist()
@@ -168,13 +171,7 @@ Result Par2Repairer::Process(
   basepath = _basepath;
   std::vector<std::string> extrafiles = _extrafiles;
 
-  // Set the number of threads
-  totalthreads = resolve_threads(nthreads);
-
-  // No more files are read at once than there are threads to hash them with,
-  // and never none whatever the caller asked for
-  filethreads = std::max(1u, std::min(_filethreads, totalthreads));
-
+  ApplyThreadCounts(nthreads, _filethreads);
   ApplyMemoryLimit(memorylimit);
 
   if (!LoadPackets(parfilename, extrafiles) || IsCancelled())
@@ -214,11 +211,23 @@ Result Par2Repairer::Process(
   return eSuccess;
 }
 
+// Apply the thread counts, leaving either at its default when it is zero
+void Par2Repairer::ApplyThreadCounts(const u32 _nthreads, const u32 _filethreads)
+{
+  totalthreads = resolve_threads(_nthreads);
+
+  // No more files are read at once than there are threads to hash them with,
+  // and never none whatever the caller asked for
+  filethreads = std::max(1u, std::min(_filethreads != 0 ? _filethreads : filethreads, totalthreads));
+}
+
 // Verify the source files and work out whether a repair is needed or possible
 Result Par2Repairer::VerifyFiles(const std::string &basepath,
                                  std::vector<std::string> &extrafiles,
                                  const bool renameonly)
 {
+  renamedlist.clear();
+
   // Create a verification hash table for all files for which we have not
   // found a complete version of the file and for which we have
   // a verification packet
@@ -382,6 +391,34 @@ Result Par2Repairer::RepairFiles(const size_t memorylimit, const std::string &ba
 }
 
 
+// The source file the set records under that name
+Par2RepairerSourceFile *Par2Repairer::FindSourceFile(const std::string &filename) const
+{
+  auto sf = sourcefilesbyname.find(filename);
+
+  return sf == sourcefilesbyname.end() ? 0 : sf->second;
+}
+
+// What the packets loaded so far describe
+bool Par2Repairer::GetSetInfo(Par2SetInfo *info) const
+{
+  if (0 == info || 0 == mainpacket)
+    return false;
+
+  *info = Par2SetInfo();
+
+  memcpy(info->setid.data(), setid.hash, sizeof(setid.hash));
+  info->blocksize = blocksize;
+  info->datablocks = sourceblockcount;
+  info->recoverablefilecount = mainpacket->RecoverableFileCount();
+  info->otherfilecount = mainpacket->TotalFileCount() - mainpacket->RecoverableFileCount();
+  info->datasize = totaldatasize;
+  if (creatorpacket)
+    info->creator = creatorpacket->Client();
+
+  return true;
+}
+
 // List the files the loaded packets describe
 bool Par2Repairer::GetFileInfo(std::vector<Par2FileInfo> *files) const
 {
@@ -400,10 +437,15 @@ bool Par2Repairer::GetFileInfo(std::vector<Par2FileInfo> *files) const
 
     const VerificationPacket *verificationpacket = sourcefile->GetVerificationPacket();
 
+    const DescriptionPacket *descriptionpacket = sourcefile->GetDescriptionPacket();
+
     Par2FileInfo info;
-    info.filename = sourcefile->GetDescriptionPacket()->FileName();
-    info.filesize = sourcefile->GetDescriptionPacket()->FileSize();
+    info.filename = descriptionpacket->FileName();
+    info.localfilename = sourcefile->TargetFileName();
+    info.filesize = descriptionpacket->FileSize();
     info.blockcount = verificationpacket ? verificationpacket->BlockCount() : 0;
+    memcpy(info.hashfull.data(), descriptionpacket->HashFull().hash, 16);
+    memcpy(info.hash16k.data(), descriptionpacket->Hash16k().hash, 16);
 
     files->push_back(info);
   }
@@ -411,14 +453,86 @@ bool Par2Repairer::GetFileInfo(std::vector<Par2FileInfo> *files) const
   return true;
 }
 
+// What each renamed file was found as, against what the set calls it
+bool Par2Repairer::GetRenamedFiles(std::vector<std::pair<std::string, std::string> > *files) const
+{
+  if (0 == files)
+    return false;
+
+  files->clear();
+
+  for (const auto &rf : renamedlist)
+  {
+    files->emplace_back(rf.second, rf.first);
+  }
+
+  return true;
+}
+
+// The files this repair renamed out of the way, which is what par2's own
+// purge deletes. Only files par2 renamed itself are listed, never a file the
+// caller supplied.
+bool Par2Repairer::GetBackupFiles(std::vector<std::string> *files) const
+{
+  if (0 == files)
+    return false;
+
+  files->clear();
+
+  for (auto *bf : backuplist)
+  {
+    files->push_back(bf->FileName());
+  }
+
+  return true;
+}
+
+// The numbers behind the last verification
+bool Par2Repairer::GetVerifyResult(Par2VerifyResult *result) const
+{
+  if (0 == result || 0 == mainpacket)
+    return false;
+
+  result->completefilecount = completefilecount;
+  result->renamedfilecount = renamedfilecount;
+  result->damagedfilecount = damagedfilecount;
+  result->missingfilecount = missingfilecount;
+  result->availableblockcount = availableblockcount;
+  result->missingblockcount = missingblockcount;
+  result->recoveryblockcount = (u32)recoverypacketmap.size();
+
+  return true;
+}
+
 // Accept the caller's word that these blocks are intact
-void Par2Repairer::SetKnownBlocks(const std::string &filename,
+bool Par2Repairer::SetKnownBlocks(const std::string &filename,
                                   const std::vector<bool> &blocks)
 {
   if (blocks.empty())
+  {
     knownblocks.erase(filename);
-  else
-    knownblocks[filename] = blocks;
+    return true;
+  }
+
+  // Checked against the set where it is already known, so that a name or a
+  // length which would never be used is refused rather than quietly ignored.
+  // Nothing is known before the packets are read, and the check is made again
+  // when the blocks come to be used.
+  const Par2RepairerSourceFile *sourcefile = FindSourceFile(filename);
+  if (0 != sourcefile)
+  {
+    const VerificationPacket *verificationpacket = sourcefile->GetVerificationPacket();
+    if (0 == verificationpacket || blocks.size() != verificationpacket->BlockCount())
+      return false;
+  }
+  else if (!sourcefilesbyname.empty())
+  {
+    return false;
+  }
+
+  knownblocks[filename] = blocks;
+
+  return true;
 }
 
 // Use the blocks the caller has vouched for instead of scanning the file. The
@@ -494,16 +608,18 @@ static std::string ReportedName(const Par2RepairerSourceFile *sourcefile, const 
 // names are based on it, and from any additional files supplied by the caller.
 // Files that have already been loaded are skipped.
 bool Par2Repairer::LoadPackets(const std::string &parfilename,
-                              const std::vector<std::string> &extrafiles)
+                              const std::vector<std::string> &extrafiles,
+                              bool reread)
 {
   // Determine the searchpath from the location of the main PAR2 file
   std::string name;
   DiskFile::SplitFilename(parfilename, searchpath, name);
 
-  par2list.push_back(parfilename);
+  if (std::find(par2list.begin(), par2list.end(), parfilename) == par2list.end())
+    par2list.push_back(parfilename);
 
-  // Load packets from the main PAR2 file
-  if (!LoadPacketsFromFile(searchpath + name))
+  // Load packets from the main PAR2 file, which is the only one reread applies to
+  if (!LoadPacketsFromFile(searchpath + name, reread))
     return false;
 
   // Load packets from other PAR2 files with names based on the original PAR2 file
@@ -522,6 +638,7 @@ bool Par2Repairer::LoadPackets(const std::string &parfilename,
 Result Par2Repairer::PreparePackets(void)
 {
   sourcefiles.clear();
+  sourcefilesbyname.clear();
 
   // Check that the packets are consistent and discard any that are not
   if (!CheckPacketConsistency())
@@ -537,17 +654,19 @@ Result Par2Repairer::PreparePackets(void)
   if (!AllocateSourceBlocks())
     return eLogicError;
 
+  // The name each source file has on this system, for looking one up by it
+  for (auto *sourcefile : sourcefiles)
+  {
+    if (0 == sourcefile || 0 == sourcefile->GetDescriptionPacket())
+      continue;
+
+    sourcefilesbyname.insert(std::make_pair(sourcefile->GetDescriptionPacket()->FileName(), sourcefile));
+  }
+
   if (observer)
   {
     Par2SetInfo info;
-    memcpy(info.setid.data(), setid.hash, sizeof(setid.hash));
-    info.blocksize = blocksize;
-    info.datablocks = sourceblockcount;
-    info.recoverablefilecount = mainpacket->RecoverableFileCount();
-    info.otherfilecount = mainpacket->TotalFileCount() - mainpacket->RecoverableFileCount();
-    info.datasize = totaldatasize;
-    if (creatorpacket)
-      info.creator = creatorpacket->Client();
+    GetSetInfo(&info);
 
     observer->OnSetInfo(info);
   }
@@ -555,24 +674,52 @@ Result Par2Repairer::PreparePackets(void)
   return eSuccess;
 }
 
-// Load the packets from the specified file
-bool Par2Repairer::LoadPacketsFromFile(std::string filename)
+// Load the packets from the specified file. reread asks for a file that has
+// already been processed to be read again.
+bool Par2Repairer::LoadPacketsFromFile(const std::string &filename, bool reread)
 {
-  // Skip the file if it has already been processed
-  if (diskFileMap.Find(filename) != 0)
+  DiskFile *known = diskFileMap.Find(filename);
+
+  // Skip the file if it has already been processed, unless a cancel cut the
+  // reading of it short
+  std::map<const DiskFile*, bool>::const_iterator pf = packetfiles.find(known);
+  const bool readtoend = (pf == packetfiles.end() || pf->second);
+
+  if (known != 0 && !reread && readtoend)
   {
     return true;
   }
 
-  DiskFile *diskfile = new DiskFile(sout, serr);
-
-  // Open the file
-  if (!diskfile->Open(filename))
+  // Nor one which was read to its end and held nothing new
+  if (0 == known && !reread && emptypar2files.count(filename) != 0)
   {
-    // If we could not open the file, ignore the error and
-    // proceed to the next file
-    delete diskfile;
     return true;
+  }
+
+  // Reuse the DiskFile of a known file: packets already loaded from it hold
+  // that pointer. Reopening it refreshes the recorded size. The map owns it.
+  const bool owned = (0 == known);
+  DiskFile *diskfile = known;
+
+  if (0 != known)
+  {
+    known->Close();
+
+    if (!known->Open(filename))
+      return true;
+  }
+  else
+  {
+    diskfile = new DiskFile(sout, serr);
+
+    // Open the file
+    if (!diskfile->Open(filename))
+    {
+      // If we could not open the file, ignore the error and
+      // proceed to the next file
+      delete diskfile;
+      return true;
+    }
   }
 
   if (noiselevel > nlSilent)
@@ -591,6 +738,9 @@ bool Par2Repairer::LoadPacketsFromFile(std::string filename)
 
   // How many recovery packets were there
   u32 recoverypackets = 0;
+
+  // Whether a cancel stopped the reading before the end of the file
+  bool cutshort = false;
 
   // How big is the file
   u64 filesize = diskfile->FileSize();
@@ -613,7 +763,10 @@ bool Par2Repairer::LoadPacketsFromFile(std::string filename)
     while (offset + sizeof(PACKET_HEADER) <= filesize)
     {
       if (IsCancelled())
+      {
+        cutshort = true;
         break;
+      }
 
       progress.Update(offset);
 
@@ -773,6 +926,8 @@ bool Par2Repairer::LoadPacketsFromFile(std::string filename)
   diskfile->Close();
 
   // Did we actually find any interesting packets
+  packetsloaded += packets;
+
   if (packets > 0)
   {
     if (noiselevel > nlQuiet)
@@ -783,14 +938,31 @@ bool Par2Repairer::LoadPacketsFromFile(std::string filename)
     }
 
     // Remember that the file was processed
-    bool success = diskFileMap.Insert(diskfile);
-    assert(success);
+    if (owned)
+    {
+      bool success = diskFileMap.Insert(diskfile);
+      assert(success);
+    }
+
+    packetfiles[diskfile] = !cutshort;
   }
   else
   {
     if (noiselevel > nlQuiet)
       sout << "No new packets found" << std::endl;
-    delete diskfile;
+
+    if (owned)
+    {
+      // Remembered by name only
+      if (!cutshort)
+        emptypar2files.insert(filename);
+
+      delete diskfile;
+    }
+    else
+    {
+      packetfiles[diskfile] = !cutshort;
+    }
   }
 
   if (observer)
@@ -1038,16 +1210,21 @@ bool Par2Repairer::LoadPacketsFromOtherFiles(std::string filename)
   // Find files called "*.par2" or "name.*.par2"
 
   {
+    const std::set<std::string> known(par2list.begin(), par2list.end());
+    auto listed = [&](const std::string &file) {return known.count(file) != 0;};
+
     std::string wildcard = name.empty() ? "*.par2" : name + ".*.par2";
     std::unique_ptr< std::list<std::string> > files(
 					DiskFile::FindFiles(path, wildcard, false)
 					);
+    files->remove_if(listed);
     par2list.splice(par2list.end(), *files);
 
     std::string wildcardu = name.empty() ? "*.PAR2" : name + ".*.PAR2";
     std::unique_ptr< std::list<std::string> > filesu(
 					 DiskFile::FindFiles(path, wildcardu, false)
 					 );
+    filesu->remove_if(listed);
     par2list.splice(par2list.end(), *filesu);
 
     // Load packets from each file that was found
@@ -1221,9 +1398,6 @@ bool Par2Repairer::CreateSourceFileList(void)
     if (sourcefile)
     {
       sourcefile->ComputeTargetFileName(sout, serr, noiselevel, basepath);
-
-      // Need actual filesize on disk for mt-progress line
-      sourcefile->SetDiskFileSize();
     }
 
     sourcefiles.push_back(sourcefile);
@@ -1419,6 +1593,7 @@ bool Par2Repairer::VerifySourceFiles(const std::string& basepath, std::vector<st
     {
       sortedfiles.push_back(sourcefile);
       // Total filesizes for mt-progress line
+      sourcefile->SetDiskFileSize();
       mttotalsize += sourcefile->DiskFileSize();
      }
     else
@@ -1655,8 +1830,8 @@ bool Par2Repairer::VerifyDataFile(DiskFile *diskfile, Par2RepairerSourceFile *so
 bool Par2Repairer::MatchDataFile(DiskFile *diskfile, Par2RepairerSourceFile *&sourcefile, const std::string &basepath, ProgressMeter<u64> &progress, const bool renameonly, u32 &blocksfound)
 {
   MatchType matchtype; // What type of match was made
-  MD5Hash hashfull;    // The MD5 Hash of the whole file
-  MD5Hash hash16k;     // The MD5 Hash of the files 16k of the file
+  MD5Hash hashfull{};  // The MD5 Hash of the whole file
+  MD5Hash hash16k{};   // The MD5 Hash of the files 16k of the file
 
   // Are there any files that can be verified at the block level
   if (blockverifiable)
@@ -2213,6 +2388,16 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
                                               alignedmatch, alignedcount,
                                               hashfull, hash16k);
 
+  // Being told that none of the blocks are usable is an answer in itself, so
+  // the file is not searched after all
+  if (vouched && alignedcount == 0)
+  {
+    matchtype = eNoMatch;
+    count = 0;
+
+    return true;
+  }
+
   // The parts of the file which still have to be searched a byte at a time
   std::vector<std::pair<u64, u64> > searchranges;
 
@@ -2704,6 +2889,9 @@ void Par2Repairer::UpdateVerificationResults(void)
         else
         {
           renamedfilecount++;
+
+          renamedlist[sourcefile->TargetFileName()] =
+            sourcefile->GetCompleteFile()->FileName();
         }
 
         availableblockcount += sourcefile->BlockCount();

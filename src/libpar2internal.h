@@ -184,6 +184,10 @@ typedef unsigned int     size_t;
 #define MAX_CHUNK_SIZE 32*1048576 // too large chunks are likely detrimental to performance; set to 0 to disable
 #define SCAN_BATCH_PER_THREAD 2 // blocks in a batch for each thread checking it, so one which finishes early has more to take
 
+// How far either side of where a block should be that data skipping searches
+// when the caller sets no distance of its own
+#define DEFAULT_SKIP_LEAWAY 64
+
 #define LONGMULTIPLY
 
 // STL includes
@@ -278,6 +282,13 @@ u64 GetTotalPhysicalMemory(void);
 // the physical memory, and no less than 256MB on a machine with more, or 256MB
 // when the memory cannot be found
 size_t DefaultMemoryLimit(void);
+
+// The directory a PAR2 file is in, which is where the tool looks with no -B
+std::string BasePathFor(const std::string &parfilename);
+
+// A path with a separator appended unless it has one already. Empty is left
+// alone.
+std::string WithSeparator(const std::string &path);
 
 } // namespace par2
 

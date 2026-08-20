@@ -1033,23 +1033,10 @@ bool CommandLine::CheckValuesAndSetDefaults() {
       std::cout << "[DEBUG] parfilename: " << parfilename << std::endl;
     }
 
-    std::string dummy;
-    std::string path;
-    DiskFile::SplitFilename(parfilename, path, dummy);
-    basepath = DiskFile::GetCanonicalPathname(path);
-
-    // fallback
-    if ("" == basepath)
-    {
-      basepath = DiskFile::GetCanonicalPathname("./");
-    }
+    basepath = BasePathFor(parfilename);
   }
 
-  std::string lastchar = basepath.substr(basepath.length() -1);
-  if (PATHSEP != lastchar && ALTPATHSEP != lastchar)
-  {
-    basepath = basepath + PATHSEP;
-  }
+  basepath = WithSeparator(basepath);
 
   if (noiselevel >= nlDebug)
   {
@@ -1115,7 +1102,7 @@ bool CommandLine::CheckValuesAndSetDefaults() {
     {
       // Expect to find blocks within +/- 64 bytes of the expected
       // position relative to the last block that was found.
-      skipleaway = 64;
+      skipleaway = DEFAULT_SKIP_LEAWAY;
     }
   }
 
