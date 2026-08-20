@@ -21,6 +21,9 @@
 #include <iostream>
 #include <fstream>
 #include <stdlib.h>
+#ifndef _WIN32
+#include <unistd.h>
+#endif
 
 #include "commandline.h"
 
@@ -1757,6 +1760,90 @@ int test12() {
 }
 
 
+#ifndef _WIN32
+int test13_helper(const char *arg, const std::vector<std::string> &extrafiles)
+{
+  // copy args into argc/argv format
+  // buffer holds copy of arg, with ' ' replaced by '\0'
+  const int len = strlen(arg);
+  int argc = 0;
+  char *buffer = new char[len+1];
+  const char **argv = new const char*[len];
+  argv[argc]=&(buffer[0]);
+  argc++;
+  for (int i = 0; i < len; i++) {
+    buffer[i] = arg[i];
+    if (buffer[i] == ' ') {
+      buffer[i] = '\0';
+      argv[argc] = &(buffer[i+1]);
+      argc++;
+    }
+  }
+  buffer[len] = '\0';
+
+  CommandLine commandline;
+  if (!commandline.Parse(argc, argv)) {
+    std::cout << "CommandLine said it was unable to parse \"" << arg << "\"" << std::endl;
+    return 1;
+  }
+
+  if (!commandline.GetFollowLinks()) {
+    std::cout << "test13 fail followlinks  arg=" << arg << std::endl;
+    return 1;
+  }
+
+  if (commandline.GetExtraFiles() != extrafiles) {
+    std::cout << "test13 fail extrafiles  arg=" << arg << std::endl;
+    return 1;
+  }
+
+  delete [] buffer;
+  delete [] argv;
+
+  return 0;
+}
+#endif
+
+
+// test the "-L" (follow symlinks) option
+int test13() {
+#ifndef _WIN32
+  // create an input file and a symlink to it.
+  std::ofstream input1;
+  input1.open("test13_input1.txt");
+  input1 << "commandline_test test13 input1.txt\n";
+  input1.close();
+  remove("test13_link1.txt");
+  if (0 != symlink("test13_input1.txt", "test13_link1.txt")) {
+    std::cout << "Could not create symlink test13_link1.txt" << std::endl;
+    return 1;
+  }
+
+  // -L is only allowed when creating.
+  if (test9_helper("par2 repair -L foo.par2 test13_link1.txt"))
+    return 1;
+  if (test9_helper("par2 verify -L foo.par2 test13_link1.txt"))
+    return 1;
+
+  // without -L, a symlink is not accepted as a source file
+  // (so create fails because there are no source files).
+  if (test9_helper("par2 create foo.par2 test13_link1.txt"))
+    return 1;
+
+  // with -L, a symlink to a file is accepted as a source file.
+  std::vector<std::string> extrafiles;
+  extrafiles.push_back(DiskFile::GetCanonicalPathname("test13_link1.txt"));
+  if (test13_helper("par2 create -L foo.par2 test13_link1.txt", extrafiles))
+    return 1;
+
+  // delete files that were created at start of test.
+  remove("test13_input1.txt");
+  remove("test13_link1.txt");
+#endif
+  return 0;
+}
+
+
 int main() {
   std::cout << "Tests 1 through 4 were moved to libpar2_test." << std::endl;
 
@@ -1792,6 +1879,10 @@ int main() {
   }
   if (test12()) {
     std::cerr << "FAILED: test12" << std::endl;
+    return 1;
+  }
+  if (test13()) {
+    std::cerr << "FAILED: test13" << std::endl;
     return 1;
   }
 

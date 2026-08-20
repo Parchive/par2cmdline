@@ -68,6 +68,7 @@ CommandLine::CommandLine(void)
 , redundancysize(0)
 , redundancyset(false)
 , recursive(false)
+, followlinks(false)
 {
 }
 
@@ -143,6 +144,10 @@ void CommandLine::usage(void)
     "  -n<n>    : Number of recovery files (max 31) (don't use both -n and -l)\n"
     "  -R       : Recurse into subdirectories\n"
     "             (Be aware of wildcard shell expansion)\n"
+    "  -L       : Follow symlinks to files when scanning for source files\n"
+    "             (Use at your own risk: symlink targets may lie outside the\n"
+    "             basepath. Symlinks to directories are not followed.\n"
+    "             POSIX systems only)\n"
     "   @       : Process a listing of files specified in text (file) input \n"
     "             (eg. @filelist.txt, or bare @ to read from stdin) \n"
     "\n";
@@ -788,6 +793,20 @@ bool CommandLine::ReadArgs(int argc, const char * const *argv)
           }
           break;
 
+        case 'L':
+          {
+            if (operation == opCreate)
+            {
+              followlinks = true;
+            }
+            else
+            {
+              std::cerr << "Cannot specify -L (follow symlinks) unless creating." << std::endl;
+              return false;
+            }
+          }
+          break;
+
         case 'N':
           {
             if (operation == opCreate)
@@ -902,7 +921,7 @@ bool CommandLine::ReadArgs(int argc, const char * const *argv)
           std::string lpath, lname;
           DiskFile::SplitFilename(line, lpath, lname);
           std::unique_ptr< std::list<std::string> > filenames(
-            DiskFile::FindFiles(lpath, lname, recursive)
+            DiskFile::FindFiles(lpath, lname, recursive, followlinks)
           );
 
           if (filenames)
@@ -932,7 +951,7 @@ bool CommandLine::ReadArgs(int argc, const char * const *argv)
         std::string name;
         DiskFile::SplitFilename(argv[0], path, name);
         std::unique_ptr< std::list<std::string> > filenames(
-          DiskFile::FindFiles(path, name, recursive)
+          DiskFile::FindFiles(path, name, recursive, followlinks)
         );
 
         if (filenames)

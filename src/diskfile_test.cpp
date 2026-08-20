@@ -20,6 +20,9 @@
 #include <iostream>
 #include <fstream>
 #include <memory>
+#ifndef _WIN32
+#include <unistd.h>
+#endif
 
 #include "libpar2internal.h"
 
@@ -736,6 +739,53 @@ int test6() {
 }
 
 
+// test symlink handling in FindFiles
+int test7() {
+#ifndef _WIN32
+  std::ofstream input1;
+  input1.open("input1.txt", std::ofstream::out | std::ofstream::binary);
+  const char *input1_contents = "diskfile_test test7 input1.txt";
+  input1 << input1_contents;
+  input1.close();
+
+  if (0 != symlink("input1.txt", "input1_link.txt")) {
+    std::cout << "Could not create symlink input1_link.txt" << std::endl;
+    return 1;
+  }
+  if (0 != symlink("not_there", "dangling_link.txt")) {
+    std::cout << "Could not create symlink dangling_link.txt" << std::endl;
+    return 1;
+  }
+
+  // by default (followlinks=false) symlinks are not returned
+  std::unique_ptr< std::list<std::string> > files = DiskFile::FindFiles(".", "input1_link.txt", false);
+  if (files->size() != 0) {
+    std::cout << "FindFiles returned symlink when followlinks=false" << std::endl;
+    return 1;
+  }
+
+  // with followlinks=true a symlink to a file is returned
+  files = DiskFile::FindFiles(".", "input1_link.txt", false, true);
+  if (files->size() != 1 || *(files->begin()) != "." + fs + "input1_link.txt") {
+    std::cout << "FindFiles failed to return followed symlink" << std::endl;
+    return 1;
+  }
+
+  // dangling symlinks are never returned
+  files = DiskFile::FindFiles(".", "dangling_link.txt", false, true);
+  if (files->size() != 0) {
+    std::cout << "FindFiles returned dangling symlink" << std::endl;
+    return 1;
+  }
+
+  remove("input1.txt");
+  remove("input1_link.txt");
+  remove("dangling_link.txt");
+#endif
+  return 0;
+}
+
+
 int main() {
   if (test1()) {
     std::cerr << "FAILED: test1" << std::endl;
@@ -759,6 +809,10 @@ int main() {
   }
   if (test6()) {
     std::cerr << "FAILED: test6" << std::endl;
+    return 1;
+  }
+  if (test7()) {
+    std::cerr << "FAILED: test7" << std::endl;
     return 1;
   }
 
