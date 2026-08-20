@@ -268,6 +268,19 @@ private:
 // Default number of file threads
 #define _FILE_THREADS 2
 
+namespace par2
+{
+
+// The physical memory of the machine in bytes, or 0 if it cannot be found
+u64 GetTotalPhysicalMemory(void);
+
+// What the work may use when the caller sets no limit of its own: an eighth of
+// the physical memory, and no less than 256MB on a machine with more, or 256MB
+// when the memory cannot be found
+size_t DefaultMemoryLimit(void);
+
+} // namespace par2
+
 
 #include "letype.h"
 #include "foreach_parallel.h"

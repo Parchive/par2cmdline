@@ -982,60 +982,6 @@ bool CommandLine::ReadArgs(int argc, const char * const *argv)
 }
 
 
-// This webpage has code to get physical memory size on many OSes
-// http://nadeausoftware.com/articles/2012/09/c_c_tip_how_get_physical_memory_size_system
-
-#ifdef _WIN32
-u64 CommandLine::GetTotalPhysicalMemory()
-{
-  u64 TotalPhysicalMemory = 0;
-
-  HMODULE hLib = ::LoadLibraryA("kernel32.dll");
-  if (NULL != hLib)
-  {
-    BOOL (WINAPI *pfn)(LPMEMORYSTATUSEX) = (BOOL (WINAPI*)(LPMEMORYSTATUSEX))::GetProcAddress(hLib, "GlobalMemoryStatusEx");
-
-    if (NULL != pfn)
-    {
-      MEMORYSTATUSEX mse;
-      mse.dwLength = sizeof(mse);
-      if (pfn(&mse))
-      {
-	TotalPhysicalMemory = mse.ullTotalPhys;
-      }
-    }
-
-    ::FreeLibrary(hLib);
-  }
-
-  if (TotalPhysicalMemory == 0)
-  {
-    MEMORYSTATUS ms;
-    ::ZeroMemory(&ms, sizeof(ms));
-    ::GlobalMemoryStatus(&ms);
-
-    TotalPhysicalMemory = ms.dwTotalPhys;
-  }
-
-  return TotalPhysicalMemory;
-}
-#elif defined(_SC_PHYS_PAGES) && defined(_SC_PAGESIZE)
-// POSIX compliant OSes, including OSX/MacOS and Cygwin.  Also works for Linux.
-u64 CommandLine::GetTotalPhysicalMemory()
-{
-  long pages = sysconf(_SC_PHYS_PAGES);
-  long page_size = sysconf(_SC_PAGESIZE);
-  return pages*page_size;
-}
-#else
-// default version == unable to request memory size
-u64 CommandLine::GetTotalPhysicalMemory()
-{
-  return 0;
-}
-#endif
-
-
 bool CommandLine::CheckValuesAndSetDefaults() {
   if (parfilename.length() == 0)
   {
@@ -1053,26 +999,17 @@ bool CommandLine::CheckValuesAndSetDefaults() {
   // Default memorylimit of 256MB
   if (memorylimit == 0)
   {
-    u64 TotalPhysicalMemory = GetTotalPhysicalMemory();
-
-    if (TotalPhysicalMemory == 0)
+    if (noiselevel >= nlDebug)
     {
-      if (noiselevel >= nlDebug)
+      u64 TotalPhysicalMemory = GetTotalPhysicalMemory();
+
+      if (TotalPhysicalMemory == 0)
         std::cout << "[DEBUG] could not detect physical memory" << std::endl;
-
-      // Default/error case:
-      memorylimit = 256;
-    }
-    else
-    {
-      if (noiselevel >= nlDebug)
+      else
         std::cout << "[DEBUG] detected physical memory: " << TotalPhysicalMemory << " bytes" << std::endl;
-
-      // 1/8th of total physical memory or floor to 256MiB if lower:
-      memorylimit = (size_t)(TotalPhysicalMemory / 1048576 / 8);
-      if (memorylimit < 256)
-        memorylimit = 256;
     }
+
+    memorylimit = DefaultMemoryLimit() / 1048576;
   }
 
   // limit to 1GB on 32-bit platforms to avoid exhausing the addressable memory space

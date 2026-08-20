@@ -22,6 +22,85 @@
 namespace par2
 {
 
+// This webpage has code to get physical memory size on many OSes
+// http://nadeausoftware.com/articles/2012/09/c_c_tip_how_get_physical_memory_size_system
+
+#ifdef _WIN32
+u64 GetTotalPhysicalMemory(void)
+{
+  u64 TotalPhysicalMemory = 0;
+
+  HMODULE hLib = ::LoadLibraryA("kernel32.dll");
+  if (NULL != hLib)
+  {
+    BOOL (WINAPI *pfn)(LPMEMORYSTATUSEX) = (BOOL (WINAPI*)(LPMEMORYSTATUSEX))::GetProcAddress(hLib, "GlobalMemoryStatusEx");
+
+    if (NULL != pfn)
+    {
+      MEMORYSTATUSEX mse;
+      mse.dwLength = sizeof(mse);
+      if (pfn(&mse))
+      {
+	TotalPhysicalMemory = mse.ullTotalPhys;
+      }
+    }
+
+    ::FreeLibrary(hLib);
+  }
+
+  if (TotalPhysicalMemory == 0)
+  {
+    MEMORYSTATUS ms;
+    ::ZeroMemory(&ms, sizeof(ms));
+    ::GlobalMemoryStatus(&ms);
+
+    TotalPhysicalMemory = ms.dwTotalPhys;
+  }
+
+  return TotalPhysicalMemory;
+}
+#elif defined(_SC_PHYS_PAGES) && defined(_SC_PAGESIZE)
+// POSIX compliant OSes, including OSX/MacOS and Cygwin.  Also works for Linux.
+u64 GetTotalPhysicalMemory(void)
+{
+  long pages = sysconf(_SC_PHYS_PAGES);
+  long page_size = sysconf(_SC_PAGESIZE);
+  if (pages <= 0 || page_size <= 0)
+    return 0;
+
+  return (u64)pages * (u64)page_size;
+}
+#else
+// default version == unable to request memory size
+u64 GetTotalPhysicalMemory(void)
+{
+  return 0;
+}
+#endif
+
+size_t DefaultMemoryLimit(void)
+{
+  // 1/8th of total physical memory, floored to 256MiB on a machine with more
+  // than that, and 256MiB when it cannot be found
+  const u64 total = GetTotalPhysicalMemory() / 1048576;
+  u64 limit = total / 8;
+  if (limit < 256 && (total == 0 || total > 256))
+    limit = 256;
+
+  // limit to 1GB on 32-bit platforms to avoid exhausing the addressable memory space
+  if (sizeof(uintptr_t) < 8 && limit > 1024)
+    limit = 1024;
+
+  return (size_t)limit * 1048576;
+}
+
+// What the work may use: the caller's limit, or the default when it set none,
+// and never less than the 1MB the command line allows
+static size_t MemoryLimit(const size_t requested)
+{
+  return std::max<size_t>((requested != 0) ? requested : DefaultMemoryLimit(), 1048576);
+}
+
 Result par2create(std::ostream &sout,
 		  std::ostream &serr,
 		  const NoiseLevel noiselevel,
@@ -41,7 +120,7 @@ Result par2create(std::ostream &sout,
 {
   Par2Creator creator(sout, serr, noiselevel, backends);
   Result result = creator.Process(
-				  memorylimit,
+				  MemoryLimit(memorylimit),
 				  basepath,
 				  nthreads,
 				  filethreads,
@@ -77,7 +156,7 @@ Result par2repair(std::ostream &sout,
 {
   Par2Repairer repairer(sout, serr, noiselevel, backends);
   Result result = repairer.Process(
-				   memorylimit,
+				   MemoryLimit(memorylimit),
 				   basepath,
 				   nthreads,
 				   filethreads,
@@ -110,7 +189,7 @@ Result par1repair(std::ostream &sout,
 		  )
 {
   Par1Repairer repairer(sout, serr, noiselevel);
-  Result result = repairer.Process(memorylimit,
+  Result result = repairer.Process(MemoryLimit(memorylimit),
 				   nthreads,
 				   parfilename,
 				   extrafiles,
