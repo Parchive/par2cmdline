@@ -25,6 +25,8 @@
 #include "libpar2internal.h"
 #include "taskpool.h"
 
+using namespace par2;
+
 
 // Counts how many times each value in [first, last) was run, and reports any
 // value which was not run exactly once

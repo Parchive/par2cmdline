@@ -27,6 +27,8 @@
 
 #include "utf8.h"
 
+namespace par2
+{
 namespace utf8
 {
   const int MAX_ARGS = 128;
@@ -197,6 +199,7 @@ namespace utf8
       delete[] m_argv;
     }
   }
+}
 }
 
 #endif // _WIN32

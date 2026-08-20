@@ -29,6 +29,9 @@
 #include "hasher.h"
 #include "backends.h"
 
+namespace par2
+{
+
 
 typedef enum
 {
@@ -143,5 +146,7 @@ bool ComputeRecoveryFileCount(std::ostream &sout,
 			      u32 recoveryblockcount,
 			      u64 largestfilesize,
 			      u64 blocksize);
+
+} // namespace par2
 
 #endif // __LIBPAR2_H__

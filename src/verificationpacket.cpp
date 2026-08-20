@@ -19,6 +19,9 @@
 
 #include "libpar2internal.h"
 
+namespace par2
+{
+
 #ifdef _MSC_VER
 #ifdef _DEBUG
 #undef THIS_FILE
@@ -101,3 +104,5 @@ bool VerificationPacket::Load(DiskFile *diskfile, u64 offset, PACKET_HEADER &hea
                         &packet->fileid,
                         (size_t)packet->header.length - sizeof(PACKET_HEADER));
 }
+
+} // namespace par2

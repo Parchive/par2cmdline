@@ -20,6 +20,9 @@
 
 #include "libpar2internal.h"
 
+namespace par2
+{
+
 #ifdef _MSC_VER
 #ifdef _DEBUG
 #undef THIS_FILE
@@ -339,3 +342,5 @@ void Par2CreatorSourceFile::FinishHashes(void)
   // Store it in the description packet
   descriptionpacket->HashFull(hash);
 }
+
+} // namespace par2

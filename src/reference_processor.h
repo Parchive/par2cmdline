@@ -20,6 +20,9 @@
 #ifndef __REFERENCE_PROCESSOR_H__
 #define __REFERENCE_PROCESSOR_H__
 
+namespace par2
+{
+
 // Multiplies each input block by the matrix on numthreads threads and keeps the
 // accumulated output blocks in one buffer. Every submission is complete by the
 // time AddInput returns.
@@ -104,5 +107,7 @@ private:
   size_t currentlength;
   u8 *outputbuffer;
 };
+
+} // namespace par2
 
 #endif // __REFERENCE_PROCESSOR_H__
