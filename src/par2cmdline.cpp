@@ -23,6 +23,10 @@
 // This is included here, so that cout and cerr are not used elsewhere.
 #include <iostream>
 
+#ifdef _WIN32
+#include "utf8.h"
+#endif
+
 #ifdef _MSC_VER
 #ifdef _DEBUG
 #undef THIS_FILE
@@ -32,8 +36,6 @@ static char THIS_FILE[]=__FILE__;
 #endif
 
 #ifdef _WIN32
-
-#include "utf8.h"
 
 int wmain(int argc, wchar_t* wargv[])
 
