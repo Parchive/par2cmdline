@@ -17,14 +17,14 @@
 //  along with this program; if not, write to the Free Software
 //  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-#ifndef __PROCESSOR_H__
-#define __PROCESSOR_H__
+#ifndef PAR2_PROCESSOR_H
+#define PAR2_PROCESSOR_H
 
 #include <cstddef>
 #include <future>
 #include <vector>
 
-#include "types.h"
+#include <par2/types.h>
 
 namespace par2
 {
@@ -148,4 +148,4 @@ public:
 
 } // namespace par2
 
-#endif // __PROCESSOR_H__
+#endif // PAR2_PROCESSOR_H

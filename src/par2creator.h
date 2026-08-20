@@ -164,6 +164,15 @@ protected:
                              // the recovery data is computed.
 };
 
+// Determine how many recovery files to create.
+bool ComputeRecoveryFileCount(std::ostream &sout,
+			      std::ostream &serr,
+			      u32 *recoveryfilecount,
+			      Scheme recoveryfilescheme,
+			      u32 recoveryblockcount,
+			      u64 largestfilesize,
+			      u64 blocksize);
+
 } // namespace par2
 
 #endif // __PAR2CREATOR_H__

@@ -17,17 +17,17 @@
 //  along with this program; if not, write to the Free Software
 //  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-#ifndef __LIBPAR2_H__
-#define __LIBPAR2_H__
+#ifndef PAR2_LIBPAR2_H
+#define PAR2_LIBPAR2_H
 
 #include <ostream>
 #include <string>
 #include <vector>
 
-#include "types.h"
-#include "processor.h"
-#include "hasher.h"
-#include "backends.h"
+#include <par2/types.h>
+#include <par2/processor.h>
+#include <par2/hasher.h>
+#include <par2/backends.h>
 
 namespace par2
 {
@@ -138,15 +138,6 @@ Result par1repair(std::ostream &sout,
 		  // skipleaway is not used by Par1
 		  );
 
-
-bool ComputeRecoveryFileCount(std::ostream &sout,
-			      std::ostream &serr,
-			      u32 *recoveryfilecount,
-			      Scheme recoveryfilescheme,
-			      u32 recoveryblockcount,
-			      u64 largestfilesize,
-			      u64 blocksize);
-
 } // namespace par2
 
-#endif // __LIBPAR2_H__
+#endif // PAR2_LIBPAR2_H

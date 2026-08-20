@@ -17,16 +17,16 @@
 //  along with this program; if not, write to the Free Software
 //  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-#ifndef __BACKENDS_H__
-#define __BACKENDS_H__
+#ifndef PAR2_BACKENDS_H
+#define PAR2_BACKENDS_H
 
 #include <cstddef>
 #include <functional>
 #include <memory>
 
-#include "processor.h"
-#include "hasher.h"
-#include "types.h"
+#include <par2/processor.h>
+#include <par2/hasher.h>
+#include <par2/types.h>
 
 namespace par2
 {
@@ -57,4 +57,4 @@ struct Backends
 
 } // namespace par2
 
-#endif // __BACKENDS_H__
+#endif // PAR2_BACKENDS_H

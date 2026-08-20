@@ -17,8 +17,8 @@
 //  along with this program; if not, write to the Free Software
 //  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-#ifndef __TYPES_H__
-#define __TYPES_H__
+#ifndef PAR2_TYPES_H
+#define PAR2_TYPES_H
 
 #include <cstdint>
 
@@ -42,4 +42,4 @@ static_assert(sizeof(u8) == 1 && sizeof(i8) == 1
 
 } // namespace par2
 
-#endif // __TYPES_H__
+#endif // PAR2_TYPES_H
