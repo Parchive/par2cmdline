@@ -62,3 +62,4 @@ perf.*
 .~lock.*#
 
 .vscode
+/par2cmdline-*.tar.gz
