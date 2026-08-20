@@ -86,6 +86,16 @@ protected:
   // Work out what the packets loaded so far describe
   Result PreparePackets(void);
 
+  // Apply the -m memory limit, which bounds the buffers a scan reads into
+  void ApplyMemoryLimit(const size_t _memorylimit) {scanmemorylimit = _memorylimit;}
+
+  // Verify the source files and work out whether a repair is needed
+  Result VerifyFiles(const std::string &basepath,
+                     std::vector<std::string> &extrafiles,
+                     const bool renameonly);
+  // Rebuild whatever is missing or damaged
+  Result RepairFiles(const size_t memorylimit, const std::string &basepath);
+
   // Load packets from the specified file
   bool LoadPacketsFromFile(std::string filename);
   // Finish loading a recovery packet
@@ -205,7 +215,7 @@ protected:
 
   // Make the buffers the files being scanned read into, or give them up when
   // no file will have its blocks checked where they are expected to be
-  void ResetScanBuffers(const size_t filecount, const size_t memorylimit);
+  void ResetScanBuffers(const size_t filecount);
 
   // The number of files to read at once, which is what limits how many are
   // open at a time rather than how much of the work they get
@@ -232,6 +242,7 @@ protected:
 
   u32 totalthreads;            // Number of threads the whole repair may use
   u32 filethreads;             // Number of files to read at once
+  size_t scanmemorylimit;      // Memory the buffers a scan reads into may use
 
   // The threads which check the blocks of every file being read, the buffers
   // those files read into, and how many files are being read at the moment
