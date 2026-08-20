@@ -1,0 +1,59 @@
+#!/bin/sh
+
+# Build a program against the public header and the static library the way an
+# embedding application does: only the public include directory on the include
+# path, and no config.h.
+
+execdir="$PWD"
+
+if [ -z "$srcdir" ] || [ "." = "$srcdir" ]; then
+  srcdir="$PWD"
+else
+  srcdir="$PWD/$srcdir"
+fi
+
+testname=$(basename $0)
+rm -rf "run$testname"
+
+mkdir "run$testname" && cd "run$testname" || { echo "ERROR: Could not change to test directory" ; exit 1; } >&2
+
+banner="An application can build against the public header alone"
+dashes=`echo "$banner" | sed s/./-/g`
+
+echo $dashes
+echo $banner
+echo $dashes
+
+if [ ! -f "$execdir/libpar2.a" ]; then
+    echo "Skipping: libpar2.a has not been built."
+    cd "$execdir"
+    rm -rf "run$testname"
+    exit 77
+fi
+
+CXX=${CXX:-c++}
+CXXFLAGS=${CXXFLAGS:--O0}
+
+# An application is free to include any one of the public headers on its own,
+# so each of them has to carry what it names.
+for header in "$srcdir"/include/par2/*.h; do
+    name=`basename "$header"`
+    echo "#include <par2/$name>" > standalone.cpp
+
+    $CXX $CXXFLAGS -std=c++17 -I"$srcdir/include" -fsyntax-only standalone.cpp \
+      || { echo "ERROR: <par2/$name> does not compile on its own" ; exit 1; } >&2
+done
+
+# Deliberately no -I for the source tree and no -DHAVE_CONFIG_H.
+$CXX $CXXFLAGS -std=c++17 -I"$srcdir/include" \
+     "$srcdir/tests/consumer.cpp" -o consumer \
+     "$execdir/libpar2.a" $PTHREAD_FLAGS $LIBS \
+  || { echo "ERROR: could not build against <par2/libpar2.h>" ; exit 1; } >&2
+
+./consumer \
+  || { echo "ERROR: the program built against <par2/libpar2.h> failed" ; exit 1; } >&2
+
+cd "$execdir"
+rm -rf "run$testname"
+
+exit 0
