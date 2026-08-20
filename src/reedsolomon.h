@@ -253,7 +253,7 @@ inline bool ReedSolomon<g>::Compute(NoiseLevel noiselevel, std::ostream &sout, s
   if (noiselevel > nlQuiet)
     sout << "Computing Reed Solomon matrix." << std::endl;
 
-  ProgressMeter<u32> progress(sout, "Constructing: ", datamissing+parmissing);
+  ProgressMeter<u32> progress(sout, "Constructing: ", datamissing+parmissing, noiselevel);
 
   /*  Layout of RS Matrix:
       NOTE: The second set of columns represents the parity vectors present,
@@ -426,7 +426,7 @@ inline bool ReedSolomon<g>::GaussElim(NoiseLevel noiselevel, std::ostream &sout,
 
   // Solve one row at a time
 
-  ProgressMeter<u32> progress(sout, "Solving: ", datamissing*rows);
+  ProgressMeter<u32> progress(sout, "Solving: ", datamissing*rows, noiselevel);
 
   // For each row in the matrix
   for (unsigned int row=0; row<datamissing; row++)
