@@ -24,9 +24,9 @@
 #include <functional>
 #include <memory>
 
-#include "processor.h"
-#include "hasher.h"
-#include "types.h"
+#include <par2/processor.h>
+#include <par2/hasher.h>
+#include <par2/types.h>
 
 namespace par2
 {

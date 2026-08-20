@@ -22,7 +22,7 @@
 
 #include <cstddef>
 
-#include "types.h"
+#include <par2/types.h>
 
 namespace par2
 {

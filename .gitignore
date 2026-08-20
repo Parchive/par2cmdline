@@ -3,7 +3,7 @@
 # thx @spider-mario
 
 # compilation output
-par2
+/par2
 libpar2.a
 *.o
 .deps/
