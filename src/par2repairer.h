@@ -45,6 +45,10 @@ public:
 		 const bool fullhash
 		 );
 
+  // Set an observer to be notified of progress and per-file results.
+  // Pass 0 to stop reporting. The observer must outlive this object.
+  void SetObserver(Par2Observer *_observer) {observer = _observer;}
+
 protected:
   // Steps in verifying and repairing files:
 
@@ -101,8 +105,13 @@ protected:
   // Scan any extra files specified on the command line
   bool VerifyExtraFiles(const std::vector<std::string> &extrafiles, const std::string &basepath, const bool renameonly);
 
-  // Attempt to match the data in the DiskFile with the source file
+  // Attempt to match the data in the DiskFile with the source file, reporting
+  // the file to the observer for as long as the match takes
   bool VerifyDataFile(DiskFile *diskfile, Par2RepairerSourceFile *sourcefile, const std::string &basepath, ProgressMeter<u64> &progress, const bool renameonly = false);
+
+  // The match itself. sourcefile is changed when the data belongs to another
+  // file of the set, and blocksfound is how many of its blocks were found.
+  bool MatchDataFile(DiskFile *diskfile, Par2RepairerSourceFile *&sourcefile, const std::string &basepath, ProgressMeter<u64> &progress, const bool renameonly, u32 &blocksfound);
 
   // Check the blocks of a source file at the offsets where they are expected
   // to be found. One thread reads the file in order while the others check the
@@ -129,7 +138,8 @@ protected:
                     Par2RepairerSourceFile* &sourcefile, // [in/out] The source file matched
                     MatchType               &matchtype,  // [out]    The type of match
                     MD5Hash                 &hashfull,   // [out]    The full hash of the file
-                    MD5Hash                 &hash16k);   // [out]    The hash of the first 16k
+                    MD5Hash                 &hash16k,    // [out]    The hash of the first 16k
+                    u32                     &count);     // [out]    The number of blocks found
 
   // Find out how much data we have found
   void UpdateVerificationResults(void);
@@ -181,6 +191,8 @@ protected:
   const NoiseLevel noiselevel;              // OnScreen display
   const Backends backends;                  // The implementations the application supplied
 
+  Par2Observer *observer;                   // Notified of progress, or 0
+
   std::string               searchpath;              // Where to find files on disk
 
   std::string               basepath;
@@ -200,6 +212,7 @@ protected:
 
   bool                      firstpacket;             // Whether or not a valid packet has been found.
   MD5Hash                   setid;                   // The SetId extracted from the first packet.
+  u64                       totaldatasize;           // Total size of the recoverable files
 
   std::map<u32, RecoveryPacket*> recoverypacketmap;       // One recovery packet for each exponent value.
   MainPacket               *mainpacket;              // One copy of the main packet.
