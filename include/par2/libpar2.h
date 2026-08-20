@@ -24,10 +24,10 @@
 #include <string>
 #include <vector>
 
-#include "types.h"
-#include "processor.h"
-#include "hasher.h"
-#include "backends.h"
+#include <par2/types.h>
+#include <par2/processor.h>
+#include <par2/hasher.h>
+#include <par2/backends.h>
 
 namespace par2
 {
