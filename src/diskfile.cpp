@@ -444,12 +444,7 @@ bool DiskFile::FileExists(std::string filename)
 #endif
 
 #define OffsetType off_t
-
-#if defined(HAVE_FSEEKO) || (_FILE_OFFSET_BITS == 64)
-# define MaxOffset ((OffsetType)0x7fffffffffffffffULL)
-#else
-# define MaxOffset ((OffsetType)0x7fffffffUL)
-#endif
+#define MaxOffset ((std::numeric_limits<OffsetType>::max)())
 
 
 DiskFile::DiskFile(std::ostream &sout, std::ostream &serr)
