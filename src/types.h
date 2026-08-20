@@ -22,6 +22,9 @@
 
 #include <cstdint>
 
+namespace par2
+{
+
 typedef std::uint8_t  u8;
 typedef std::int8_t   i8;
 typedef std::uint16_t u16;
@@ -36,5 +39,7 @@ static_assert(sizeof(u8) == 1 && sizeof(i8) == 1
 		&& sizeof(u32) == 4 && sizeof(i32) == 4
 		&& sizeof(u64) == 8 && sizeof(i64) == 8,
 		"the integer types are the widths their names give");
+
+} // namespace par2
 
 #endif // __TYPES_H__

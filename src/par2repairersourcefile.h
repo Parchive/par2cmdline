@@ -21,6 +21,9 @@
 #ifndef __PAR2REPAIRERSOURCEFILE_H__
 #define __PAR2REPAIRERSOURCEFILE_H__
 
+namespace par2
+{
+
 enum MatchType
 {
   eNoMatch = 0,
@@ -108,5 +111,7 @@ protected:
   std::string                  targetfilename;      // The filename of the target file
   u64                          diskfilesize;        // The filesize of sourcefile on disk
 };
+
+} // namespace par2
 
 #endif // __PAR2REPAIRERSOURCEFILE_H__

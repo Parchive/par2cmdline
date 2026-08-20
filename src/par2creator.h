@@ -21,6 +21,9 @@
 #ifndef __PAR2CREATOR_H__
 #define __PAR2CREATOR_H__
 
+namespace par2
+{
+
 class MainPacket;
 class CreatorPacket;
 class CriticalPacket;
@@ -160,5 +163,7 @@ protected:
                              // the full file hash and block crc and hashes until
                              // the recovery data is computed.
 };
+
+} // namespace par2
 
 #endif // __PAR2CREATOR_H__
