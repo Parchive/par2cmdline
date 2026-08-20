@@ -182,7 +182,9 @@ typedef unsigned int     size_t;
 #define NUM_TRANSFER_BUFFERS 2
 
 #define MAX_CHUNK_SIZE 32*1048576 // too large chunks are likely detrimental to performance; set to 0 to disable
-#define SCAN_BATCH_PER_THREAD 2 // blocks in a batch for each thread checking it, so one which finishes early has more to take
+
+// What the work may use when the caller sets no limit of its own
+#define DEFAULT_MEMORY_LIMIT ((size_t)256*1048576)
 
 #define LONGMULTIPLY
 

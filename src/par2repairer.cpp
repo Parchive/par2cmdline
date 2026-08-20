@@ -61,6 +61,7 @@ Par2Repairer::Par2Repairer(std::ostream &sout, std::ostream &serr, const NoiseLe
 , basepath()
 , totalthreads(default_threads())
 , filethreads(_FILE_THREADS)
+, scanmemorylimit(DEFAULT_MEMORY_LIMIT)
 , blockpool()
 , activereaders(0)
 , setid()
@@ -173,6 +174,8 @@ Result Par2Repairer::Process(
   // and never none whatever the caller asked for
   filethreads = std::max(1u, std::min(_filethreads, totalthreads));
 
+  ApplyMemoryLimit(memorylimit);
+
   if (!LoadPackets(parfilename, extrafiles))
     return IsCancelled() ? eCancelled : eLogicError;
 
@@ -186,6 +189,38 @@ Result Par2Repairer::Process(
   if (preparedresult != eSuccess)
     return preparedresult;
 
+  Result verifyresult = VerifyFiles(basepath, extrafiles, renameonly);
+
+  // Are any of the files incomplete
+  if (verifyresult == eRepairPossible)
+  {
+    // Do we want to carry out a repair
+    if (!dorepair)
+      return eRepairPossible;
+
+    Result repairresult = RepairFiles(memorylimit, basepath);
+    if (repairresult != eSuccess)
+      return repairresult;
+  }
+  else if (verifyresult != eSuccess)
+  {
+    return verifyresult;
+  }
+
+  if (purgefiles == true)
+  {
+    RemoveBackupFiles();
+    RemoveParFiles();
+  }
+
+  return eSuccess;
+}
+
+// Verify the source files and work out whether a repair is needed or possible
+Result Par2Repairer::VerifyFiles(const std::string &basepath,
+                                 std::vector<std::string> &extrafiles,
+                                 const bool renameonly)
+{
   // Create a verification hash table for all files for which we have not
   // found a complete version of the file and for which we have
   // a verification packet
@@ -196,7 +231,7 @@ Result Par2Repairer::Process(
   if (!ComputeWindowTable())
     return eLogicError;
 
-  ResetScanBuffers(std::max(sourcefiles.size(), extrafiles.size()), memorylimit);
+  ResetScanBuffers(std::max(sourcefiles.size(), extrafiles.size()));
 
   // Attempt to verify all of the source files
   if (!VerifySourceFiles(basepath, extrafiles))
@@ -225,136 +260,128 @@ Result Par2Repairer::Process(
   // Check the verification results and report the results
   if (!CheckVerificationResults())
     return eRepairNotPossible;
-
   // Are any of the files incomplete
   if (completefilecount < mainpacket->RecoverableFileCount())
-  {
-    // Do we want to carry out a repair
-    if (dorepair)
-    {
-      if (noiselevel > nlSilent)
-        sout << '\n';
-
-      // Rename any damaged or missnamed target files.
-      if (!RenameTargetFiles())
-        return eFileIOError;
-
-      // Are we still missing any files
-      if (completefilecount < mainpacket->RecoverableFileCount())
-      {
-        // Work out which files are being repaired, create them, and allocate
-        // target DataBlocks to them, and remember them for later verification.
-        if (!CreateTargetFiles())
-          return eFileIOError;
-
-        // Allocate memory buffers for reading and writing data to disk, and
-        // build the processor, which is offered the erasures below.
-        if (!AllocateBuffers(memorylimit))
-        {
-          // Delete all of the partly reconstructed files
-          DeleteIncompleteTargetFiles();
-          return eMemoryError;
-        }
-
-        // Work out which data blocks are available, which need to be copied
-        // directly to the output, and which need to be recreated, and compute
-        // the appropriate Reed Solomon matrix.
-        if (!ComputeRSmatrix())
-        {
-          // Delete all of the partly reconstructed files
-          DeleteIncompleteTargetFiles();
-          return eFileIOError;
-        }
-
-        if (noiselevel > nlSilent)
-          sout << '\n';
-
-        if (observer)
-          observer->OnRepairStart();
-
-        // Set the total amount of data to be processed.
-        ProgressMeter<u64> progress(sout, missingblockcount > 0 ? "Repairing: " : "Processing: ", blocksize * sourceblockcount, noiselevel, observer);
-
-        // Start at an offset of 0 within a block.
-        u64 blockoffset = 0;
-        while (blockoffset < blocksize) // Continue until the end of the block.
-        {
-          // Work out how much data to process this time.
-          size_t blocklength = (size_t)std::min((u64)chunksize, blocksize-blockoffset);
-
-          // Read source data, process it through the RS matrix and write it to disk.
-          if (!ProcessData(blockoffset, blocklength, progress))
-          {
-            // Delete all of the partly reconstructed files
-            DeleteIncompleteTargetFiles();
-            return IsCancelled() ? eCancelled : eFileIOError;
-          }
-
-          if (IsCancelled())
-          {
-            // Delete all of the partly reconstructed files
-            DeleteIncompleteTargetFiles();
-            return eCancelled;
-          }
-
-          // Advance to the need offset within each block
-          blockoffset += blocklength;
-        }
-
-        if (noiselevel > nlSilent)
-          sout << "\nVerifying repaired files:\n" << std::endl;
-
-        // The repaired files are scanned into buffers of their own, so the ones
-        // the repair read and wrote through are given up first
-        delete [] (u8*)transferbuffer;
-        transferbuffer = 0;
-        delete [] (u8*)outputbuffer;
-        outputbuffer = 0;
-
-        // Verify that all of the reconstructed target files are now correct
-        ResetScanBuffers(verifylist.size(), memorylimit);
-
-        if (!VerifyTargetFiles(basepath))
-        {
-          // Delete all of the partly reconstructed files
-          DeleteIncompleteTargetFiles();
-          return IsCancelled() ? eCancelled : eFileIOError;
-        }
-
-        if (IsCancelled())
-        {
-          // Delete all of the partly reconstructed files
-          DeleteIncompleteTargetFiles();
-          return eCancelled;
-        }
-      }
-
-      // Are all of the target files now complete?
-      if (completefilecount<mainpacket->RecoverableFileCount())
-      {
-        serr << "Repair Failed." << std::endl;
-        return eRepairFailed;
-      }
-      else
-      {
-        if (noiselevel > nlSilent)
-          sout << "\nRepair complete." << std::endl;
-      }
-    }
-    else
-    {
-      return eRepairPossible;
-    }
-  }
-
-  if (purgefiles == true)
-  {
-    RemoveBackupFiles();
-    RemoveParFiles();
-  }
+    return eRepairPossible;
 
   return eSuccess;
 }
+
+// Rebuild whatever is missing or damaged
+Result Par2Repairer::RepairFiles(const size_t memorylimit, const std::string &basepath)
+{
+  ApplyMemoryLimit(memorylimit);
+
+  if (noiselevel > nlSilent)
+    sout << '\n';
+
+  // Rename any damaged or missnamed target files.
+  if (!RenameTargetFiles())
+    return eFileIOError;
+
+  // Are we still missing any files
+  if (completefilecount < mainpacket->RecoverableFileCount())
+  {
+    // Work out which files are being repaired, create them, and allocate
+    // target DataBlocks to them, and remember them for later verification.
+    if (!CreateTargetFiles())
+      return eFileIOError;
+
+    // Allocate memory buffers for reading and writing data to disk, and
+    // build the processor, which is offered the erasures below.
+    if (!AllocateBuffers(memorylimit))
+    {
+      // Delete all of the partly reconstructed files
+      DeleteIncompleteTargetFiles();
+      return eMemoryError;
+    }
+
+    // Work out which data blocks are available, which need to be copied
+    // directly to the output, and which need to be recreated, and compute
+    // the appropriate Reed Solomon matrix.
+    if (!ComputeRSmatrix())
+    {
+      // Delete all of the partly reconstructed files
+      DeleteIncompleteTargetFiles();
+      return eFileIOError;
+    }
+
+    if (noiselevel > nlSilent)
+      sout << '\n';
+
+    if (observer)
+      observer->OnRepairStart();
+
+    // Set the total amount of data to be processed.
+    ProgressMeter<u64> progress(sout, missingblockcount > 0 ? "Repairing: " : "Processing: ", blocksize * sourceblockcount, noiselevel, observer);
+
+    // Start at an offset of 0 within a block.
+    u64 blockoffset = 0;
+    while (blockoffset < blocksize) // Continue until the end of the block.
+    {
+      // Work out how much data to process this time.
+      size_t blocklength = (size_t)std::min((u64)chunksize, blocksize-blockoffset);
+
+      // Read source data, process it through the RS matrix and write it to disk.
+      if (!ProcessData(blockoffset, blocklength, progress))
+      {
+        // Delete all of the partly reconstructed files
+        DeleteIncompleteTargetFiles();
+        return IsCancelled() ? eCancelled : eFileIOError;
+      }
+
+      if (IsCancelled())
+      {
+        // Delete all of the partly reconstructed files
+        DeleteIncompleteTargetFiles();
+        return eCancelled;
+      }
+
+      // Advance to the need offset within each block
+      blockoffset += blocklength;
+    }
+
+    if (noiselevel > nlSilent)
+      sout << "\nVerifying repaired files:\n" << std::endl;
+
+    // The repaired files are scanned into buffers of their own, so the ones
+    // the repair read and wrote through are given up first
+    delete [] (u8*)transferbuffer;
+    transferbuffer = 0;
+    delete [] (u8*)outputbuffer;
+    outputbuffer = 0;
+
+    // Verify that all of the reconstructed target files are now correct
+    ResetScanBuffers(verifylist.size());
+
+    if (!VerifyTargetFiles(basepath))
+    {
+      // Delete all of the partly reconstructed files
+      DeleteIncompleteTargetFiles();
+      return IsCancelled() ? eCancelled : eFileIOError;
+    }
+
+    if (IsCancelled())
+    {
+      // Delete all of the partly reconstructed files
+      DeleteIncompleteTargetFiles();
+      return eCancelled;
+    }
+  }
+
+  // Are all of the target files now complete?
+  if (completefilecount<mainpacket->RecoverableFileCount())
+  {
+    serr << "Repair Failed." << std::endl;
+    return eRepairFailed;
+  }
+
+  if (noiselevel > nlSilent)
+    sout << "\nRepair complete." << std::endl;
+
+  return eSuccess;
+}
+
 
 // List the files the loaded packets describe
 bool Par2Repairer::GetFileInfo(std::vector<Par2FileInfo> *files) const
@@ -3044,12 +3071,9 @@ bool Par2Repairer::ComputeRSmatrix(void)
 
 // The files being read take the buffers they read into from these, which
 // between them hold two batches for each of the filecount files which may be
-// read at once. A batch is a whole number of blocks: SCAN_BATCH_PER_THREAD of
-// them for every thread which will check it, fewer where the buffers would
-// take more than memorylimit between them, and never fewer than one each. The
-// buffers are given up before a repair allocates the ones it works through, so
-// the two never hold that memory at the same time.
-void Par2Repairer::ResetScanBuffers(const size_t filecount, const size_t memorylimit)
+// read at once. A batch is a whole number of blocks, at least one, and no more
+// than MAX_CHUNK_SIZE unless a single block is already larger than that.
+void Par2Repairer::ResetScanBuffers(const size_t filecount)
 {
   // The blocks of a file are only checked where they are expected to be when
   // there are verification packets to check them against and more than one
@@ -3071,13 +3095,17 @@ void Par2Repairer::ResetScanBuffers(const size_t filecount, const size_t memoryl
   }
 
   const u32 readers = FileThreads(filecount);
-  const u32 workers = std::max(1u, totalthreads / readers);
 
-  const size_t affordable = std::max<size_t>(1, memorylimit / (2 * readers) / (size_t)blocksize);
+  const size_t batchsize = (size_t)std::max(1u, totalthreads / readers) * (size_t)blocksize;
+  const size_t maxbatchsize = MAX_CHUNK_SIZE != 0
+    ? std::max((size_t)blocksize, (size_t)MAX_CHUNK_SIZE)
+    : batchsize;
 
-  const u32 blocksperbatch = (u32)std::min<size_t>((size_t)workers * SCAN_BATCH_PER_THREAD, affordable);
+  // Never more than the caller allowed for the work, down to a block a buffer,
+  // which is the least a batch can be
+  const size_t affordable = std::max((size_t)blocksize, scanmemorylimit / (2 * readers));
 
-  scanbuffers.Reset(2 * readers, (size_t)blocksperbatch * (size_t)blocksize);
+  scanbuffers.Reset(2 * readers, std::min(std::min(batchsize, maxbatchsize), affordable));
 }
 
 // Allocate memory buffers for reading and writing data to disk.
