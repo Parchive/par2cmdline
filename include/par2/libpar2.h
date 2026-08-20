@@ -103,6 +103,17 @@ struct Par2SetInfo
 };
 
 
+// One of the files a PAR2 set describes
+struct Par2FileInfo
+{
+  std::string filename;         // The name the set records for the file
+  u64 filesize{};               // Size of the file
+  u32 blockcount{};             // Blocks the file is divided into, 0 when no
+                                // verification packet for it has been read,
+                                // as for a file that cannot be recovered
+};
+
+
 // Receives progress and per-file results from a par2 operation.
 //
 // Every method has an empty default, so an implementation only overrides what
