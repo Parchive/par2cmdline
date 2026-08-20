@@ -46,10 +46,10 @@ libpar2_a_SOURCES = src/crc.cpp src/crc.h \
 	src/foreach_parallel.h \
 	src/bufferpool.h \
 	src/taskpool.h \
-	src/backends.h \
-	src/hasher.h \
-	src/processor.h \
-	src/types.h \
+	include/par2/backends.h \
+	include/par2/hasher.h \
+	include/par2/processor.h \
+	include/par2/types.h \
 	src/reference_hasher.h \
 	src/reference_processor.h \
 	src/progressmeter.h \
@@ -57,7 +57,7 @@ libpar2_a_SOURCES = src/crc.cpp src/crc.h \
 	src/reedsolomon.cpp src/reedsolomon.h \
 	src/verificationhashtable.cpp src/verificationhashtable.h \
 	src/verificationpacket.cpp src/verificationpacket.h \
-	src/libpar2.cpp src/libpar2.h src/libpar2internal.h \
+	src/libpar2.cpp include/par2/libpar2.h src/libpar2internal.h \
 	src/utf8.cpp src/utf8.h
 
 
@@ -69,6 +69,7 @@ par2_SOURCES = src/par2cmdline.cpp \
 par2_LDADD = libpar2.a
 
 LDADD = -lstdc++
+AM_CPPFLAGS = -I$(top_srcdir)/include
 AM_CXXFLAGS = -Wall -std=c++14 $(PTHREAD_FLAGS)
 AM_LDFLAGS = $(PTHREAD_FLAGS)
 
@@ -225,7 +226,7 @@ tests_diskfile_test_LDADD = libpar2.a
 tests_filechecksummer_test_SOURCES = src/filechecksummer_test.cpp src/filechecksummer.cpp src/filechecksummer.h
 tests_filechecksummer_test_LDADD = libpar2.a
 
-tests_libpar2_test_SOURCES = src/libpar2_test.cpp src/libpar2.h
+tests_libpar2_test_SOURCES = src/libpar2_test.cpp include/par2/libpar2.h
 tests_libpar2_test_LDADD = libpar2.a
 
 tests_commandline_test_SOURCES = src/commandline_test.cpp src/commandline.cpp src/commandline.h

@@ -93,7 +93,7 @@
     <ClInclude Include="src\filechecksummer.h" />
     <ClInclude Include="src\galois.h" />
     <ClInclude Include="src\letype.h" />
-    <ClInclude Include="src\libpar2.h" />
+    <ClInclude Include="include\par2\libpar2.h" />
     <ClInclude Include="src\libpar2internal.h" />
     <ClInclude Include="src\mainpacket.h" />
     <ClInclude Include="src\md5.h" />
@@ -108,10 +108,10 @@
     <ClInclude Include="src\foreach_parallel.h" />
     <ClInclude Include="src\bufferpool.h" />
     <ClInclude Include="src\taskpool.h" />
-    <ClInclude Include="src\backends.h" />
-    <ClInclude Include="src\hasher.h" />
-    <ClInclude Include="src\processor.h" />
-    <ClInclude Include="src\types.h" />
+    <ClInclude Include="include\par2\backends.h" />
+    <ClInclude Include="include\par2\hasher.h" />
+    <ClInclude Include="include\par2\processor.h" />
+    <ClInclude Include="include\par2\types.h" />
     <ClInclude Include="src\reference_hasher.h" />
     <ClInclude Include="src\reference_processor.h" />
     <ClInclude Include="src\progressmeter.h" />
