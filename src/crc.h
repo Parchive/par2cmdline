@@ -21,6 +21,9 @@
 #ifndef __CRC_H__
 #define __CRC_H__
 
+namespace par2
+{
+
 // These global functions are used to compute the CCITT CRC32 checksum of
 // blocks of data.
 
@@ -100,5 +103,7 @@ inline u32 CRCSlideChar(u32 crc, u8 chNew, u8 chOld, const u32 (&windowtable)[25
 
 */
 
+
+} // namespace par2
 
 #endif // __CRC_H__

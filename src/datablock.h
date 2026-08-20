@@ -20,6 +20,9 @@
 #ifndef __DATABLOCK_H__
 #define __DATABLOCK_H__
 
+namespace par2
+{
+
 class DiskFile;
 
 // A Data Block is a block of data of a specific length at a specific
@@ -153,5 +156,7 @@ inline u64 DataBlock::GetLength(void) const
 {
   return length;
 }
+
+} // namespace par2
 
 #endif // __DATABLOCK_H__

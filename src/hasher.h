@@ -24,6 +24,9 @@
 
 #include "types.h"
 
+namespace par2
+{
+
 // Hashes the blocks of one file, and the file itself. Several consecutive
 // blocks are submitted at once, so that an implementation may hash them
 // alongside each other.
@@ -99,5 +102,7 @@ public:
   // submissions advanced the hashes of the file reaches this.
   virtual void EndFile(void *hashfull, void *hash16k) = 0;
 };
+
+} // namespace par2
 
 #endif // __HASHER_H__

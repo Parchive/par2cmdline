@@ -20,6 +20,9 @@
 #ifndef __LETYPE_H__
 #define __LETYPE_H__
 
+namespace par2
+{
+
 #if __BYTE_ORDER == __LITTLE_ENDIAN
 
 typedef u16 leu16;
@@ -116,5 +119,7 @@ inline leu64::operator u64(void) const
 }
 
 #endif
+
+} // namespace par2
 
 #endif // __LETYPE_H__

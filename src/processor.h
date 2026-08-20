@@ -26,6 +26,9 @@
 
 #include "types.h"
 
+namespace par2
+{
+
 // Multiplies input blocks by the Reed Solomon matrix and accumulates the
 // results. One input block is submitted against every output block at once, so
 // that an implementation chooses how to tile the work and how to spread it over
@@ -142,5 +145,7 @@ public:
   // ends the operation.
   virtual bool GetOutput(u32 index, void *out) = 0;
 };
+
+} // namespace par2
 
 #endif // __PROCESSOR_H__

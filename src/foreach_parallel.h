@@ -30,6 +30,9 @@
 #include <utility>
 #include <vector>
 
+namespace par2
+{
+
 // The largest number of threads a requested thread count is taken up to. Each
 // thread costs a stack and a share of the buffers a loop divides between them.
 #define MAX_THREAD_COUNT 256
@@ -246,5 +249,7 @@ void foreach_parallel(const std::vector<T> &collection, u32 numthreads, Fn &&fn)
 {
   foreach_parallel(0, collection.size(), numthreads, [&](size_t index) { fn(collection[index]); });
 }
+
+} // namespace par2
 
 #endif // __FOREACH_PARALLEL_H__

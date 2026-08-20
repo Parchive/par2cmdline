@@ -21,6 +21,9 @@
 #ifndef __MAINPACKET_H__
 #define __MAINPACKET_H__
 
+namespace par2
+{
+
 // The main packet ties all other critical packets together.
 // It specifies the block size to use for both verification of
 // files and for the Reed Solomon computation.
@@ -107,5 +110,7 @@ inline const MD5Hash& MainPacket::SetId(void) const
   return ((const MAINPACKET*)packetdata)->header.setid;
 }
 
+
+} // namespace par2
 
 #endif // __MAINPACKET_H__
