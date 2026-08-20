@@ -48,6 +48,12 @@ public:
 protected:
   // Steps in verifying and repairing files:
 
+  // Load packets from a PAR2 file, the files named after it, and the extra files
+  bool LoadPackets(const std::string &parfilename,
+                   const std::vector<std::string> &extrafiles);
+  // Work out what the packets loaded so far describe
+  Result PreparePackets(void);
+
   // Load packets from the specified file
   bool LoadPacketsFromFile(std::string filename);
   // Finish loading a recovery packet
