@@ -170,40 +170,15 @@ Result Par2Repairer::Process(
   // and never none whatever the caller asked for
   filethreads = std::max(1u, std::min(_filethreads, totalthreads));
 
-  // Determine the searchpath from the location of the main PAR2 file
-  std::string name;
-  DiskFile::SplitFilename(parfilename, searchpath, name);
-
-  par2list.push_back(parfilename);
-
-  // Load packets from the main PAR2 file
-  if (!LoadPacketsFromFile(searchpath + name))
-    return eLogicError;
-
-  // Load packets from other PAR2 files with names based on the original PAR2 file
-  if (!LoadPacketsFromOtherFiles(parfilename))
-    return eLogicError;
-
-  // Load packets from any other PAR2 files whose names are given on the command line
-  if (!LoadPacketsFromExtraFiles(extrafiles))
+  if (!LoadPackets(parfilename, extrafiles))
     return eLogicError;
 
   if (noiselevel > nlQuiet)
     sout << '\n';
 
-  // Check that the packets are consistent and discard any that are not
-  if (!CheckPacketConsistency())
-    return eInsufficientCriticalData;
-
-  // Use the information in the main packet to get the source files
-  // into the correct order and determine their filenames
-  if (!CreateSourceFileList())
-    return eLogicError;
-
-  // Determine the total number of DataBlocks for the recoverable source files
-  // The allocate the DataBlocks and assign them to each source file
-  if (!AllocateSourceBlocks())
-    return eLogicError;
+  Result preparedresult = PreparePackets();
+  if (preparedresult != eSuccess)
+    return preparedresult;
 
   // Create a verification hash table for all files for which we have not
   // found a complete version of the file and for which we have
@@ -351,6 +326,56 @@ Result Par2Repairer::Process(
     RemoveBackupFiles();
     RemoveParFiles();
   }
+
+  return eSuccess;
+}
+
+// Load packets from the specified PAR2 file, from the other PAR2 files whose
+// names are based on it, and from any additional files supplied by the caller.
+// Files that have already been loaded are skipped.
+bool Par2Repairer::LoadPackets(const std::string &parfilename,
+                              const std::vector<std::string> &extrafiles)
+{
+  // Determine the searchpath from the location of the main PAR2 file
+  std::string name;
+  DiskFile::SplitFilename(parfilename, searchpath, name);
+
+  par2list.push_back(parfilename);
+
+  // Load packets from the main PAR2 file
+  if (!LoadPacketsFromFile(searchpath + name))
+    return false;
+
+  // Load packets from other PAR2 files with names based on the original PAR2 file
+  if (!LoadPacketsFromOtherFiles(parfilename))
+    return false;
+
+  // Load packets from any other PAR2 files whose names are given on the command line
+  if (!LoadPacketsFromExtraFiles(extrafiles))
+    return false;
+
+  return true;
+}
+
+// Work out what the packets loaded so far describe. Rebuilt from scratch each
+// time so that it can be called again after more packets have been loaded.
+Result Par2Repairer::PreparePackets(void)
+{
+  sourcefiles.clear();
+
+  // Check that the packets are consistent and discard any that are not
+  if (!CheckPacketConsistency())
+    return eInsufficientCriticalData;
+
+  // Use the information in the main packet to get the source files
+  // into the correct order and determine their filenames
+  if (!CreateSourceFileList())
+    return eLogicError;
+
+  // Determine the total number of DataBlocks for the recoverable source files
+  // The allocate the DataBlocks and assign them to each source file
+  if (!AllocateSourceBlocks())
+    return eLogicError;
 
   return eSuccess;
 }
