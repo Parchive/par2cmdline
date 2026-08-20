@@ -84,6 +84,9 @@ typedef enum Result
   eLogicError                  = 7,  // In internal error occurred
   eMemoryError                 = 8,  // Out of memory
 
+  eCancelled                   = 9,  // The operation was cancelled by the
+                                     // caller before it completed
+
 } Result;
 
 
