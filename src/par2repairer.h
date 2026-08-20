@@ -45,6 +45,10 @@ public:
 		 const bool fullhash
 		 );
 
+  // Set an observer to be notified of progress and per-file results.
+  // Pass 0 to stop reporting. The observer must outlive this object.
+  void SetObserver(Par2Observer *_observer) {observer = _observer;}
+
 protected:
   // Steps in verifying and repairing files:
 
@@ -182,6 +186,8 @@ protected:
   const NoiseLevel noiselevel;              // OnScreen display
   const Backends backends;                  // The implementations the application supplied
 
+  Par2Observer *observer;                   // Notified of progress, or 0
+
   std::string               searchpath;              // Where to find files on disk
 
   std::string               basepath;
@@ -201,6 +207,7 @@ protected:
 
   bool                      firstpacket;             // Whether or not a valid packet has been found.
   MD5Hash                   setid;                   // The SetId extracted from the first packet.
+  u64                       totaldatasize;           // Total size of the recoverable files
 
   std::map<u32, RecoveryPacket*> recoverypacketmap;       // One recovery packet for each exponent value.
   MainPacket               *mainpacket;              // One copy of the main packet.
