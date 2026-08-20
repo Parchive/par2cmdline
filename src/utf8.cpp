@@ -42,7 +42,7 @@ namespace utf8
 
     if (wpath.compare(0, 2, L"\\\\") == 0)
     {
-      wpath = L"\\\\?\\UNC" + wpath;
+      wpath = L"\\\\?\\UNC" + wpath.substr(1);
     }
     else
     {

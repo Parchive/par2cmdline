@@ -178,6 +178,30 @@ int test8()
   return 0;
 }
 
+int test9()
+{
+  std::wstring shortpath;
+  if (!Utf8ToWide("C:\\short", shortpath))
+    return 1;
+  if (shortpath != std::wstring(L"C:\\short"))
+    return 1;
+
+  std::string longpath = "C:\\" + std::string(MAX_DIR_PATH, 'a');
+  std::wstring widelong;
+  if (!Utf8ToWide(longpath, widelong))
+    return 1;
+  if (widelong != L"\\\\?\\C:\\" + std::wstring(MAX_DIR_PATH, L'a'))
+    return 1;
+
+  std::string uncpath = "\\\\server\\" + std::string(MAX_DIR_PATH, 'b');
+  std::wstring wideunc;
+  if (!Utf8ToWide(uncpath, wideunc))
+    return 1;
+  if (wideunc != L"\\\\?\\UNC\\server\\" + std::wstring(MAX_DIR_PATH, L'b'))
+    return 1;
+
+  return 0;
+}
 
 int main()
 {
@@ -226,6 +250,12 @@ int main()
   if (test8())
   {
     std::cerr << "FAILED: test8" << std::endl;
+    return 1;
+  }
+
+  if (test9())
+  {
+    std::cerr << "FAILED: test9" << std::endl;
     return 1;
   }
 
