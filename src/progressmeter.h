@@ -21,6 +21,7 @@
 #define __PROGRESSMETER_H__
 
 #include <chrono>
+#include <mutex>
 
 #include <par2/libpar2.h>
 
@@ -40,6 +41,8 @@ class ProgressMeter
   std::atomic<steady_clock::duration::rep> printed; // last time progress was outputted
   const bool print;          // whether the percentage is written to sout
   Par2Observer *observer;    // notified of progress whatever the noise level
+  std::mutex reporting;      // held while a fraction is claimed and reported
+  u32 reported;              // highest fraction reported so far
 
   inline u32 CalcThousandths(TValue val) const
   {
@@ -61,6 +64,16 @@ class ProgressMeter
     // if enough time has passed, print the current progress, and update the time record
     if (now - lastpoint >= PRINT_INTERVAL || newfraction == 1000)
     {
+      // Threads report as they finish, so a larger fraction can arrive first.
+      // Nothing is reported which would take the count backwards, and the lock
+      // is held across the report so the observer is told in the same order.
+      std::lock_guard<std::mutex> lock(reporting);
+
+      if (newfraction <= reported)
+        return false;
+
+      reported = newfraction;
+
       if (print)
         LockedStream(sout) << message << newfraction/10 << '.' << newfraction%10 << "%\r" << std::flush;
 
@@ -77,11 +90,11 @@ public:
   ProgressMeter(std::ostream &sout, const std::string &message, TValue total,
                 NoiseLevel noiselevel, Par2Observer *observer = 0) :
     sout(sout), message(message), scale(1000.0f / total), current(0), printed(0),
-    print(noiselevel > nlQuiet), observer(observer) {}
+    print(noiselevel > nlQuiet), observer(observer), reporting(), reported(0) {}
   ProgressMeter(std::ostream &sout, const char *message, TValue total,
                 NoiseLevel noiselevel, Par2Observer *observer = 0) :
     sout(sout), message(message), scale(1000.0f / total), current(0), printed(0),
-    print(noiselevel > nlQuiet), observer(observer) {}
+    print(noiselevel > nlQuiet), observer(observer), reporting(), reported(0) {}
 
   // NOTE: Update() doesn't always update current value, so don't mix it with Add()
   void Update(TValue newval)
