@@ -17,10 +17,13 @@
 //  along with this program; if not, write to the Free Software
 //  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-#ifndef __LIBPAR2_H__
-#define __LIBPAR2_H__
+#ifndef LIBPAR2_H
+#define LIBPAR2_H
 
 #include <cstdint>
+#include <ostream>
+#include <string>
+#include <vector>
 
 typedef uint8_t  u8;
 typedef int8_t   i8;
@@ -30,11 +33,6 @@ typedef uint32_t u32;
 typedef int32_t  i32;
 typedef uint64_t u64;
 typedef int64_t  i64;
-
-
-#include <ostream>
-#include <vector>
-#include <string>
 
 
 typedef enum
@@ -154,4 +152,4 @@ bool ComputeRecoveryFileCount(std::ostream &sout,
 			      u64 largestfilesize,
 			      u64 blocksize);
 
-#endif // __LIBPAR2_H__
+#endif // LIBPAR2_H
