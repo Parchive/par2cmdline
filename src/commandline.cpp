@@ -118,8 +118,9 @@ void CommandLine::usage(void)
 #ifdef _OPENMP
   std::cout <<
     "  -t<n>    : Number of threads used for main processing (" << omp_get_max_threads() << " detected)\n"
-    "  -T<n>    : Number of files hashed in parallel\n"
-    "             (" << _FILE_THREADS << " are the default)\n";
+    "  -T<n>    : Number of files hashed in parallel (" << _FILE_THREADS << " are the default)\n"
+    "             Threads not busy with another file share out the blocks of a\n"
+    "             single file, so that one large file is not left to a single thread\n";
 #endif
   std::cout <<
     "  --       : Treat all following arguments as filenames\n"

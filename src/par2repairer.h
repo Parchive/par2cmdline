@@ -21,6 +21,7 @@
 #ifndef __PAR2REPAIRER_H__
 #define __PAR2REPAIRER_H__
 
+#include <atomic>
 
 class Par2Repairer
 {
@@ -100,6 +101,16 @@ protected:
   bool VerifyDataFile(DiskFile *diskfile, Par2RepairerSourceFile *sourcefile, const std::string &basepath, const bool renameonly = false);
 #endif
 
+  // Check the blocks of a source file at the offsets where they are expected
+  // to be found, using several threads. This is much faster than the sliding
+  // window scan below, and what it does not find narrows that scan down to
+  // the parts of the file which are not where they should be.
+  bool ScanDataFileAligned(DiskFile               *diskfile,    // [in]     The file being scanned
+                           ProgressMeter<u64>     &progress,    // [in]
+                           Par2RepairerSourceFile *sourcefile,  // [in]     The file it should match
+                           std::vector<char>      &matched,     // [out]    One entry per block
+                           u32                    &matchcount); // [out]
+
   // Perform a sliding window scan of the DiskFile looking for blocks of data that
   // might belong to any of the source files (for which a verification packet was
   // available). If a block of data might be from more than one source file, prefer
@@ -168,6 +179,8 @@ protected:
 #ifdef _OPENMP
   static u32 filethreads;      // Number of threads for file processing
 #endif
+  // How many files are being scanned block by block at this moment
+  static std::atomic<u32> activeblockscans;
 
   bool                      skipdata;                // Should we skip data whilst scanning
   u64                       skipleaway;              // The leaway +/- we should allow whilst scanning

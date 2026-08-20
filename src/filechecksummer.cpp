@@ -57,10 +57,12 @@ FileCheckSummer::~FileCheckSummer(void)
   delete [] buffer;
 }
 
-// Start reading the file at the beginning
-bool FileCheckSummer::Start(void)
+// Start reading the file at the beginning, or at the given offset
+bool FileCheckSummer::Start(u64 startoffset)
 {
-  currentoffset = readoffset = 0;
+  assert(startoffset == 0 || !computefilehashes);
+
+  currentoffset = readoffset = startoffset;
 
   tailpointer = outpointer = buffer;
   inpointer = &buffer[blocksize];

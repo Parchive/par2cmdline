@@ -189,6 +189,7 @@ typedef unsigned int     size_t;
 #include <sstream>
 #include <algorithm>
 #include <memory>
+#include <limits>
 
 #include <ctype.h>
 #include <iomanip>
