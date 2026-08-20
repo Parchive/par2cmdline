@@ -35,6 +35,8 @@ static char THIS_FILE[]=__FILE__;
 #endif
 #endif
 
+using namespace par2;
+
 #ifdef _WIN32
 
 int wmain(int argc, wchar_t* wargv[])

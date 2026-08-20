@@ -22,6 +22,9 @@
 
 #include <deque>
 
+namespace par2
+{
+
 // Multiplies each input block by the matrix on numthreads threads, which stay
 // alive from one submission to the next, and keeps the accumulated output
 // blocks in one buffer. AddInput queues a submission and returns, the block
@@ -210,5 +213,7 @@ private:
   std::condition_variable  drained;  // the queue has emptied
   std::thread              worker;   // multiplies the submitted blocks
 };
+
+} // namespace par2
 
 #endif // __REFERENCE_PROCESSOR_H__

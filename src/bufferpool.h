@@ -26,6 +26,9 @@
 #include <mutex>
 #include <vector>
 
+namespace par2
+{
+
 // A fixed set of equally sized buffers which the threads using them take from
 // and give back to. They all come from one allocation, so that a thread which
 // holds several of them, or every one of them, costs no more than the pool
@@ -113,5 +116,7 @@ private:
   std::mutex              mutex;
   std::condition_variable given;       // a buffer has been given back
 };
+
+} // namespace par2
 
 #endif // __BUFFERPOOL_H__

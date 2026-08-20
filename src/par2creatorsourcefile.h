@@ -21,6 +21,9 @@
 #ifndef __PAR2CREATORSOURCEFILE_H__
 #define __PAR2CREATORSOURCEFILE_H__
 
+namespace par2
+{
+
 class DescriptionPacket;
 class VerificationPacket;
 class DiskFile;
@@ -78,5 +81,7 @@ protected:
 
   std::unique_ptr<Hasher> hasher; // Hashes the blocks of the file, and the file itself
 };
+
+} // namespace par2
 
 #endif // __PAR2CREATORSOURCEFILE_H__

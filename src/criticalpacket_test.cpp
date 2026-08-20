@@ -22,6 +22,8 @@
 
 #include "libpar2internal.h"
 
+using namespace par2;
+
 // CriticalPacket::CompareLess
 int test1() {
   CriticalPacket criticalpackets[11];
