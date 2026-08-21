@@ -116,6 +116,11 @@ Uniform recovery file sizes (default is variable sizes)
 .B \-R
 Recurse into subdirectories (only useful on create)
 .TP
+.B \-L
+Follow symlinks to files when scanning for source files (create only).
+Use at your own risk: symlink targets may lie outside the basepath.
+Symlinks to directories are not followed. POSIX systems only.
+.TP
 .B @
 Process a listing of files specified in text (file) input
 .SH EXITCODES

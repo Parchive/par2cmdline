@@ -372,7 +372,7 @@ std::string DiskFile::GetCanonicalPathname(std::string filename)
   return utf8::WideToUtf8(wfullname.get());
 }
 
-std::unique_ptr< std::list<std::string> > DiskFile::FindFiles(std::string path, std::string wildcard, bool recursive)
+std::unique_ptr< std::list<std::string> > DiskFile::FindFiles(std::string path, std::string wildcard, bool recursive, bool followlinks)
 {
   // check path, if not ending with path separator, add one
   char pathend = *path.rbegin();
@@ -401,7 +401,7 @@ std::unique_ptr< std::list<std::string> > DiskFile::FindFiles(std::string path, 
 
         std::string nwwildcard="*";
 	std::unique_ptr< std::list<std::string> > dirmatches(
-						 DiskFile::FindFiles(path + utf8::WideToUtf8(fd.cFileName), nwwildcard, true)
+						 DiskFile::FindFiles(path + utf8::WideToUtf8(fd.cFileName), nwwildcard, true, followlinks)
 						 );
 
         // append without requiring ordering
@@ -807,7 +807,7 @@ std::string DiskFile::GetCanonicalPathname(std::string filename)
   return result;
 }
 
-std::unique_ptr< std::list<std::string> > DiskFile::FindFiles(std::string path, std::string wildcard, bool recursive)
+std::unique_ptr< std::list<std::string> > DiskFile::FindFiles(std::string path, std::string wildcard, bool recursive, bool followlinks)
 {
   // check path, if not ending with path separator, add one
   char pathend = *path.rbegin();
@@ -853,13 +853,21 @@ std::unique_ptr< std::list<std::string> > DiskFile::FindFiles(std::string path, 
 
                 std::string nwwildcard="*";
                 std::unique_ptr< std::list<std::string> > dirmatches(
-							 DiskFile::FindFiles(fn, nwwildcard, true)
+							 DiskFile::FindFiles(fn, nwwildcard, true, followlinks)
 							 );
                 matches->splice(matches->end(), *dirmatches);
               }
               else if (S_ISREG(st.st_mode))
               {
                 matches->push_back(path + name);
+              }
+              else if (followlinks && S_ISLNK(st.st_mode))
+              {
+                struct stat stt;
+                if (stat(fn.c_str(), &stt) == 0 && S_ISREG(stt.st_mode))
+                {
+                  matches->push_back(path + name);
+                }
               }
             }
           }
@@ -890,7 +898,7 @@ std::unique_ptr< std::list<std::string> > DiskFile::FindFiles(std::string path, 
 
                   std::string nwwildcard="*";
 		  std::unique_ptr< std::list<std::string> > dirmatches(
-							   DiskFile::FindFiles(fn, nwwildcard, true)
+							   DiskFile::FindFiles(fn, nwwildcard, true, followlinks)
 							   );
 
                   matches->splice(matches->end(), *dirmatches);
@@ -898,6 +906,14 @@ std::unique_ptr< std::list<std::string> > DiskFile::FindFiles(std::string path, 
                 else if (S_ISREG(st.st_mode))
                 {
                   matches->push_back(path + name);
+                }
+                else if (followlinks && S_ISLNK(st.st_mode))
+                {
+                  struct stat stt;
+                  if (stat(fn.c_str(), &stt) == 0 && S_ISREG(stt.st_mode))
+                  {
+                    matches->push_back(path + name);
+                  }
                 }
               }
             }
@@ -919,7 +935,7 @@ std::unique_ptr< std::list<std::string> > DiskFile::FindFiles(std::string path, 
       {
         std::string nwwildcard="*";
 	std::unique_ptr< std::list<std::string> > dirmatches(
-						 DiskFile::FindFiles(fn, nwwildcard, true)
+						 DiskFile::FindFiles(fn, nwwildcard, true, followlinks)
 						 );
 
         matches->splice(matches->end(), *dirmatches);
@@ -927,6 +943,14 @@ std::unique_ptr< std::list<std::string> > DiskFile::FindFiles(std::string path, 
       else if (S_ISREG(st.st_mode))
       {
         matches->push_back(path + wildcard);
+      }
+      else if (followlinks && S_ISLNK(st.st_mode))
+      {
+        struct stat stt;
+        if (stat(fn.c_str(), &stt) == 0 && S_ISREG(stt.st_mode))
+        {
+          matches->push_back(path + wildcard);
+        }
       }
     }
   }

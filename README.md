@@ -106,6 +106,8 @@ The command line parameters for par2cmdline are as follow:
     -p       : Purge backup files and par files on successful recovery or
                when no recovery is needed
     -R       : Recurse into subdirectories (only useful on create)
+    -L       : Follow symlinks to files when scanning for source files
+               (create only, POSIX only, use at your own risk)
     -N       : data skipping (find badly mispositioned data blocks)
     -S<n>    : Skip leaway (distance +/- from expected block position)
     -B<path> : Set the basepath to use as reference for the datafiles
