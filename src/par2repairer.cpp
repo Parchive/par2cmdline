@@ -276,7 +276,8 @@ Result Par2Repairer::VerifyFiles(const std::string &basepath,
 }
 
 // Rebuild whatever is missing or damaged
-Result Par2Repairer::RepairFiles(const size_t memorylimit, const std::string &basepath)
+Result Par2Repairer::RepairFiles(const size_t memorylimit, const std::string &basepath,
+                                 bool verifyafter)
 {
   ApplyMemoryLimit(memorylimit);
 
@@ -349,9 +350,6 @@ Result Par2Repairer::RepairFiles(const size_t memorylimit, const std::string &ba
       blockoffset += blocklength;
     }
 
-    if (noiselevel > nlSilent)
-      sout << "\nVerifying repaired files:\n" << std::endl;
-
     // The repaired files are scanned into buffers of their own, so the ones
     // the repair read and wrote through are given up first
     delete [] (u8*)transferbuffer;
@@ -359,14 +357,34 @@ Result Par2Repairer::RepairFiles(const size_t memorylimit, const std::string &ba
     delete [] (u8*)outputbuffer;
     outputbuffer = 0;
 
-    // Verify that all of the reconstructed target files are now correct
-    ResetScanBuffers(verifylist.size());
-
-    if (!VerifyTargetFiles(basepath))
+    if (verifyafter)
     {
-      // Delete all of the partly reconstructed files
-      DeleteIncompleteTargetFiles();
-      return IsCancelled() ? eCancelled : eFileIOError;
+      if (noiselevel > nlSilent)
+        sout << "\nVerifying repaired files:\n" << std::endl;
+
+      // Verify that all of the reconstructed target files are now correct
+      ResetScanBuffers(verifylist.size());
+
+      if (!VerifyTargetFiles(basepath))
+      {
+        // Delete all of the partly reconstructed files
+        DeleteIncompleteTargetFiles();
+        return IsCancelled() ? eCancelled : eFileIOError;
+      }
+    }
+    else
+    {
+      // Close what the skipped pass would have closed
+      for (size_t i = 0; i < verifylist.size(); ++i)
+      {
+        Par2RepairerSourceFile *sourcefile = verifylist[i];
+        if (0 == sourcefile)
+          continue;
+
+        DiskFile *targetfile = sourcefile->GetTargetFile();
+        if (0 != targetfile && targetfile->IsOpen())
+          targetfile->Close();
+      }
     }
 
     if (IsCancelled())
@@ -378,7 +396,7 @@ Result Par2Repairer::RepairFiles(const size_t memorylimit, const std::string &ba
   }
 
   // Are all of the target files now complete?
-  if (completefilecount<mainpacket->RecoverableFileCount())
+  if (verifyafter && completefilecount<mainpacket->RecoverableFileCount())
   {
     serr << "Repair Failed." << std::endl;
     return eRepairFailed;
