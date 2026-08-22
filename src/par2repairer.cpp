@@ -428,6 +428,7 @@ bool Par2Repairer::GetSetInfo(Par2SetInfo *info) const
   memcpy(info->setid.data(), setid.hash, sizeof(setid.hash));
   info->blocksize = blocksize;
   info->datablocks = sourceblockcount;
+  info->recoveryblocks = (u32)recoverypacketmap.size();
   info->recoverablefilecount = mainpacket->RecoverableFileCount();
   info->otherfilecount = mainpacket->TotalFileCount() - mainpacket->RecoverableFileCount();
   info->datasize = totaldatasize;

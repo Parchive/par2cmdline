@@ -49,6 +49,7 @@ namespace
   const size_t DATACOUNT = 3;
   const char *const PARFILE = "consumer.par2";
   const par2::u64 BLOCKSIZE = 4096;
+  const par2::u32 RECOVERYBLOCKS = 20;
 
   int failures = 0;
 
@@ -100,7 +101,7 @@ namespace
                                               0, 2,
                                               PARFILE, files,
                                               BLOCKSIZE, 0,
-                                              par2::scVariable, 0, 20);
+                                              par2::scVariable, 0, RECOVERYBLOCKS);
   }
 }
 
@@ -111,18 +112,22 @@ class Counting : public par2::Par2Observer
 public:
   Counting()
     : setinfo(0), files(0), progress(0), done(0),
-      last(0), wentbackwards(false), reached(false) {}
+      lastinfo(), last(0), wentbackwards(false), reached(false) {}
 
   int setinfo, files, progress, done;
+
+  // What the last OnSetInfo carried
+  par2::Par2SetInfo lastinfo;
 
   // Enough to tell one run of progress from several
   par2::u32 last;
   bool wentbackwards, reached;
 
-  void OnSetInfo(const par2::Par2SetInfo &)
+  void OnSetInfo(const par2::Par2SetInfo &info) override
   {
     std::lock_guard<std::mutex> lock(mutex);
     ++setinfo;
+    lastinfo = info;
   }
 
   void OnFile(const std::string &) override
@@ -182,6 +187,15 @@ int main()
       setidset = setidset || byte != 0;
     Check(setidset, "GetSetInfo setid");
     Check(info.creator.find("Created by ") == 0, "GetSetInfo creator");
+    // Counted from the packets, so it reads before anything has been verified
+    Check(info.recoveryblocks == RECOVERYBLOCKS, "GetSetInfo recovery blocks");
+
+    Check(observer.setinfo == 1, "OnSetInfo once");
+    Check(observer.lastinfo.recoveryblocks == RECOVERYBLOCKS,
+          "OnSetInfo recovery blocks");
+    Check(observer.lastinfo.datablocks == info.datablocks, "OnSetInfo data blocks");
+    Check(observer.lastinfo.blocksize == info.blocksize, "OnSetInfo blocksize");
+    Check(observer.lastinfo.creator == info.creator, "OnSetInfo creator");
 
     std::vector<par2::Par2FileInfo> files;
     Check(verifier.GetFileInfo(&files), "GetFileInfo");
@@ -208,7 +222,8 @@ int main()
     Check(status.completefilecount == DATACOUNT, "all files complete");
     Check(status.missingblockcount == 0, "nothing missing");
     Check(status.availableblockcount == info.datablocks, "every block available");
-    Check(status.recoveryblockcount > 0, "recovery blocks counted");
+    Check(status.recoveryblockcount == info.recoveryblocks,
+          "the verify counts the same recovery blocks");
     Check(quiet.str().empty(), "nlSilent writes nothing");
     Check(observer.setinfo == 1, "OnSetInfo called");
     Check(observer.progress > 0, "OnProgress called at nlSilent");
@@ -693,7 +708,7 @@ int main()
     Check(par2::eSuccess == verifier.Repair(false), "Repair without reading it back");
 
     // Nothing recounted the files, so the numbers still describe the damage
-    par2::Par2VerifyResult stale;
+    par2::Par2VerifyResult stale{};
     Check(verifier.GetVerifyResult(&stale), "GetVerifyResult after skipping");
     Check(stale.damagedfilecount == 1,
           "the counts still describe the state before the repair");
