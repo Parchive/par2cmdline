@@ -68,7 +68,6 @@ AC_FUNC_MEMCMP
 AC_CHECK_FUNCS([stricmp] [strcasecmp])
 AC_CHECK_FUNCS([strchr] [memcpy])
 AC_CHECK_FUNCS([pread])
-AC_CHECK_FUNCS([posix_fadvise])
 
 dnl DiskFile::Read is given the position to read from, using ReadFile with an
 dnl OVERLAPPED offset on Windows and pread everywhere else. Without one of the
