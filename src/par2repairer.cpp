@@ -160,10 +160,6 @@ Result Par2Repairer::Process(
 			     const u64 _skipleaway
 			     )
 {
-#ifdef _OPENMP
-  filethreads = _filethreads;
-#endif
-
   // Should we skip data whilst scanning files
   skipdata = _skipdata;
 
@@ -178,6 +174,9 @@ Result Par2Repairer::Process(
   // Set the number of threads
   if (nthreads != 0)
     omp_set_num_threads(nthreads);
+
+  // No more files are read at once than there are threads to hash them with
+  filethreads = std::min(_filethreads, (u32)omp_get_max_threads());
 
   // Files are scanned in parallel, and so are the blocks within one file,
   // so both levels need to be able to run threads.
