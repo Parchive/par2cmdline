@@ -272,7 +272,8 @@ Result Par2Repairer::VerifyFiles(const std::string &basepath,
 }
 
 // Rebuild whatever is missing or damaged
-Result Par2Repairer::RepairFiles(const size_t memorylimit, const std::string &basepath)
+Result Par2Repairer::RepairFiles(const size_t memorylimit, const std::string &basepath,
+                                 bool verifyafter)
 {
   ApplyMemoryLimit(memorylimit);
 
@@ -351,9 +352,6 @@ Result Par2Repairer::RepairFiles(const size_t memorylimit, const std::string &ba
       }
     }
 
-    if (noiselevel > nlSilent)
-      sout << "\nVerifying repaired files:\n" << std::endl;
-
     // The repaired files are scanned into buffers of their own, so the ones
     // the repair read and wrote through are given up first
     delete [] (u8*)transferbuffer;
@@ -361,14 +359,34 @@ Result Par2Repairer::RepairFiles(const size_t memorylimit, const std::string &ba
     delete [] (u8*)outputbuffer;
     outputbuffer = 0;
 
-    // Verify that all of the reconstructed target files are now correct
-    ResetScanBuffers(verifylist.size());
-
-    if (!VerifyTargetFiles(basepath))
+    if (verifyafter)
     {
-      // Delete all of the partly reconstructed files
-      DeleteIncompleteTargetFiles();
-      return IsCancelled() ? eCancelled : eFileIOError;
+      if (noiselevel > nlSilent)
+        sout << "\nVerifying repaired files:\n" << std::endl;
+
+      // Verify that all of the reconstructed target files are now correct
+      ResetScanBuffers(verifylist.size());
+
+      if (!VerifyTargetFiles(basepath) && !IsCancelled())
+      {
+        // Delete all of the partly reconstructed files
+        DeleteIncompleteTargetFiles();
+        return eFileIOError;
+      }
+    }
+
+    if (!verifyafter || IsCancelled())
+    {
+      // Close what the skipped pass would have closed
+      for (auto *sourcefile : verifylist)
+      {
+        if (0 == sourcefile)
+          continue;
+
+        DiskFile *targetfile = sourcefile->GetTargetFile();
+        if (0 != targetfile && targetfile->IsOpen())
+          targetfile->Close();
+      }
     }
 
     // Every block has been written, so a cancel now only stops the checking
@@ -378,7 +396,7 @@ Result Par2Repairer::RepairFiles(const size_t memorylimit, const std::string &ba
   }
 
   // Are all of the target files now complete?
-  if (completefilecount<mainpacket->RecoverableFileCount())
+  if (verifyafter && completefilecount<mainpacket->RecoverableFileCount())
   {
     serr << "Repair Failed." << std::endl;
     return eRepairFailed;
@@ -3071,12 +3089,22 @@ bool Par2Repairer::RenameTargetFiles(void)
         if (!renamed)
           return false;
 
+        // A backup renamed into place is no longer a backup
+        std::vector<DiskFile*>::iterator backup = std::find(backuplist.begin(), backuplist.end(), targetfile);
+        if (backup != backuplist.end())
+        {
+          backuplist.erase(backup);
+          backupnames.erase(targetfile);
+        }
+
         // This file is now the target file
         sourcefile->SetTargetExists(true);
         sourcefile->SetTargetFile(targetfile);
 
-        // We have one more complete file
+        // We have one more complete file, and one fewer with the wrong name
         completefilecount++;
+        if (renamedfilecount > 0)
+          renamedfilecount--;
       }
     }
 
