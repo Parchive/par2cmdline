@@ -98,8 +98,10 @@ struct Par2SetInfo
 {
   std::array<u8, 16> setid{};   // The recovery set id, an MD5 in the order its
                                 // bytes are stored
-  u64 blocksize;                // Size of each block
-  u32 datablocks;               // Number of blocks in the recovery set
+  u64 blocksize{};              // Size of each block
+  u32 datablocks{};             // Number of blocks in the recovery set
+  u32 recoveryblocks{};         // Recovery blocks read so far, which each
+                                // AddPar2File may add to
   u32 recoverablefilecount{};   // Files that can be repaired
   u32 otherfilecount{};         // Files described but not recoverable
   u64 datasize{};               // Total size of the recoverable files
