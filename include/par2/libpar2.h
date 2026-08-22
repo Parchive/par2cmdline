@@ -304,7 +304,12 @@ public:
   // Returns eLogicError if nothing has been verified yet, and
   // eRepairNotPossible if the last Verify or Reassess found too little
   // recovery data.
-  Result Repair(void);
+  //
+  // verifyafter reads back and hashes everything that was rebuilt, and is
+  // what turns a repair that did not work into eRepairFailed. With it off the
+  // result is eSuccess unless something went wrong along the way, and
+  // GetVerifyResult still describes the state before the repair.
+  Result Repair(const bool verifyafter = true);
 
   // Ask the work in progress to stop, from any thread. Verify or Repair then
   // returns eCancelled, having removed any partly written files. The request

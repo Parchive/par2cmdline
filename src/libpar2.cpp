@@ -118,14 +118,15 @@ public:
 
   Result Rebuild(const size_t memorylimit,
                  const u32 _nthreads,
-                 const u32 _filethreads)
+                 const u32 _filethreads,
+                 const bool verifyafter)
   {
     if (0 == mainpacket)
       return eInsufficientCriticalData;
 
     ApplyThreadCounts(_nthreads, _filethreads);
 
-    return RepairFiles(memorylimit, basepath);
+    return RepairFiles(memorylimit, basepath, verifyafter);
   }
 
   bool SetInfo(Par2SetInfo *info) const
@@ -336,7 +337,7 @@ Result Par2Verifier::Verify(const std::vector<std::string> &extrafiles,
   return result;
 }
 
-Result Par2Verifier::Repair(void)
+Result Par2Verifier::Repair(const bool verifyafter)
 {
   if (!verified)
     return eLogicError;
@@ -344,7 +345,7 @@ Result Par2Verifier::Repair(void)
   if (!impl->CanRepair())
     return eRepairNotPossible;
 
-  return impl->Rebuild(memorylimit, nthreads, filethreads);
+  return impl->Rebuild(memorylimit, nthreads, filethreads, verifyafter);
 }
 
 void Par2Verifier::Cancel(void)
