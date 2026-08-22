@@ -633,6 +633,47 @@ int main()
       std::remove(observed[i]);
   }
 
+  // A repair can be asked not to read back what it wrote
+  {
+    Check(MakeDirectory("skipdir"), "mkdir for the skipped-verification check");
+
+    const char *const data = "skipdir/skip.data";
+    WriteData(data, 61, 30000);
+
+    std::vector<std::string> files;
+    files.emplace_back(data);
+    Check(par2::eSuccess == par2::par2create(quiet, quiet, par2::nlSilent,
+                                             64 * 1024 * 1024, "skipdir/", 0, 2,
+                                             "skipdir/skip", files, BLOCKSIZE, 0,
+                                             par2::scUniform, 1, 8),
+          "par2create for the skipped-verification check");
+
+    Corrupt(data, 500, 400);
+
+    par2::Par2Verifier verifier(quiet, quiet, par2::nlSilent, "skipdir/");
+    Check(par2::eSuccess == verifier.AddPar2File("skipdir/skip.par2"),
+          "AddPar2File for the skipped-verification check");
+    Check(par2::eRepairPossible == verifier.Verify(noextras, false, 0),
+          "the damage is repairable");
+
+    Check(par2::eSuccess == verifier.Repair(false), "Repair without reading it back");
+
+    // Nothing recounted the files, so the numbers still describe the damage
+    par2::Par2VerifyResult stale;
+    Check(verifier.GetVerifyResult(&stale), "GetVerifyResult after skipping");
+    Check(stale.damagedfilecount == 1,
+          "the counts still describe the state before the repair");
+
+    // The repair itself was real, which a fresh verifier can say
+    par2::Par2Verifier after(quiet, quiet, par2::nlSilent, "skipdir/");
+    Check(par2::eSuccess == after.AddPar2File("skipdir/skip.par2"),
+          "AddPar2File to check the repair");
+    Check(par2::eSuccess == after.Verify(noextras, false, 0),
+          "the file really was repaired");
+
+    std::remove(data);
+  }
+
   // A file found under another name is reported as a pair, and stays reported
   // after the repair that renames it into place
   {

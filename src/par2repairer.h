@@ -115,7 +115,8 @@ protected:
                      std::vector<std::string> &extrafiles,
                      const bool renameonly);
   // Rebuild whatever is missing or damaged
-  Result RepairFiles(const size_t memorylimit, const std::string &basepath);
+  Result RepairFiles(const size_t memorylimit, const std::string &basepath,
+                     bool verifyafter = true);
 
   // Load packets from the specified file
   bool LoadPacketsFromFile(const std::string &filename, bool reread = false);
