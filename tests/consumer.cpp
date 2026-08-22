@@ -48,6 +48,7 @@ namespace
   const size_t DATACOUNT = 3;
   const char *const PARFILE = "consumer.par2";
   const par2::u64 BLOCKSIZE = 4096;
+  const par2::u32 RECOVERYBLOCKS = 20;
 
   int failures = 0;
 
@@ -99,7 +100,7 @@ namespace
                                               0, 2,
                                               PARFILE, files,
                                               BLOCKSIZE, 0,
-                                              par2::scVariable, 0, 20);
+                                              par2::scVariable, 0, RECOVERYBLOCKS);
   }
 }
 
@@ -187,6 +188,8 @@ int main()
     for (size_t i = 0; i < info.setid.size(); ++i)
       setidset = setidset || info.setid[i] != 0;
     Check(setidset, "GetSetInfo setid");
+    // Counted from the packets, so it reads before anything has been verified
+    Check(info.recoveryblocks == RECOVERYBLOCKS, "GetSetInfo recovery blocks");
 
     std::vector<par2::Par2FileInfo> files;
     Check(verifier.GetFileInfo(&files), "GetFileInfo");
@@ -213,7 +216,8 @@ int main()
     Check(status.completefilecount == DATACOUNT, "all files complete");
     Check(status.missingblockcount == 0, "nothing missing");
     Check(status.availableblockcount == info.datablocks, "every block available");
-    Check(status.recoveryblockcount > 0, "recovery blocks counted");
+    Check(status.recoveryblockcount == info.recoveryblocks,
+          "the verify counts the same recovery blocks");
     Check(quiet.str().empty(), "nlSilent writes nothing");
     Check(observer.setinfo == 1, "OnSetInfo called");
     Check(observer.progress > 0, "OnProgress called at nlSilent");
@@ -648,33 +652,33 @@ int main()
 
     std::vector<std::string> files;
     files.push_back(data);
-    Check(Par2::eSuccess == Par2::par2create(quiet, quiet, Par2::nlSilent,
+    Check(par2::eSuccess == par2::par2create(quiet, quiet, par2::nlSilent,
                                              64 * 1024 * 1024, "skipdir/", 0, 2,
                                              "skipdir/skip", files, BLOCKSIZE, 0,
-                                             Par2::scUniform, 1, 8),
+                                             par2::scUniform, 1, 8),
           "par2create for the skipped-verification check");
 
     Corrupt(data, 500, 400);
 
-    Par2::Par2Verifier verifier(quiet, quiet, Par2::nlSilent, "skipdir/");
-    Check(Par2::eSuccess == verifier.AddPar2File("skipdir/skip.par2"),
+    par2::Par2Verifier verifier(quiet, quiet, par2::nlSilent, "skipdir/");
+    Check(par2::eSuccess == verifier.AddPar2File("skipdir/skip.par2"),
           "AddPar2File for the skipped-verification check");
-    Check(Par2::eRepairPossible == verifier.Verify(noextras, false, 0),
+    Check(par2::eRepairPossible == verifier.Verify(noextras, false, 0),
           "the damage is repairable");
 
-    Check(Par2::eSuccess == verifier.Repair(false), "Repair without reading it back");
+    Check(par2::eSuccess == verifier.Repair(false), "Repair without reading it back");
 
     // Nothing recounted the files, so the numbers still describe the damage
-    Par2::Par2VerifyResult stale;
+    par2::Par2VerifyResult stale;
     Check(verifier.GetVerifyResult(&stale), "GetVerifyResult after skipping");
     Check(stale.damagedfilecount == 1,
           "the counts still describe the state before the repair");
 
     // The repair itself was real, which a fresh verifier can say
-    Par2::Par2Verifier after(quiet, quiet, Par2::nlSilent, "skipdir/");
-    Check(Par2::eSuccess == after.AddPar2File("skipdir/skip.par2"),
+    par2::Par2Verifier after(quiet, quiet, par2::nlSilent, "skipdir/");
+    Check(par2::eSuccess == after.AddPar2File("skipdir/skip.par2"),
           "AddPar2File to check the repair");
-    Check(Par2::eSuccess == after.Verify(noextras, false, 0),
+    Check(par2::eSuccess == after.Verify(noextras, false, 0),
           "the file really was repaired");
 
     std::remove(data);
