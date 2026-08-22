@@ -20,7 +20,14 @@ do
 	PARBINARY="$f"
     fi
 
-    $PARBINARY || { echo "ERROR: $f failed." ; exit 1; } >&2
+    # 77 is the exit status for a test that does not apply on this platform
+    $PARBINARY
+    status=$?
+    if [ $status -ne 0 ] && [ $status -ne 77 ]
+    then
+        echo "ERROR: $f failed." >&2
+        exit 1
+    fi
 
     echo "------------------------------------------------------"
     echo "Unit test complete for file $f"
@@ -38,7 +45,13 @@ do
     echo "Running unit tests from file $f"
     echo "------------------------------------------------------"
 
-    wine $f || { echo "ERROR: $f failed." ; exit 1; } >&2
+    wine $f
+    status=$?
+    if [ $status -ne 0 ] && [ $status -ne 77 ]
+    then
+        echo "ERROR: $f failed." >&2
+        exit 1
+    fi
 
     echo "------------------------------------------------------"
     echo "Unit test complete for file $f"

@@ -53,6 +53,7 @@ int main(int argc, char* argv[])
 
   utf8::WideToUtf8ArgsAdapter wargsAdapter{ argc, wargv };
   auto argv = wargsAdapter.GetUtf8Args();
+  argc = wargsAdapter.GetArgc();
 #endif
 
   // check sizeof integers

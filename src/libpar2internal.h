@@ -193,7 +193,6 @@ typedef unsigned int     size_t;
 
 #include <ctype.h>
 #include <iomanip>
-#include <codecvt>
 
 #include <cassert>
 
