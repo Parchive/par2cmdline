@@ -796,6 +796,48 @@ int main()
     std::remove(data);
   }
 
+  // A file scanned again once it no longer holds the set's data stops being
+  // reported as that file under another name
+  {
+    Check(MakeDirectory("restaledir"), "mkdir for the rescanned rename check");
+
+    const char *const data = "restaledir/proper.data";
+    const char *const obfuscated = "restaledir/c4d2e19a.dat";
+
+    WriteData(data, 53, 12000);
+
+    std::vector<std::string> files;
+    files.emplace_back(data);
+    Check(par2::eSuccess == par2::par2create(quiet, quiet, par2::nlSilent,
+                                             64 * 1024 * 1024, "restaledir/", 0, 2,
+                                             "restaledir/stale", files, BLOCKSIZE, 0,
+                                             par2::scUniform, 1, 4),
+          "par2create for the rescanned rename check");
+
+    std::rename(data, obfuscated);
+
+    par2::Par2Verifier verifier(quiet, quiet, par2::nlSilent, "restaledir/");
+    Check(par2::eSuccess == verifier.AddPar2File("restaledir/stale.par2"),
+          "AddPar2File for the rescanned rename check");
+    Check(par2::eRepairPossible == verifier.VerifyFile(obfuscated),
+          "the file is found under its other name");
+
+    std::vector<std::pair<std::string, std::string> > renamed;
+    Check(verifier.GetRenamedFiles(&renamed) && renamed.size() == 1,
+          "and reported as renamed");
+
+    // Its contents change, and it is scanned again
+    WriteData(obfuscated, 99, 12000);
+    verifier.VerifyFile(obfuscated);
+
+    Check(verifier.GetRenamedFiles(&renamed), "GetRenamedFiles after scanning it again");
+    Check(renamed.empty(), "it is no longer reported as renamed");
+
+    std::remove(obfuscated);
+    std::remove("restaledir/stale.par2");
+    std::remove("restaledir/stale.vol0+4.par2");
+  }
+
   // With no basepath the set is resolved beside its PAR2 files, as the tool
   // does, rather than against the working directory
   {
@@ -984,6 +1026,214 @@ int main()
     // after this. WriteData is deterministic, so no new par2create is needed.
     for (size_t i = 0; i < DATACOUNT; ++i)
       WriteData(DATA[i], (unsigned)i, 20000 + i * 9000);
+  }
+
+  // Files fed in one at a time as they arrive, including one which is the right
+  // size but has not finished downloading when it is first scanned
+  {
+    Check(MakeDirectory("arrivedir"), "mkdir for the incremental check");
+
+    const char *const arriving[] = {"arrivedir/arrive-0.data",
+                                    "arrivedir/arrive-1.data",
+                                    "arrivedir/arrive-2.data"};
+    const size_t arrivingcount = sizeof(arriving) / sizeof(arriving[0]);
+
+    std::vector<std::string> files;
+    for (size_t i = 0; i < arrivingcount; ++i)
+    {
+      WriteData(arriving[i], (unsigned)(91 + i), 30000);
+      files.emplace_back(arriving[i]);
+    }
+    Check(par2::eSuccess == par2::par2create(quiet, quiet, par2::nlSilent,
+                                             64 * 1024 * 1024, "arrivedir/", 0, 2,
+                                             "arrivedir/arrive", files, BLOCKSIZE, 0,
+                                             par2::scUniform, 1, 20),
+          "par2create for the incremental check");
+
+    // Only the third file is on disk, and it is the right size with a hole in
+    // the middle, which is what a download in progress looks like
+    Corrupt(arriving[2], 12000, 6000);
+    std::remove(arriving[0]);
+    std::remove(arriving[1]);
+
+    par2::Par2Verifier verifier(quiet, quiet, par2::nlSilent, "arrivedir/");
+    Check(par2::eSuccess == verifier.AddPar2File("arrivedir/arrive.par2"),
+          "AddPar2File for the incremental check");
+
+    par2::Par2VerifyResult r{};
+
+    // The incomplete one, scanned while it is still a hole
+    verifier.VerifyFile(arriving[2]);
+    Check(verifier.GetVerifyResult(&r), "GetVerifyResult after the first scan");
+    Check(r.completefilecount == 0, "nothing is complete yet");
+    Check(r.damagedfilecount == 1, "the file on disk is damaged");
+    Check(r.availableblockcount > 0, "but some of its blocks are usable");
+
+    const par2::u32 partial = r.availableblockcount;
+
+    // It finishes downloading, and is scanned again
+    WriteData(arriving[2], (unsigned)93, 30000);
+    verifier.VerifyFile(arriving[2]);
+    Check(verifier.GetVerifyResult(&r), "GetVerifyResult after the rescan");
+    Check(r.completefilecount == 1, "the finished file is now complete");
+    Check(r.damagedfilecount == 0, "and no longer counts as damaged");
+    Check(r.availableblockcount > partial, "the blocks it was missing are there");
+
+    // The other two arrive
+    WriteData(arriving[0], (unsigned)91, 30000);
+    verifier.VerifyFile(arriving[0]);
+    WriteData(arriving[1], (unsigned)92, 30000);
+    Check(par2::eSuccess == verifier.VerifyFile(arriving[1]),
+          "the set is complete once the last file is scanned");
+
+    Check(verifier.GetVerifyResult(&r), "GetVerifyResult at the end");
+    Check(r.completefilecount == arrivingcount, "every file is complete");
+    Check(r.missingblockcount == 0, "and nothing is missing");
+
+    for (const char *name : arriving)
+      std::remove(name);
+  }
+
+  // A Verify after files were fed in one at a time starts again from what is on
+  // disk, rather than adding to what the scans found
+  {
+    Check(MakeDirectory("rescandir"), "mkdir for the verify after scans check");
+
+    const char *const names[] = {"rescandir/rescan-0.data", "rescandir/rescan-1.data"};
+
+    std::vector<std::string> files;
+    for (size_t i = 0; i < 2; ++i)
+    {
+      WriteData(names[i], (unsigned)(71 + i), 30000);
+      files.emplace_back(names[i]);
+    }
+    Check(par2::eSuccess == par2::par2create(quiet, quiet, par2::nlSilent,
+                                             64 * 1024 * 1024, "rescandir/", 0, 2,
+                                             "rescandir/rescan", files, BLOCKSIZE, 0,
+                                             par2::scUniform, 1, 20),
+          "par2create for the verify after scans check");
+
+    par2::Par2Verifier verifier(quiet, quiet, par2::nlSilent, "rescandir/");
+    Check(par2::eSuccess == verifier.AddPar2File("rescandir/rescan.par2"),
+          "AddPar2File for the verify after scans check");
+    verifier.VerifyFile(names[0]);
+    Check(par2::eSuccess == verifier.VerifyFile(names[1]),
+          "both files are intact when they are fed in");
+
+    Corrupt(names[0], 5000, 2000);
+
+    par2::Par2VerifyResult r{};
+    Check(par2::eRepairPossible == verifier.Verify(),
+          "a Verify after the scans finds the damage done since");
+    Check(verifier.GetVerifyResult(&r), "GetVerifyResult after the verify");
+    Check(r.completefilecount == 1 && r.damagedfilecount == 1,
+          "one file is intact and one damaged, each counted once");
+
+    for (const char *name : names)
+      std::remove(name);
+  }
+
+  // A PAR2 file fed in along with the data is left alone, since a repair
+  // reads the recovery data through the packets read from it
+  {
+    Check(MakeDirectory("feeddir"), "mkdir for the fed PAR2 file check");
+
+    const char *const data = "feeddir/feed.data";
+
+    WriteData(data, 27, 40000);
+
+    std::vector<std::string> files;
+    files.emplace_back(data);
+    Check(par2::eSuccess == par2::par2create(quiet, quiet, par2::nlSilent,
+                                             64 * 1024 * 1024, "feeddir/", 0, 2,
+                                             "feeddir/feed", files, BLOCKSIZE, 0,
+                                             par2::scUniform, 1, 8),
+          "par2create for the fed PAR2 file check");
+
+    // Named in full, as an application working in absolute paths names them,
+    // which is also how the volumes found beside the set are recorded
+    std::string dir;
+    {
+      par2::Par2Verifier probe(quiet, quiet, par2::nlSilent, "feeddir/");
+      std::vector<par2::Par2FileInfo> info;
+      Check(par2::eSuccess == probe.AddPar2File("feeddir/feed.par2") &&
+            probe.GetFileInfo(&info) && info.size() == 1,
+            "GetFileInfo for the fed PAR2 file check");
+      if (info.size() == 1)
+        dir = info[0].localfilename.substr(0, info[0].localfilename.size() -
+                                              std::string("feed.data").size());
+    }
+
+    Corrupt(data, 1000, 5000);
+
+    par2::Par2Verifier verifier(quiet, quiet, par2::nlSilent, dir);
+    Check(par2::eSuccess == verifier.AddPar2File(dir + "feed.par2"),
+          "AddPar2File for the fed PAR2 file check");
+    Check(par2::eRepairPossible == verifier.VerifyFile(dir + "feed.data"),
+          "the damaged data is found");
+    Check(par2::eRepairPossible == verifier.VerifyFile(dir + "feed.vol0+8.par2"),
+          "a volume fed in too is not taken for data");
+    Check(par2::eRepairPossible == verifier.VerifyFile(dir + "feed.par2"),
+          "nor is the index file");
+    Check(par2::eSuccess == verifier.Repair(),
+          "and the repair still reads its recovery data through them");
+
+    // With the set whole, a file which adds nothing says so as a verify would
+    Check(par2::eSuccess == verifier.VerifyFile(dir + "feed.data"),
+          "the repaired data fed in again is whole");
+    Check(par2::eSuccess == verifier.VerifyFile(dir + "feed.par2"),
+          "a PAR2 file fed in once the set is whole reports it whole");
+    Check(par2::eSuccess == verifier.VerifyFile(dir + "absent.data"),
+          "and so does a file which is not there");
+
+    par2::Par2Verifier after(quiet, quiet, par2::nlSilent, "feeddir/");
+    Check(par2::eSuccess == after.AddPar2File("feeddir/feed.par2"),
+          "AddPar2File after the fed repair");
+    Check(par2::eSuccess == after.Verify(), "the data is whole again");
+
+    std::remove(data);
+    std::remove("feeddir/feed.data.1");
+    std::remove("feeddir/feed.par2");
+    std::remove("feeddir/feed.vol0+8.par2");
+  }
+
+  // A data file which arrives before the PAR2 file describing it
+  {
+    Check(MakeDirectory("firstdir"), "mkdir for the ordering check");
+
+    const char *const early = "firstdir/early.data";
+    const char *const late = "firstdir/late.data";
+
+    WriteData(early, 95, 30000);
+    WriteData(late, 96, 30000);
+
+    std::vector<std::string> files;
+    files.emplace_back(early);
+    files.emplace_back(late);
+    Check(par2::eSuccess == par2::par2create(quiet, quiet, par2::nlSilent,
+                                             64 * 1024 * 1024, "firstdir/", 0, 2,
+                                             "firstdir/first", files, BLOCKSIZE, 0,
+                                             par2::scUniform, 1, 20),
+          "par2create for the ordering check");
+
+    std::remove(late);
+
+    par2::Par2Verifier verifier(quiet, quiet, par2::nlSilent, "firstdir/");
+
+    // Nothing describes it yet, so it cannot be scanned
+    Check(par2::eInsufficientCriticalData == verifier.VerifyFile(early),
+          "a scan before the set is known says so");
+
+    // The PAR2 file arrives and the earlier scan is replayed against it
+    Check(par2::eSuccess == verifier.AddPar2File("firstdir/first.par2"),
+          "AddPar2File for the ordering check");
+
+    par2::Par2VerifyResult r{};
+    Check(verifier.GetVerifyResult(&r), "the replayed scan counts as a verify");
+    Check(r.completefilecount == 1, "the file scanned first was found");
+    Check(r.missingfilecount == 1, "and the one never scanned is missing");
+
+    std::remove(early);
   }
 
   // The implementations an application supplies reach the work the handle does,

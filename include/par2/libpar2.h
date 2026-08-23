@@ -25,6 +25,7 @@
 #include <memory>
 #include <mutex>
 #include <ostream>
+#include <set>
 #include <string>
 #include <utility>
 #include <vector>
@@ -277,16 +278,16 @@ public:
 
   // Look for blocks which are not where the set says they should be, the -N
   // option, with leaway the distance either side to search, the -S option.
-  // Zero leaway selects the default. Applies to Verify.
+  // Zero leaway selects the default. Applies to Verify and to VerifyFile.
   void SetDataSkipping(const bool enabled, const u64 leaway = 0);
 
   // Hash the whole of each file as well as its blocks, the --full-hash option.
-  // Applies to Verify.
+  // Applies to Verify and to VerifyFile.
   void SetFullHash(const bool enabled);
 
   // Threads for the main processing and for hashing files in parallel, the -t
   // and -T options. Either left zero stays at the default. They are read by
-  // the next Verify or Repair.
+  // the next Verify, VerifyFile or Repair.
   void SetThreadCounts(const u32 nthreads, const u32 filethreads);
 
   // Check the files described by the set against the data on disk. Returns
@@ -296,6 +297,27 @@ public:
   // May be called more than once; each call is a fresh pass. Repair works on
   // the results of the Verify that preceded it, so call them in that order.
   Result Verify(const std::vector<std::string> &extrafiles = {});
+
+  // Scan one file that has become available, matching it against the set the
+  // way a Verify would, without reading anything else. Use it to feed files in
+  // as they arrive rather than waiting for all of them.
+  //
+  // Safe to call again for the same file: whatever an earlier scan found for it
+  // is discarded first, so a file which was incomplete when it was first
+  // scanned can be scanned again once it is finished. Blocks another file
+  // supplied are left alone.
+  //
+  // The name may be one the set describes or one it does not; an unrecognised
+  // file is matched by content, as an extra file is.
+  //
+  // Returns what Verify would return for the set as it stands, so a file which
+  // has not been scanned yet still counts as missing. A later Verify replaces
+  // everything the individual scans found, and after a Repair they start again
+  // from nothing.
+  //
+  // May be called before any PAR2 file has been added: the result is then
+  // eInsufficientCriticalData, and the file is scanned once one arrives.
+  Result VerifyFile(const std::string &filename);
 
   // The numbers behind the last Verify or Reassess. A repair is possible when
   // recoveryblockcount is at least missingblockcount, and needs
@@ -375,6 +397,7 @@ private:
   u64 skipleaway;
   bool fullhash;
   std::vector<std::string> par2files;
+  std::set<std::string> scannedfiles;
   std::map<std::string, std::vector<bool> > knownblocks;
   bool verified;
   bool scanned;

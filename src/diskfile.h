@@ -159,6 +159,9 @@ public:
   void Remove(DiskFile *diskfile);
   DiskFile* Find(std::string filename) const;
 
+  // Every file in the map
+  std::vector<DiskFile*> Files(void) const;
+
 protected:
   std::map<std::string, DiskFile*>    diskfilemap;             // Map from filename to DiskFile
 };
