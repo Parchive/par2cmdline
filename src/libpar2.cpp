@@ -94,10 +94,23 @@ public:
     return eSuccess;
   }
 
+  Result Scan(const std::string &filename, const size_t memorylimit,
+              const u32 _nthreads, const u32 _filethreads)
+  {
+    ApplyThreadCounts(_nthreads, _filethreads);
+    ApplyMemoryLimit(memorylimit);
+
+    return ScanFile(filename, basepath);
+  }
+
+  void SetDataSkipping(const bool _skipdata, const u64 _skipleaway)
+  {
+    skipdata = _skipdata;
+    skipleaway = _skipleaway;
+  }
+
   Result Check(const std::vector<std::string> &_extrafiles,
                const size_t memorylimit,
-               const bool _skipdata,
-               const u64 _skipleaway,
                const u32 _nthreads,
                const u32 _filethreads)
   {
@@ -106,9 +119,6 @@ public:
 
     ApplyThreadCounts(_nthreads, _filethreads);
     ApplyMemoryLimit(memorylimit);
-
-    skipdata = _skipdata;
-    skipleaway = _skipleaway;
 
     std::vector<std::string> extrafiles = _extrafiles;
 
@@ -198,6 +208,7 @@ void Par2Verifier::Restart(void)
   // The replay repeats work the observer has already been told about, so it is
   // told none of it. The observer is attached once the handle is back where it
   // was, and the cancel with it, so that neither affects the replay itself.
+  impl->SetDataSkipping(skipdata, skipleaway);
 
   for (std::map<std::string, std::vector<bool> >::const_iterator kb = knownblocks.begin();
        kb != knownblocks.end();
@@ -211,13 +222,21 @@ void Par2Verifier::Restart(void)
     impl->Add(par2file, 0);
   }
 
+  verified = false;
+  scanned = false;
+
+  const std::vector<std::string> rescan = scannedfiles;
+  scannedfiles.clear();
+
+  for (const auto &f : rescan)
+  {
+    VerifyFile(f);
+  }
+
   impl->SetObserver(observer);
 
   if (wascancelled)
     impl->Cancel();
-
-  verified = false;
-  scanned = false;
 }
 
 Par2Verifier::Par2Verifier(std::ostream &sout, std::ostream &serr, NoiseLevel noiselevel,
@@ -229,7 +248,10 @@ Par2Verifier::Par2Verifier(std::ostream &sout, std::ostream &serr, NoiseLevel no
 , memorylimit(DEFAULT_MEMORY_LIMIT)
 , nthreads(0)
 , filethreads(0)
+, skipdata(false)
+, skipleaway(0)
 , par2files()
+, scannedfiles()
 , knownblocks()
 , verified(false)
 , scanned(false)
@@ -249,6 +271,14 @@ void Par2Verifier::SetObserver(Par2Observer *_observer)
 void Par2Verifier::SetMemoryLimit(const size_t _memorylimit)
 {
   memorylimit = (_memorylimit != 0) ? _memorylimit : DEFAULT_MEMORY_LIMIT;
+}
+
+void Par2Verifier::SetDataSkipping(const bool enabled, const u64 leaway)
+{
+  skipdata = enabled;
+  skipleaway = leaway;
+
+  impl->SetDataSkipping(skipdata, skipleaway);
 }
 
 void Par2Verifier::SetThreadCounts(const u32 _nthreads, const u32 _filethreads)
@@ -279,8 +309,10 @@ Result Par2Verifier::AddPar2File(const std::string &parfilename)
     par2files.push_back(parfilename);
 
   // Extra recovery data leaves what the scan found still true, so it is kept
-  // and Reassess can use it. A set of a different shape does not.
-  if (scanned && setchanged)
+  // and Reassess can use it. A set of a different shape does not, even when the
+  // scan was cancelled. Files scanned before the set was known are replayed by
+  // the same restart.
+  if (setchanged && (scanned || !scannedfiles.empty()))
     Restart();
 
   return result;
@@ -336,20 +368,44 @@ bool Par2Verifier::SetKnownBlocks(const std::string &filename,
   return true;
 }
 
-Result Par2Verifier::Verify(const std::vector<std::string> &extrafiles,
-                           const bool skipdata,
-                           const u64 skipleaway)
+Result Par2Verifier::Verify(const std::vector<std::string> &extrafiles)
 {
+  // A full pass covers everything the individual scans did, so they are dropped
+  // rather than replayed into it. Whatever was scanned before, by a pass that
+  // was cancelled too, is started afresh.
+  scannedfiles.clear();
+
   if (scanned)
     Restart();
 
-  const Result result = impl->Check(extrafiles, memorylimit, skipdata, skipleaway,
-                                    nthreads, filethreads);
+  const Result result = impl->Check(extrafiles, memorylimit, nthreads, filethreads);
 
   if (result != eInsufficientCriticalData)
     scanned = true;
 
   if (result != eInsufficientCriticalData && result != eCancelled)
+    verified = true;
+
+  return result;
+}
+
+Result Par2Verifier::VerifyFile(const std::string &filename)
+{
+  const Result result = impl->Scan(filename, memorylimit, nthreads, filethreads);
+
+  if (result != eInsufficientCriticalData)
+    scanned = true;
+
+  if (result == eCancelled)
+    return result;
+
+  // Remembered even when the set is not known yet, so that adding the PAR2 file
+  // which describes it replays the scan rather than losing it. Scanning one
+  // again replaces what the last scan of it found, so it is remembered once.
+  if (std::find(scannedfiles.begin(), scannedfiles.end(), filename) == scannedfiles.end())
+    scannedfiles.push_back(filename);
+
+  if (result != eInsufficientCriticalData)
     verified = true;
 
   return result;

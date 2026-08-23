@@ -77,6 +77,7 @@ Par2Repairer::Par2Repairer(std::ostream &sout, std::ostream &serr, const NoiseLe
 , par2list()
 , sourceblocks()
 , targetblocks()
+, scanningprepared(false)
 , blockverifiable(false)
 , verificationhashtable()
 , unverifiablesourcefiles()
@@ -224,20 +225,154 @@ void Par2Repairer::ApplyThreadCounts(const u32 _nthreads, const u32 _filethreads
 }
 
 // Verify the source files and work out whether a repair is needed or possible
+// The hash table and window table are built from the packets loaded so far and
+// are not rebuilt per scan: PrepareVerificationHashTable appends to
+// unverifiablesourcefiles and loads the hash table, so calling it twice would
+// duplicate both.
+bool Par2Repairer::PrepareForScanning(void)
+{
+  if (scanningprepared)
+    return true;
+
+  if (!PrepareVerificationHashTable())
+    return false;
+
+  if (!ComputeWindowTable())
+    return false;
+
+  scanningprepared = true;
+
+  return true;
+}
+
+void Par2Repairer::DiscardScannedFile(DiskFile *diskfile)
+{
+  for (auto *sourcefile : sourcefiles)
+  {
+    if (0 == sourcefile)
+      continue;
+
+    if (sourcefile->GetTargetFile() == diskfile)
+    {
+      sourcefile->SetTargetFile(0);
+      sourcefile->SetTargetExists(false);
+    }
+
+    if (sourcefile->GetCompleteFile() == diskfile)
+    {
+      sourcefile->SetCompleteFile(0);
+      renamedlist.erase(sourcefile->TargetFileName());
+    }
+
+    // Only the blocks this file supplied: another file may hold the rest
+    if (sourcefile->GetDescriptionPacket() != 0)
+    {
+      auto block = sourcefile->SourceBlocks();
+      for (u32 i = 0; i < sourcefile->BlockCount(); ++i, ++block)
+      {
+        if (block->IsSet() && block->GetDiskFile() == diskfile)
+          block->ClearLocation();
+      }
+    }
+  }
+
+  diskFileMap.Remove(diskfile);
+  delete diskfile;
+}
+
+Result Par2Repairer::ScanFile(const std::string &filename, const std::string &basepath)
+{
+  if (0 == mainpacket)
+    return eInsufficientCriticalData;
+
+  if (!PrepareForScanning())
+    return eLogicError;
+
+  const std::string pathname = DiskFile::GetCanonicalPathname(filename);
+
+  DiskFile *previous = diskFileMap.Find(pathname);
+
+  // A PAR2 file whose packets have been read is not scanned as data, and the
+  // packets still hold its DiskFile
+  if (previous != 0 && packetfiles.count(previous) != 0)
+  {
+    return ScanOutcome();
+  }
+
+  if (previous != 0)
+    DiscardScannedFile(previous);
+
+  // Which source file the set expects at this path, if any
+  Par2RepairerSourceFile *sourcefile = 0;
+  for (auto *sf : sourcefiles)
+  {
+    if (sf != 0 && sf->GetDescriptionPacket() != 0 &&
+        DiskFile::GetCanonicalPathname(sf->TargetFileName()) == pathname)
+    {
+      sourcefile = sf;
+      break;
+    }
+  }
+
+  DiskFile *diskfile = new DiskFile(sout, serr);
+  if (!diskfile->Open(pathname))
+  {
+    delete diskfile;
+    return ScanOutcome();
+  }
+
+  if (!diskFileMap.Insert(diskfile))
+  {
+    diskfile->Close();
+    delete diskfile;
+
+    return eLogicError;
+  }
+
+  if (0 != sourcefile)
+  {
+    sourcefile->SetTargetExists(true);
+    sourcefile->SetTargetFile(diskfile);
+  }
+
+  ProgressMeter<u64> progress(sout, "Scanning: ", diskfile->FileSize(), noiselevel, observer);
+
+  ResetScanBuffers(1);
+
+  VerifyDataFile(diskfile, sourcefile, basepath, progress);
+
+  diskfile->Close();
+
+  // Nothing is scanned again until the next file arrives, so the buffers are
+  // given up rather than held against the memory a repair needs
+  scanbuffers.Reset(0, 0);
+
+  if (IsCancelled())
+    return eCancelled;
+
+  return ScanOutcome();
+}
+
+Result Par2Repairer::ScanOutcome(void)
+{
+  UpdateVerificationResults();
+
+  if (!CheckVerificationResults())
+    return eRepairNotPossible;
+
+  if (completefilecount < mainpacket->RecoverableFileCount())
+    return eRepairPossible;
+
+  return eSuccess;
+}
+
 Result Par2Repairer::VerifyFiles(const std::string &basepath,
                                  std::vector<std::string> &extrafiles,
                                  const bool renameonly)
 {
   renamedlist.clear();
 
-  // Create a verification hash table for all files for which we have not
-  // found a complete version of the file and for which we have
-  // a verification packet
-  if (!PrepareVerificationHashTable())
-    return eLogicError;
-
-  // Compute the table for the sliding CRC computation
-  if (!ComputeWindowTable())
+  if (!PrepareForScanning())
     return eLogicError;
 
   ResetScanBuffers(std::max(sourcefiles.size(), extrafiles.size()));
