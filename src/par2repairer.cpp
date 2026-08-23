@@ -79,6 +79,7 @@ Par2Repairer::Par2Repairer(std::ostream &sout, std::ostream &serr, const NoiseLe
 , par2list()
 , sourceblocks()
 , targetblocks()
+, scanningprepared(false)
 , blockverifiable(false)
 , verificationhashtable()
 , unverifiablesourcefiles()
@@ -221,6 +222,163 @@ void Par2Repairer::ApplyThreadCounts(const u32 _nthreads, const u32 _filethreads
   filethreads = std::max(1u, std::min(_filethreads != 0 ? _filethreads : filethreads, totalthreads));
 }
 
+// The hash table and window table are built from the packets loaded so far and
+// are not rebuilt per scan: PrepareVerificationHashTable appends to
+// unverifiablesourcefiles and loads the hash table, so calling it twice would
+// duplicate both.
+bool Par2Repairer::PrepareForScanning(void)
+{
+  if (scanningprepared)
+    return true;
+
+  if (!PrepareVerificationHashTable())
+    return false;
+
+  if (!ComputeWindowTable())
+    return false;
+
+  scanningprepared = true;
+
+  return true;
+}
+
+void Par2Repairer::DiscardScannedFile(DiskFile *diskfile)
+{
+  for (auto *sourcefile : sourcefiles)
+  {
+    if (0 == sourcefile)
+      continue;
+
+    if (sourcefile->GetTargetFile() == diskfile)
+    {
+      sourcefile->SetTargetFile(0);
+      sourcefile->SetTargetExists(false);
+    }
+
+    if (sourcefile->GetCompleteFile() == diskfile)
+    {
+      sourcefile->SetCompleteFile(0);
+      renamedlist.erase(sourcefile->TargetFileName());
+    }
+
+    // Only the blocks this file supplied: another file may hold the rest
+    if (sourcefile->GetDescriptionPacket() != 0)
+    {
+      auto block = sourcefile->SourceBlocks();
+      for (u32 i = 0; i < sourcefile->BlockCount(); ++i, ++block)
+      {
+        if (block->IsSet() && block->GetDiskFile() == diskfile)
+          block->ClearLocation();
+      }
+    }
+  }
+
+  diskFileMap.Remove(diskfile);
+  delete diskfile;
+}
+
+Result Par2Repairer::ScanFile(const std::string &filename, const std::string &basepath)
+{
+  if (0 == mainpacket)
+    return eInsufficientCriticalData;
+
+  if (!PrepareForScanning())
+    return eLogicError;
+
+  const std::string pathname = DiskFile::GetCanonicalPathname(filename);
+
+  DiskFile *previous = diskFileMap.Find(pathname);
+
+  // Or under the name the set records, as a Verify opens it
+  if (0 == previous)
+  {
+    auto expected = sourcefilesbytarget.find(pathname);
+    if (expected != sourcefilesbytarget.end())
+      previous = expected->second->GetTargetFile();
+  }
+
+  // A PAR2 file whose packets have been read is not scanned as data, and the
+  // packets still hold its DiskFile
+  if (previous != 0 && packetfiles.count(previous) != 0)
+  {
+    return ScanOutcome(false);
+  }
+
+  if (previous != 0)
+    DiscardScannedFile(previous);
+
+  // Which source file the set expects at this path, if any
+  auto expected = sourcefilesbytarget.find(pathname);
+  Par2RepairerSourceFile *sourcefile = (expected == sourcefilesbytarget.end()) ? 0 : expected->second;
+
+  DiskFile *diskfile = new DiskFile(sout, serr);
+  if (!diskfile->Open(pathname))
+  {
+    delete diskfile;
+    return ScanOutcome(false);
+  }
+
+  if (!diskFileMap.Insert(diskfile))
+  {
+    diskfile->Close();
+    delete diskfile;
+
+    return eLogicError;
+  }
+
+  // The file at the name the set records is matched in its own right, as a
+  // Verify matches it before a copy found under another name
+  DiskFile *copy = 0;
+  if (0 != sourcefile)
+  {
+    sourcefile->SetTargetExists(true);
+    sourcefile->SetTargetFile(diskfile);
+
+    copy = sourcefile->GetCompleteFile();
+    sourcefile->SetCompleteFile(0);
+  }
+
+  ProgressMeter<u64> progress(sout, "Scanning: ", diskfile->FileSize(), noiselevel, observer);
+
+  ResetScanBuffers(1, diskfile->FileSize());
+
+  VerifyDataFile(diskfile, sourcefile, basepath, progress);
+
+  diskfile->Close();
+
+  if (0 != sourcefile && 0 == sourcefile->GetCompleteFile())
+    sourcefile->SetCompleteFile(copy);
+
+  // Nothing is scanned again until the next file arrives, so the buffers are
+  // given up rather than held against the memory a repair needs
+  scanbuffers.Reset(0, 0);
+
+  // A cancelled scan is discarded, leaving the file as if it had not been scanned
+  if (IsCancelled())
+  {
+    DiscardScannedFile(diskfile);
+    return eCancelled;
+  }
+
+  return ScanOutcome(false);
+}
+
+Result Par2Repairer::ScanOutcome(const bool report)
+{
+  UpdateVerificationResults();
+
+  // CheckVerificationResults writes the summary out and comes to the same answer
+  const bool possible = report ? CheckVerificationResults()
+                               : recoverypacketmap.size() >= missingblockcount;
+  if (!possible)
+    return eRepairNotPossible;
+
+  if (completefilecount < mainpacket->RecoverableFileCount())
+    return eRepairPossible;
+
+  return eSuccess;
+}
+
 // Verify the source files and work out whether a repair is needed or possible
 Result Par2Repairer::VerifyFiles(const std::string &basepath,
                                  std::vector<std::string> &extrafiles,
@@ -228,14 +386,7 @@ Result Par2Repairer::VerifyFiles(const std::string &basepath,
 {
   renamedlist.clear();
 
-  // Create a verification hash table for all files for which we have not
-  // found a complete version of the file and for which we have
-  // a verification packet
-  if (!PrepareVerificationHashTable())
-    return eLogicError;
-
-  // Compute the table for the sliding CRC computation
-  if (!ComputeWindowTable())
+  if (!PrepareForScanning())
     return eLogicError;
 
   ResetScanBuffers(std::max(sourcefiles.size(), extrafiles.size()));
@@ -251,9 +402,6 @@ Result Par2Repairer::VerifyFiles(const std::string &basepath,
       return IsCancelled() ? eCancelled : eLogicError;
   }
 
-  // Find out how much data we have found
-  UpdateVerificationResults();
-
   // Nothing is scanned again until the repaired files are verified, so the
   // buffers are given up rather than held against the memory a repair needs
   scanbuffers.Reset(0, 0);
@@ -262,13 +410,7 @@ Result Par2Repairer::VerifyFiles(const std::string &basepath,
     sout << '\n';
 
   // Check the verification results and report the results
-  if (!CheckVerificationResults())
-    return eRepairNotPossible;
-  // Are any of the files incomplete
-  if (completefilecount < mainpacket->RecoverableFileCount())
-    return eRepairPossible;
-
-  return eSuccess;
+  return ScanOutcome();
 }
 
 // Rebuild whatever is missing or damaged
@@ -658,6 +800,7 @@ Result Par2Repairer::PreparePackets(void)
 {
   sourcefiles.clear();
   sourcefilesbyname.clear();
+  sourcefilesbytarget.clear();
 
   // Check that the packets are consistent and discard any that are not
   if (!CheckPacketConsistency())
@@ -680,6 +823,16 @@ Result Par2Repairer::PreparePackets(void)
       continue;
 
     sourcefilesbyname.insert(std::make_pair(sourcefile->GetDescriptionPacket()->FileName(), sourcefile));
+  }
+
+  // The source file each canonical path belongs to, for finding the one a
+  // scanned file is expected to be
+  for (auto *sourcefile : sourcefiles)
+  {
+    if (0 == sourcefile || 0 == sourcefile->GetDescriptionPacket())
+      continue;
+
+    sourcefilesbytarget.insert(std::make_pair(DiskFile::GetCanonicalPathname(sourcefile->TargetFileName()), sourcefile));
   }
 
   if (observer)
@@ -3310,7 +3463,7 @@ bool Par2Repairer::ComputeRSmatrix(void)
 // take more than the memory limit between them, and never fewer than one each.
 // The buffers are given up before a repair allocates the ones it works
 // through, so the two never hold that memory at the same time.
-void Par2Repairer::ResetScanBuffers(const size_t filecount)
+void Par2Repairer::ResetScanBuffers(const size_t filecount, const u64 filesize)
 {
   // The blocks of a file are only checked where they are expected to be when
   // there are verification packets to check them against and more than one
@@ -3334,7 +3487,11 @@ void Par2Repairer::ResetScanBuffers(const size_t filecount)
   const u32 readers = FileThreads(filecount);
   const u32 workers = std::max(1u, totalthreads / readers);
 
-  const size_t affordable = std::max<size_t>(1, scanmemorylimit / (2 * readers) / (size_t)blocksize);
+  size_t affordable = std::max<size_t>(1, scanmemorylimit / (2 * readers) / (size_t)blocksize);
+
+  // A file needs no more than its own blocks
+  if (filesize > 0)
+    affordable = std::min<size_t>(affordable, (size_t)((filesize + blocksize - 1) / blocksize));
 
   const u32 blocksperbatch = (u32)std::min<size_t>((size_t)workers * SCAN_BATCH_PER_THREAD, affordable);
 

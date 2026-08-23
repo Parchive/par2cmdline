@@ -172,6 +172,41 @@ public:
     noiselevel = _noiselevel;
   }
 
+  // Forget every scan, keeping what the PAR2 files hold
+  void DiscardScans(void)
+  {
+    for (auto *sourcefile : sourcefiles)
+    {
+      if (0 == sourcefile)
+        continue;
+
+      sourcefile->SetTargetFile(0);
+      sourcefile->SetTargetExists(false);
+      sourcefile->SetCompleteFile(0);
+
+      if (sourcefile->GetDescriptionPacket() != 0)
+      {
+        auto block = sourcefile->SourceBlocks();
+        for (u32 i = 0; i < sourcefile->BlockCount(); ++i, ++block)
+        {
+          if (block->IsSet())
+            block->ClearLocation();
+        }
+      }
+    }
+
+    renamedlist.clear();
+
+    for (auto *diskfile : diskFileMap.Files())
+    {
+      if (0 == packetfiles.count(diskfile))
+      {
+        diskFileMap.Remove(diskfile);
+        delete diskfile;
+      }
+    }
+  }
+
   void SetBasePath(const std::string &_basepath)
   {
     basepath = _basepath;
@@ -186,6 +221,18 @@ public:
   bool CanRepair(void) const
   {
     return recoverypacketmap.size() >= missingblockcount;
+  }
+
+  Result Scan(const std::string &filename, const size_t memorylimit,
+              const u32 _nthreads, const u32 _filethreads)
+  {
+    if (prepared != eSuccess)
+      return prepared;
+
+    ApplyThreadCounts(_nthreads, _filethreads);
+    ApplyMemoryLimit(memorylimit);
+
+    return ScanFile(filename, basepath);
   }
 
   void SetDataSkipping(const bool _skipdata, const u64 _skipleaway)
@@ -266,13 +313,13 @@ std::string BasePathFor(const std::string &parfilename)
   return basepath;
 }
 
-// Verifying leaves a Par2Repairer with the results of that one pass, so a
-// second pass has to start from a new one. The PAR2 files that were added are
-// read again, which is cheap next to scanning the data files.
+// A repair, or a set which changes shape after files were scanned, leaves a
+// Par2Repairer with results which no longer hold, so the work starts again from
+// a new one. The PAR2 files that were added are read again.
 void Par2Verifier::Restart(void)
 {
-  // A cancel which arrives while the engine is replaced and replayed is kept
-  // for the new one rather than given to either
+  // A cancel which arrives while the engine is replaced and the PAR2 files
+  // are read again is kept for the new one rather than given to either
   {
     std::lock_guard<std::mutex> lock(cancelmutex);
     restarting = true;
@@ -281,8 +328,7 @@ void Par2Verifier::Restart(void)
 
   // The replay repeats work the observer has already been told about, so it is
   // told none of it, and nothing is written to the streams again. The observer
-  // is attached once the handle is back where it was, and the cancel with it, so
-  // that neither affects the replay itself.
+  // is attached once the handle is back where it was.
   impl->SetDataSkipping(skipdata, skipleaway);
   impl->SetFullHash(fullhash);
 
@@ -298,18 +344,42 @@ void Par2Verifier::Restart(void)
     impl->Add(par2file, 0);
   }
 
-  impl->SetNoiseLevel(noiselevel);
-  impl->SetObserver(observer);
-
-  std::lock_guard<std::mutex> lock(cancelmutex);
-  restarting = false;
-
-  if (cancelled)
-    impl->Cancel();
-
   verified = false;
   scanned = false;
   repaired = false;
+
+  // A cancel reaches the rescan, which stops where it got to
+  {
+    std::lock_guard<std::mutex> lock(cancelmutex);
+    restarting = false;
+
+    if (cancelled)
+      impl->Cancel();
+  }
+
+  const std::set<std::string> rescan = scannedfiles;
+  scannedfiles.clear();
+
+  bool cutshort = false;
+
+  for (const auto &f : rescan)
+  {
+    if (impl->IsCancelled() || eCancelled == VerifyFile(f))
+    {
+      cutshort = true;
+      break;
+    }
+  }
+
+  // What the rescan did not reach is kept for the next one
+  if (cutshort)
+  {
+    scannedfiles = rescan;
+    verified = false;
+  }
+
+  impl->SetNoiseLevel(noiselevel);
+  impl->SetObserver(observer);
 }
 
 Par2Verifier::Par2Verifier(std::ostream &sout, std::ostream &serr, NoiseLevel noiselevel,
@@ -326,6 +396,7 @@ Par2Verifier::Par2Verifier(std::ostream &sout, std::ostream &serr, NoiseLevel no
 , skipleaway(DEFAULT_SKIP_LEAWAY)
 , fullhash(false)
 , par2files()
+, scannedfiles()
 , knownblocks()
 , verified(false)
 , scanned(false)
@@ -406,8 +477,10 @@ Result Par2Verifier::AddPar2File(const std::string &_parfilename)
   }
 
   // Extra recovery data leaves what the scan found still true, so it is kept
-  // and a repair can use it. A set of a different shape does not.
-  if (scanned && setchanged)
+  // and a repair can use it. A set of a different shape does not, even when the
+  // scan was cancelled. Files scanned before the set was known are replayed by
+  // the same restart.
+  if (setchanged && (scanned || !scannedfiles.empty()))
     Restart();
 
   return result;
@@ -466,13 +539,51 @@ std::map<std::string, std::vector<bool> > Par2Verifier::GetKnownBlocks(void) con
 
 Result Par2Verifier::Verify(const std::vector<std::string> &extrafiles)
 {
-  if (scanned)
+  // A full pass covers everything the individual scans did, so they are dropped
+  // rather than replayed into it. Whatever was scanned before, by a pass that
+  // was cancelled too, is started afresh.
+  scannedfiles.clear();
+
+  if (repaired)
     Restart();
+  else
+    impl->DiscardScans();
+
+  verified = false;
 
   const Result result = impl->Check(extrafiles, memorylimit, nthreads, filethreads);
 
   if (result != eInsufficientCriticalData)
     scanned = true;
+
+  if (result == eSuccess || result == eRepairPossible || result == eRepairNotPossible)
+    verified = true;
+
+  return result;
+}
+
+Result Par2Verifier::VerifyFile(const std::string &filename)
+{
+  // After a repair a new engine starts from nothing, and each file is scanned
+  // again as it is fed in
+  if (repaired)
+  {
+    scannedfiles.clear();
+    Restart();
+  }
+
+  const Result result = impl->Scan(filename, memorylimit, nthreads, filethreads);
+
+  if (result != eInsufficientCriticalData)
+    scanned = true;
+
+  if (result == eCancelled)
+    return result;
+
+  // Remembered even when the set is not known yet, so that adding the PAR2 file
+  // which describes it replays the scan rather than losing it. Scanning one
+  // again replaces what the last scan of it found, so it is remembered once.
+  scannedfiles.insert(DiskFile::GetCanonicalPathname(filename));
 
   if (result == eSuccess || result == eRepairPossible || result == eRepairNotPossible)
     verified = true;

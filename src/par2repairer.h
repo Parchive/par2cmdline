@@ -115,6 +115,9 @@ protected:
   // Apply the -m memory limit, which bounds the buffers a scan reads into
   void ApplyMemoryLimit(const size_t _memorylimit) {scanmemorylimit = _memorylimit;}
 
+  // Scan one file, replacing whatever an earlier scan of it found
+  Result ScanFile(const std::string &filename, const std::string &basepath);
+
   // Verify the source files and work out whether a repair is needed
   Result VerifyFiles(const std::string &basepath,
                      std::vector<std::string> &extrafiles,
@@ -169,6 +172,17 @@ protected:
 
   // Scan any extra files specified on the command line
   bool VerifyExtraFiles(const std::vector<std::string> &extrafiles, const std::string &basepath, const bool renameonly);
+
+  // Set up the tables a scan needs, once
+  bool PrepareForScanning(void);
+
+  // Forget what a scan of this file found: the blocks it supplied and its
+  // place as a target or complete file
+  void DiscardScannedFile(DiskFile *diskfile);
+
+  // What the files scanned so far add up to, as a verify of the set says it,
+  // with the summary written out when report is set
+  Result ScanOutcome(const bool report = true);
 
   // Attempt to match the data in the DiskFile with the source file, reporting
   // the file to the observer for as long as the match takes
@@ -242,7 +256,7 @@ protected:
 
   // Make the buffers the files being scanned read into, or give them up when
   // no file will have its blocks checked where they are expected to be
-  void ResetScanBuffers(const size_t filecount);
+  void ResetScanBuffers(const size_t filecount, const u64 filesize = 0);
 
   // The number of files to read at once, which is what limits how many are
   // open at a time rather than how much of the work they get
@@ -306,6 +320,7 @@ protected:
 
   std::map<MD5Hash,Par2RepairerSourceFile*> sourcefilemap;// Map from FileId to SourceFile
   std::vector<Par2RepairerSourceFile*>      sourcefiles;  // The source files
+  std::map<std::string, Par2RepairerSourceFile*> sourcefilesbytarget; // The source file expected at each canonical path
   std::vector<Par2RepairerSourceFile*>      verifylist;   // Those source files that are being repaired
   std::vector<DiskFile*>                    backuplist;   // Those source files backups
   std::map<const DiskFile*, std::string>    backupnames;  // What each backup was called before it was renamed
@@ -325,6 +340,7 @@ protected:
 
   u32                       windowtable[256];        // Table for sliding CRCs
 
+  bool                            scanningprepared;        // Whether the tables a scan needs have been built
   bool                            blockverifiable;         // Whether and files can be verified at the block level
   VerificationHashTable           verificationhashtable;   // Hash table for block verification
   std::list<Par2RepairerSourceFile*>   unverifiablesourcefiles; // Files that are not block verifiable
