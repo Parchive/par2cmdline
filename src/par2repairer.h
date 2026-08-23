@@ -106,6 +106,9 @@ protected:
   void ApplyThreadCounts(const u32 _nthreads, const u32 _filethreads);
 
   // Verify the source files and work out whether a repair is needed
+  // Scan one file, replacing whatever an earlier scan of it found
+  Result ScanFile(const std::string &filename, const std::string &basepath);
+
   Result VerifyFiles(const std::string &basepath,
                      std::vector<std::string> &extrafiles,
                      const bool renameonly);
@@ -159,6 +162,13 @@ protected:
 
   // Scan any extra files specified on the command line
   bool VerifyExtraFiles(const std::vector<std::string> &extrafiles, const std::string &basepath, const bool renameonly);
+
+  // Set up the tables a scan needs, once
+  bool PrepareForScanning(void);
+
+  // Forget what a scan of this file found: the blocks it supplied and its
+  // place as a target or complete file
+  void DiscardScannedFile(DiskFile *diskfile);
 
   // Attempt to match the data in the DiskFile with the source file
   bool VerifyDataFile(DiskFile *diskfile, Par2RepairerSourceFile *sourcefile, const std::string &basepath, ProgressMeter<u64> &progress, const bool renameonly = false);
@@ -299,6 +309,7 @@ protected:
 
   u32                       windowtable[256];        // Table for sliding CRCs
 
+  bool                            scanningprepared;        // Whether the tables a scan needs have been built
   bool                            blockverifiable;         // Whether and files can be verified at the block level
   VerificationHashTable           verificationhashtable;   // Hash table for block verification
   std::list<Par2RepairerSourceFile*>   unverifiablesourcefiles; // Files that are not block verifiable
