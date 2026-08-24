@@ -24,7 +24,7 @@
 #include <iostream>
 
 #ifdef _WIN32
-#include "utf8.h"
+#include "wargs.h"
 #endif
 
 #ifdef _MSC_VER
