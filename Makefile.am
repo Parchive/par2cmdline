@@ -57,8 +57,11 @@ libpar2_a_SOURCES = src/crc.cpp src/crc.h \
 	src/reedsolomon.cpp src/reedsolomon.h \
 	src/verificationhashtable.cpp src/verificationhashtable.h \
 	src/verificationpacket.cpp src/verificationpacket.h \
-	src/libpar2.cpp include/par2/libpar2.h src/libpar2internal.h \
-	src/utf8.cpp src/utf8.h
+	src/libpar2.cpp include/par2/libpar2.h src/libpar2internal.h
+
+if MINGW
+libpar2_a_SOURCES += src/utf8.cpp src/utf8.h
+endif
 
 
 bin_PROGRAMS = par2
@@ -66,6 +69,10 @@ man_MANS = man/par2.1
 
 par2_SOURCES = src/par2cmdline.cpp \
 	src/commandline.cpp src/commandline.h
+
+if MINGW
+par2_SOURCES += src/wargs.cpp src/wargs.h
+endif
 par2_LDADD = libpar2.a
 
 LDADD = -lstdc++
@@ -260,7 +267,7 @@ tests_taskpool_test_LDADD = libpar2.a
 tests_bufferpool_test_SOURCES = src/bufferpool_test.cpp src/bufferpool.h
 tests_bufferpool_test_LDADD = libpar2.a
 
-tests_utf8_test_SOURCES = src/utf8_test.cpp src/utf8.cpp src/utf8.h
+tests_utf8_test_SOURCES = src/utf8_test.cpp src/utf8.cpp src/utf8.h src/wargs.cpp src/wargs.h
 
 # List of all tests.
 # tests/test* are integration tests that use the binary.
