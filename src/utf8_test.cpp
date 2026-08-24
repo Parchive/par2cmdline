@@ -25,6 +25,7 @@
 
 #include <string>
 #include "utf8.h"
+#include "wargs.h"
 
 
 using namespace par2::utf8;
