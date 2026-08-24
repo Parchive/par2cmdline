@@ -60,9 +60,11 @@
   <ItemGroup>
     <ClCompile Include="src\commandline.cpp" />
     <ClCompile Include="src\par2cmdline.cpp" />
+    <ClCompile Include="src\wargs.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\commandline.h" />
+    <ClInclude Include="src\wargs.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="AUTHORS" />
