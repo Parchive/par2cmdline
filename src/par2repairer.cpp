@@ -1631,30 +1631,27 @@ bool Par2Repairer::ScanDataFileAligned(DiskFile               *diskfile,   // [i
 
   bool readfailed = false;
 
-  // Read a run of blocks in order, padding a short final block with zeroes so
-  // that it matches the verification entry recorded for it
-  auto readblock = [&](u32 firstblock, std::vector<char> &into)
+  // The blocks of a batch are next to each other, so they are read in one go.
+  // Only the last block of a file can be short, and its entry covers it padded
+  // out to the full block size with zeroes
+  auto readbatch = [&](u32 firstblock, std::vector<char> &into)
   {
-    const u32 lastblock = std::min(firstblock + batchblocks, blockcount);
+    const u32 blocks = std::min(firstblock + batchblocks, blockcount) - firstblock;
+    const u64 offset = (u64)firstblock * blocksize;
+    const size_t span = (size_t)blocks * blocksize;
+    const size_t length = (size_t)std::min((u64)span, filesize - offset);
 
-    for (u32 b=firstblock; b<lastblock; ++b)
+    if (!diskfile->Read(offset, &into[0], length))
     {
-      const u64 offset = (u64)b * blocksize;
-      const u64 length = std::min(blocksize, filesize - offset);
-      char *at = &into[(size_t)(b - firstblock) * blocksize];
-
-      if (!diskfile->Read(offset, at, (size_t)length))
-      {
-        readfailed = true;
-        return;
-      }
-
-      if (length < blocksize)
-        memset(at + length, 0, (size_t)(blocksize - length));
+      readfailed = true;
+      return;
     }
+
+    if (length < span)
+      memset(&into[length], 0, span - length);
   };
 
-  readblock(0, buffer[0]);
+  readbatch(0, buffer[0]);
 
   for (u32 firstblock=0; firstblock<blockcount && !readfailed; firstblock+=batchblocks)
   {
@@ -1670,7 +1667,7 @@ bool Par2Repairer::ScanDataFileAligned(DiskFile               *diskfile,   // [i
       #pragma omp single nowait
       {
         if (lastblock < blockcount)
-          readblock(lastblock, reading);
+          readbatch(lastblock, reading);
       }
 
       #pragma omp for schedule(dynamic)
