@@ -1601,6 +1601,11 @@ bool Par2Repairer::ScanDataFileAligned(DiskFile               *diskfile,   // [i
   const u32 workers = 1;
 #endif
 
+  // A single thread gains nothing from checking the blocks up front, and a
+  // damaged file would then be read a second time by the scan below
+  if (workers < 2)
+    return false;
+
   matched.assign(blockcount, 0);
 
   // One block for each thread is read at a time, into one of two buffers, so
