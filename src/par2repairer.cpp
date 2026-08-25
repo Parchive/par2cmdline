@@ -1642,16 +1642,16 @@ bool Par2Repairer::ScanDataFileAligned(DiskFile               *diskfile,   // [i
 
   readbatch(0, buffer[0]);
 
-  for (u32 firstblock=0; firstblock<blockcount && !readfailed; firstblock+=batchblocks)
+  #pragma omp parallel num_threads(workers)
   {
-    const u32 lastblock = std::min(firstblock + batchblocks, blockcount);
-    const u32 batch = firstblock / batchblocks;
-
-    std::vector<char> &checking = buffer[batch % 2];
-    std::vector<char> &reading = buffer[(batch + 1) % 2];
-
-    #pragma omp parallel num_threads(workers)
+    for (u32 firstblock=0; firstblock<blockcount && !readfailed; firstblock+=batchblocks)
     {
+      const u32 lastblock = std::min(firstblock + batchblocks, blockcount);
+      const u32 batch = firstblock / batchblocks;
+
+      std::vector<char> &checking = buffer[batch % 2];
+      std::vector<char> &reading = buffer[(batch + 1) % 2];
+
       // Reads the next block while this one is being hashed
       #pragma omp single nowait
       {
