@@ -35,8 +35,8 @@ echo $dashes
 echo $banner
 echo $dashes
 
-# The -T option only exists when built with thread support
-if ! $PARBINARY -h 2>&1 | grep -q '^  -T<n>'; then
+# The -t option only exists when built with thread support
+if ! $PARBINARY -h 2>&1 | grep -q '^  -t<n>'; then
     echo "Skipping: par2 was built without thread support."
     cd "$TESTROOT"
     rm -rf "run$testname"
@@ -64,17 +64,17 @@ printf 'XXXXXXXXXXXXXXXX' | dd of=data.bin bs=1 seek=3072 conv=notrunc 2>/dev/nu
 dd if=data.bin of=region.bin bs=512 skip=20 count=21 2>/dev/null
 dd if=region.bin of=data.bin bs=512 seek=21 conv=notrunc 2>/dev/null
 
-# -T2 is the default and searches the whole file a byte at a time.
-# -T4 checks each block where it is expected first, and only searches
-# what that does not account for. Both must find the same data.
-$PARBINARY v -T2 test.par2 > sequential.out 2>&1
+# A single thread leaves the whole file to the byte at a time search.
+# Several threads check each block where it is expected first, and only
+# search what that does not account for. Both must find the same data.
+$PARBINARY v -t1 test.par2 > sequential.out 2>&1
 sequential=$?
-$PARBINARY v -T4 test.par2 > parallel.out 2>&1
+$PARBINARY v -t4 test.par2 > parallel.out 2>&1
 parallel=$?
 
 if [ $sequential -ne $parallel ]
 then
-    echo "ERROR: Exit code differed: -T2 gave $sequential and -T4 gave $parallel" >&2
+    echo "ERROR: Exit code differed: -t1 gave $sequential and -t4 gave $parallel" >&2
     exit 1
 fi
 
@@ -91,7 +91,7 @@ fi
 grep -q "Found 62 of 64 data blocks" parallel.blocks || { echo "ERROR: Expected 62 of 64 blocks to be found" ; cat parallel.blocks ; exit 1; } >&2
 
 # The repair must still work when the blocks were scanned in parallel
-$PARBINARY r -q -T4 test.par2 || { echo "ERROR: Repair failed" ; exit 1; } >&2
+$PARBINARY r -q -t4 test.par2 || { echo "ERROR: Repair failed" ; exit 1; } >&2
 
 cmp data.bin data.bin.orig || { echo "ERROR: Repaired file does not match the original" ; exit 1; } >&2
 
