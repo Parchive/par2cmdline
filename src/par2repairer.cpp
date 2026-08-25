@@ -172,6 +172,8 @@ Result Par2Repairer::Process(
   // so both levels need to be able to run threads.
 #if _OPENMP >= 200805
   omp_set_max_active_levels(2);
+#else
+  omp_set_nested(1);
 #endif
 #endif
 
