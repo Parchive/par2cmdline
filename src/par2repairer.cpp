@@ -37,16 +37,6 @@ static char THIS_FILE[]=__FILE__;
 
 #ifdef _OPENMP
 u32 Par2Repairer::filethreads = _FILE_THREADS;
-u32 Par2Repairer::blockthreads = 1;
-
-void Par2Repairer::SetBlockThreads(size_t filecount)
-{
-  u32 files = std::max(1u, filethreads);
-  if (filecount > 0 && filecount < files)
-    files = (u32)filecount;
-
-  blockthreads = std::max(1u, (u32)omp_get_max_threads() / files);
-}
 #endif
 
 
@@ -1240,12 +1230,8 @@ bool Par2Repairer::VerifySourceFiles(const std::string& basepath, std::vector<st
   ProgressMeter<u64> progress(sout, "Scanning: ", mttotalsize);
 #endif
 
-#ifdef _OPENMP
-  SetBlockThreads(sortedfiles.size());
-#endif
-
   // Start verifying the files
-  #pragma omp parallel for schedule(dynamic) num_threads(Par2Repairer::GetFileThreads())
+  #pragma omp parallel for schedule(dynamic) num_threads(Par2Repairer::FileThreads(sortedfiles.size()))
   for (int i=0; i< static_cast<int>(sortedfiles.size()); ++i)
   {
     // Do we have a source file
@@ -1356,11 +1342,7 @@ bool Par2Repairer::VerifyExtraFiles(const std::vector<std::string> &extrafiles, 
     ProgressMeter<u64> progress(sout, "Scanning: ", mttotalextrasize);
 #endif
 
-#ifdef _OPENMP
-    SetBlockThreads(extrafiles.size());
-#endif
-
-    #pragma omp parallel for schedule(dynamic) num_threads(Par2Repairer::GetFileThreads())
+    #pragma omp parallel for schedule(dynamic) num_threads(Par2Repairer::FileThreads(extrafiles.size()))
     for (int i=0; i< static_cast<int>(extrafiles.size()); ++i)
     {
       std::string filename = extrafiles[i];
@@ -1613,13 +1595,13 @@ bool Par2Repairer::ScanDataFileAligned(DiskFile               *diskfile,   // [i
   if (0 == blockcount)
     return false;
 
-  matched.assign(blockcount, 0);
-
 #ifdef _OPENMP
-  const u32 workers = blockthreads;
+  const u32 workers = std::max(1u, (u32)omp_get_max_threads() / (u32)std::max(1, omp_get_num_threads()));
 #else
   const u32 workers = 1;
 #endif
+
+  matched.assign(blockcount, 0);
 
   // One block for each thread is read at a time, into one of two buffers, so
   // that the next batch can be read while the current one is being checked
@@ -2859,12 +2841,8 @@ bool Par2Repairer::VerifyTargetFiles(const std::string &basepath)
   ProgressMeter<u64> progress(sout, "Scanning: ", mttotalsize);
 #endif
 
-#ifdef _OPENMP
-  SetBlockThreads(verifylist.size());
-#endif
-
   // Iterate through each file in the verification list
-  #pragma omp parallel for schedule(dynamic) num_threads(Par2Repairer::GetFileThreads())
+  #pragma omp parallel for schedule(dynamic) num_threads(Par2Repairer::FileThreads(verifylist.size()))
   for (int i=0; i< static_cast<int>(verifylist.size()); ++i)
   {
     Par2RepairerSourceFile *sourcefile = verifylist[i];

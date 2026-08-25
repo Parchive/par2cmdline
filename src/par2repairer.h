@@ -162,8 +162,8 @@ protected:
   bool RemoveParFiles(void);
 
 #ifdef _OPENMP
-  static u32                          GetFileThreads(void) {return filethreads;}
-  static void                         SetBlockThreads(size_t filecount);
+  static u32                          FileThreads(size_t filecount)
+    {return (u32)std::max<size_t>(1, std::min<size_t>(filethreads, filecount));}
 #endif
 
 protected:
@@ -178,7 +178,6 @@ protected:
 
 #ifdef _OPENMP
   static u32 filethreads;      // Number of threads for file processing
-  static u32 blockthreads;     // Number of threads each file gets for its blocks
 #endif
 
   bool                      skipdata;                // Should we skip data whilst scanning
