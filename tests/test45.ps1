@@ -13,9 +13,9 @@ try {
 
     Write-Banner "Scanning the blocks of a file in parallel finds the same data"
 
-    # The -T option only exists when built with thread support
+    # The -t option only exists when built with thread support
     $help = Invoke-Par2 -Arguments @("-h") -ReturnObject
-    if ($help.StdOut -notmatch "(?m)^  -T<n>") {
+    if ($help.StdOut -notmatch "(?m)^  -t<n>") {
         Write-Host "Skipping: par2 was built without thread support."
         Complete-Test
         exit 77
@@ -52,14 +52,14 @@ try {
 
     [System.IO.File]::WriteAllBytes((Join-Path $PWD "data.bin"), $bytes)
 
-    # -T2 is the default and searches the whole file a byte at a time.
-    # -T4 checks each block where it is expected first, and only searches
-    # what that does not account for. Both must find the same data.
-    $sequential = Invoke-Par2 -Arguments @("v", "-T2", "test.par2") -ReturnObject
-    $parallel = Invoke-Par2 -Arguments @("v", "-T4", "test.par2") -ReturnObject
+    # A single thread leaves the whole file to the byte at a time search.
+    # Several threads check each block where it is expected first, and only
+    # search what that does not account for. Both must find the same data.
+    $sequential = Invoke-Par2 -Arguments @("v", "-t1", "test.par2") -ReturnObject
+    $parallel = Invoke-Par2 -Arguments @("v", "-t4", "test.par2") -ReturnObject
 
     if ($sequential.ExitCode -ne $parallel.ExitCode) {
-        Exit-TestWithError "Exit code differed: -T2 gave $($sequential.ExitCode) and -T4 gave $($parallel.ExitCode)"
+        Exit-TestWithError "Exit code differed: -t1 gave $($sequential.ExitCode) and -t4 gave $($parallel.ExitCode)"
     }
 
     # Strip the progress indicator, which is rewritten in place with `r
@@ -67,8 +67,8 @@ try {
     $parallelBlocks = ($parallel.StdOut -replace "`r", "`n") -split "`n" | Where-Object { $_ -match "data blocks" }
 
     if (($sequentialBlocks -join "`n") -ne ($parallelBlocks -join "`n")) {
-        Write-Host "-T2:"; $sequentialBlocks | ForEach-Object { Write-Host "  $_" }
-        Write-Host "-T4:"; $parallelBlocks | ForEach-Object { Write-Host "  $_" }
+        Write-Host "-t1:"; $sequentialBlocks | ForEach-Object { Write-Host "  $_" }
+        Write-Host "-t4:"; $parallelBlocks | ForEach-Object { Write-Host "  $_" }
         Exit-TestWithError "Scanning the blocks in parallel found different data"
     }
 
@@ -77,7 +77,7 @@ try {
     }
 
     # The repair must still work when the blocks were scanned in parallel
-    $repair = Invoke-Par2 -Arguments @("r", "-q", "-T4", "test.par2") -ReturnObject
+    $repair = Invoke-Par2 -Arguments @("r", "-q", "-t4", "test.par2") -ReturnObject
     if ($repair.ExitCode -ne 0) {
         Exit-TestWithError "Repair failed"
     }

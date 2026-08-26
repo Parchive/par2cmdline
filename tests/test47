@@ -1,0 +1,113 @@
+#!/bin/sh
+
+execdir="$PWD"
+
+if [ -n "${PARVALGRINDOPTS+set}" ]
+then
+    PARBINARY="valgrind $PARVALGRINDOPTS $execdir/par2"
+elif [ "`which wine`" != "" ] && [ -f "$execdir/par2.exe" ]
+then
+    PARBINARY="wine $execdir/par2.exe"
+else
+    PARBINARY="$execdir/par2"
+fi
+
+if [ -z "$srcdir" ] || [ "." = "$srcdir" ]; then
+  srcdir="$PWD"
+  TESTDATA="$srcdir/tests"
+else
+  srcdir="$PWD/$srcdir"
+  TESTDATA="$srcdir/tests"
+fi
+
+TESTROOT="$PWD"
+
+testname=$(basename $0)
+rm -f "$testname.log"
+rm -rf "run$testname"
+
+mkdir "run$testname" && cd "run$testname" || { echo "ERROR: Could not change to test directory" ; exit 1; } >&2
+
+banner="Reading several files at once finds the same data"
+dashes=`echo "$banner" | sed s/./-/g`
+
+echo $dashes
+echo $banner
+echo $dashes
+
+# The -T option only exists when built with thread support
+if ! $PARBINARY -h 2>&1 | grep -q '^  -T<n>'; then
+    echo "Skipping: par2 was built without thread support."
+    cd "$TESTROOT"
+    rm -rf "run$testname"
+    exit 77
+fi
+
+# Build four data files of 16 blocks of 1024 bytes. Each file holds different
+# data so that a block cannot be matched against the wrong file.
+for n in 1 2 3 4
+do
+    i=0
+    while [ $i -lt 256 ]; do
+        printf '%s%063d' "$n" $i
+        i=$((i + 1))
+    done > "data$n.bin"
+    cp "data$n.bin" "data$n.bin.orig"
+done
+
+$PARBINARY c -q -s1024 -c20 test.par2 data1.bin data2.bin data3.bin data4.bin || { echo "ERROR: Could not create PAR2 files" ; exit 1; } >&2
+
+# data1.bin is left alone, so it is matched entirely where it is expected.
+
+# data2.bin has a gap holding nothing: block 3 is corrupt.
+printf 'XXXXXXXXXXXXXXXX' | dd of=data2.bin bs=1 seek=3072 conv=notrunc 2>/dev/null
+
+# data3.bin has a gap holding data: blocks 5 onwards are shifted forward by
+# half a block, so they are still in the file but not where they are expected.
+dd if=data3.bin of=region.bin bs=512 skip=10 count=20 2>/dev/null
+dd if=region.bin of=data3.bin bs=512 seek=11 conv=notrunc 2>/dev/null
+
+# data4.bin is truncated, so it cannot be a perfect match on length alone.
+dd if=data4.bin of=truncated.bin bs=1024 count=12 2>/dev/null
+mv truncated.bin data4.bin
+
+# Reading one file at a time gives each file every thread for its blocks.
+# Reading four at once shares those threads out between them. Both must find
+# the same data. The files are reported in whatever order they finish, so the
+# lines are sorted before they are compared.
+$PARBINARY v -T1 test.par2 > onefile.out 2>&1
+onefile=$?
+$PARBINARY v -T4 test.par2 > allfiles.out 2>&1
+allfiles=$?
+
+if [ $onefile -ne $allfiles ]
+then
+    echo "ERROR: Exit code differed: -T1 gave $onefile and -T4 gave $allfiles" >&2
+    exit 1
+fi
+
+# Strip the progress indicator, which is rewritten in place with \r
+tr '\r' '\n' < onefile.out | grep -E "Target:" | sort > onefile.blocks
+tr '\r' '\n' < allfiles.out | grep -E "Target:" | sort > allfiles.blocks
+
+if ! diff onefile.blocks allfiles.blocks
+then
+    echo "ERROR: Reading several files at once found different data" >&2
+    exit 1
+fi
+
+grep -q 'data1.bin" - found' allfiles.blocks || { echo "ERROR: Expected data1.bin to be found intact" ; cat allfiles.blocks ; exit 1; } >&2
+grep -q 'data2.bin" - damaged. Found 15 of 16 data blocks' allfiles.blocks || { echo "ERROR: Expected 15 of 16 blocks in data2.bin" ; cat allfiles.blocks ; exit 1; } >&2
+
+# The repair must still work when the files were read at the same time
+$PARBINARY r -q -T4 test.par2 || { echo "ERROR: Repair failed" ; exit 1; } >&2
+
+for n in 1 2 3 4
+do
+    cmp "data$n.bin" "data$n.bin.orig" || { echo "ERROR: Repaired data$n.bin does not match the original" ; exit 1; } >&2
+done
+
+cd "$TESTROOT"
+rm -rf "run$testname"
+
+exit 0
