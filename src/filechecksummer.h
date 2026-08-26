@@ -34,6 +34,22 @@
 // the object also computes the MD5 Hash of the whole file and of
 // the first 16k of the file for later tests.
 
+// Computes the hash of the whole of a file and of its first 16k from the data
+// of the file supplied in order
+class FileHasher
+{
+public:
+  // Add the next part of the file
+  void Update(u64 offset, const void *buffer, size_t length);
+
+  // Return the full file hash and the 16k file hash
+  void GetHashes(u64 filesize, MD5Hash &hashfull, MD5Hash &hash16k) const;
+
+protected:
+  MD5Context  contextfull;
+  MD5Context  context16k;
+};
+
 class FileCheckSummer
 {
 public:
@@ -100,14 +116,10 @@ protected:
   u32         checksum;
 
   // MD5 hash of whole file and of first 16k
-  MD5Context  contextfull;
-  MD5Context  context16k;
+  FileHasher  filehasher;
 
 protected:
-  //void ComputeCurrentCRC(void);
-  void UpdateHashes(u64 offset, const void *buffer, size_t length);
-
-  //// Fill the buffers with more data from disk
+  // Fill the buffers with more data from disk
   // Set longfill = true to force fill the whole buffer
   bool Fill(bool longfill = false);
 
