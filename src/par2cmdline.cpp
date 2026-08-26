@@ -135,7 +135,8 @@ int main(int argc, char* argv[])
 				  commandline->GetPurgeFiles(),
 				  commandline->GetRenameOnly(),
 				  commandline->GetSkipData(),
-				  commandline->GetSkipLeaway());
+				  commandline->GetSkipLeaway(),
+				  commandline->GetFullHash());
               break;
 	    default:
               break;

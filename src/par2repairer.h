@@ -39,7 +39,8 @@ public:
 		 const bool purgefiles,
 		 const bool renameonly,
 		 const bool skipdata,
-		 const u64 skipleaway
+		 const u64 skipleaway,
+		 const bool fullhash
 		 );
 
 protected:
@@ -108,7 +109,9 @@ protected:
                            ProgressMeter<u64>     &progress,    // [in]
                            Par2RepairerSourceFile *sourcefile,  // [in]     The file it should match
                            std::vector<char>      &matched,     // [out]    One entry per block
-                           u32                    &matchcount); // [out]
+                           u32                    &matchcount,  // [out]
+                           MD5Hash                &hashfull,    // [out]    Only set when the whole hash is wanted
+                           MD5Hash                &hash16k);    // [out]
 
   // Perform a sliding window scan of the DiskFile looking for blocks of data that
   // might belong to any of the source files (for which a verification packet was
@@ -182,6 +185,7 @@ protected:
 
   bool                      skipdata;                // Should we skip data whilst scanning
   u64                       skipleaway;              // The leaway +/- we should allow whilst scanning
+  bool                      fullhash;                // Should the whole of each file be hashed too
 
   bool                      firstpacket;             // Whether or not a valid packet has been found.
   MD5Hash                   setid;                   // The SetId extracted from the first packet.
