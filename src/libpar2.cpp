@@ -72,7 +72,8 @@ Result par2repair(std::ostream &sout,
 		  const bool purgefiles,
 		  const bool renameonly,
 		  const bool skipdata,
-		  const u64 skipleaway
+		  const u64 skipleaway,
+		  const bool fullhash
 		  )
 {
   Par2Repairer repairer(sout, serr, noiselevel);
@@ -89,7 +90,8 @@ Result par2repair(std::ostream &sout,
 				   purgefiles,
 				   renameonly,
 				   skipdata,
-				   skipleaway);
+				   skipleaway,
+				   fullhash);
 
   return result;
 }
