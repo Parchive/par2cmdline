@@ -50,17 +50,11 @@ namespace utf8
     }
   }
 
-  bool Utf8ToWide(const std::string& str, std::wstring& out)
+  static bool Decode(UINT codepage, const std::string& str, std::wstring& out)
   {
-    if (str.empty())
-    {
-      out.clear();
-      return true;
-    }
-
     const int length = (int)str.size();
     const int required = ::MultiByteToWideChar(
-      CP_UTF8,
+      codepage,
       MB_ERR_INVALID_CHARS,
       str.c_str(),
       length,
@@ -70,15 +64,31 @@ namespace utf8
     if (required <= 0)
       return false;
 
-    std::wstring wpath(required, L'\0');
+    std::wstring wide(required, L'\0');
     if (::MultiByteToWideChar(
-      CP_UTF8,
+      codepage,
       MB_ERR_INVALID_CHARS,
       str.c_str(),
       length,
-      &wpath[0],
+      &wide[0],
       required
     ) <= 0)
+      return false;
+
+    out.swap(wide);
+    return true;
+  }
+
+  bool Utf8ToWide(const std::string& str, std::wstring& out)
+  {
+    if (str.empty())
+    {
+      out.clear();
+      return true;
+    }
+
+    std::wstring wpath;
+    if (!Decode(CP_UTF8, str, wpath) && !Decode(CP_ACP, str, wpath))
       return false;
 
     ApplyLongPathPrefix(wpath);

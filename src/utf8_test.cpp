@@ -203,6 +203,46 @@ int test9()
   return 0;
 }
 
+int test10()
+{
+  // "café.dat"
+  std::string utf8 = "caf\xC3\xA9.dat";
+
+  std::wstring converted;
+  if (!Utf8ToWide(utf8, converted))
+    return 1;
+
+  return converted != L"caf\u00E9.dat";
+}
+
+int test11()
+{
+  const std::wstring wide = L"caf\u00E9.dat";
+
+  BOOL useddefault = FALSE;
+  char ansi[64];
+  const int length = ::WideCharToMultiByte(
+    CP_ACP,
+    WC_NO_BEST_FIT_CHARS,
+    wide.c_str(),
+    (int)wide.size(),
+    ansi,
+    (int)sizeof(ansi),
+    nullptr,
+    &useddefault
+  );
+
+  // nothing to check when the ANSI code page cannot hold the name
+  if (length <= 0 || useddefault)
+    return 0;
+
+  std::wstring converted;
+  if (!Utf8ToWide(std::string(ansi, length), converted))
+    return 1;
+
+  return converted != wide;
+}
+
 int main()
 {
   if (test1())
@@ -256,6 +296,18 @@ int main()
   if (test9())
   {
     std::cerr << "FAILED: test9" << std::endl;
+    return 1;
+  }
+
+  if (test10())
+  {
+    std::cerr << "FAILED: test10" << std::endl;
+    return 1;
+  }
+
+  if (test11())
+  {
+    std::cerr << "FAILED: test11" << std::endl;
     return 1;
   }
 
