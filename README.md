@@ -42,6 +42,11 @@ Yes, there is one disadvantage:
 
 This disadvantage is considerably mitigated by the fact that you don't need to create as much recovery data in the first place to provide the same level of protection against loss and damage.
 
+## Project Goals
+
+- Be the reference implementation for par2 handling
+- If the readability of the reference can be maintained open for all sorts performance optimizations
+
 ## Compiling par2cmdline
 
 You should have received par2cmdline in the form of source code which you can compile on your computer. You may optionally have received a precompiled version of the program for your operating system.
