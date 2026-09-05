@@ -160,7 +160,7 @@ int test2() {
 
 
 template<typename gtype, typename utype>
-int test_operators(const gtype a, const gtype b, const gtype zero, const gtype one, int max_value) {
+int test_operators(const gtype a, const gtype b, unsigned int power, const gtype zero, const gtype one, int max_value) {
   gtype c;
 
   c = a;
@@ -215,7 +215,6 @@ int test_operators(const gtype a, const gtype b, const gtype zero, const gtype o
     }
   }
 
-  unsigned int power = (unsigned int) (utype) b;
   c = one;
   for (unsigned int i = 0; i < power; i++) {
     c *= a;
@@ -273,7 +272,8 @@ int test_operators_many(const gtype zero, const gtype one, int max_value) {
   srand(14531119);
 
   for (int i = 0; i < 256*256; i++) {
-    if (test_operators<gtype, utype>( gtype(i%max_value), gtype(rand() % max_value), zero, one, max_value)) {
+    const unsigned int power = (i % 64 == 0) ? (rand() % max_value) : (rand() % 256);
+    if (test_operators<gtype, utype>( gtype(i%max_value), gtype(rand() % max_value), power, zero, one, max_value)) {
 	return 1;
     }
   }

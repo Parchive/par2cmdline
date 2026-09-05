@@ -42,7 +42,7 @@ echo $dashes
 
 mkdir par2
 
-$PARBINARY create -vv -a par2/disk1.par2 -b32768 -n31 -R -v -B./ * || { echo "ERROR: Recursive creation of PAR 2.0 files failed" ; exit 1; } >&2
+$PARBINARY create -vv -a par2/disk1.par2 -n31 -R -v -B./ * || { echo "ERROR: Recursive creation of PAR 2.0 files failed" ; exit 1; } >&2
 
 $PARBINARY verify -B./ par2/disk1.par2 || { echo "ERROR: verify failed" ; exit 1; } >&2
 
