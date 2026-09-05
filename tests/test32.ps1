@@ -19,7 +19,7 @@ try {
 
     # Get all items for recursive creation
     $allItems = Get-ChildItem | Select-Object -ExpandProperty Name
-    $exitCode = Invoke-Par2 -Arguments (@("create", "-vv", "-a", "par2\disk1.par2", "-b32768", "-n31", "-R", "-v", "-B.\") + $allItems)
+    $exitCode = Invoke-Par2 -Arguments (@("create", "-vv", "-a", "par2\disk1.par2", "-n31", "-R", "-v", "-B.\") + $allItems)
     if ($exitCode -ne 0) {
         Exit-TestWithError "Recursive creation of PAR 2.0 files failed"
     }
