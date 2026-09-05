@@ -5,22 +5,33 @@ on:
     branches:
     - '**'
     - '!master'
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build-check-linux:
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
     uses: ./.github/workflows/build-check-linux.yml
 
   build-check-sanitizers:
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
     uses: ./.github/workflows/build-check-sanitizers.yml
 
   build-check-mingw:
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
     uses: ./.github/workflows/build-check-mingw.yml
 
   build-check-windows:
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
     uses: ./.github/workflows/build-check-windows.yml
 
   build-check-macos:
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
     uses: ./.github/workflows/build-check-macos.yml
 
   build-check-freebsd:
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
     uses: ./.github/workflows/build-check-freebsd.yml
