@@ -11,18 +11,6 @@ Cppcheck
 	report likely errors.  I used the command:
 	cppcheck --enable=all src/*.cpp > cppcheck_output.txt 2>&1
 
-Valgrind
-	Valgrind is an program that tracks memory usage.  So, if you
-	forget to free memory or use memory after it has been freed,
-	it will print out a warning.  To run Par2 with Valgrind, you
-	the command is:
-	valgrind --leak-check=yes par2 create foo.par2 input1.txt input2.txt
-
-	The tests will run with Valgrind if you set the environment
-	variable "VALGRINDOPTS".  That environment variable is put
-	on the commandline after "valgrind".  So, I use:
-	export PARVALGRINDOPTS="--leak-check=yes"
-
 MinGW/WINE
 	If you are on a UNIX box and want to check the Windows code,
 	you can compile using MinGW and run using WINE.  MinGW is a
