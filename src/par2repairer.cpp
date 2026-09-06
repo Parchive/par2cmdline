@@ -2045,13 +2045,11 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
     }
   }
 
-#ifdef _OPENMP
   if (noiselevel > nlQuiet)
   {
     if (filechecksummer.Offset() >= rangeend)
       progress.Add(filechecksummer.Offset() - oldoffset);
   }
-#endif
 
   if (lastmatchoffset < filechecksummer.Offset() && noiselevel > nlNormal)
   {
