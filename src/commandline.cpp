@@ -55,6 +55,7 @@ CommandLine::CommandLine(void)
 , operation(opNone)
 , purgefiles(false)
 , renameonly(false)
+, fullhash(false)
 , skipdata(false)
 , skipleaway(0)
 , blockcount(0)
@@ -131,6 +132,7 @@ void CommandLine::usage(void)
     "             useful for quickly fixing renamed files)\n"
     "  -N       : Data skipping (find badly mispositioned data blocks)\n"
     "  -S<n>    : Skip leaway (distance +/- from expected block position, default 64)\n"
+    "  --full-hash : Also check the hash of the whole of each file\n"
     "Options: (create)\n"
     "  -b<n>    : Set the Block-Count (default 2000)\n"
     "  -s<n>    : Set the Block-Size (don't use both -b and -s)\n"
@@ -862,6 +864,16 @@ bool CommandLine::ReadArgs(int argc, const char * const *argv)
 
         case '-':
           {
+            if (argv[0] == std::string("--full-hash")) {
+              if (operation == opCreate)
+              {
+                std::cerr << "Cannot specify a full hash check unless repairing or verifying." << std::endl;
+                return false;
+              }
+              fullhash = true;
+              break;
+            }
+
 	    if (argv[0] != std::string("--")) {
               std::cerr << "Unknown option: " << argv[0] << std::endl;
 	      std::cerr << "  (Options must appear after create, repair or verify.)" << std::endl;

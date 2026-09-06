@@ -1,0 +1,82 @@
+#!/bin/sh
+
+execdir="$PWD"
+
+if [ -n "${PARVALGRINDOPTS+set}" ]
+then
+    PARBINARY="valgrind $PARVALGRINDOPTS $execdir/par2"
+elif [ "`which wine`" != "" ] && [ -f "$execdir/par2.exe" ]
+then
+    PARBINARY="wine $execdir/par2.exe"
+else
+    PARBINARY="$execdir/par2"
+fi
+
+if [ -z "$srcdir" ] || [ "." = "$srcdir" ]; then
+  srcdir="$PWD"
+  TESTDATA="$srcdir/tests"
+else
+  srcdir="$PWD/$srcdir"
+  TESTDATA="$srcdir/tests"
+fi
+
+TESTROOT="$PWD"
+
+testname=$(basename $0)
+rm -f "$testname.log"
+rm -rf "run$testname"
+
+mkdir "run$testname" && cd "run$testname" || { echo "ERROR: Could not change to test directory" ; exit 1; } >&2
+
+banner="Checking the hash of the whole of a file when asked to"
+dashes=`echo "$banner" | sed s/./-/g`
+
+echo $dashes
+echo $banner
+echo $dashes
+
+tar -xzf "$TESTDATA/full-hash-mismatch.tar.gz" || { echo "ERROR: Could not extract PAR2 test file" ; exit 1; } >&2
+
+# Every block of the file matches its verification entry, so the blocks alone
+# say the file is intact.
+$PARBINARY v -q recovery.par2 > blocks.out 2>&1
+blocks=$?
+
+if [ $blocks -ne 0 ]
+then
+    echo "ERROR: Expected the file to verify when only its blocks are checked" >&2
+    cat blocks.out >&2
+    exit 1
+fi
+
+# The -t option only exists when built with thread support
+if $PARBINARY -h 2>&1 | grep -q '^  -t<n>'
+then
+    threadopts="-t1 -t4"
+else
+    threadopts=""
+fi
+
+# The whole file hash recorded for it does not match, which only shows up when
+# the whole of the file is hashed as well. A single thread leaves the whole
+# file to the byte at a time search, and several threads have the thread which
+# reads the file hash it, so both have to notice. The file is damaged rather
+# than unreadable, so the exit code is checked rather than just being non-zero,
+# which an unrecognised option would also give.
+for opt in "" $threadopts
+do
+    $PARBINARY v -q $opt --full-hash recovery.par2 > whole.out 2>&1
+    whole=$?
+
+    if [ $whole -ne 1 ]
+    then
+        echo "ERROR: --full-hash $opt gave $whole, expected 1" >&2
+        cat whole.out >&2
+        exit 1
+    fi
+done
+
+cd "$TESTROOT"
+rm -rf "run$testname"
+
+exit 0

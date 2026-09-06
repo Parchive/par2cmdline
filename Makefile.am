@@ -83,7 +83,10 @@ EXTRA_DIST = \
 	tests/bug128-parfiles.tar.gz \
 	tests/bug190.tar.gz \
 	tests/block-count-wrap.tar.gz \
+	tests/full-hash-mismatch.tar.gz \
+	tests/hash16k-mismatch.tar.gz \
 	tests/generate-block-count-wrap-fixture.py \
+	tests/generate-hash-mismatch-fixture.py \
 	tests/flatdata-filelist.txt \
 	tests/subdirdata-filelist.txt \
 	tests/subdirdata-partial-filelist.txt \
@@ -184,6 +187,10 @@ EXTRA_DIST = \
 	tests/test46 \
 	tests/test47 \
 	tests/test47.ps1 \
+	tests/test48 \
+	tests/test48.ps1 \
+	tests/test49 \
+	tests/test49.ps1 \
 	tests/unit_tests \
 	tests/unit_tests.ps1
 
@@ -271,6 +278,8 @@ TESTS = \
 	tests/test45 \
 	tests/test46 \
 	tests/test47 \
+	tests/test48 \
+	tests/test49 \
 	tests/utf8_test \
 	tests/unit_tests
 

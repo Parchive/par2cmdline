@@ -147,7 +147,8 @@ Result Par2Repairer::Process(
 			     const bool purgefiles,
 			     const bool renameonly,
 			     const bool _skipdata,
-			     const u64 _skipleaway
+			     const u64 _skipleaway,
+			     const bool _fullhash
 			     )
 {
   // Should we skip data whilst scanning files
@@ -155,6 +156,9 @@ Result Par2Repairer::Process(
 
   // How much leaway should we allow when scanning files
   skipleaway = _skipleaway;
+
+  // Should the whole of each file be hashed as well as its blocks
+  fullhash = _fullhash;
 
   // Get filenames from the command line
   basepath = _basepath;
@@ -1572,7 +1576,9 @@ bool Par2Repairer::ScanDataFileAligned(DiskFile               *diskfile,   // [i
                                        ProgressMeter<u64>     &progress,   // [in]
                                        Par2RepairerSourceFile *sourcefile, // [in]
                                        std::vector<char>      &matched,    // [out]
-                                       u32                    &matchcount) // [out]
+                                       u32                    &matchcount, // [out]
+                                       MD5Hash                &hashfull,   // [out]
+                                       MD5Hash                &hash16k)    // [out]
 {
   matchcount = 0;
 
@@ -1620,6 +1626,8 @@ bool Par2Repairer::ScanDataFileAligned(DiskFile               *diskfile,   // [i
 
   bool readfailed = false;
 
+  FileHasher filehasher(fullhash);
+
   // The blocks of a batch are next to each other, so they are read in one go.
   // Only the last block of a file can be short, and its entry covers it padded
   // out to the full block size with zeroes
@@ -1635,6 +1643,8 @@ bool Par2Repairer::ScanDataFileAligned(DiskFile               *diskfile,   // [i
       readfailed = true;
       return;
     }
+
+    filehasher.Update(offset, &into[0], length);
 
     if (length < span)
       memset(&into[length], 0, span - length);
@@ -1689,6 +1699,8 @@ bool Par2Repairer::ScanDataFileAligned(DiskFile               *diskfile,   // [i
 
   if (readfailed)
     return false;
+
+  filehasher.GetHashes(filesize, hashfull, hash16k);
 
   for (u32 b=0; b<blockcount; ++b)
     if (matched[b])
@@ -1794,7 +1806,8 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
   std::vector<char> alignedmatch;
   u32 alignedcount = 0;
   const bool aligned = ScanDataFileAligned(diskfile, progress, sourcefile,
-                                           alignedmatch, alignedcount);
+                                           alignedmatch, alignedcount,
+                                           hashfull, hash16k);
 
   // The parts of the file which still have to be searched a byte at a time
   std::vector<std::pair<u64, u64> > searchranges;
@@ -1854,16 +1867,23 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
     searchranges.push_back(std::make_pair((u64)0, filesize));
   }
 
+  // Whichever scan read the whole of the file from its start produced the 16k
+  // hash, and the whole file hash if that was asked for
+  bool filehashes = aligned;
+
   if (!searchranges.empty())
   {
 
-  // The MD5 hash of the whole file is only needed to match against source
-  // files which have no verification packet, and only when no block at all is
-  // found. That can only happen when the whole of the file is being searched.
-  const bool computefilehashes = !unverifiablesourcefiles.empty()
-                                 && 1 == searchranges.size()
+  const bool wholefilesearched = 1 == searchranges.size()
                                  && 0 == searchranges[0].first
                                  && filesize == searchranges[0].second;
+
+  // The MD5 hash of the whole file is only needed to match against source
+  // files which have no verification packet, and when it was asked for.
+  const bool computefilehashes = ((fullhash && !aligned) || !unverifiablesourcefiles.empty())
+                                 && wholefilesearched;
+
+  filehashes = filehashes || wholefilesearched;
 
   // Create the checksummer for the file
   FileCheckSummer filechecksummer(diskfile, blocksize, windowtable, computefilehashes);
@@ -2063,7 +2083,7 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
   }
 
   // Get the Full and 16k hash values of the file
-  if (computefilehashes)
+  if (wholefilesearched)
     filechecksummer.GetFileHashes(hashfull, hash16k);
 
   }
@@ -2081,14 +2101,18 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
   // Did we make any matches at all
   if (count > 0)
   {
-    // If this still might be a perfect match, check the file size and
-    // number of blocks to confirm. The file hashes need not be checked:
-    // a full match means every block of the file was matched, in order,
-    // starting at offset 0, and each of those matches required the MD5
-    // hash of the block to be verified.
+    // If this still might be a perfect match, check the file size and number
+    // of blocks to confirm. A full match verifies the file against the
+    // verification packet, and the description packet's hashes are a
+    // separate claim, so the 16k hash is checked as well, and the hash of
+    // the whole file when that was asked for.
     if (matchtype            != eFullMatch ||
         count                != sourcefile->GetVerificationPacket()->BlockCount() ||
-        diskfile->FileSize() != sourcefile->GetDescriptionPacket()->FileSize())
+        diskfile->FileSize() != sourcefile->GetDescriptionPacket()->FileSize() ||
+        (filehashes &&
+         (hash16k != sourcefile->GetDescriptionPacket()->Hash16k() ||
+          (fullhash &&
+           hashfull != sourcefile->GetDescriptionPacket()->HashFull()))))
     {
       matchtype = ePartialMatch;
 
