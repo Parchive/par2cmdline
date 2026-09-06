@@ -1,0 +1,70 @@
+#!/bin/sh
+
+execdir="$PWD"
+
+if [ -n "${PARVALGRINDOPTS+set}" ]
+then
+    PARBINARY="valgrind $PARVALGRINDOPTS $execdir/par2"
+elif [ "`which wine`" != "" ] && [ -f "$execdir/par2.exe" ]
+then
+    PARBINARY="wine $execdir/par2.exe"
+else
+    PARBINARY="$execdir/par2"
+fi
+
+if [ -z "$srcdir" ] || [ "." = "$srcdir" ]; then
+  srcdir="$PWD"
+  TESTDATA="$srcdir/tests"
+else
+  srcdir="$PWD/$srcdir"
+  TESTDATA="$srcdir/tests"
+fi
+
+TESTROOT="$PWD"
+
+testname=$(basename $0)
+rm -f "$testname.log"
+rm -rf "run$testname"
+
+mkdir "run$testname" && cd "run$testname" || { echo "ERROR: Could not change to test directory" ; exit 1; } >&2
+banner="Checking the 16k hash of a file"
+dashes=`echo "$banner" | sed s/./-/g`
+
+echo $dashes
+echo $banner
+echo $dashes
+
+tar -xzf "$TESTDATA/hash16k-mismatch.tar.gz" || { echo "ERROR: Could not extract PAR2 test file" ; exit 1; } >&2
+
+# The -t option only exists when built with thread support
+if $PARBINARY -h 2>&1 | grep -q '^  -t<n>'
+then
+    threadopts="-t1 -t4"
+else
+    threadopts=""
+fi
+
+# Every block of the file matches its verification entry, but the 16k hash
+# recorded for it does not. That costs 16k of hashing to check however large
+# the file is, so it is checked without being asked for. A single thread leaves
+# the whole file to the byte at a time search, and several threads have the
+# thread which reads the file hash it, so both have to notice. The file is
+# damaged rather than unreadable, so the exit code is checked rather than just
+# being non-zero, which an unrecognised option would also give.
+for opt in "" $threadopts
+do
+    $PARBINARY v -q $opt recovery.par2 > verify.out 2>&1
+    verify=$?
+
+    if [ $verify -ne 1 ]
+    then
+        echo "ERROR: verify $opt gave $verify, expected 1" >&2
+        cat verify.out >&2
+        exit 1
+    fi
+done
+
+cd "$TESTROOT"
+rm -rf "run$testname"
+
+exit 0

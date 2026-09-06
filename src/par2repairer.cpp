@@ -1626,7 +1626,7 @@ bool Par2Repairer::ScanDataFileAligned(DiskFile               *diskfile,   // [i
 
   bool readfailed = false;
 
-  FileHasher filehasher;
+  FileHasher filehasher(fullhash);
 
   // The blocks of a batch are next to each other, so they are read in one go.
   // Only the last block of a file can be short, and its entry covers it padded
@@ -1644,8 +1644,7 @@ bool Par2Repairer::ScanDataFileAligned(DiskFile               *diskfile,   // [i
       return;
     }
 
-    if (fullhash)
-      filehasher.Update(offset, &into[0], length);
+    filehasher.Update(offset, &into[0], length);
 
     if (length < span)
       memset(&into[length], 0, span - length);
@@ -1701,8 +1700,7 @@ bool Par2Repairer::ScanDataFileAligned(DiskFile               *diskfile,   // [i
   if (readfailed)
     return false;
 
-  if (fullhash)
-    filehasher.GetHashes(filesize, hashfull, hash16k);
+  filehasher.GetHashes(filesize, hashfull, hash16k);
 
   for (u32 b=0; b<blockcount; ++b)
     if (matched[b])
@@ -1869,16 +1867,23 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
     searchranges.push_back(std::make_pair((u64)0, filesize));
   }
 
+  // Whichever scan read the whole of the file from its start produced the 16k
+  // hash, and the whole file hash if that was asked for
+  bool filehashes = aligned;
+
   if (!searchranges.empty())
   {
 
-  // The MD5 hash of the whole file is only needed to match against source
-  // files which have no verification packet, and only when no block at all is
-  // found. That can only happen when the whole of the file is being searched.
-  const bool computefilehashes = ((fullhash && !aligned) || !unverifiablesourcefiles.empty())
-                                 && 1 == searchranges.size()
+  const bool wholefilesearched = 1 == searchranges.size()
                                  && 0 == searchranges[0].first
                                  && filesize == searchranges[0].second;
+
+  // The MD5 hash of the whole file is only needed to match against source
+  // files which have no verification packet, and when it was asked for.
+  const bool computefilehashes = ((fullhash && !aligned) || !unverifiablesourcefiles.empty())
+                                 && wholefilesearched;
+
+  filehashes = filehashes || wholefilesearched;
 
   // Create the checksummer for the file
   FileCheckSummer filechecksummer(diskfile, blocksize, windowtable, computefilehashes);
@@ -2078,7 +2083,7 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
   }
 
   // Get the Full and 16k hash values of the file
-  if (computefilehashes)
+  if (wholefilesearched)
     filechecksummer.GetFileHashes(hashfull, hash16k);
 
   }
@@ -2096,17 +2101,18 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
   // Did we make any matches at all
   if (count > 0)
   {
-    // If this still might be a perfect match, check the file size and
-    // number of blocks to confirm. The file hashes need not be checked:
-    // a full match means every block of the file was matched, in order,
-    // starting at offset 0, and each of those matches required the MD5
-    // hash of the block to be verified.
+    // If this still might be a perfect match, check the file size and number
+    // of blocks to confirm. A full match verifies the file against the
+    // verification packet, and the description packet's hashes are a
+    // separate claim, so the 16k hash is checked as well, and the hash of
+    // the whole file when that was asked for.
     if (matchtype            != eFullMatch ||
         count                != sourcefile->GetVerificationPacket()->BlockCount() ||
         diskfile->FileSize() != sourcefile->GetDescriptionPacket()->FileSize() ||
-        (fullhash &&
-         (hashfull != sourcefile->GetDescriptionPacket()->HashFull() ||
-          hash16k  != sourcefile->GetDescriptionPacket()->Hash16k())))
+        (filehashes &&
+         (hash16k != sourcefile->GetDescriptionPacket()->Hash16k() ||
+          (fullhash &&
+           hashfull != sourcefile->GetDescriptionPacket()->HashFull()))))
     {
       matchtype = ePartialMatch;
 
