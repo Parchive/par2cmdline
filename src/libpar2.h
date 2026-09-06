@@ -17,95 +17,22 @@
 //  along with this program; if not, write to the Free Software
 //  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-#ifndef __LIBPAR2_H__
-#define __LIBPAR2_H__
+#ifndef LIBPAR2_H
+#define LIBPAR2_H
 
-#ifdef _MSC_VER
-
-// _MSC_VER is for Microsoft Visual C++ Compiler.
-//
-// The ifdef is not for _WIN32, because MinGW (Mingw32)
-// is a port of gcc's compiler that targets Windows
-// and we don't want this code run for MinGW.
-
-typedef unsigned char    u8;
-typedef signed char      i8;
-typedef unsigned short   u16;
-typedef signed short     i16;
-typedef unsigned int     u32;
-typedef signed int       i32;
-typedef unsigned __int64 u64;
-typedef signed __int64   i64;
-
-#else // _MSC_VER
-#ifdef HAVE_CONFIG_H
-
-#include <config.h>
-
-#if HAVE_INTTYPES_H
-#  include <inttypes.h>
-#endif
-
-#if HAVE_STDINT_H
-#  include <stdint.h>
-typedef uint8_t            u8;
-typedef int8_t             i8;
-typedef uint16_t           u16;
-typedef int16_t            i16;
-typedef uint32_t           u32;
-typedef int32_t            i32;
-typedef uint64_t           u64;
-typedef int64_t            i64;
-#else
-typedef unsigned char      u8;
-typedef signed char        i8;
-typedef unsigned short     u16;
-typedef signed short       i16;
-typedef unsigned int       u32;
-typedef signed int         i32;
-typedef unsigned long long u64;
-typedef signed long long   i64;
-#endif
-
-#else // HAVE_CONFIG_H
-
-typedef   unsigned char        u8;
-typedef   signed char          i8;
-typedef   unsigned short       u16;
-typedef   signed short         i16;
-typedef   unsigned int         u32;
-typedef   signed int           i32;
-typedef   unsigned long long   u64;
-typedef   signed long long     i64;
-
-#endif
-#endif
-
-
-// Case-insensitive string comparison
-#ifdef _WIN32
-#  define stricmp  _stricmp
-#else
-#  include <string.h>
-#  define stricmp strcasecmp
-#endif
-
-// Path separators
-#ifdef _WIN32
-#  define PATHSEP "\\"
-#  define ALTPATHSEP "/"
-#else
-#  define PATHSEP "/"
-#  define ALTPATHSEP "\\"
-#endif
-
-// Default number of file threads
-#define _FILE_THREADS 2
-
-
+#include <cstdint>
 #include <ostream>
-#include <vector>
 #include <string>
+#include <vector>
+
+typedef std::uint8_t  u8;
+typedef std::int8_t   i8;
+typedef std::uint16_t u16;
+typedef std::int16_t  i16;
+typedef std::uint32_t u32;
+typedef std::int32_t  i32;
+typedef std::uint64_t u64;
+typedef std::int64_t  i64;
 
 
 typedef enum
@@ -225,4 +152,4 @@ bool ComputeRecoveryFileCount(std::ostream &sout,
 			      u64 largestfilesize,
 			      u64 blocksize);
 
-#endif // __LIBPAR2_H__
+#endif // LIBPAR2_H
