@@ -19,9 +19,11 @@
 
 #include "libpar2internal.h"
 
+#ifdef _WIN32
+
 #include <cstring>
 #include <iostream>
-#include <exception>
+#include <stdexcept>
 
 #include "utf8.h"
 
@@ -29,58 +31,104 @@ namespace utf8
 {
   const int MAX_ARGS = 128;
   const size_t MAX_DIR_PATH = 248;
-  std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> UTF8_CONVERTER;
 
-  std::wstring Utf8ToWide(const std::string& str)
+  static void ApplyLongPathPrefix(std::wstring& wpath)
   {
-    if (str.empty())
-      return L"";
-
-    try
+    if (wpath.size() <= MAX_DIR_PATH ||
+      wpath.find(L"\\\\?\\") != std::wstring::npos)
     {
-      std::wstring wpath = UTF8_CONVERTER.from_bytes(str.c_str());
-
-      if (wpath.size() > MAX_DIR_PATH &&
-        wpath.find(L"\\\\?\\") == std::wstring::npos &&
-        wpath.find(L"\\\\?\\UNC") == std::wstring::npos)
-      {
-        if (std::wcsncmp(wpath.c_str(), L"\\\\", 2) == 0)
-        {
-          wpath = L"\\\\?\\UNC" + wpath;
-        }
-        else
-        {
-          wpath = L"\\\\?\\" + wpath;
-        }
-      }
-
-      return wpath;
+      return;
     }
-    catch (const std::exception& e)
+
+    if (wpath.compare(0, 2, L"\\\\") == 0)
     {
-      std::cerr << "Failed to convert UTF-8 to wide string: " << e.what() << std::endl;
-      return L"";
+      wpath = L"\\\\?\\UNC" + wpath.substr(1);
+    }
+    else
+    {
+      wpath = L"\\\\?\\" + wpath;
     }
   }
 
-  std::string WideToUtf8(const std::wstring& str)
+  bool Utf8ToWide(const std::string& str, std::wstring& out)
   {
     if (str.empty())
-      return "";
+    {
+      out.clear();
+      return true;
+    }
 
-    try
+    const int length = (int)str.size();
+    const int required = ::MultiByteToWideChar(
+      CP_UTF8,
+      MB_ERR_INVALID_CHARS,
+      str.c_str(),
+      length,
+      nullptr,
+      0
+    );
+    if (required <= 0)
+      return false;
+
+    std::wstring wpath(required, L'\0');
+    if (::MultiByteToWideChar(
+      CP_UTF8,
+      MB_ERR_INVALID_CHARS,
+      str.c_str(),
+      length,
+      &wpath[0],
+      required
+    ) <= 0)
+      return false;
+
+    ApplyLongPathPrefix(wpath);
+
+    out.swap(wpath);
+    return true;
+  }
+
+  bool WideToUtf8(const std::wstring& str, std::string& out)
+  {
+    if (str.empty())
     {
-      return UTF8_CONVERTER.to_bytes(str.c_str());
+      out.clear();
+      return true;
     }
-    catch (const std::exception& e)
-    {
-      std::cerr << "Failed to convert wide to UTF-8 string: " << e.what() << std::endl;
-      return "";
-    }
+
+    const int length = (int)str.size();
+    const int required = ::WideCharToMultiByte(
+      CP_UTF8,
+      WC_ERR_INVALID_CHARS,
+      str.c_str(),
+      length,
+      nullptr,
+      0,
+      nullptr,
+      nullptr
+    );
+    if (required <= 0)
+      return false;
+
+    std::string utf8(required, '\0');
+    if (::WideCharToMultiByte(
+      CP_UTF8,
+      WC_ERR_INVALID_CHARS,
+      str.c_str(),
+      length,
+      &utf8[0],
+      required,
+      nullptr,
+      nullptr
+    ) <= 0)
+      return false;
+
+    out.swap(utf8);
+    return true;
   }
 
   WideToUtf8ArgsAdapter::WideToUtf8ArgsAdapter(int argc, wchar_t* wargv[]) noexcept(false)
-    : m_argc(argc)
+    : m_argv(nullptr)
+    , m_argc(argc)
   {
     if (wargv == nullptr)
     {
@@ -97,23 +145,34 @@ namespace utf8
     }
 
     m_argv = new char* [m_argc + 1];
+
+    int argcount = 0;
     for (int i = 0; i < m_argc; ++i)
     {
       if (wargv[i] == nullptr)
       {
         std::cerr
           << "Invalid argument: encountered nullptr in wargv.\n"
-             "Skipping " << i << "argument." << std::endl;
-        --m_argc;
-        --i;
+             "Skipping argument " << i << "." << std::endl;
         continue;
       }
 
-      std::string arg = WideToUtf8(wargv[i]);
-      size_t size = arg.size() + 1;
-      m_argv[i] = new char[size];
-      std::memcpy(m_argv[i], arg.c_str(), size);
+      std::string arg;
+      if (!WideToUtf8(wargv[i], arg))
+      {
+        std::cerr
+          << "Failed to convert wide to UTF-8 string.\n"
+             "Skipping argument " << i << "." << std::endl;
+        continue;
+      }
+
+      const size_t size = arg.size() + 1;
+      m_argv[argcount] = new char[size];
+      std::memcpy(m_argv[argcount], arg.c_str(), size);
+      ++argcount;
     }
+
+    m_argc = argcount;
     m_argv[m_argc] = nullptr;
   }
 
@@ -122,11 +181,16 @@ namespace utf8
     return m_argv;
   }
 
+  int WideToUtf8ArgsAdapter::GetArgc() const noexcept
+  {
+    return m_argc;
+  }
+
   WideToUtf8ArgsAdapter::~WideToUtf8ArgsAdapter()
   {
     if (m_argv)
     {
-      for (size_t i = 0; m_argv[i]; ++i)
+      for (int i = 0; i < m_argc; ++i)
       {
         delete[] m_argv[i];
       }
@@ -134,3 +198,5 @@ namespace utf8
     }
   }
 }
+
+#endif // _WIN32
