@@ -20,6 +20,10 @@
 #include "libpar2internal.h"
 
 #include <iostream>
+
+#ifdef _WIN32
+
+#include <string>
 #include "utf8.h"
 
 
@@ -29,10 +33,14 @@ int test1()
 {
   std::string emptyString = "";
   std::wstring expectedWide = L"";
-  std::wstring actualWide = Utf8ToWide(emptyString);
+  std::wstring actualWide;
+  if (!Utf8ToWide(emptyString, actualWide))
+    return 1;
 
   std::string expectedUtf8 = "";
-  std::string actualUtf8 = WideToUtf8(expectedWide);
+  std::string actualUtf8;
+  if (!WideToUtf8(expectedWide, actualUtf8))
+    return 1;
 
   if (actualWide == expectedWide && actualUtf8 == expectedUtf8)
     return 0;
@@ -44,10 +52,14 @@ int test2()
 {
   std::string asciiString = "Hello, World!";
   std::wstring expectedWide = L"Hello, World!";
-  std::wstring actualWide = Utf8ToWide(asciiString);
+  std::wstring actualWide;
+  if (!Utf8ToWide(asciiString, actualWide))
+    return 1;
 
   std::string expectedUtf8 = "Hello, World!";
-  std::string actualUtf8 = WideToUtf8(expectedWide);
+  std::string actualUtf8;
+  if (!WideToUtf8(expectedWide, actualUtf8))
+    return 1;
 
   if (actualWide == expectedWide && actualUtf8 == expectedUtf8)
     return 0;
@@ -60,10 +72,14 @@ int test3()
   // "Привет, мир!"
   std::string nonAsciiString = "\xD0\x9F\xD1\x80\xD0\xB8\xD0\xB2\xD0\xB5\xD1\x82, \xD0\xBC\xD0\xB8\xD1\x80!";
   std::wstring expectedWide = L"\x041F\x0440\x0438\x0432\x0435\x0442, \x043C\x0438\x0440!";
-  std::wstring actualWide = Utf8ToWide(nonAsciiString);
+  std::wstring actualWide;
+  if (!Utf8ToWide(nonAsciiString, actualWide))
+    return 1;
 
   std::string expectedUtf8 = "\xD0\x9F\xD1\x80\xD0\xB8\xD0\xB2\xD0\xB5\xD1\x82, \xD0\xBC\xD0\xB8\xD1\x80!";
-  std::string actualUtf8 = WideToUtf8(expectedWide);
+  std::string actualUtf8;
+  if (!WideToUtf8(expectedWide, actualUtf8))
+    return 1;
 
   if (actualWide == expectedWide && actualUtf8 == expectedUtf8)
     return 0;
@@ -75,10 +91,14 @@ int test4()
 {
   std::string specialCharsString = "This string has: !@#$%^&*()_+=-`~[]{}:;'<>,.?/";
   std::wstring expectedWide = L"This string has: !@#$%^&*()_+=-`~[]{}:;'<>,.?/";
-  std::wstring actualWide = Utf8ToWide(specialCharsString);
+  std::wstring actualWide;
+  if (!Utf8ToWide(specialCharsString, actualWide))
+    return 1;
 
   std::string expectedUtf8 = "This string has: !@#$%^&*()_+=-`~[]{}:;'<>,.?/";
-  std::string actualUtf8 = WideToUtf8(expectedWide);
+  std::string actualUtf8;
+  if (!WideToUtf8(expectedWide, actualUtf8))
+    return 1;
 
   if (actualWide == expectedWide && actualUtf8 == expectedUtf8)
     return 0;
@@ -91,10 +111,14 @@ int test5()
   // "Привет! こんにちは世界! 안녕하세요!"
   std::string multiLangString = "\xD0\x9F\xD1\x80\xD0\xB8\xD0\xB2\xD0\xB5\xD1\x82! \xE3\x81\x93\xE3\x82\x93\xE3\x81\xAB\xE3\x81\xA1\xE3\x81\xAF\xE4\xB8\x96\xE7\x95\x8C! \xEC\x95\x88\xEB\x85\x95\xED\x95\x98\xEC\x84\xB8\xEC\x9A\x94!";
   std::wstring expectedWide = L"\x041F\x0440\x0438\x0432\x0435\x0442! \x3053\x3093\x306B\x3061\x306F\x4E16\x754C! \xC548\xB155\xD558\xC138\xC694!";
-  std::wstring actualWide = Utf8ToWide(multiLangString);
+  std::wstring actualWide;
+  if (!Utf8ToWide(multiLangString, actualWide))
+    return 1;
 
   std::string expectedUtf8 = "\xD0\x9F\xD1\x80\xD0\xB8\xD0\xB2\xD0\xB5\xD1\x82! \xE3\x81\x93\xE3\x82\x93\xE3\x81\xAB\xE3\x81\xA1\xE3\x81\xAF\xE4\xB8\x96\xE7\x95\x8C! \xEC\x95\x88\xEB\x85\x95\xED\x95\x98\xEC\x84\xB8\xEC\x9A\x94!";
-  std::string actualUtf8 = WideToUtf8(expectedWide);
+  std::string actualUtf8;
+  if (!WideToUtf8(expectedWide, actualUtf8))
+    return 1;
 
   if (actualWide == expectedWide && actualUtf8 == expectedUtf8)
     return 0;
@@ -119,7 +143,12 @@ int test7()
   const char* const* utf8Args = adapter.GetUtf8Args();
 
   for (int i = 0; i < 3; ++i) {
-    if (WideToUtf8(wargv[i]) != std::string(utf8Args[i]))
+    std::string converted;
+    if (!WideToUtf8(wargv[i], converted))
+    {
+      return 1;
+    }
+    if (converted != std::string(utf8Args[i]))
     {
       return 1;
     }
@@ -133,21 +162,43 @@ int test8()
   wchar_t* wargv[3] = { const_cast<wchar_t*>(L"arg1"), nullptr, const_cast<wchar_t*>(L"arg3") };
   WideToUtf8ArgsAdapter adapter(3, wargv);
   const char* const* utf8Args = adapter.GetUtf8Args();
-  int argc = 3;
-  for (int i = 0; i < argc; ++i)
-  {
-    if (wargv[i] == nullptr)
-    {
-      --i;
-      --argc;
-      continue;
-    }
 
-    if (WideToUtf8(wargv[i]) != std::string(utf8Args[i]))
-    {
-      return 1;
-    }
-  }
+  if (std::string(utf8Args[0]) != "arg1")
+    return 1;
+
+  if (std::string(utf8Args[1]) != "arg3")
+    return 1;
+
+  if (utf8Args[2] != nullptr)
+    return 1;
+
+  if (adapter.GetArgc() != 2)
+    return 1;
+
+  return 0;
+}
+
+int test9()
+{
+  std::wstring shortpath;
+  if (!Utf8ToWide("C:\\short", shortpath))
+    return 1;
+  if (shortpath != std::wstring(L"C:\\short"))
+    return 1;
+
+  std::string longpath = "C:\\" + std::string(MAX_DIR_PATH, 'a');
+  std::wstring widelong;
+  if (!Utf8ToWide(longpath, widelong))
+    return 1;
+  if (widelong != L"\\\\?\\C:\\" + std::wstring(MAX_DIR_PATH, L'a'))
+    return 1;
+
+  std::string uncpath = "\\\\server\\" + std::string(MAX_DIR_PATH, 'b');
+  std::wstring wideunc;
+  if (!Utf8ToWide(uncpath, wideunc))
+    return 1;
+  if (wideunc != L"\\\\?\\UNC\\server\\" + std::wstring(MAX_DIR_PATH, L'b'))
+    return 1;
 
   return 0;
 }
@@ -202,7 +253,26 @@ int main()
     return 1;
   }
 
+  if (test9())
+  {
+    std::cerr << "FAILED: test9" << std::endl;
+    return 1;
+  }
+
   std::cout << "SUCCESS: utf8_test complete." << std::endl;
 
   return 0;
 }
+
+#else // !_WIN32
+
+int main()
+{
+  std::cout << "utf8 conversion is only built on Windows." << std::endl;
+
+  // 77 is the exit status automake reports as SKIP, so this does not read as a
+  // test that ran and passed
+  return 77;
+}
+
+#endif

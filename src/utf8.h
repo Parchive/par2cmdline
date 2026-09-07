@@ -20,18 +20,20 @@
 #ifndef __UTF8_H__
 #define __UTF8_H__
 
+#ifdef _WIN32
+
 #include <string>
-#include <locale>
-#include <codecvt>
 
 namespace utf8
 {
   extern const int MAX_ARGS;
   extern const size_t MAX_DIR_PATH;
-  extern std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> UTF8_CONVERTER;
 
-  std::wstring Utf8ToWide(const std::string& str);
-  std::string WideToUtf8(const std::wstring& str);
+  // False if the string is not well formed, leaving out untouched. Otherwise out
+  // holds the conversion, and a path longer than MAX_DIR_PATH has gained a
+  // \\?\ or \\?\UNC prefix so that the Win32 calls accept it.
+  bool Utf8ToWide(const std::string& str, std::wstring& out);
+  bool WideToUtf8(const std::wstring& str, std::string& out);
 
   class WideToUtf8ArgsAdapter final
   {
@@ -39,6 +41,10 @@ namespace utf8
     WideToUtf8ArgsAdapter(int argc, wchar_t* argv_[]) noexcept(false);
 
     const char* const* GetUtf8Args() const noexcept;
+
+    // The number of arguments in GetUtf8Args(), which is less than the argc
+    // passed in when an argument could not be used.
+    int GetArgc() const noexcept;
 
     WideToUtf8ArgsAdapter() = delete;
     WideToUtf8ArgsAdapter(const WideToUtf8ArgsAdapter&) = delete;
@@ -53,5 +59,7 @@ namespace utf8
     int m_argc;
   };
 }
+
+#endif // _WIN32
 
 #endif // __UTF8_H__
