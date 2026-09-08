@@ -32,6 +32,7 @@ if ($Clean) {
         "crc_test",
         "md5_test",
         "diskfile_test",
+        "filechecksummer_test",
         "libpar2_test",
         "commandline_test",
         "descriptionpacket_test",
