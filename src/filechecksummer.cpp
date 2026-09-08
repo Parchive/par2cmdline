@@ -68,6 +68,8 @@ bool FileCheckSummer::Start(u64 startoffset)
   tailpointer = outpointer = buffer;
   inpointer = &buffer[blocksize];
 
+  BlankPastEndOfFile();
+
   // Fill the buffer with new data
   if (!Fill())
     return false;
@@ -127,6 +129,8 @@ bool FileCheckSummer::Jump(u64 distance)
   outpointer = buffer;
   inpointer = &buffer[blocksize];
 
+  BlankPastEndOfFile();
+
   if (!Fill())
     return false;
 
@@ -134,6 +138,14 @@ bool FileCheckSummer::Jump(u64 distance)
   checksum = ~0 ^ CRCUpdateBlock(~0, (size_t)blocksize, buffer);
 
   return true;
+}
+
+// The scan window slides beyond the end of the file, where the data reads as
+// zeros. Once the whole file has been read, blank the rest of the buffer.
+void FileCheckSummer::BlankPastEndOfFile() const
+{
+  if (readoffset >= filesize)
+    memset(tailpointer, 0, static_cast<size_t>(&buffer[2 * blocksize] - tailpointer));
 }
 
 // Fill the buffer from disk
@@ -165,13 +177,8 @@ bool FileCheckSummer::Fill(bool longfill)
     tailpointer += want;
   }
 
-  // Did we fill the buffer
-  want = target - tailpointer;
-  if (want > 0)
-  {
-    // Blank the rest of the buffer
-    memset(tailpointer, 0, want);
-  }
+  // Blank whatever part of the buffer was not filled
+  BlankPastEndOfFile();
 
   return true;
 }
