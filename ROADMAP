@@ -1,5 +1,20 @@
 I'm using this file for notes to developers.
 
+--------------
+Roadmap to 2.0
+--------------
+
+Replace OpenMP with std::thread
+  This is already done in par2cmdline-turbo so it is already proven to work
+  
+Standalone library
+  Decouple the code from the commandline application and make it properly
+  useable as a library for others to build upon. The goal is to have a
+  composable API where eventually you can also bring your own
+  optimizations/implementations while still using that same API.
+
+CLI becomes full consumer of the library
+  The par2cmdline fully uses the library to do its thing while keeping its CLI interface.
 
 -----------------------------------
 Programs to help you test your code
