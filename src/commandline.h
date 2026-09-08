@@ -99,6 +99,7 @@ public:
   bool                                GetFollowLinks(void) const {return followlinks;}
   bool                                GetSkipData(void) const    {return skipdata;}
   u64                                 GetSkipLeaway(void) const  {return skipleaway;}
+  bool                                GetFullHash(void) const    {return fullhash;}
 #ifdef _OPENMP
   u32                                 GetNumThreads(void) {return nthreads;}
   u32                                 GetFileThreads(void) {return filethreads;}
@@ -182,6 +183,8 @@ protected:
                                // skip data that is too far away.
   u64 skipleaway;              // The maximum leaway +/- that we will
                                // allow when searching for blocks.
+  bool fullhash;               // Whether to check the hash of the whole of each
+                               // file as well as the hash of each of its blocks
 
 
   // options for creating par files
