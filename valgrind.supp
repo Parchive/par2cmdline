@@ -12,3 +12,27 @@
    fun:pthread_create*
    obj:*/libgomp.so*
 }
+
+# libgomp allocates its global state from an ELF constructor when the library
+# is loaded, and its per-team state on entry to a parallel region. Both are
+# held inside the runtime until the process exits
+{
+   libgomp_internal_state
+   Memcheck:Leak
+   match-leak-kinds: possible,reachable
+   fun:*
+   obj:*/libgomp.so*
+   obj:*/libgomp.so*
+}
+
+# Unsynchronising the C++ streams from C stdio gives cin/cout/cerr and their
+# wide counterparts their own filebufs, whose buffers belong to static objects
+# and are never freed
+{
+   libstdcxx_sync_with_stdio_buffers
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   fun:_Znam
+   ...
+   fun:_ZNSt8ios_base15sync_with_stdioEb
+}
