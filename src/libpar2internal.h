@@ -193,8 +193,45 @@ typedef unsigned int     size_t;
 
 #include <ctype.h>
 #include <iomanip>
+#include <atomic>
+#include <mutex>
 
 #include <cassert>
+
+// Holds a lock for the duration of one output statement, so that lines written
+// from several threads do not interleave.
+class LockedStream
+{
+public:
+  explicit LockedStream(std::ostream &stream)
+    : stream(stream)
+    , lock(Mutex())
+  {
+  }
+
+  template<typename T>
+  LockedStream& operator<<(const T &value)
+  {
+    stream << value;
+    return *this;
+  }
+
+  LockedStream& operator<<(std::ostream& (*manipulator)(std::ostream&))
+  {
+    stream << manipulator;
+    return *this;
+  }
+
+private:
+  static std::mutex& Mutex(void)
+  {
+    static std::mutex mutex;
+    return mutex;
+  }
+
+  std::ostream &stream;
+  std::lock_guard<std::mutex> lock;
+};
 
 #ifdef offsetof
 #undef offsetof

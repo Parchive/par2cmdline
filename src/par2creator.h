@@ -143,6 +143,8 @@ protected:
   std::vector<Par2CreatorSourceFile*> sourcefiles;  // Array containing details of the source files
                                                // as well as the file verification and file
                                                // description packets for them.
+  std::mutex                      sourcefilesMutex; // Guards sourcefiles and criticalpackets while
+                                                    // the source files are opened in parallel.
 
   std::vector<DataBlock>          sourceblocks;     // Array with one entry for every source block.
 

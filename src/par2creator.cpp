@@ -372,8 +372,7 @@ bool Par2Creator::OpenSourceFiles(const std::vector<std::string> &extrafiles, st
 
     if (noiselevel > nlSilent)
     {
-      #pragma omp critical(stdio)
-      sout << "Opening: " << name << std::endl;
+      LockedStream(sout) << "Opening: " << name << std::endl;
     }
 
     // Open the source file and compute its Hashes and CRCs.
@@ -394,8 +393,8 @@ bool Par2Creator::OpenSourceFiles(const std::vector<std::string> &extrafiles, st
 
     // Record the file verification and file description packets
     // in the critical packet list.
-    #pragma omp critical
     {
+    std::lock_guard<std::mutex> lock(sourcefilesMutex);
     sourcefile->RecordCriticalPackets(criticalpackets);
 
     // Add the source file to the sourcefiles array.

@@ -1250,8 +1250,7 @@ bool Par2Repairer::VerifySourceFiles(const std::string& basepath, std::vector<st
 
     if (noiselevel >= nlDebug)
     {
-      #pragma omp critical(stdio)
-      sout << "[DEBUG] VerifySourceFiles ----\n"
+      LockedStream(sout) << "[DEBUG] VerifySourceFiles ----\n"
         "[DEBUG] file: " << file << "\n"
         "[DEBUG] name: " << name << "\n"
         "[DEBUG] targ: " << target_pathname << std::endl;
@@ -1259,8 +1258,8 @@ bool Par2Repairer::VerifySourceFiles(const std::string& basepath, std::vector<st
 
     // if the target file is in the list of extra files, we remove it
     // from the extra files.
-    #pragma omp critical(extrafiles)
     {
+      std::lock_guard<std::mutex> lock(extraFilesMutex);
       std::vector<std::string>::iterator it = extrafiles.begin();
       for (; it != extrafiles.end(); ++it)
       {
@@ -1276,13 +1275,14 @@ bool Par2Repairer::VerifySourceFiles(const std::string& basepath, std::vector<st
 
     // Check to see if we have already used this file
     bool b;
-    #pragma omp critical(diskFileMap)
-    b = diskFileMap.Find(file) != 0;
+    {
+      std::lock_guard<std::mutex> lock(diskFileMapMutex);
+      b = diskFileMap.Find(file) != 0;
+    }
     if (b)
     {
       // The file has already been used!
-      #pragma omp critical(stdio)
-      serr << "Source file " << name << " is a duplicate." << std::endl;
+      LockedStream(serr) << "Source file " << name << " is a duplicate." << std::endl;
 
       finalresult = false;
     }
@@ -1301,8 +1301,10 @@ bool Par2Repairer::VerifySourceFiles(const std::string& basepath, std::vector<st
 
         // Remember that we have processed this file
         bool success;
-        #pragma omp critical(diskFileMap)
-        success = diskFileMap.Insert(diskfile);
+        {
+          std::lock_guard<std::mutex> lock(diskFileMapMutex);
+          success = diskFileMap.Insert(diskfile);
+        }
         assert(success);
         // Do the actual verification
         if (!VerifyDataFile(diskfile, sourcefile, basepath MT_PROGRESS))
@@ -1318,8 +1320,7 @@ bool Par2Repairer::VerifySourceFiles(const std::string& basepath, std::vector<st
 
         if (noiselevel > nlSilent)
         {
-          #pragma omp critical(stdio)
-          sout << "Target: \"" << name << "\" - missing." << std::endl;
+          LockedStream(sout) << "Target: \"" << name << "\" - missing." << std::endl;
         }
       }
     }
@@ -1360,8 +1361,10 @@ bool Par2Repairer::VerifyExtraFiles(const std::vector<std::string> &extrafiles, 
 
         // Has this file already been dealt with
         bool b;
-        #pragma omp critical(diskFileMap)
-        b = diskFileMap.Find(filename) == 0;
+        {
+          std::lock_guard<std::mutex> lock(diskFileMapMutex);
+          b = diskFileMap.Find(filename) == 0;
+        }
         if (b)
         {
           DiskFile *diskfile = new DiskFile(sout, serr);
@@ -1375,8 +1378,10 @@ bool Par2Repairer::VerifyExtraFiles(const std::vector<std::string> &extrafiles, 
 
           // Remember that we have processed this file
           bool success;
-          #pragma omp critical(diskFileMap)
-          success = diskFileMap.Insert(diskfile);
+          {
+            std::lock_guard<std::mutex> lock(diskFileMapMutex);
+            success = diskFileMap.Insert(diskfile);
+          }
           assert(success);
 
           // Do the actual verification
@@ -1533,8 +1538,7 @@ bool Par2Repairer::VerifyDataFile(DiskFile *diskfile, Par2RepairerSourceFile *so
       {
         if (noiselevel > nlSilent)
         {
-          #pragma omp critical(stdio)
-          sout << diskfile->FileName() << " is a perfect match for " << sourcefile->GetDescriptionPacket()->FileName() << std::endl;
+          LockedStream(sout) << diskfile->FileName() << " is a perfect match for " << sourcefile->GetDescriptionPacket()->FileName() << std::endl;
         }
         // Record that we have a perfect match for this source file
         sourcefile->SetCompleteFile(diskfile);
@@ -1751,13 +1755,11 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
     {
       if (originalsourcefile != 0)
       {
-        #pragma omp critical(stdio)
-        sout << "Target: \"" << name << "\" - empty." << std::endl;
+        LockedStream(sout) << "Target: \"" << name << "\" - empty." << std::endl;
       }
       else
       {
-        #pragma omp critical(stdio)
-        sout << "File: \"" << name << "\" - empty." << std::endl;
+        LockedStream(sout) << "File: \"" << name << "\" - empty." << std::endl;
       }
     }
 
@@ -1777,8 +1779,7 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
 #ifdef _OPENMP
   if (noiselevel > nlQuiet)
   {
-    #pragma omp critical(stdio)
-    sout << "Opening: \"" << shortname << "\"" << std::endl;
+    LockedStream(sout) << "Opening: \"" << shortname << "\"" << std::endl;
   }
 #else
   std::string message = "Scanning: \"";
@@ -2122,8 +2123,7 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
           // Were we scanning the target file or an extra file
           if (originalsourcefile != 0)
           {
-            #pragma omp critical(stdio)
-            sout << "Target: \""
+            LockedStream(sout) << "Target: \""
               << name
               << "\" - damaged, found "
               << count
@@ -2132,8 +2132,7 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
           }
           else
           {
-            #pragma omp critical(stdio)
-            sout << "File: \""
+            LockedStream(sout) << "File: \""
               << name
               << "\" - found "
               << count
@@ -2146,8 +2145,7 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
           // Did we find data blocks that belong to the target file
           if (originalsourcefile == sourcefile)
           {
-            #pragma omp critical(stdio)
-            sout << "Target: \""
+            LockedStream(sout) << "Target: \""
               << name
               << "\" - damaged. Found "
               << count
@@ -2162,8 +2160,7 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
             std::string targetname;
             DiskFile::SplitRelativeFilename(sourcefile->TargetFileName(), basepath, targetname);
 
-            #pragma omp critical(stdio)
-            sout << "Target: \""
+            LockedStream(sout) << "Target: \""
               << name
               << "\" - damaged. Found "
               << count
@@ -2179,8 +2176,7 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
             std::string targetname;
             DiskFile::SplitRelativeFilename(sourcefile->TargetFileName(), basepath, targetname);
 
-            #pragma omp critical(stdio)
-            sout << "File: \""
+            LockedStream(sout) << "File: \""
               << name
               << "\" - found "
               << count
@@ -2195,8 +2191,7 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
 
         if (skippeddata > 0)
         {
-          #pragma omp critical(stdio)
-          sout << skippeddata << " bytes of data were skipped whilst scanning.\n"
+          LockedStream(sout) << skippeddata << " bytes of data were skipped whilst scanning.\n"
             "If there are not enough blocks found to repair: try again "
             "with the -N option." << std::endl;
         }
@@ -2209,8 +2204,7 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
         // Did we match the target file
         if (originalsourcefile == sourcefile)
         {
-          #pragma omp critical(stdio)
-          sout << "Target: \"" << name << "\" - found." << std::endl;
+          LockedStream(sout) << "Target: \"" << name << "\" - found." << std::endl;
         }
         // Were we scanning the target file or an extra file
         else if (originalsourcefile != 0)
@@ -2218,8 +2212,7 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
           std::string targetname;
           DiskFile::SplitRelativeFilename(sourcefile->TargetFileName(), basepath, targetname);
 
-          #pragma omp critical(stdio)
-          sout << "Target: \""
+          LockedStream(sout) << "Target: \""
             << name
             << "\" - is a match for \""
             << targetname
@@ -2231,8 +2224,7 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
           std::string targetname;
           DiskFile::SplitRelativeFilename(sourcefile->TargetFileName(), basepath, targetname);
 
-          #pragma omp critical(stdio)
-          sout << "File: \""
+          LockedStream(sout) << "File: \""
             << name
             << "\" - is a match for \""
             << targetname
@@ -2252,8 +2244,7 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
       // had already found in other files.
       if (duplicatecount > 0)
       {
-        #pragma omp critical(stdio)
-        sout << "File: \""
+        LockedStream(sout) << "File: \""
           << name
           << "\" - found "
           << duplicatecount
@@ -2262,8 +2253,7 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
       }
       else
       {
-        #pragma omp critical(stdio)
-        sout << "File: \""
+        LockedStream(sout) << "File: \""
           << name
           << "\" - no data found."
           << std::endl;
@@ -2271,8 +2261,7 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
 
       if (skippeddata > 0)
       {
-        #pragma omp critical(stdio)
-        sout << skippeddata << " bytes of data were skipped whilst scanning.\n"
+        LockedStream(sout) << skippeddata << " bytes of data were skipped whilst scanning.\n"
           "If there are not enough blocks found to repair: try again "
           "with the -N option." << std::endl;
       }

@@ -195,6 +195,8 @@ protected:
   CreatorPacket            *creatorpacket;           // One copy of the creator packet.
 
   DiskFileMap               diskFileMap;
+  std::mutex                diskFileMapMutex;        // Guards diskFileMap while files are verified in parallel.
+  std::mutex                extraFilesMutex;         // Guards the caller's list of extra files.
 
   std::map<MD5Hash,Par2RepairerSourceFile*> sourcefilemap;// Map from FileId to SourceFile
   std::vector<Par2RepairerSourceFile*>      sourcefiles;  // The source files

@@ -58,8 +58,7 @@ class ProgressMeter
     // if enough time has passed, print the current progress, and update the time record
     if (now - lastpoint >= PRINT_INTERVAL || newfraction == 1000)
     {
-      #pragma omp critical(stdio)
-      sout << message << newfraction/10 << '.' << newfraction%10 << "%\r" << std::flush;
+      LockedStream(sout) << message << newfraction/10 << '.' << newfraction%10 << "%\r" << std::flush;
 #if defined(_OPENMP) && _OPENMP >= 201107
       #pragma omp atomic write
 #endif
@@ -114,8 +113,7 @@ public:
 #endif
     val = current;
     u32 fraction = CalcThousandths(val);
-    #pragma omp critical(stdio)
-    sout << std::setw(message.size()+7) << std::setfill(' ') << "\r"
+    LockedStream(sout) << std::setw(message.size()+7) << std::setfill(' ') << "\r"
       << line << '\n'
       << message << fraction/10 << '.' << fraction%10 << "%\r" << std::flush;
   }
