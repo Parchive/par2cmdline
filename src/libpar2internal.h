@@ -194,7 +194,9 @@ typedef unsigned int     size_t;
 #include <ctype.h>
 #include <iomanip>
 #include <atomic>
+#include <condition_variable>
 #include <mutex>
+#include <thread>
 
 #include <cassert>
 

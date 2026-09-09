@@ -1628,7 +1628,7 @@ bool Par2Repairer::ScanDataFileAligned(DiskFile               *diskfile,   // [i
   buffer[0].resize((size_t)batchblocks * blocksize);
   buffer[1].resize((size_t)batchblocks * blocksize);
 
-  bool readfailed = false;
+  std::atomic<bool> readfailed(false);
 
   FileHasher filehasher(fullhash);
 
@@ -1638,9 +1638,9 @@ bool Par2Repairer::ScanDataFileAligned(DiskFile               *diskfile,   // [i
   auto readbatch = [&](u32 firstblock, std::vector<char> &into)
   {
     const u32 blocks = std::min(firstblock + batchblocks, blockcount) - firstblock;
-    const u64 offset = (u64)firstblock * blocksize;
-    const size_t span = (size_t)blocks * blocksize;
-    const size_t length = (size_t)std::min((u64)span, filesize - offset);
+    const u64 offset = static_cast<u64>(firstblock) * blocksize;
+    const size_t span = static_cast<size_t>(blocks) * blocksize;
+    const size_t length = std::min(static_cast<u64>(span), filesize - offset);
 
     if (!diskfile->Read(offset, &into[0], length))
     {
@@ -1654,52 +1654,112 @@ bool Par2Repairer::ScanDataFileAligned(DiskFile               *diskfile,   // [i
       memset(&into[length], 0, span - length);
   };
 
-  readbatch(0, buffer[0]);
-
-  #pragma omp parallel num_threads(workers)
+  auto checkblock = [&](const u32 block, const std::vector<char> &checking, u32 firstblock)
   {
-    for (u32 firstblock=0; firstblock<blockcount && !readfailed; firstblock+=batchblocks)
+    const u64 length = std::min(blocksize, filesize - static_cast<u64>(block) * blocksize);
+    const char *at = &checking[static_cast<size_t>(block - firstblock) * blocksize];
+    const FILEVERIFICATIONENTRY *entry = verificationpacket->VerificationEntry(block);
+
+    const u32 checksum = ~0 ^ CRCUpdateBlock(~0, blocksize, at);
+    if (checksum != entry->crc)
+      return;
+
+    MD5Context context;
+    context.Update(at, blocksize);
+
+    MD5Hash hash{};
+    context.Final(hash);
+
+    if (hash != entry->hash)
+      return;
+
+    matched[block] = 1;
+
+    if (noiselevel > nlQuiet)
+      progress.Add(length);
+  };
+
+  // Checkers take the blocks of a batch claimblocks at a time. One block each
+  // is what the batch holds today; a hasher that takes several blocks at once
+  // would ask for more.
+  const u32 claimblocks = 1;
+  const u32 batchcount = (blockcount + batchblocks - 1) / batchblocks;
+
+  std::mutex mutex;
+  std::condition_variable batchfilled;   // the reader has filled a buffer
+  std::condition_variable batchchecked;  // the checkers have emptied one
+  u32 filledbatches = 0;                 // batches the reader has completed
+  u32 outstanding[2] = { 0, 0 };         // blocks left to check in each buffer
+  std::atomic<u32> nextblock(0);      // the next block a checker may claim
+
+  // Reads each batch into the buffer the checkers are not using, so that the
+  // next batch arrives while the current one is being hashed
+  std::thread reader([&] {
+    for (u32 batch = 0; batch < batchcount; ++batch)
     {
-      const u32 lastblock = std::min(firstblock + batchblocks, blockcount);
-      const u32 batch = firstblock / batchblocks;
+      const u32 firstblock = batch * batchblocks;
+      const u32 blocks = std::min(firstblock + batchblocks, blockcount) - firstblock;
 
-      std::vector<char> &checking = buffer[batch % 2];
-      std::vector<char> &reading = buffer[(batch + 1) % 2];
-
-      // Reads the next block while this one is being hashed
-      #pragma omp single nowait
       {
-        if (lastblock < blockcount)
-          readbatch(lastblock, reading);
+        std::unique_lock<std::mutex> lock(mutex);
+        batchchecked.wait(lock, [&]{ return outstanding[batch % 2] == 0; });
       }
 
-      #pragma omp for schedule(dynamic)
-      for (int b=(int)firstblock; b<(int)lastblock; ++b)
+      readbatch(firstblock, buffer[batch % 2]);
+
       {
-        const u64 length = std::min(blocksize, filesize - (u64)b * blocksize);
-        const char *at = &checking[(size_t)(b - (int)firstblock) * blocksize];
-        const FILEVERIFICATIONENTRY *entry = verificationpacket->VerificationEntry(b);
-
-        const u32 checksum = ~0 ^ CRCUpdateBlock(~0, (size_t)blocksize, at);
-        if (checksum != entry->crc)
-          continue;
-
-        MD5Context context;
-        context.Update(at, (size_t)blocksize);
-
-        MD5Hash hash;
-        context.Final(hash);
-
-        if (!(hash == entry->hash))
-          continue;
-
-        matched[b] = 1;
-
-        if (noiselevel > nlQuiet)
-          progress.Add(length);
+        std::lock_guard<std::mutex> lock(mutex);
+        outstanding[batch % 2] = blocks;
+        filledbatches = batch + 1;
       }
+      batchfilled.notify_all();
+
+      if (readfailed)
+        return;
     }
+  });
+
+  std::vector<std::thread> checkers;
+  checkers.reserve(workers);
+  for (u32 worker = 0; worker < workers; ++worker)
+  {
+    checkers.emplace_back([&]()
+    {
+      for (;;)
+      {
+        const u32 firstclaimed = nextblock.fetch_add(claimblocks);
+        if (firstclaimed >= blockcount)
+          return;
+
+        // A claim never spans two batches, because each batch sits in its own buffer
+        const u32 batch = firstclaimed / batchblocks;
+        const u32 lastclaimed = std::min(firstclaimed + claimblocks,
+                                         std::min((batch + 1) * batchblocks, blockcount));
+
+        {
+          std::unique_lock<std::mutex> lock(mutex);
+          batchfilled.wait(lock, [&]{ return filledbatches > batch || readfailed; });
+        }
+
+        if (readfailed)
+          return;
+
+        for (u32 block = firstclaimed; block < lastclaimed; ++block)
+          checkblock(block, buffer[batch % 2], batch * batchblocks);
+
+        {
+          std::lock_guard<std::mutex> lock(mutex);
+          outstanding[batch % 2] -= lastclaimed - firstclaimed;
+          if (outstanding[batch % 2] == 0)
+            batchchecked.notify_one();
+        }
+      }
+    });
   }
+
+  reader.join();
+  for (auto & checker : checkers)
+    checker.join();
 
   if (readfailed)
     return false;
