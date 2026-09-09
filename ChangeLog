@@ -1,3 +1,31 @@
+09 September 2026 Ike Devolder
+  * release: 1.4.0
+
+  Release:
+  * #301: Version 1.4.0 (via PR #321)
+
+  Issues:
+  * #289: Par2 create fails to follow symlinks (via PR #305)
+  * Windows long-path prefix doubled the separator producing `\\?\UNC\\server\share` (via PR #308)
+  * #313: Announcement: @mnightingale joins the group
+
+  PRs:
+  * #300: Cross-compile the FreeBSD release binaries from Linux
+  * #298: Bump actions/download-artifact from 7 to 8
+  * #299: Bump cross-platform-actions/action from 1.3.0 to 1.4.0
+  * #303: Skip the redundant whole-file MD5 during verification
+  * #302: Cleanup minor items after review
+  * #304: Verify the blocks of a file in parallel
+  * #307: Scan each file with a reader thread feeding worker threads (followup of #304)
+  * #315: Run tests on pull requests from forks
+  * #316: Reduce test suite runtime
+  * #317: Bump cross-platform-actions/action from 1.4.0 to 1.5.0
+  * #311: Count the tail of a scanned file when built without OpenMP (minor progress fix to #294)
+  * #308: Replace wstring_convert with the Win32 conversion functions
+  * #310: Check the 16k hash again, and make the whole file hash opt-in (followup of #304)
+  * #318: Suppress reachable blocks from libgomp init and sync_with_stdio
+  * #319: Blank the whole scan buffer beyond the end of the file
+
 15 August 2026 Ike Devolder
   * release: 1.3.0
 
