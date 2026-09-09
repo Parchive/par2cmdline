@@ -63,6 +63,23 @@ AC_FUNC_FSEEKO
 dnl Check for OpenMP
 AC_OPENMP
 
+dnl ProgressMeter keeps 64-bit counters in std::atomic. Most targets emit those
+dnl inline, but 32-bit ones generally need libatomic to supply them.
+AC_MSG_CHECKING([whether 64-bit atomics need libatomic])
+m4_define([PAR2_ATOMIC_PROGRAM], [AC_LANG_PROGRAM(
+  [[#include <atomic>
+    #include <cstdint>]],
+  [[std::atomic<uint64_t> value(0); return (int)value.fetch_add(1);]])])
+AC_LINK_IFELSE([PAR2_ATOMIC_PROGRAM],
+  [AC_MSG_RESULT([no])],
+  [par2_saved_LIBS=$LIBS
+   LIBS="$LIBS -latomic"
+   AC_LINK_IFELSE([PAR2_ATOMIC_PROGRAM],
+     [AC_MSG_RESULT([yes])],
+     [AC_MSG_RESULT([no])
+      LIBS=$par2_saved_LIBS
+      AC_MSG_ERROR([par2cmdline needs 64-bit atomics])])])
+
 dnl Checks for library functions.
 AC_FUNC_MEMCMP
 AC_CHECK_FUNCS([stricmp] [strcasecmp])
