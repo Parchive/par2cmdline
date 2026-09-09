@@ -59,10 +59,11 @@ par2_SOURCES = src/par2cmdline.cpp \
 par2_LDADD = libpar2.a
 
 LDADD = -lstdc++
-AM_CXXFLAGS = -Wall -std=c++14 $(OPENMP_CXXFLAGS)
+AM_CXXFLAGS = -Wall -std=c++14 $(OPENMP_CXXFLAGS) $(PTHREAD_FLAGS)
+AM_LDFLAGS = $(PTHREAD_FLAGS)
 
 if MINGW
-par2_LDFLAGS = -municode
+par2_LDFLAGS = $(AM_LDFLAGS) -municode
 endif
 
 EXTRA_DIST = \
