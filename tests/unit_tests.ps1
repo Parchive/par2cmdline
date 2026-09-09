@@ -41,6 +41,7 @@ $unitTestExes = @(
     "crc_test.exe",
     "md5_test.exe",
     "diskfile_test.exe",
+    "filechecksummer_test.exe",
     "libpar2_test.exe",
     "commandline_test.exe",
     "descriptionpacket_test.exe",

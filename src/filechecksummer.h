@@ -132,6 +132,9 @@ protected:
   // Set longfill = true to force fill the whole buffer
   bool Fill(bool longfill = false);
 
+  // Blank the part of the buffer which is beyond the end of the file
+  void BlankPastEndOfFile() const;
+
 private:
   // private copy constructor to prevent any misuse.
   FileCheckSummer(const FileCheckSummer &);
@@ -206,6 +209,8 @@ inline bool FileCheckSummer::Step(void)
   inpointer = outpointer;
   outpointer = buffer;
   tailpointer -= blocksize;
+
+  BlankPastEndOfFile();
 
   return true;
 }

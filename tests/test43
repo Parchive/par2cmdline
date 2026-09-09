@@ -42,10 +42,10 @@ printf 'symlink escape file body\n' > work/.config/autostart/poc.desktop
 
 (
   cd work || exit 1
-  "$PARBINARY" c -q -r100 recovery.par2 .config/autostart/poc.desktop >/dev/null || exit 1
+  $PARBINARY c -q -r100 recovery.par2 .config/autostart/poc.desktop >/dev/null || exit 1
   rm .config/autostart/poc.desktop
   ln -s "$PWD/../outside/escaped-by-repair" .config/autostart/poc.desktop
-  "$PARBINARY" r -q recovery.par2 >/dev/null && exit 2
+  $PARBINARY r -q recovery.par2 >/dev/null && exit 2
   exit 0
 )
 status=$?
