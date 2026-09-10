@@ -39,12 +39,17 @@
 //   for each chunk:
 //     SetChunkLength
 //     ResetOutput
+//     OfferRecoveryExponents             creating only
 //     for each input block:
 //       WaitForAdd
 //       AddInput
 //     EndInput
 //     for each output block:
 //       GetOutput
+//
+// Only the methods declared pure need implementing. The one carrying a body
+// is a chance to do less work, and an implementation which does not override
+// it is correct.
 class Processor
 {
 public:
@@ -62,18 +67,35 @@ public:
   // Set every accumulated output block back to zero.
   virtual void ResetOutput(void) = 0;
 
+  // Offer the number of input blocks which will be submitted, and the
+  // exponents of the exponentcount output blocks, which are the outputcount
+  // given to Init. An implementation that would rather work the coefficients
+  // out for itself returns true, and is given no factors from then on. Only
+  // creation offers them: after a repair matrix is solved its coefficients are
+  // no longer a function of the exponents.
+  virtual bool OfferRecoveryExponents(u32 inputcount, const u16 *exponents, u32 exponentcount)
+  {
+    (void)inputcount;
+    (void)exponents;
+    (void)exponentcount;
+    return false;
+  }
+
   // Wait until AddInput will not block. The caller holds a bounded number of
   // submissions in flight and calls this before each of them.
   virtual void WaitForAdd(void) = 0;
 
   // Submit one input block against every output block. length is the length
   // last given to SetChunkLength. factors[index] is the matrix coefficient for
-  // output block index.
+  // output block index, and is null where an offer was taken, leaving
+  // inputindex to say which input block this is:
+  //
+  //   creating, it is the source block, counting from zero
   //
   // Called from one thread, and always after WaitForAdd. The returned future
   // becomes ready once data may be overwritten, and one which is ready
   // already says the implementation has finished with it.
-  virtual std::future<void> AddInput(const void *data, size_t length, const u16 *factors) = 0;
+  virtual std::future<void> AddInput(const void *data, size_t length, u32 inputindex, const u16 *factors) = 0;
 
   // Wait for every submitted input block to be processed.
   virtual void EndInput(void) = 0;
