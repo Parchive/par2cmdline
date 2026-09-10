@@ -108,6 +108,7 @@ typedef   signed long long     i64;
 #include <string>
 
 #include "processor.h"
+#include "hasher.h"
 #include "backends.h"
 
 

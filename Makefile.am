@@ -46,6 +46,7 @@ libpar2_a_SOURCES = src/crc.cpp src/crc.h \
 	src/bufferpool.h \
 	src/taskpool.h \
 	src/backends.h \
+	src/hasher.h \
 	src/processor.h \
 	src/reference_processor.h \
 	src/progressmeter.h \
