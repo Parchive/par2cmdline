@@ -275,6 +275,7 @@ private:
 #include "par2repairersourcefile.h"
 
 #include "filechecksummer.h"
+#include "reference_hasher.h"
 #include "verificationhashtable.h"
 
 #include "par2creator.h"
