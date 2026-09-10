@@ -40,6 +40,9 @@ static_assert(sizeof(u8) == 1 && sizeof(i8) == 1
 		&& sizeof(u64) == 8 && sizeof(i64) == 8,
 		"the integer types are the widths their names give");
 
+#include "processor.h"
+#include "backends.h"
+
 
 typedef enum
 {
@@ -107,7 +110,8 @@ Result par2create(std::ostream &sout,
 			  const u32 firstblock,
 			  const Scheme recoveryfilescheme,
 			  const u32 recoveryfilecount,
-			  const u32 recoveryblockcount
+			  const u32 recoveryblockcount,
+			  const Backends &backends = Backends()
 			  );
 
 
@@ -125,7 +129,8 @@ Result par2repair(std::ostream &sout,
 		  const bool renameonly,
 		  const bool skipdata,
 		  const u64 skipleaway,
-		  const bool fullhash = false
+		  const bool fullhash = false,
+		  const Backends &backends = Backends()
 		  );
 
 

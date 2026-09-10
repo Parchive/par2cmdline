@@ -23,8 +23,10 @@
 #include <future>
 
 // Multiplies input blocks by the Reed Solomon matrix and accumulates the
-// results. One input block is submitted against every output block at once,
-// so that an implementation chooses its own tiling and threading.
+// results. One input block is submitted against every output block at once, so
+// that an implementation chooses how to tile the work and how to spread it over
+// the threads it is given, which reach it in the ProcessorConfig it is built
+// from.
 //
 // Every block, in and out, is a sequence of 16 bit Galois values, each little
 // endian, which is the layout they have on disk. The values belong to GF(2^16)

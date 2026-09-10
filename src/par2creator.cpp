@@ -29,10 +29,11 @@ static char THIS_FILE[]=__FILE__;
 #endif
 
 
-Par2Creator::Par2Creator(std::ostream &sout, std::ostream &serr, const NoiseLevel noiselevel)
+Par2Creator::Par2Creator(std::ostream &sout, std::ostream &serr, const NoiseLevel noiselevel, const Backends &backends)
 : sout(sout)
 , serr(serr)
 , noiselevel(noiselevel)
+, backends(backends)
 , totalthreads(default_threads())
 , filethreads(_FILE_THREADS)
 , blocksize(0)
@@ -168,7 +169,7 @@ Result Par2Creator::Process(
   if (recoveryblockcount > 0)
   {
     // Allocate memory buffers for reading and writing data to disk.
-    if (!AllocateBuffers())
+    if (!AllocateBuffers(memorylimit))
       return eMemoryError;
 
     // Compute the Reed Solomon matrix
@@ -714,7 +715,7 @@ bool Par2Creator::InitialiseOutputFiles(const std::string &parfilename)
 }
 
 // Allocate memory buffers for reading and writing data to disk.
-bool Par2Creator::AllocateBuffers(void)
+bool Par2Creator::AllocateBuffers(size_t memorylimit)
 {
   inputbuffer = new u8[chunksize];
   outputbuffer = new u8[chunksize];
@@ -725,8 +726,15 @@ bool Par2Creator::AllocateBuffers(void)
     return false;
   }
 
-  processor.reset(new ReferenceProcessor(rs, totalthreads));
-  if (!processor->Init(chunksize, recoveryblockcount))
+  ProcessorConfig config;
+  config.numthreads = totalthreads;
+  config.memorylimit = memorylimit;
+
+  processor = backends.processor
+    ? backends.processor(config)
+    : std::unique_ptr<Processor>(new ReferenceProcessor(rs, totalthreads));
+
+  if (!processor || !processor->Init(chunksize, recoveryblockcount))
   {
     serr << "Could not allocate buffer memory." << std::endl;
     return false;
