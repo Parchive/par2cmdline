@@ -37,7 +37,6 @@ Par2CreatorSourceFile::Par2CreatorSourceFile(void)
   //diskfilename;
   //parfilename;
   blockcount = 0;
-  contextfull = 0;
 }
 
 Par2CreatorSourceFile::~Par2CreatorSourceFile(void)
@@ -45,7 +44,6 @@ Par2CreatorSourceFile::~Par2CreatorSourceFile(void)
   delete descriptionpacket;
   delete verificationpacket;
   delete diskfile;
-  delete contextfull;
 }
 
 // Open the source file, compute the MD5 Hash of the whole file and the first
@@ -114,9 +112,15 @@ bool Par2CreatorSourceFile::Open(NoiseLevel noiselevel, std::ostream &sout, std:
     descriptionpacket->ComputeFileId();
     verificationpacket->FileId(descriptionpacket->FileId());
 
-    // Allocate an MD5 context for computing the file hash
+    // Allocate a hasher for the block and file hashes computed
     // during the recovery data generation phase
-    contextfull = new MD5Context;
+    hasher.reset(new ReferenceHasher());
+
+    if (!hasher->Init(filesize, (size_t)blocksize, true))
+    {
+      diskfile->Close();
+      return false;
+    }
   }
   else
   {
@@ -293,36 +297,40 @@ void Par2CreatorSourceFile::InitialiseSourceBlocks(std::vector<DataBlock>::itera
 
 void Par2CreatorSourceFile::UpdateHashes(u32 blocknumber, const void *buffer, size_t length)
 {
-  // Compute the crc and hash of the data
-  u32 blockcrc = ~0 ^ CRCUpdateBlock(~0, length, buffer);
-  MD5Context blockcontext;
-  blockcontext.Update(buffer, length);
+  assert(hasher);
+
+  // The block is hashed padded out to its full length, the file only as far
+  // as its end
+  const u64 len = filesize - (u64) blocknumber * (u64) length;
+  const size_t filelength = (u64)length > len ? (size_t)len : length;
+
+  hasher->SubmitBlocks(buffer, 1, filelength);
+
+  u8 result[20];
+  hasher->CollectBlocks(result, 1);
+
   MD5Hash blockhash;
-  blockcontext.Final(blockhash);
+  memcpy(blockhash.hash, result, 16);
+
+  const u32 blockcrc = (u32)result[16] | ((u32)result[17] << 8)
+                     | ((u32)result[18] << 16) | ((u32)result[19] << 24);
 
   // Store the results in the verification packet
   verificationpacket->SetBlockHashAndCRC(blocknumber, blockhash, blockcrc);
-
-
-  // Update the full file hash, but don't go beyond the end of the file
-  const u64 len = filesize - (u64) blocknumber * (u64) length;
-  if ((u64)length > len)
-  {
-    length = (size_t)(len);
-  }
-
-  assert(contextfull != 0);
-
-  contextfull->Update(buffer, length);
 }
 
 void Par2CreatorSourceFile::FinishHashes(void)
 {
-  assert(contextfull != 0);
+  assert(hasher);
 
-  // Finish computation of the full file hash
+  // Finish computation of the full file hash. The 16k hash was stored when
+  // the file was opened
+  u8 hashfull[16];
+  u8 hash16k[16];
+  hasher->EndFile(hashfull, hash16k);
+
   MD5Hash hash;
-  contextfull->Final(hash);
+  memcpy(hash.hash, hashfull, 16);
 
   // Store it in the description packet
   descriptionpacket->HashFull(hash);

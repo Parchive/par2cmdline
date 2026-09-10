@@ -76,7 +76,7 @@ protected:
 
   u32    blockcount;    // How many blocks the file will be divided into.
 
-  MD5Context *contextfull; // MD5 context used to calculate the hash of the whole file
+  std::unique_ptr<Hasher> hasher; // Hashes the blocks of the file, and the file itself
 };
 
 #endif // __PAR2CREATORSOURCEFILE_H__
