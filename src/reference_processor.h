@@ -89,6 +89,11 @@ public:
     return true;
   }
 
+  const void *PeekOutput(u32 index)
+  {
+    return &outputbuffer[slicesize * index];
+  }
+
 private:
   ReedSolomon<Galois16> &rs;
   u32 numthreads;

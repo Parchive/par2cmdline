@@ -2963,12 +2963,17 @@ bool Par2Repairer::ProcessData(u64 blockoffset, size_t blocklength, ProgressMete
   for (u32 outputindex=0; outputindex<missingblockcount;outputindex++)
   {
     // Take the accumulated output block from the processor
-    if (!processor->GetOutput(outputindex, outputbuffer))
-      return false;
+    const void *outbuf = processor->PeekOutput(outputindex);
+    if (outbuf == NULL)
+    {
+      if (!processor->GetOutput(outputindex, outputbuffer))
+        return false;
+      outbuf = outputbuffer;
+    }
 
     // Write the data to the target file
     size_t wrote;
-    if (!(*outputblock)->WriteData(blockoffset, blocklength, outputbuffer, wrote))
+    if (!(*outputblock)->WriteData(blockoffset, blocklength, outbuf, wrote))
       return false;
     totalwritten += wrote;
 

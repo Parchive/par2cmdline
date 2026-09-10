@@ -877,11 +877,16 @@ bool Par2Creator::ProcessData(u64 blockoffset, size_t blocklength, ProgressMeter
   for (u32 outputblock=0; outputblock<recoveryblockcount;outputblock++)
   {
     // Take the accumulated output block from the processor
-    if (!processor->GetOutput(outputblock, outputbuffer))
-      return false;
+    const void *outbuf = processor->PeekOutput(outputblock);
+    if (outbuf == NULL)
+    {
+      if (!processor->GetOutput(outputblock, outputbuffer))
+        return false;
+      outbuf = outputbuffer;
+    }
 
     // Write the data to the recovery packet
-    if (!recoverypackets[outputblock].WriteData(blockoffset, blocklength, outputbuffer))
+    if (!recoverypackets[outputblock].WriteData(blockoffset, blocklength, outbuf))
       return false;
   }
 

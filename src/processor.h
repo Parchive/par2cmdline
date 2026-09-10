@@ -65,6 +65,16 @@ public:
   // Copy accumulated output block index into out, which holds the length last
   // given to SetSliceSize.
   virtual bool GetOutput(u32 index, void *out) = 0;
+
+  // Point at accumulated output block index where the implementation keeps it
+  // somewhere the caller can read, saving the copy GetOutput makes. Null means
+  // it does not, and the caller uses GetOutput instead. Any pointer returned
+  // stays good until the next submission.
+  virtual const void *PeekOutput(u32 index)
+  {
+    (void)index;
+    return nullptr;
+  }
 };
 
 #endif // __PROCESSOR_H__
