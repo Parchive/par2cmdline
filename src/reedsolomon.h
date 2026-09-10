@@ -67,6 +67,15 @@ public:
                const void *inputbuffer, // Buffer containing input data
                u32 outputindex,         // The row in the RS matrix
                void *outputbuffer);     // Buffer containing output data
+
+  // The matrix coefficient for one input block against one output block
+  typename g::ValueType GetFactor(u32 inputindex, u32 outputindex) const;
+
+  // Multiply a block of data by one coefficient and add it to the output
+  bool MultiplyAdd(typename g::ValueType factor,
+                   size_t size,
+                   const void *inputbuffer,
+                   void *outputbuffer);
 private:
 		bool InternalProcess(const g &factor, size_t size, const void *inputbuffer, void *outputbuffer);	// Optimization
 
@@ -160,15 +169,25 @@ inline ReedSolomon<g>::~ReedSolomon(void)
 template<class g>
 inline bool ReedSolomon<g>::Process(size_t size, u32 inputindex, const void *inputbuffer, u32 outputindex, void *outputbuffer)
 {
+	return MultiplyAdd(GetFactor(inputindex, outputindex), size, inputbuffer, outputbuffer);
+}
+
+template<class g>
+inline bool ReedSolomon<g>::MultiplyAdd(typename g::ValueType factor, size_t size, const void *inputbuffer, void *outputbuffer)
+{
 	// Optimization: it occurs frequently the function exits early on, so inline the start.
 	// This resulted in a speed gain of approx. 8% in repairing.
 
-	// Look up the appropriate element in the RS matrix
-	g factor = leftmatrix[outputindex * (datapresent + datamissing) + inputindex];
 	// Do nothing if the factor happens to be 0
 	if (factor == 0)
 		return eSuccess;
-	return this->InternalProcess (factor, size, inputbuffer, outputbuffer);
+	return this->InternalProcess (g(factor), size, inputbuffer, outputbuffer);
+}
+
+template<class g>
+inline typename g::ValueType ReedSolomon<g>::GetFactor(u32 inputindex, u32 outputindex) const
+{
+	return leftmatrix[outputindex * (datapresent + datamissing) + inputindex].Value();
 }
 
 u32 gcd(u32 a, u32 b);
