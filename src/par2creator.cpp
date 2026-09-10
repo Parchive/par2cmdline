@@ -176,7 +176,7 @@ Result Par2Creator::Process(
       return eLogicError;
 
     // Set the total amount of data to be processed.
-    ProgressMeter<u64> progress(sout, "Processing: ", blocksize * sourceblockcount * recoveryblockcount);
+    ProgressMeter<u64> progress(sout, "Processing: ", blocksize * sourceblockcount);
 
     // Start at an offset of 0 within a block.
     u64 blockoffset = 0;
@@ -717,9 +717,16 @@ bool Par2Creator::InitialiseOutputFiles(const std::string &parfilename)
 bool Par2Creator::AllocateBuffers(void)
 {
   inputbuffer = new u8[chunksize];
-  outputbuffer = new u8[chunksize * recoveryblockcount];
+  outputbuffer = new u8[chunksize];
 
   if (inputbuffer == NULL || outputbuffer == NULL)
+  {
+    serr << "Could not allocate buffer memory." << std::endl;
+    return false;
+  }
+
+  processor.reset(new ReferenceProcessor(rs, totalthreads));
+  if (!processor->Init(chunksize, recoveryblockcount))
   {
     serr << "Could not allocate buffer memory." << std::endl;
     return false;
@@ -751,8 +758,11 @@ bool Par2Creator::ComputeRSMatrix(void)
 // Read source data, process it through the RS matrix and write it to disk.
 bool Par2Creator::ProcessData(u64 blockoffset, size_t blocklength, ProgressMeter<u64> &progress)
 {
-  // Clear the output buffer
-  memset(outputbuffer, 0, chunksize * recoveryblockcount);
+  processor->SetSliceSize(blocklength);
+  processor->DiscardOutput();
+
+  // The matrix column for one input block
+  std::vector<u16> factors(recoveryblockcount);
 
   // If we have deferred computation of the file hash and block crc and hashes
   // sourcefile and sourceindex will be used to update them during
@@ -764,10 +774,6 @@ bool Par2Creator::ProcessData(u64 blockoffset, size_t blocklength, ProgressMeter
   u32 inputblock;
 
   DiskFile *lastopenfile = NULL;
-
-  // The output blocks are divided between the same threads for every input
-  // block, so the threads are started once for the whole of the data
-  ParallelRunner runner(std::min<u32>(totalthreads, recoveryblockcount));
 
   // For each input block
   for ((sourceblock=sourceblocks.begin()),(inputblock=0);
@@ -803,20 +809,15 @@ bool Par2Creator::ProcessData(u64 blockoffset, size_t blocklength, ProgressMeter
       (*sourcefile)->UpdateHashes(sourceindex, inputbuffer, blocklength);
     }
 
-    // For each output block
-    runner.Run(0, recoveryblockcount, [&](size_t outputblock)
-    {
-      u32 internalOutputblock = (u32)outputblock;
+    // Look up the matrix column and process the data against every output block
+    for (u32 outputblock=0; outputblock<recoveryblockcount; outputblock++)
+      factors[outputblock] = rs.GetFactor(inputblock, outputblock);
 
-      // Select the appropriate part of the output buffer
-      void *outbuf = &((u8*)outputbuffer)[chunksize * internalOutputblock];
+    processor->WaitForAdd();
+    processor->AddInput(inputbuffer, blocklength, factors.data()).get();
 
-      // Process the data through the RS matrix
-      rs.Process(blocklength, inputblock, inputbuffer, internalOutputblock, outbuf);
-
-      if (noiselevel > nlQuiet)
-        progress.Add(blocklength);
-    });
+    if (noiselevel > nlQuiet)
+      progress.Add(blocklength);
 
     // Work out which source file the next block belongs to
     if (++sourceindex >= (*sourcefile)->BlockCount())
@@ -825,6 +826,8 @@ bool Par2Creator::ProcessData(u64 blockoffset, size_t blocklength, ProgressMeter
       ++sourcefile;
     }
   }
+
+  processor->EndInput();
 
   // Close the last file
   if (lastopenfile != NULL)
@@ -838,11 +841,12 @@ bool Par2Creator::ProcessData(u64 blockoffset, size_t blocklength, ProgressMeter
   // For each output block
   for (u32 outputblock=0; outputblock<recoveryblockcount;outputblock++)
   {
-    // Select the appropriate part of the output buffer
-    char *outbuf = &((char*)outputbuffer)[chunksize * outputblock];
+    // Take the accumulated output block from the processor
+    if (!processor->GetOutput(outputblock, outputbuffer))
+      return false;
 
     // Write the data to the recovery packet
-    if (!recoverypackets[outputblock].WriteData(blockoffset, blocklength, outbuf))
+    if (!recoverypackets[outputblock].WriteData(blockoffset, blocklength, outputbuffer))
       return false;
   }
 

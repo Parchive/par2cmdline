@@ -115,7 +115,8 @@ protected:
                       // time (due to memory constraints).
 
   void *inputbuffer;  // chunksize
-  void *outputbuffer; // chunksize * recoveryblockcount
+  void *outputbuffer; // chunksize
+  std::unique_ptr<Processor> processor; // Multiplies the input blocks by the RS matrix
 
   u32 sourcefilecount;   // Number of source files for which recovery data will be computed.
   u32 sourceblockcount;  // Total number of data blocks that the source files will be
