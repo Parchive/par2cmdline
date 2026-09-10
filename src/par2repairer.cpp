@@ -2978,15 +2978,20 @@ bool Par2Repairer::ProcessData(u64 blockoffset, size_t blocklength, ProgressMete
   for (u32 outputindex=0; outputindex<missingblockcount;outputindex++)
   {
     // Take the accumulated output block from the processor
-    if (!processor->GetOutput(outputindex, outputbuffer))
+    const void *outbuf = processor->PeekOutput(outputindex);
+    if (outbuf == NULL)
     {
-      serr << "Could not read the repaired data back from the processor." << std::endl;
-      return false;
+      if (!processor->GetOutput(outputindex, outputbuffer))
+      {
+        serr << "Could not read the repaired data back from the processor." << std::endl;
+        return false;
+      }
+      outbuf = outputbuffer;
     }
 
     // Write the data to the target file
     size_t wrote;
-    if (!(*outputblock)->WriteData(blockoffset, blocklength, outputbuffer, wrote))
+    if (!(*outputblock)->WriteData(blockoffset, blocklength, outbuf, wrote))
       return false;
     totalwritten += wrote;
 

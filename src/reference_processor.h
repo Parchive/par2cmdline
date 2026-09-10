@@ -85,6 +85,11 @@ public:
   {
   }
 
+  const void *PeekOutput(u32 index)
+  {
+    return &outputbuffer[maxlength * index];
+  }
+
   bool GetOutput(u32 index, void *out)
   {
     memcpy(out, &outputbuffer[maxlength * index], currentlength);

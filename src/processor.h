@@ -45,11 +45,11 @@
 //       AddInput
 //     EndInput
 //     for each output block:
-//       GetOutput
+//       PeekOutput, and GetOutput where it gives nothing
 //
-// Only the methods declared pure need implementing. The one carrying a body
-// is a chance to do less work, and an implementation which does not override
-// it is correct.
+// Only the methods declared pure need implementing. The two carrying a body
+// are chances to do less work, and an implementation which overrides none of
+// them is correct.
 class Processor
 {
 public:
@@ -99,6 +99,18 @@ public:
 
   // Wait for every submitted input block to be processed.
   virtual void EndInput(void) = 0;
+
+  // Point at accumulated output block index where the implementation keeps it
+  // somewhere the caller can read, saving the copy GetOutput makes. Null means
+  // it does not, and the caller uses GetOutput instead; it never means the
+  // block could not be produced, which only GetOutput reports. The block holds
+  // the length last given to SetChunkLength, and the pointer stays good until
+  // the next submission.
+  virtual const void *PeekOutput(u32 index)
+  {
+    (void)index;
+    return nullptr;
+  }
 
   // Copy accumulated output block index into out, which holds the length last
   // given to SetChunkLength. False where the block could not be produced, which
