@@ -254,6 +254,8 @@ private:
 #include "md5.h"
 #include "par2fileformat.h"
 #include "reedsolomon.h"
+#include "processor.h"
+#include "reference_processor.h"
 
 #include "diskfile.h"
 #include "datablock.h"

@@ -45,6 +45,8 @@ libpar2_a_SOURCES = src/crc.cpp src/crc.h \
 	src/foreach_parallel.h \
 	src/bufferpool.h \
 	src/taskpool.h \
+	src/processor.h \
+	src/reference_processor.h \
 	src/progressmeter.h \
 	src/recoverypacket.cpp src/recoverypacket.h \
 	src/reedsolomon.cpp src/reedsolomon.h \

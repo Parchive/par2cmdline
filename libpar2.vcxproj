@@ -106,6 +106,8 @@
     <ClInclude Include="src\foreach_parallel.h" />
     <ClInclude Include="src\bufferpool.h" />
     <ClInclude Include="src\taskpool.h" />
+    <ClInclude Include="src\processor.h" />
+    <ClInclude Include="src\reference_processor.h" />
     <ClInclude Include="src\progressmeter.h" />
     <ClInclude Include="src\recoverypacket.h" />
     <ClInclude Include="src\reedsolomon.h" />
