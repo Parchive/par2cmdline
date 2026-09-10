@@ -361,7 +361,7 @@ bool Par2Creator::OpenSourceFiles(const std::vector<std::string> &extrafiles, st
     }
 
     // Open the source file and compute its Hashes and CRCs.
-    if (!sourcefile->Open(noiselevel, sout, serr, extrafile, blocksize, deferhashcomputation, basepath, progress))
+    if (!sourcefile->Open(noiselevel, sout, serr, extrafile, blocksize, deferhashcomputation, basepath, progress, backends))
     {
       delete sourcefile;
       openfailed = true;
