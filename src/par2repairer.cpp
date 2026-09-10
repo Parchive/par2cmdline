@@ -278,7 +278,7 @@ Result Par2Repairer::Process(
         }
 
         // Set the total amount of data to be processed.
-        ProgressMeter<u64> progress(sout, missingblockcount > 0 ? "Repairing: " : "Processing: ", blocksize * sourceblockcount * (missingblockcount > 0 ? missingblockcount : 1));
+        ProgressMeter<u64> progress(sout, missingblockcount > 0 ? "Repairing: " : "Processing: ", blocksize * sourceblockcount);
 
         // Start at an offset of 0 within a block.
         u64 blockoffset = 0;
@@ -2780,7 +2780,14 @@ bool Par2Repairer::AllocateBuffers(size_t memorylimit)
 
   // Allocate the two buffers
   inputbuffer = new u8[(size_t)chunksize];
-  outputbuffer = new u8[(size_t)chunksize * missingblockcount];
+  outputbuffer = new u8[(size_t)chunksize];
+
+  processor.reset(new ReferenceProcessor(rs, totalthreads));
+  if (!processor->Init((size_t)chunksize, missingblockcount))
+  {
+    serr << "Could not allocate buffer memory." << std::endl;
+    return false;
+  }
 
   if (MAX_CHUNK_SIZE != 0 && chunksize > MAX_CHUNK_SIZE)
     chunksize = MAX_CHUNK_SIZE;
@@ -2802,9 +2809,6 @@ bool Par2Repairer::ProcessData(u64 blockoffset, size_t blocklength, ProgressMete
 {
   u64 totalwritten = 0;
 
-  // Clear the output buffer
-  memset(outputbuffer, 0, (size_t)chunksize * missingblockcount);
-
   std::vector<DataBlock*>::iterator inputblock = inputblocks.begin();
   std::vector<DataBlock*>::iterator copyblock  = copyblocks.begin();
   u32                          inputindex = 0;
@@ -2814,9 +2818,11 @@ bool Par2Repairer::ProcessData(u64 blockoffset, size_t blocklength, ProgressMete
   // Are there any blocks which need to be reconstructed
   if (missingblockcount > 0)
   {
-    // The output blocks are divided between the same threads for every input
-    // block, so the threads are started once for the whole of the data
-    ParallelRunner runner(std::min<u32>(totalthreads, missingblockcount));
+    processor->SetSliceSize(blocklength);
+    processor->DiscardOutput();
+
+    // The matrix column for one input block
+    std::vector<u16> factors(missingblockcount);
 
     // For each input block
     while (inputblock != inputblocks.end())
@@ -2859,23 +2865,21 @@ bool Par2Repairer::ProcessData(u64 blockoffset, size_t blocklength, ProgressMete
         ++copyblock;
       }
 
-      // For each output block
-      runner.Run(0, missingblockcount, [&](size_t outputindex)
-      {
-        u32 internalOutputindex = (u32) outputindex;
-        // Select the appropriate part of the output buffer
-        void *outbuf = &((u8*)outputbuffer)[chunksize * internalOutputindex];
+      // Look up the matrix column and process the data against every output block
+      for (u32 outputindex=0; outputindex<missingblockcount; outputindex++)
+        factors[outputindex] = rs.GetFactor(inputindex, outputindex);
 
-        // Process the data
-        rs.Process(blocklength, inputindex, inputbuffer, internalOutputindex, outbuf);
+      processor->WaitForAdd();
+      processor->AddInput(inputbuffer, blocklength, factors.data()).get();
 
-        if (noiselevel > nlQuiet)
-          progress.Add(blocklength);
-      });
+      if (noiselevel > nlQuiet)
+        progress.Add(blocklength);
 
       ++inputblock;
       ++inputindex;
     }
+
+    processor->EndInput();
   }
   else
   {
@@ -2935,12 +2939,13 @@ bool Par2Repairer::ProcessData(u64 blockoffset, size_t blocklength, ProgressMete
   std::vector<DataBlock*>::iterator outputblock = outputblocks.begin();
   for (u32 outputindex=0; outputindex<missingblockcount;outputindex++)
   {
-    // Select the appropriate part of the output buffer
-    char *outbuf = &((char*)outputbuffer)[chunksize * outputindex];
+    // Take the accumulated output block from the processor
+    if (!processor->GetOutput(outputindex, outputbuffer))
+      return false;
 
     // Write the data to the target file
     size_t wrote;
-    if (!(*outputblock)->WriteData(blockoffset, blocklength, outbuf, wrote))
+    if (!(*outputblock)->WriteData(blockoffset, blocklength, outputbuffer, wrote))
       return false;
     totalwritten += wrote;
 
