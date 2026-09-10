@@ -26,6 +26,7 @@
 
 #include "types.h"
 #include "processor.h"
+#include "hasher.h"
 #include "backends.h"
 
 
