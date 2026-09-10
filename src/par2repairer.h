@@ -234,7 +234,7 @@ protected:
 
   ReedSolomon<Galois16>     rs;                      // The Reed Solomon matrix.
 
-  void                     *inputbuffer;             // Buffer for reading DataBlocks (chunksize)
+  void                     *transferbuffer;          // Input blocks in flight (chunksize * NUM_TRANSFER_BUFFERS)
   void                     *outputbuffer;            // Buffer for writing DataBlocks (chunksize)
   std::unique_ptr<Processor> processor;              // Multiplies the input blocks by the RS matrix
 };

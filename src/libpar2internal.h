@@ -177,6 +177,10 @@ typedef unsigned int     size_t;
 #endif
 #endif
 
+// Input blocks held in flight, so that a backend still working on one block
+// does not stop the next being read.
+#define NUM_TRANSFER_BUFFERS 2
+
 #define MAX_CHUNK_SIZE 32*1048576 // too large chunks are likely detrimental to performance; set to 0 to disable
 
 #define LONGMULTIPLY

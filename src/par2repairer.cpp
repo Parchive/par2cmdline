@@ -99,13 +99,13 @@ Par2Repairer::Par2Repairer(std::ostream &sout, std::ostream &serr, const NoiseLe
   damagedfilecount = 0;
   missingfilecount = 0;
 
-  inputbuffer = 0;
+  transferbuffer = 0;
   outputbuffer = 0;
 }
 
 Par2Repairer::~Par2Repairer(void)
 {
-  delete [] (u8*)inputbuffer;
+  delete [] (u8*)transferbuffer;
   delete [] (u8*)outputbuffer;
 
   std::map<u32,RecoveryPacket*>::iterator rp = recoverypacketmap.begin();
@@ -305,8 +305,8 @@ Result Par2Repairer::Process(
 
         // The repaired files are scanned into buffers of their own, so the ones
         // the repair read and wrote through are given up first
-        delete [] (u8*)inputbuffer;
-        inputbuffer = 0;
+        delete [] (u8*)transferbuffer;
+        transferbuffer = 0;
         delete [] (u8*)outputbuffer;
         outputbuffer = 0;
 
@@ -2780,7 +2780,7 @@ bool Par2Repairer::AllocateBuffers(size_t memorylimit)
   }
 
   // Allocate the two buffers
-  inputbuffer = new u8[(size_t)chunksize];
+  transferbuffer = new u8[(size_t)chunksize * NUM_TRANSFER_BUFFERS];
   outputbuffer = new u8[(size_t)chunksize];
 
   ProcessorConfig config;
@@ -2803,7 +2803,7 @@ bool Par2Repairer::AllocateBuffers(size_t memorylimit)
   if (noiselevel >= nlDebug)
     sout << "[DEBUG] Process chunk size: " << chunksize << std::endl;
 
-  if (inputbuffer == NULL || outputbuffer == NULL)
+  if (transferbuffer == NULL || outputbuffer == NULL)
   {
     serr << "Could not allocate buffer memory." << std::endl;
     return false;
@@ -2832,6 +2832,16 @@ bool Par2Repairer::ProcessData(u64 blockoffset, size_t blocklength, ProgressMete
     // The matrix column for one input block
     std::vector<u16> factors(missingblockcount);
 
+    // Every buffer starts free
+    std::future<void> bufferfree[NUM_TRANSFER_BUFFERS];
+    for (u32 buffer=0; buffer<NUM_TRANSFER_BUFFERS; buffer++)
+    {
+      std::promise<void> free;
+      free.set_value();
+      bufferfree[buffer] = free.get_future();
+    }
+    u32 bufferindex = 0;
+
     // For each input block
     while (inputblock != inputblocks.end())
     {
@@ -2851,6 +2861,10 @@ bool Par2Repairer::ProcessData(u64 blockoffset, size_t blocklength, ProgressMete
           return false;
         }
       }
+
+      // Wait for the next input buffer to come free
+      void *inputbuffer = &((u8*)transferbuffer)[(size_t)chunksize * bufferindex];
+      bufferfree[bufferindex].get();
 
       // Read data from the current input block
       if (!(*inputblock)->ReadData(blockoffset, blocklength, inputbuffer))
@@ -2878,7 +2892,8 @@ bool Par2Repairer::ProcessData(u64 blockoffset, size_t blocklength, ProgressMete
         factors[outputindex] = rs.GetFactor(inputindex, outputindex);
 
       processor->WaitForAdd();
-      processor->AddInput(inputbuffer, blocklength, factors.data()).get();
+      bufferfree[bufferindex] = processor->AddInput(inputbuffer, blocklength, factors.data());
+      bufferindex = (bufferindex + 1) % NUM_TRANSFER_BUFFERS;
 
       if (noiselevel > nlQuiet)
         progress.Add(blocklength);
@@ -2917,11 +2932,11 @@ bool Par2Repairer::ProcessData(u64 blockoffset, size_t blocklength, ProgressMete
         }
 
         // Read data from the current input block
-        if (!(*inputblock)->ReadData(blockoffset, blocklength, inputbuffer))
+        if (!(*inputblock)->ReadData(blockoffset, blocklength, transferbuffer))
           return false;
 
         size_t wrote;
-        if (!(*copyblock)->WriteData(blockoffset, blocklength, inputbuffer, wrote))
+        if (!(*copyblock)->WriteData(blockoffset, blocklength, transferbuffer, wrote))
           return false;
         totalwritten += wrote;
       }

@@ -38,7 +38,7 @@ Par2Creator::Par2Creator(std::ostream &sout, std::ostream &serr, const NoiseLeve
 , filethreads(_FILE_THREADS)
 , blocksize(0)
 , chunksize(0)
-, inputbuffer(0)
+, transferbuffer(0)
 , outputbuffer(0)
 
 , sourcefilecount(0)
@@ -70,7 +70,7 @@ Par2Creator::~Par2Creator(void)
   delete mainpacket;
   delete creatorpacket;
 
-  delete [] (u8*)inputbuffer;
+  delete [] (u8*)transferbuffer;
   delete [] (u8*)outputbuffer;
 
   std::vector<Par2CreatorSourceFile*>::iterator sourcefile = sourcefiles.begin();
@@ -717,10 +717,10 @@ bool Par2Creator::InitialiseOutputFiles(const std::string &parfilename)
 // Allocate memory buffers for reading and writing data to disk.
 bool Par2Creator::AllocateBuffers(size_t memorylimit)
 {
-  inputbuffer = new u8[chunksize];
+  transferbuffer = new u8[chunksize * NUM_TRANSFER_BUFFERS];
   outputbuffer = new u8[chunksize];
 
-  if (inputbuffer == NULL || outputbuffer == NULL)
+  if (transferbuffer == NULL || outputbuffer == NULL)
   {
     serr << "Could not allocate buffer memory." << std::endl;
     return false;
@@ -772,6 +772,16 @@ bool Par2Creator::ProcessData(u64 blockoffset, size_t blocklength, ProgressMeter
   // The matrix column for one input block
   std::vector<u16> factors(recoveryblockcount);
 
+  // Every buffer starts free
+  std::future<void> bufferfree[NUM_TRANSFER_BUFFERS];
+  for (u32 buffer=0; buffer<NUM_TRANSFER_BUFFERS; buffer++)
+  {
+    std::promise<void> free;
+    free.set_value();
+    bufferfree[buffer] = free.get_future();
+  }
+  u32 bufferindex = 0;
+
   // If we have deferred computation of the file hash and block crc and hashes
   // sourcefile and sourceindex will be used to update them during
   // the main recovery block computation
@@ -805,6 +815,10 @@ bool Par2Creator::ProcessData(u64 blockoffset, size_t blocklength, ProgressMeter
       }
     }
 
+    // Wait for the next input buffer to come free
+    void *inputbuffer = &((u8*)transferbuffer)[chunksize * bufferindex];
+    bufferfree[bufferindex].get();
+
     // Read data from the current input block
     if (!sourceblock->ReadData(blockoffset, blocklength, inputbuffer))
       return false;
@@ -822,7 +836,8 @@ bool Par2Creator::ProcessData(u64 blockoffset, size_t blocklength, ProgressMeter
       factors[outputblock] = rs.GetFactor(inputblock, outputblock);
 
     processor->WaitForAdd();
-    processor->AddInput(inputbuffer, blocklength, factors.data()).get();
+    bufferfree[bufferindex] = processor->AddInput(inputbuffer, blocklength, factors.data());
+    bufferindex = (bufferindex + 1) % NUM_TRANSFER_BUFFERS;
 
     if (noiselevel > nlQuiet)
       progress.Add(blocklength);
