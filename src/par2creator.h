@@ -116,7 +116,7 @@ protected:
   size_t chunksize;   // How much of each block will be processed at a
                       // time (due to memory constraints).
 
-  void *inputbuffer;  // chunksize
+  void *transferbuffer; // chunksize * NUM_TRANSFER_BUFFERS
   void *outputbuffer; // chunksize
   std::unique_ptr<Processor> processor; // Multiplies the input blocks by the RS matrix
 
