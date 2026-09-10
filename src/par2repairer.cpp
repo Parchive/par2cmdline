@@ -1645,9 +1645,13 @@ bool Par2Repairer::ScanDataFileAligned(DiskFile               *diskfile,   // [i
 
   for (u32 i = 0; i < blockpool->ThreadCount() + filethreads; ++i)
   {
-    std::unique_ptr<Hasher> hasher(new ReferenceHasher());
+    HasherConfig config;
 
-    if (!hasher->Init(filesize, (size_t)blocksize, false))
+    std::unique_ptr<Hasher> hasher = backends.hasher
+      ? backends.hasher(config)
+      : std::unique_ptr<Hasher>(new ReferenceHasher());
+
+    if (!hasher || !hasher->Init(filesize, (size_t)blocksize, false))
       return false;
 
     idle.push_back(hasher.get());

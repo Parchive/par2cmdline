@@ -50,7 +50,7 @@ Par2CreatorSourceFile::~Par2CreatorSourceFile(void)
 // 16k of the file, and then compute the FileId and store the results
 // in a file description packet and a file verification packet.
 
-bool Par2CreatorSourceFile::Open(NoiseLevel noiselevel, std::ostream &sout, std::ostream &serr, const std::string &extrafile, u64 blocksize, bool deferhashcomputation, std::string basepath, ProgressMeter<u64> &progress)
+bool Par2CreatorSourceFile::Open(NoiseLevel noiselevel, std::ostream &sout, std::ostream &serr, const std::string &extrafile, u64 blocksize, bool deferhashcomputation, std::string basepath, ProgressMeter<u64> &progress, const Backends &backends)
 {
   // Get the filename and filesize
   diskfilename = extrafile;
@@ -114,9 +114,13 @@ bool Par2CreatorSourceFile::Open(NoiseLevel noiselevel, std::ostream &sout, std:
 
     // Allocate a hasher for the block and file hashes computed
     // during the recovery data generation phase
-    hasher.reset(new ReferenceHasher());
+    HasherConfig config;
 
-    if (!hasher->Init(filesize, (size_t)blocksize, true))
+    hasher = backends.hasher
+      ? backends.hasher(config)
+      : std::unique_ptr<Hasher>(new ReferenceHasher());
+
+    if (!hasher || !hasher->Init(filesize, (size_t)blocksize, true))
     {
       diskfile->Close();
       return false;

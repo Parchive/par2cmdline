@@ -22,6 +22,7 @@
 #include <memory>
 
 #include "processor.h"
+#include "hasher.h"
 
 // The budgets a backend is built with. What it accumulates is given separately,
 // by Processor::Init, once the number of recovery blocks is known.
@@ -31,11 +32,20 @@ struct ProcessorConfig
   size_t memorylimit;  // The memory budget, from -m
 };
 
+// What a hasher is built with. Empty for now, and here so that it can gain a
+// field without every factory changing shape. It carries no thread budget,
+// because one instance belongs to one thread at a time and the caller keeps
+// the threading.
+struct HasherConfig
+{
+};
+
 // The implementations an application supplies. A factory left empty selects the
 // one built into par2cmdline.
 struct Backends
 {
   std::function<std::unique_ptr<Processor>(const ProcessorConfig &)> processor;
+  std::function<std::unique_ptr<Hasher>(const HasherConfig &)>       hasher;
 };
 
 #endif // __BACKENDS_H__
