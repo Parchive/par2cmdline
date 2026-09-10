@@ -32,10 +32,11 @@ Result par2create(std::ostream &sout,
 		  const u32 firstblock,
 		  const Scheme recoveryfilescheme,
 		  const u32 recoveryfilecount,
-		  const u32 recoveryblockcount
+		  const u32 recoveryblockcount,
+		  const Backends &backends
 		  )
 {
-  Par2Creator creator(sout, serr, noiselevel);
+  Par2Creator creator(sout, serr, noiselevel, backends);
   Result result = creator.Process(
 				  memorylimit,
 				  basepath,
@@ -67,10 +68,11 @@ Result par2repair(std::ostream &sout,
 		  const bool renameonly,
 		  const bool skipdata,
 		  const u64 skipleaway,
-		  const bool fullhash
+		  const bool fullhash,
+		  const Backends &backends
 		  )
 {
-  Par2Repairer repairer(sout, serr, noiselevel);
+  Par2Repairer repairer(sout, serr, noiselevel, backends);
   Result result = repairer.Process(
 				   memorylimit,
 				   basepath,

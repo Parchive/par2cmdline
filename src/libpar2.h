@@ -107,6 +107,9 @@ typedef   signed long long     i64;
 #include <vector>
 #include <string>
 
+#include "processor.h"
+#include "backends.h"
+
 
 typedef enum
 {
@@ -174,7 +177,8 @@ Result par2create(std::ostream &sout,
 			  const u32 firstblock,
 			  const Scheme recoveryfilescheme,
 			  const u32 recoveryfilecount,
-			  const u32 recoveryblockcount
+			  const u32 recoveryblockcount,
+			  const Backends &backends = Backends()
 			  );
 
 
@@ -192,7 +196,8 @@ Result par2repair(std::ostream &sout,
 		  const bool renameonly,
 		  const bool skipdata,
 		  const u64 skipleaway,
-		  const bool fullhash = false
+		  const bool fullhash = false,
+		  const Backends &backends = Backends()
 		  );
 
 

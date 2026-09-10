@@ -47,10 +47,11 @@ bool Par2Repairer::IsPar2Filename(const std::string &filename)
     && ext[4] == '2');
 }
 
-Par2Repairer::Par2Repairer(std::ostream &sout, std::ostream &serr, const NoiseLevel noiselevel)
+Par2Repairer::Par2Repairer(std::ostream &sout, std::ostream &serr, const NoiseLevel noiselevel, const Backends &backends)
 : sout(sout)
 , serr(serr)
 , noiselevel(noiselevel)
+, backends(backends)
 , searchpath()
 , basepath()
 , totalthreads(default_threads())
@@ -2782,8 +2783,15 @@ bool Par2Repairer::AllocateBuffers(size_t memorylimit)
   inputbuffer = new u8[(size_t)chunksize];
   outputbuffer = new u8[(size_t)chunksize];
 
-  processor.reset(new ReferenceProcessor(rs, totalthreads));
-  if (!processor->Init((size_t)chunksize, missingblockcount))
+  ProcessorConfig config;
+  config.numthreads = totalthreads;
+  config.memorylimit = memorylimit;
+
+  processor = backends.processor
+    ? backends.processor(config)
+    : std::unique_ptr<Processor>(new ReferenceProcessor(rs, totalthreads));
+
+  if (!processor || !processor->Init((size_t)chunksize, missingblockcount))
   {
     serr << "Could not allocate buffer memory." << std::endl;
     return false;
