@@ -2892,7 +2892,7 @@ bool Par2Repairer::ProcessData(u64 blockoffset, size_t blocklength, ProgressMete
         factors[outputindex] = rs.GetFactor(inputindex, outputindex);
 
       processor->WaitForAdd();
-      bufferfree[bufferindex] = processor->AddInput(inputbuffer, blocklength, factors.data());
+      bufferfree[bufferindex] = processor->AddInput(inputbuffer, blocklength, inputindex, factors.data());
       bufferindex = (bufferindex + 1) % NUM_TRANSFER_BUFFERS;
 
       if (noiselevel > nlQuiet)

@@ -38,13 +38,26 @@ public:
   // Set every accumulated output block back to zero.
   virtual void DiscardOutput(void) = 0;
 
+  // Offer the exponents of the output blocks. An implementation that would
+  // rather work them out for itself returns true, and is then given the index
+  // of each input block instead of a column of coefficients. Only creation can
+  // offer them: after a repair matrix is solved its coefficients are no longer
+  // a function of the exponents.
+  virtual bool SetRecoveryExponents(const u16 *exponents, u32 count)
+  {
+    (void)exponents;
+    (void)count;
+    return false;
+  }
+
   // Wait until AddInput will not block.
   virtual void WaitForAdd(void) = 0;
 
-  // Submit one input block against every output block, where factors[index] is
-  // the matrix coefficient for output block index. The returned future becomes
-  // ready once data may be overwritten.
-  virtual std::future<void> AddInput(const void *data, size_t length, const u16 *factors) = 0;
+  // Submit one input block against every output block. factors[index] is the
+  // matrix coefficient for output block index, and is null when
+  // SetRecoveryExponents returned true. The returned future becomes ready once
+  // data may be overwritten.
+  virtual std::future<void> AddInput(const void *data, size_t length, u32 inputindex, const u16 *factors) = 0;
 
   // Wait for every submitted input block to be processed.
   virtual void EndInput(void) = 0;

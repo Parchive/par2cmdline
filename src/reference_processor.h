@@ -65,8 +65,10 @@ public:
   {
   }
 
-  std::future<void> AddInput(const void *data, size_t length, const u16 *factors)
+  std::future<void> AddInput(const void *data, size_t length, u32 inputindex, const u16 *factors)
   {
+    (void)inputindex;
+
     foreach_parallel(0, outputcount, numthreads, [&](size_t outputindex)
     {
       rs.MultiplyAdd(factors[outputindex], length, data, &outputbuffer[slicesize * outputindex]);
