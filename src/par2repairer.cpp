@@ -1631,23 +1631,70 @@ bool Par2Repairer::ScanDataFileAligned(DiskFile               *diskfile,   // [i
     return true;
   };
 
+  // A verification entry is the 20 bytes a block is expected to hash to, so the
+  // packet is handed to the hasher as it stands
+  static_assert(sizeof(FILEVERIFICATIONENTRY) == 20, "a verification entry is a block hash");
+
+  // A hasher belongs to one thread at a time, and the blocks of a batch go to
+  // whichever of the pool's threads and the threads waiting on it take them, so
+  // a block is checked with one taken for it and given back afterwards. There is
+  // one for every thread which could be checking this file at once
+  std::vector<std::unique_ptr<Hasher> > hashers;
+  std::vector<Hasher*>                  idle;
+  std::mutex                            idlemutex;
+
+  for (u32 i = 0; i < blockpool->ThreadCount() + filethreads; ++i)
+  {
+    std::unique_ptr<Hasher> hasher(new ReferenceHasher());
+
+    if (!hasher->Init(filesize, (size_t)blocksize, false))
+      return false;
+
+    idle.push_back(hasher.get());
+    hashers.push_back(std::move(hasher));
+  }
+
+  struct Borrowed
+  {
+    Borrowed(std::vector<Hasher*> &idle, std::mutex &mutex)
+    : idle(idle)
+    , mutex(mutex)
+    {
+      std::lock_guard<std::mutex> lock(mutex);
+
+      hasher = idle.back();
+      idle.pop_back();
+    }
+
+    ~Borrowed(void)
+    {
+      std::lock_guard<std::mutex> lock(mutex);
+
+      idle.push_back(hasher);
+    }
+
+    std::vector<Hasher*> &idle;
+    std::mutex           &mutex;
+    Hasher               *hasher;
+  };
+
+  // One block goes in a submission, because that is how the pool hands them
+  // out. Filling the lanes of a hasher which takes several at once means having
+  // it hand out a range of them instead
   auto checkblock = [&](const char *from, const u32 first, const u32 block)
   {
     const u64 length = std::min(blocksize, filesize - static_cast<u64>(block) * blocksize);
     const char *data = &from[static_cast<size_t>(block - first) * blocksize];
-    const FILEVERIFICATIONENTRY *entry = verificationpacket->VerificationEntry(block);
 
-    const u32 checksum = ~0 ^ CRCUpdateBlock(~0, blocksize, data);
-    if (checksum != entry->crc)
-      return;
+    char result = 0;
 
-    MD5Context context;
-    context.Update(data, blocksize);
+    {
+      Borrowed borrowed(idle, idlemutex);
 
-    MD5Hash hash{};
-    context.Final(hash);
+      borrowed.hasher->CheckBlocks(data, 1, 0, verificationpacket->VerificationEntry(block), &result);
+    }
 
-    if (hash != entry->hash)
+    if (!result)
       return;
 
     matched[block] = 1;
