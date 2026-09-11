@@ -35,10 +35,8 @@ public:
   // Create recovery files from the source files specified on the command line
   Result Process(const size_t memorylimit,
 		 const std::string &basepath,
-#ifdef _OPENMP
 		 const u32 nthreads,
 		 const u32 filethreads,
-#endif
 		 const std::string &parfilename,
 		 const std::vector<std::string> &extrafiles,
 		 const u64 blocksize,
@@ -101,9 +99,7 @@ protected:
   // Close all files.
   bool CloseFiles(void);
 
-#ifdef _OPENMP
-  static u32                          GetFileThreads(void) {return filethreads;}
-#endif
+  u32                                 GetFileThreads(void) const {return filethreads;}
 
 protected:
   std::ostream &sout; // stream for output (for commandline, this is cout)
@@ -111,9 +107,8 @@ protected:
 
   const NoiseLevel noiselevel; // How noisy we should be
 
-#ifdef _OPENMP
-  static u32 filethreads;      // Number of threads for file processing
-#endif
+  u32 totalthreads;            // Number of threads the whole create may use
+  u32 filethreads;             // Number of threads for file processing
 
   u64 blocksize;      // The size of each block.
   size_t chunksize;   // How much of each block will be processed at a

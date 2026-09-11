@@ -29,16 +29,12 @@ static char THIS_FILE[]=__FILE__;
 #endif
 
 
-// static variable
-#ifdef _OPENMP
-u32 Par2Creator::filethreads = _FILE_THREADS;
-#endif
-
-
 Par2Creator::Par2Creator(std::ostream &sout, std::ostream &serr, const NoiseLevel noiselevel)
 : sout(sout)
 , serr(serr)
 , noiselevel(noiselevel)
+, totalthreads(default_threads())
+, filethreads(_FILE_THREADS)
 , blocksize(0)
 , chunksize(0)
 , inputbuffer(0)
@@ -87,10 +83,8 @@ Par2Creator::~Par2Creator(void)
 Result Par2Creator::Process(
 			    const size_t memorylimit,
 			    const std::string &basepath,
-#ifdef _OPENMP
 			    const u32 nthreads,
 			    const u32 _filethreads,
-#endif
 			    const std::string &parfilename,
 			    const std::vector<std::string> &_extrafiles,
 			    const u64 _blocksize,
@@ -99,9 +93,7 @@ Result Par2Creator::Process(
 			    const u32 _recoveryfilecount,
 			    const u32 _recoveryblockcount)
 {
-#ifdef _OPENMP
   filethreads = _filethreads;
-#endif
 
   if (!CheckBasepath(parfilename))
     return eFileIOError;
@@ -115,11 +107,8 @@ Result Par2Creator::Process(
   firstrecoveryblock = _firstblock;
   recoveryfilescheme = _recoveryfilescheme;
 
-#ifdef _OPENMP
   // Set the number of threads
-  if (nthreads != 0)
-    omp_set_num_threads(nthreads);
-#endif
+  totalthreads = resolve_threads(nthreads);
 
   // Compute block size from block count or vice versa depending on which was
   // specified on the command line
@@ -346,8 +335,7 @@ bool Par2Creator::CalculateProcessBlockSize(size_t memorylimit)
 // the results in the file verification and file description packets.
 bool Par2Creator::OpenSourceFiles(const std::vector<std::string> &extrafiles, std::string basepath)
 {
-#ifdef _OPENMP
-  bool openfailed = false;
+  std::atomic<bool> openfailed(false);
 
   //Total size of files for mt-progress line
   u64 mttotalsize = 0;
@@ -355,20 +343,16 @@ bool Par2Creator::OpenSourceFiles(const std::vector<std::string> &extrafiles, st
     mttotalsize += DiskFile::GetFileSize(extrafiles[i]);
 
   ProgressMeter<u64> progress(sout, "", mttotalsize);
-#endif
 
-  #pragma omp parallel for schedule(dynamic) num_threads(Par2Creator::GetFileThreads())
-  for (int i=0; i< static_cast<int>(extrafiles.size()); ++i)
+  foreach_parallel(extrafiles, GetFileThreads(), [&](const std::string &extrafile)
   {
-#ifdef _OPENMP
     if (openfailed)
-      continue;
-#endif
+      return;
 
     Par2CreatorSourceFile *sourcefile = new Par2CreatorSourceFile;
 
     std::string name;
-    DiskFile::SplitRelativeFilename(extrafiles[i], basepath, name);
+    DiskFile::SplitRelativeFilename(extrafile, basepath, name);
 
     if (noiselevel > nlSilent)
     {
@@ -376,19 +360,11 @@ bool Par2Creator::OpenSourceFiles(const std::vector<std::string> &extrafiles, st
     }
 
     // Open the source file and compute its Hashes and CRCs.
-#ifdef _OPENMP
-    if (!sourcefile->Open(noiselevel, sout, serr, extrafiles[i], blocksize, deferhashcomputation, basepath, progress))
-#else
-    if (!sourcefile->Open(noiselevel, sout, serr, extrafiles[i], blocksize, deferhashcomputation, basepath))
-#endif
+    if (!sourcefile->Open(noiselevel, sout, serr, extrafile, blocksize, deferhashcomputation, basepath, progress))
     {
       delete sourcefile;
-#ifdef _OPENMP
       openfailed = true;
-      continue;
-#else
-      return false;
-#endif
+      return;
     }
 
     // Record the file verification and file description packets
@@ -403,12 +379,10 @@ bool Par2Creator::OpenSourceFiles(const std::vector<std::string> &extrafiles, st
     // Close the source file until its needed
     sourcefile->Close();
 
-  }
+  });
 
-#ifdef _OPENMP
   if (openfailed)
     return false;
-#endif
 
   return true;
 }
@@ -791,6 +765,10 @@ bool Par2Creator::ProcessData(u64 blockoffset, size_t blocklength, ProgressMeter
 
   DiskFile *lastopenfile = NULL;
 
+  // The output blocks are divided between the same threads for every input
+  // block, so the threads are started once for the whole of the data
+  ParallelRunner runner(std::min<u32>(totalthreads, recoveryblockcount));
+
   // For each input block
   for ((sourceblock=sourceblocks.begin()),(inputblock=0);
        sourceblock != sourceblocks.end();
@@ -826,8 +804,7 @@ bool Par2Creator::ProcessData(u64 blockoffset, size_t blocklength, ProgressMeter
     }
 
     // For each output block
-    #pragma omp parallel for
-    for (i64 outputblock=0; outputblock<recoveryblockcount; outputblock++)
+    runner.Run(0, recoveryblockcount, [&](size_t outputblock)
     {
       u32 internalOutputblock = (u32)outputblock;
 
@@ -839,7 +816,7 @@ bool Par2Creator::ProcessData(u64 blockoffset, size_t blocklength, ProgressMeter
 
       if (noiselevel > nlQuiet)
         progress.Add(blocklength);
-    }
+    });
 
     // Work out which source file the next block belongs to
     if (++sourceindex >= (*sourcefile)->BlockCount())

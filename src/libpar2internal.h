@@ -244,6 +244,7 @@ private:
 #include "libpar2.h"
 
 #include "letype.h"
+#include "foreach_parallel.h"
 #include "progressmeter.h"
 
 #include "galois.h"
@@ -286,11 +287,5 @@ private:
 #include <crtdbg.h>
 #define DEBUG_NEW new(_NORMAL_BLOCK, THIS_FILE, __LINE__)
 #endif
-
-// OpenMP
-#ifdef _OPENMP
-# include <omp.h>
-#endif
-
 
 #endif // __PARCMDLINE_H__

@@ -13,14 +13,6 @@ try {
 
     Write-Banner "Scanning the blocks of a file in parallel finds the same data"
 
-    # The -t option only exists when built with thread support
-    $help = Invoke-Par2 -Arguments @("-h") -ReturnObject
-    if ($help.StdOut -notmatch "(?m)^  -t<n>") {
-        Write-Host "Skipping: par2 was built without thread support."
-        Complete-Test
-        exit 77
-    }
-
     # Build a data file of 64 blocks of 1024 bytes
     $builder = New-Object System.Text.StringBuilder
     for ($i = 0; $i -lt 1024; $i++) {

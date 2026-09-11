@@ -52,11 +52,7 @@ Par2CreatorSourceFile::~Par2CreatorSourceFile(void)
 // 16k of the file, and then compute the FileId and store the results
 // in a file description packet and a file verification packet.
 
-#ifdef _OPENMP
 bool Par2CreatorSourceFile::Open(NoiseLevel noiselevel, std::ostream &sout, std::ostream &serr, const std::string &extrafile, u64 blocksize, bool deferhashcomputation, std::string basepath, ProgressMeter<u64> &progress)
-#else
-bool Par2CreatorSourceFile::Open(NoiseLevel noiselevel, std::ostream &sout, std::ostream &serr, const std::string &extrafile, u64 blocksize, bool deferhashcomputation, std::string basepath)
-#endif
 {
   // Get the filename and filesize
   diskfilename = extrafile;
@@ -138,9 +134,6 @@ bool Par2CreatorSourceFile::Open(NoiseLevel noiselevel, std::ostream &sout, std:
     MD5Context filecontext;
     MD5Context blockcontext;
     u32        blockcrc = 0;
-#ifndef _OPENMP
-    ProgressMeter<u64> progress(sout, "", filesize);
-#endif
 
     // Whilst we have not reached the end of the file
     while (offset < filesize)

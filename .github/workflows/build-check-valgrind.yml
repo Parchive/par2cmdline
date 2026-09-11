@@ -22,8 +22,7 @@ jobs:
     # Runs tests
     # The shell scripts use the PARVALGRINDOPTS env var when set.
     #
-    # The suppressions file silences known false positives from the libgomp
-    # (OpenMP) thread pool
+    # The suppressions file silences known false positives
     - name: Run tests under valgrind
       env:
         PARVALGRINDOPTS: --leak-check=full --error-exitcode=1 --errors-for-leak-kinds=all --quiet --suppressions=${{ github.workspace }}/valgrind.supp

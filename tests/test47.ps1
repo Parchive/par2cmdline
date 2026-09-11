@@ -13,14 +13,6 @@ try {
 
     Write-Banner "Reading several files at once finds the same data"
 
-    # The -T option only exists when built with thread support
-    $help = Invoke-Par2 -Arguments @("-h") -ReturnObject
-    if ($help.StdOut -notmatch "(?m)^  -T<n>") {
-        Write-Host "Skipping: par2 was built without thread support."
-        Complete-Test
-        exit 77
-    }
-
     # Build four data files of 16 blocks of 1024 bytes. Each file holds
     # different data so that a block cannot be matched against the wrong file.
     foreach ($n in 1..4) {

@@ -22,6 +22,7 @@
 #include<iostream>
 #include<algorithm>
 #include "commandline.h"
+#include "foreach_parallel.h"
 #include <fstream>  //ADDED for @FILELIST FUNCTIONALY
 
 #ifdef _MSC_VER
@@ -34,10 +35,6 @@ static char THIS_FILE[]=__FILE__;
 #include <unistd.h>
 #endif
 
-// OpenMP
-#ifdef _OPENMP
-# include <omp.h>
-#endif
 
 CommandLine::CommandLine(void)
 : filesize_cache()
@@ -45,10 +42,8 @@ CommandLine::CommandLine(void)
 , noiselevel(nlUnknown)
 , memorylimit(0)
 , basepath()
-#ifdef _OPENMP
 , nthreads(0) // 0 means use default number
 , filethreads( _FILE_THREADS ) // default from header file
-#endif
 , parfilename()
 , rawfilenames()
 , extrafiles()
@@ -117,12 +112,10 @@ void CommandLine::usage(void)
     "  -v [-v]  : Be more verbose\n"
     "  -q [-q]  : Be more quiet (-q -q gives silence)\n"
     "  -m<n>    : Memory (in MB) to use (default is half of total physical memory)\n";
-#ifdef _OPENMP
   std::cout <<
-    "  -t<n>    : Number of threads used for main processing (" << omp_get_max_threads() << " detected)\n"
+    "  -t<n>    : Number of threads used for main processing (" << default_threads() << " detected)\n"
     "  -T<n>    : Number of files hashed in parallel\n"
     "             (" << _FILE_THREADS << " are the default)\n";
-#endif
   std::cout <<
     "  --       : Treat all following arguments as filenames\n"
     "Options: (verify or repair)\n"
@@ -405,7 +398,6 @@ bool CommandLine::ReadArgs(int argc, const char * const *argv)
           }
           break;
 
-#ifdef _OPENMP
         case 't':  // Set amount of threads
           {
             nthreads = 0;
@@ -422,6 +414,9 @@ bool CommandLine::ReadArgs(int argc, const char * const *argv)
               std::cerr << "Invalid thread option: " << argv[0] << std::endl;
               return false;
             }
+
+            if (nthreads > MAX_THREAD_COUNT)
+              nthreads = MAX_THREAD_COUNT;
           }
           break;
 
@@ -443,7 +438,6 @@ bool CommandLine::ReadArgs(int argc, const char * const *argv)
             }
           }
           break;
-#endif
 
         case 'r':  // Set the amount of redundancy required
           {

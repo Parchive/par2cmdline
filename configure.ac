@@ -60,9 +60,6 @@ AC_C_INLINE
 AC_SYS_LARGEFILE
 AC_FUNC_FSEEKO
 
-dnl Check for OpenMP
-AC_OPENMP
-
 dnl std::thread needs pthreads where they are not already part of libc.
 AC_SEARCH_LIBS([pthread_create], [pthread])
 

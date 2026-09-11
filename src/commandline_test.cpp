@@ -557,10 +557,8 @@ int test10_helper(const char *arg,
 		  const NoiseLevel noiselevel,
 		  const size_t memorylimit,
 		  const std::string &basepath,
-#ifdef _OPENMP
 		  const u32 nthreads,
 		  const u32 filethreads,
-#endif
 		  const std::string &parfilename,
 		  const std::vector<std::string> &extrafiles,
 		  const u64 blocksize,
@@ -620,7 +618,6 @@ int test10_helper(const char *arg,
     std::cout << commandline.GetBasePath() << " != " << basepath << std::endl;
     return 1;
   }
-#ifdef _OPENMP
   if (commandline.GetNumThreads() != nthreads) {
     std::cout << "test10 fail nthreads  arg=" << arg << std::endl;
     std::cout << commandline.GetNumThreads() << " != " << nthreads << std::endl;
@@ -631,7 +628,6 @@ int test10_helper(const char *arg,
     std::cout << commandline.GetFileThreads() << " != " << filethreads << std::endl;
     return 1;
   }
-#endif
   if (commandline.GetParFilename() != parfilename) {
     std::cout << "test10 fail parfilename  arg=" << arg << std::endl;
     std::cout << commandline.GetParFilename() << " != " << parfilename << std::endl;
@@ -714,10 +710,8 @@ int test10() {
   const NoiseLevel default_noiselevel = nlNormal;
   const size_t default_memorylimit = commandline_for_defaults.GetMemoryLimit();
   const std::string &default_basepath = commandline_for_defaults.GetBasePath();
-#ifdef _OPENMP
   const u32 default_nthreads = 0;
   const u32 default_filethreads = _FILE_THREADS;
-#endif
   std::string default_parfilename = default_basepath + "foo";  // ".par2" is stripped.
   std::vector<std::string> default_extrafiles;
   default_extrafiles.push_back(default_basepath + "input1.txt");
@@ -732,10 +726,8 @@ int test10() {
 		    default_noiselevel,
 		    default_memorylimit,
 		    default_basepath,
-#ifdef _OPENMP
 		    default_nthreads,
 		    default_filethreads,
-#endif
 		    default_parfilename,
 		    default_extrafiles,
 		    default_blocksize,
@@ -754,10 +746,8 @@ int test10() {
 		    nlNoisy,
 		    default_memorylimit,
 		    default_basepath,
-#ifdef _OPENMP
 		    default_nthreads,
 		    default_filethreads,
-#endif
 		    default_parfilename,
 		    default_extrafiles,
 		    default_blocksize,
@@ -773,10 +763,8 @@ int test10() {
 		    nlDebug,
 		    default_memorylimit,
 		    default_basepath,
-#ifdef _OPENMP
 		    default_nthreads,
 		    default_filethreads,
-#endif
 		    default_parfilename,
 		    default_extrafiles,
 		    default_blocksize,
@@ -792,10 +780,8 @@ int test10() {
 		    nlQuiet,
 		    default_memorylimit,
 		    default_basepath,
-#ifdef _OPENMP
 		    default_nthreads,
 		    default_filethreads,
-#endif
 		    default_parfilename,
 		    default_extrafiles,
 		    default_blocksize,
@@ -811,10 +797,8 @@ int test10() {
 		    nlSilent,
 		    default_memorylimit,
 		    default_basepath,
-#ifdef _OPENMP
 		    default_nthreads,
 		    default_filethreads,
-#endif
 		    default_parfilename,
 		    default_extrafiles,
 		    default_blocksize,
@@ -830,10 +814,8 @@ int test10() {
 		    default_noiselevel,
 		    16*1024*1024,
 		    default_basepath,
-#ifdef _OPENMP
 		    default_nthreads,
 		    default_filethreads,
-#endif
 		    default_parfilename,
 		    default_extrafiles,
 		    default_blocksize,
@@ -844,7 +826,6 @@ int test10() {
     return 1;
   }
 
-#ifdef _OPENMP
   // -t option
   if (test10_helper("par2 create -t42 foo.par2 input1.txt input2.txt",
 		    default_noiselevel,
@@ -878,17 +859,14 @@ int test10() {
 		    default_recoveryblockcount)) {
     return 1;
   }
-#endif
 
   // -- option
   if (test10_helper("par2 create -- foo.par2 input1.txt input2.txt",
 		    default_noiselevel,
 		    default_memorylimit,
 		    default_basepath,
-#ifdef _OPENMP
 		    default_nthreads,
 		    default_filethreads,
-#endif
 		    default_parfilename,
 		    default_extrafiles,
 		    default_blocksize,
@@ -902,10 +880,8 @@ int test10() {
 		    default_noiselevel,
 		    default_memorylimit,
 		    default_basepath,
-#ifdef _OPENMP
 		    default_nthreads,
 		    default_filethreads,
-#endif
 		    default_basepath + "-foo",
 		    default_extrafiles,
 		    default_blocksize,
@@ -928,10 +904,8 @@ int test10() {
 		    default_noiselevel,
 		    default_memorylimit,
 		    default_basepath,
-#ifdef _OPENMP
 		    default_nthreads,
 		    default_filethreads,
-#endif
 		    default_parfilename,
 		    extrafiles,
 		    default_blocksize,
@@ -949,10 +923,8 @@ int test10() {
 		    default_noiselevel,
 		    default_memorylimit,
 		    default_basepath,
-#ifdef _OPENMP
 		    default_nthreads,
 		    default_filethreads,
-#endif
 		    default_parfilename,
 		    default_extrafiles,
 		    default_blocksize,
@@ -971,10 +943,8 @@ int test10() {
 		    default_noiselevel,
 		    default_memorylimit,
 		    default_basepath,
-#ifdef _OPENMP
 		    default_nthreads,
 		    default_filethreads,
-#endif
 		    default_parfilename,
 		    default_extrafiles,
 		    longestfilelen_rounded_up,
@@ -988,10 +958,8 @@ int test10() {
 		    default_noiselevel,
 		    default_memorylimit,
 		    default_basepath,
-#ifdef _OPENMP
 		    default_nthreads,
 		    default_filethreads,
-#endif
 		    default_parfilename,
 		    default_extrafiles,
 		    8,
@@ -1012,10 +980,8 @@ int test10() {
 		    default_noiselevel,
 		    default_memorylimit,
 		    default_basepath,
-#ifdef _OPENMP
 		    default_nthreads,
 		    default_filethreads,
-#endif
 		    default_parfilename,
 		    default_extrafiles,
 		    default_blocksize,
@@ -1049,10 +1015,8 @@ int test10() {
 		    default_noiselevel,
 		    default_memorylimit,
 		    default_basepath,
-#ifdef _OPENMP
 		    default_nthreads,
 		    default_filethreads,
-#endif
 		    default_parfilename,
 		    default_extrafiles,
 		    default_blocksize,
@@ -1066,10 +1030,8 @@ int test10() {
 		    default_noiselevel,
 		    default_memorylimit,
 		    default_basepath,
-#ifdef _OPENMP
 		    default_nthreads,
 		    default_filethreads,
-#endif
 		    default_parfilename,
 		    default_extrafiles,
 		    default_blocksize,
@@ -1083,10 +1045,8 @@ int test10() {
 		    default_noiselevel,
 		    default_memorylimit,
 		    default_basepath,
-#ifdef _OPENMP
 		    default_nthreads,
 		    default_filethreads,
-#endif
 		    default_parfilename,
 		    default_extrafiles,
 		    default_blocksize,
@@ -1100,10 +1060,8 @@ int test10() {
 		    default_noiselevel,
 		    default_memorylimit,
 		    default_basepath,
-#ifdef _OPENMP
 		    default_nthreads,
 		    default_filethreads,
-#endif
 		    default_parfilename,
 		    default_extrafiles,
 		    default_blocksize,
@@ -1117,10 +1075,8 @@ int test10() {
 		    default_noiselevel,
 		    default_memorylimit,
 		    default_basepath,
-#ifdef _OPENMP
 		    default_nthreads,
 		    default_filethreads,
-#endif
 		    default_parfilename,
 		    default_extrafiles,
 		    default_blocksize,
@@ -1134,10 +1090,8 @@ int test10() {
 		    default_noiselevel,
 		    default_memorylimit,
 		    default_basepath,
-#ifdef _OPENMP
 		    default_nthreads,
 		    default_filethreads,
-#endif
 		    default_parfilename,
 		    default_extrafiles,
 		    default_blocksize,
@@ -1166,10 +1120,8 @@ int test11_helper(const char *arg,
 		  const NoiseLevel noiselevel,
 		  const size_t memorylimit,
 		  const std::string &basepath,
-#ifdef _OPENMP
 		  const u32 nthreads,
 		  const u32 filethreads,
-#endif
 		  const std::string &parfilename,
 		  const std::vector<std::string> &extrafiles,
 		  const CommandLine::Version version,
@@ -1230,7 +1182,6 @@ int test11_helper(const char *arg,
     std::cout << commandline.GetBasePath() << " != " << basepath << std::endl;
     return 1;
   }
-#ifdef _OPENMP
   if (commandline.GetNumThreads() != nthreads) {
     std::cout << "test11 fail nthreads  arg=" << arg << std::endl;
     std::cout << commandline.GetNumThreads() << " != " << nthreads << std::endl;
@@ -1241,7 +1192,6 @@ int test11_helper(const char *arg,
     std::cout << commandline.GetFileThreads() << " != " << filethreads << std::endl;
     return 1;
   }
-#endif
   if (commandline.GetParFilename() != parfilename) {
     std::cout << "test11 fail parfilename  arg=" << arg << std::endl;
     std::cout << commandline.GetParFilename() << " != " << parfilename << std::endl;
@@ -1323,10 +1273,8 @@ int test11() {
   const NoiseLevel default_noiselevel = nlNormal;
   const size_t default_memorylimit = commandline_for_defaults.GetMemoryLimit();
   const std::string &default_basepath = commandline_for_defaults.GetBasePath();
-#ifdef _OPENMP
   const u32 default_nthreads = 0;
   const u32 default_filethreads = _FILE_THREADS;
-#endif
   std::string default_parfilename = "foo.par2"; // relative path, par2 is NOT stripped.
   std::vector<std::string> default_extrafiles;
   default_extrafiles.push_back(default_basepath + "input1.txt");
@@ -1339,10 +1287,8 @@ int test11() {
 		    default_noiselevel,
 		    default_memorylimit,
 		    default_basepath,
-#ifdef _OPENMP
 		    default_nthreads,
 		    default_filethreads,
-#endif
 		    default_parfilename,
 		    default_extrafiles,
 		    CommandLine::verPar2,
@@ -1360,10 +1306,8 @@ int test11() {
 		    nlNoisy,
 		    default_memorylimit,
 		    default_basepath,
-#ifdef _OPENMP
 		    default_nthreads,
 		    default_filethreads,
-#endif
 		    default_parfilename,
 		    default_extrafiles,
 		    CommandLine::verPar2,
@@ -1377,10 +1321,8 @@ int test11() {
 		    nlNoisy,
 		    default_memorylimit,
 		    default_basepath,
-#ifdef _OPENMP
 		    default_nthreads,
 		    default_filethreads,
-#endif
 		    default_parfilename,
 		    default_extrafiles,
 		    CommandLine::verPar2,
@@ -1395,10 +1337,8 @@ int test11() {
 		    nlDebug,
 		    default_memorylimit,
 		    default_basepath,
-#ifdef _OPENMP
 		    default_nthreads,
 		    default_filethreads,
-#endif
 		    default_parfilename,
 		    default_extrafiles,
 		    CommandLine::verPar2,
@@ -1413,10 +1353,8 @@ int test11() {
 		    nlQuiet,
 		    default_memorylimit,
 		    default_basepath,
-#ifdef _OPENMP
 		    default_nthreads,
 		    default_filethreads,
-#endif
 		    default_parfilename,
 		    default_extrafiles,
 		    CommandLine::verPar2,
@@ -1431,10 +1369,8 @@ int test11() {
 		    nlSilent,
 		    default_memorylimit,
 		    default_basepath,
-#ifdef _OPENMP
 		    default_nthreads,
 		    default_filethreads,
-#endif
 		    default_parfilename,
 		    default_extrafiles,
 		    CommandLine::verPar2,
@@ -1449,10 +1385,8 @@ int test11() {
 		    default_noiselevel,
 		    16*1024*1024,
 		    default_basepath,
-#ifdef _OPENMP
 		    default_nthreads,
 		    default_filethreads,
-#endif
 		    default_parfilename,
 		    default_extrafiles,
 		    CommandLine::verPar2,
@@ -1462,7 +1396,6 @@ int test11() {
 		    default_skipleaway)) {
     return 1;
   }
-#ifdef _OPENMP
   // -t
   if (test11_helper("par2 repair -t42 foo.par2 input1.txt input2.txt",
 		    default_noiselevel,
@@ -1495,16 +1428,13 @@ int test11() {
 		    default_skipleaway)) {
     return 1;
   }
-#endif
   // --
   if (test11_helper("par2 repair -- foo.par2 input1.txt input2.txt",
 		    default_noiselevel,
 		    default_memorylimit,
 		    default_basepath,
-#ifdef _OPENMP
 		    default_nthreads,
 		    default_filethreads,
-#endif
 		    default_parfilename,
 		    default_extrafiles,
 		    CommandLine::verPar2,
@@ -1524,10 +1454,8 @@ int test11() {
 		    default_noiselevel,
 		    default_memorylimit,
 		    default_basepath,
-#ifdef _OPENMP
 		    default_nthreads,
 		    default_filethreads,
-#endif
 		    "-foo.par2",
 		    default_extrafiles,
 		    CommandLine::verPar2,
@@ -1554,10 +1482,8 @@ int test11() {
 		    default_noiselevel,
 		    default_memorylimit,
 		    default_basepath,
-#ifdef _OPENMP
 		    default_nthreads,
 		    default_filethreads,
-#endif
 		    default_parfilename,
 		    extrafiles,
 		    CommandLine::verPar2,
@@ -1576,10 +1502,8 @@ int test11() {
 		    default_noiselevel,
 		    default_memorylimit,
 		    default_basepath,
-#ifdef _OPENMP
 		    default_nthreads,
 		    default_filethreads,
-#endif
 		    default_parfilename,
 		    default_extrafiles,
 		    CommandLine::verPar2,
@@ -1594,10 +1518,8 @@ int test11() {
 		    default_noiselevel,
 		    default_memorylimit,
 		    default_basepath,
-#ifdef _OPENMP
 		    default_nthreads,
 		    default_filethreads,
-#endif
 		    default_parfilename,
 		    default_extrafiles,
 		    CommandLine::verPar2,
@@ -1612,10 +1534,8 @@ int test11() {
 		    default_noiselevel,
 		    default_memorylimit,
 		    default_basepath,
-#ifdef _OPENMP
 		    default_nthreads,
 		    default_filethreads,
-#endif
 		    default_parfilename,
 		    default_extrafiles,
 		    CommandLine::verPar2,
@@ -1631,10 +1551,8 @@ int test11() {
 		    default_noiselevel,
 		    default_memorylimit,
 		    default_basepath,
-#ifdef _OPENMP
 		    default_nthreads,
 		    default_filethreads,
-#endif
 		    default_parfilename,
 		    default_extrafiles,
 		    CommandLine::verPar2,
@@ -1659,10 +1577,8 @@ int test11() {
 		    default_noiselevel,
 		    default_memorylimit,
 		    default_basepath,
-#ifdef _OPENMP
 		    default_nthreads,
 		    default_filethreads,
-#endif
 		    "bar.par",
 		    default_extrafiles,
 		    CommandLine::verPar1,
@@ -1676,10 +1592,8 @@ int test11() {
 		    default_noiselevel,
 		    default_memorylimit,
 		    default_basepath,
-#ifdef _OPENMP
 		    default_nthreads,
 		    default_filethreads,
-#endif
 		    "bar.par",
 		    default_extrafiles,
 		    CommandLine::verPar1,
