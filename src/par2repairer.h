@@ -29,10 +29,8 @@ public:
 
   Result Process(const size_t memorylimit,
 		 const std::string &basepath,
-#ifdef _OPENMP
 		 const u32 nthreads,
 		 const u32 filethreads,
-#endif
 		 std::string parfilename,
 		 const std::vector<std::string> &extrafiles,
 		 const bool dorepair,   // derived from operation
@@ -94,11 +92,7 @@ protected:
   bool VerifyExtraFiles(const std::vector<std::string> &extrafiles, const std::string &basepath, const bool renameonly);
 
   // Attempt to match the data in the DiskFile with the source file
-#ifdef _OPENMP
   bool VerifyDataFile(DiskFile *diskfile, Par2RepairerSourceFile *sourcefile, const std::string &basepath, ProgressMeter<u64> &progress, const bool renameonly = false);
-#else
-  bool VerifyDataFile(DiskFile *diskfile, Par2RepairerSourceFile *sourcefile, const std::string &basepath, const bool renameonly = false);
-#endif
 
   // Check the blocks of a source file at the offsets where they are expected
   // to be found. One thread reads the file in order while the others check the
@@ -120,9 +114,7 @@ protected:
   // found is for a different source file then "sourcefile" is changed accordingly.
   bool ScanDataFile(DiskFile                *diskfile,   // [in]     The file being scanned
                     std::string             basepath,    // [in]
-#ifdef _OPENMP
                     ProgressMeter<u64>      &progress,   // [in]
-#endif
                     const bool              renameonly,  // [in]     Only look for perfect matches
                     Par2RepairerSourceFile* &sourcefile, // [in/out] The source file matched
                     MatchType               &matchtype,  // [out]    The type of match
@@ -164,10 +156,17 @@ protected:
   bool RemoveBackupFiles(void);
   bool RemoveParFiles(void);
 
-#ifdef _OPENMP
-  static u32                          FileThreads(size_t filecount)
+  u32                                 FileThreads(size_t filecount) const
     {return (u32)std::max<size_t>(1, std::min<size_t>(filethreads, filecount));}
-#endif
+
+  // Divides the threads between the files scanned at once and the blocks
+  // checked within one file. Returns the number of files to scan at once.
+  u32                                 SetBlockThreads(size_t filecount)
+    {
+      const u32 files = FileThreads(filecount);
+      blockthreads = std::max(1u, totalthreads / files);
+      return files;
+    }
 
 protected:
   std::ostream &sout; // stream for output (for commandline, this is cout)
@@ -179,9 +178,9 @@ protected:
 
   std::string               basepath;
 
-#ifdef _OPENMP
-  static u32 filethreads;      // Number of threads for file processing
-#endif
+  u32 totalthreads;            // Number of threads the whole repair may use
+  u32 filethreads;             // Number of threads for file processing
+  u32 blockthreads;            // Number of threads left to check one file's blocks
 
   bool                      skipdata;                // Should we skip data whilst scanning
   u64                       skipleaway;              // The leaway +/- we should allow whilst scanning
@@ -195,6 +194,8 @@ protected:
   CreatorPacket            *creatorpacket;           // One copy of the creator packet.
 
   DiskFileMap               diskFileMap;
+  std::mutex                diskFileMapMutex;        // Guards diskFileMap while files are verified in parallel.
+  std::mutex                extraFilesMutex;         // Guards the caller's list of extra files.
 
   std::map<MD5Hash,Par2RepairerSourceFile*> sourcefilemap;// Map from FileId to SourceFile
   std::vector<Par2RepairerSourceFile*>      sourcefiles;  // The source files

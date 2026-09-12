@@ -32,6 +32,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "descriptionpacket_test", "t
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "criticalpacket_test", "tests\criticalpacket_test.vcxproj", "{862B6ABA-D1C6-4DB8-A893-747CC8B5D0F2}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "foreach_parallel_test", "tests\foreach_parallel_test.vcxproj", "{9A1D7F6C-2B48-4D5E-8C31-5F0B7E4A2D19}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|ARM64 = Debug|ARM64
@@ -306,6 +308,24 @@ Global
 		{862B6ABA-D1C6-4DB8-A893-747CC8B5D0F2}.UnitTests-Release|Win32.Build.0 = Release|Win32
 		{862B6ABA-D1C6-4DB8-A893-747CC8B5D0F2}.UnitTests-Release|x64.ActiveCfg = Release|x64
 		{862B6ABA-D1C6-4DB8-A893-747CC8B5D0F2}.UnitTests-Release|x64.Build.0 = Release|x64
+		{9A1D7F6C-2B48-4D5E-8C31-5F0B7E4A2D19}.Debug|ARM64.ActiveCfg = Debug|ARM64
+		{9A1D7F6C-2B48-4D5E-8C31-5F0B7E4A2D19}.Debug|Win32.ActiveCfg = Debug|Win32
+		{9A1D7F6C-2B48-4D5E-8C31-5F0B7E4A2D19}.Debug|x64.ActiveCfg = Debug|x64
+		{9A1D7F6C-2B48-4D5E-8C31-5F0B7E4A2D19}.Release|ARM64.ActiveCfg = Release|ARM64
+		{9A1D7F6C-2B48-4D5E-8C31-5F0B7E4A2D19}.Release|Win32.ActiveCfg = Release|Win32
+		{9A1D7F6C-2B48-4D5E-8C31-5F0B7E4A2D19}.Release|x64.ActiveCfg = Release|x64
+		{9A1D7F6C-2B48-4D5E-8C31-5F0B7E4A2D19}.UnitTests-Debug|ARM64.ActiveCfg = Debug|ARM64
+		{9A1D7F6C-2B48-4D5E-8C31-5F0B7E4A2D19}.UnitTests-Debug|ARM64.Build.0 = Debug|ARM64
+		{9A1D7F6C-2B48-4D5E-8C31-5F0B7E4A2D19}.UnitTests-Debug|Win32.ActiveCfg = Debug|Win32
+		{9A1D7F6C-2B48-4D5E-8C31-5F0B7E4A2D19}.UnitTests-Debug|Win32.Build.0 = Debug|Win32
+		{9A1D7F6C-2B48-4D5E-8C31-5F0B7E4A2D19}.UnitTests-Debug|x64.ActiveCfg = Debug|x64
+		{9A1D7F6C-2B48-4D5E-8C31-5F0B7E4A2D19}.UnitTests-Debug|x64.Build.0 = Debug|x64
+		{9A1D7F6C-2B48-4D5E-8C31-5F0B7E4A2D19}.UnitTests-Release|ARM64.ActiveCfg = Release|ARM64
+		{9A1D7F6C-2B48-4D5E-8C31-5F0B7E4A2D19}.UnitTests-Release|ARM64.Build.0 = Release|ARM64
+		{9A1D7F6C-2B48-4D5E-8C31-5F0B7E4A2D19}.UnitTests-Release|Win32.ActiveCfg = Release|Win32
+		{9A1D7F6C-2B48-4D5E-8C31-5F0B7E4A2D19}.UnitTests-Release|Win32.Build.0 = Release|Win32
+		{9A1D7F6C-2B48-4D5E-8C31-5F0B7E4A2D19}.UnitTests-Release|x64.ActiveCfg = Release|x64
+		{9A1D7F6C-2B48-4D5E-8C31-5F0B7E4A2D19}.UnitTests-Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -323,6 +343,7 @@ Global
 		{E2E11769-76C3-40BD-BF1C-A9198481BD6E} = {09795456-9DA5-4253-AE04-DD2AB464238A}
 		{4E77EA22-B1FA-4FC0-8E13-74953DE245D7} = {09795456-9DA5-4253-AE04-DD2AB464238A}
 		{862B6ABA-D1C6-4DB8-A893-747CC8B5D0F2} = {09795456-9DA5-4253-AE04-DD2AB464238A}
+		{9A1D7F6C-2B48-4D5E-8C31-5F0B7E4A2D19} = {09795456-9DA5-4253-AE04-DD2AB464238A}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {06E89BF8-F199-48B1-94CB-D7BB1B23DDD9}

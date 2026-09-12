@@ -35,14 +35,6 @@ echo $dashes
 echo $banner
 echo $dashes
 
-# The -T option only exists when built with thread support
-if ! $PARBINARY -h 2>&1 | grep -q '^  -T<n>'; then
-    echo "Skipping: par2 was built without thread support."
-    cd "$TESTROOT"
-    rm -rf "run$testname"
-    exit 77
-fi
-
 # Build four data files of 16 blocks of 1024 bytes. Each file holds different
 # data so that a block cannot be matched against the wrong file.
 for n in 1 2 3 4

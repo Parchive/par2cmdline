@@ -60,8 +60,41 @@ AC_C_INLINE
 AC_SYS_LARGEFILE
 AC_FUNC_FSEEKO
 
-dnl Check for OpenMP
-AC_OPENMP
+dnl std::thread needs pthreads where they are not already part of libc.
+AC_SEARCH_LIBS([pthread_create], [pthread])
+
+dnl -pthread is what tells the compiler and the linker that a build is
+dnl threaded. AC_SEARCH_LIBS above only covers the library.
+AC_MSG_CHECKING([whether $CXX accepts -pthread])
+par2_saved_CXXFLAGS=$CXXFLAGS
+CXXFLAGS="$CXXFLAGS -pthread"
+AC_LINK_IFELSE([AC_LANG_PROGRAM(
+  [[#include <thread>
+    static void par2_probe(void) {}]],
+  [[std::thread thread(par2_probe); thread.join();]])],
+  [AC_MSG_RESULT([yes])
+   PTHREAD_FLAGS="-pthread"],
+  [AC_MSG_RESULT([no])
+   PTHREAD_FLAGS=""])
+CXXFLAGS=$par2_saved_CXXFLAGS
+AC_SUBST([PTHREAD_FLAGS])
+
+dnl ProgressMeter keeps 64-bit counters in std::atomic. Most targets emit those
+dnl inline, but 32-bit ones generally need libatomic to supply them.
+AC_MSG_CHECKING([whether 64-bit atomics need libatomic])
+m4_define([PAR2_ATOMIC_PROGRAM], [AC_LANG_PROGRAM(
+  [[#include <atomic>
+    #include <cstdint>]],
+  [[std::atomic<uint64_t> value(0); return (int)value.fetch_add(1);]])])
+AC_LINK_IFELSE([PAR2_ATOMIC_PROGRAM],
+  [AC_MSG_RESULT([no])],
+  [par2_saved_LIBS=$LIBS
+   LIBS="$LIBS -latomic"
+   AC_LINK_IFELSE([PAR2_ATOMIC_PROGRAM],
+     [AC_MSG_RESULT([yes])],
+     [AC_MSG_RESULT([no])
+      LIBS=$par2_saved_LIBS
+      AC_MSG_ERROR([par2cmdline needs 64-bit atomics])])])
 
 dnl Checks for library functions.
 AC_FUNC_MEMCMP

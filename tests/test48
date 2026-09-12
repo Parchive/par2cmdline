@@ -49,21 +49,13 @@ then
     exit 1
 fi
 
-# The -t option only exists when built with thread support
-if $PARBINARY -h 2>&1 | grep -q '^  -t<n>'
-then
-    threadopts="-t1 -t4"
-else
-    threadopts=""
-fi
-
 # The whole file hash recorded for it does not match, which only shows up when
 # the whole of the file is hashed as well. A single thread leaves the whole
 # file to the byte at a time search, and several threads have the thread which
 # reads the file hash it, so both have to notice. The file is damaged rather
 # than unreadable, so the exit code is checked rather than just being non-zero,
 # which an unrecognised option would also give.
-for opt in "" $threadopts
+for opt in "" -t1 -t4
 do
     $PARBINARY v -q $opt --full-hash recovery.par2 > whole.out 2>&1
     whole=$?

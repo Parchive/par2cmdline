@@ -193,8 +193,47 @@ typedef unsigned int     size_t;
 
 #include <ctype.h>
 #include <iomanip>
+#include <atomic>
+#include <condition_variable>
+#include <mutex>
+#include <thread>
 
 #include <cassert>
+
+// Holds a lock for the duration of one output statement, so that lines written
+// from several threads do not interleave.
+class LockedStream
+{
+public:
+  explicit LockedStream(std::ostream &stream)
+    : stream(stream)
+    , lock(Mutex())
+  {
+  }
+
+  template<typename T>
+  LockedStream& operator<<(const T &value)
+  {
+    stream << value;
+    return *this;
+  }
+
+  LockedStream& operator<<(std::ostream& (*manipulator)(std::ostream&))
+  {
+    stream << manipulator;
+    return *this;
+  }
+
+private:
+  static std::mutex& Mutex(void)
+  {
+    static std::mutex mutex;
+    return mutex;
+  }
+
+  std::ostream &stream;
+  std::lock_guard<std::mutex> lock;
+};
 
 #ifdef offsetof
 #undef offsetof
@@ -205,6 +244,7 @@ typedef unsigned int     size_t;
 #include "libpar2.h"
 
 #include "letype.h"
+#include "foreach_parallel.h"
 #include "progressmeter.h"
 
 #include "galois.h"
@@ -247,11 +287,5 @@ typedef unsigned int     size_t;
 #include <crtdbg.h>
 #define DEBUG_NEW new(_NORMAL_BLOCK, THIS_FILE, __LINE__)
 #endif
-
-// OpenMP
-#ifdef _OPENMP
-# include <omp.h>
-#endif
-
 
 #endif // __PARCMDLINE_H__

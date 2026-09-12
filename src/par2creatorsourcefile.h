@@ -40,11 +40,7 @@ public:
   ~Par2CreatorSourceFile(void);
 
   // Open the source file and compute the Hashes and CRCs.
-#ifdef _OPENMP
   bool Open(NoiseLevel noiselevel, std::ostream &sout, std::ostream &serr, const std::string &extrafile, u64 blocksize, bool deferhashcomputation, std::string basepath, ProgressMeter<u64> &progress);
-#else
-  bool Open(NoiseLevel noiselevel, std::ostream &sout, std::ostream &serr, const std::string &extrafile, u64 blocksize, bool deferhashcomputation, std::string basepath);
-#endif
   void Close(void);
 
   // Recover the file description and file verification packets
