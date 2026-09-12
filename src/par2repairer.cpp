@@ -156,8 +156,9 @@ Result Par2Repairer::Process(
   // Set the number of threads
   totalthreads = resolve_threads(nthreads);
 
-  // No more files are read at once than there are threads to hash them with
-  filethreads = std::min(_filethreads, totalthreads);
+  // No more files are read at once than there are threads to hash them with,
+  // and never none whatever the caller asked for
+  filethreads = std::max(1u, std::min(_filethreads, totalthreads));
 
   // Determine the searchpath from the location of the main PAR2 file
   std::string name;
