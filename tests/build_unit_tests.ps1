@@ -39,6 +39,8 @@ if ($Clean) {
         "criticalpacket_test",
         "reedsolomon_test",
         "galois_test",
+        "taskpool_test",
+        "bufferpool_test",
         "utf8_test"
     )
     $ObjDir = Join-Path $script:RootDir "tests\$Platform\$Configuration"
