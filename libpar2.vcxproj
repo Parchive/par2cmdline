@@ -104,6 +104,7 @@
     <ClInclude Include="src\par2repairer.h" />
     <ClInclude Include="src\par2repairersourcefile.h" />
     <ClInclude Include="src\foreach_parallel.h" />
+    <ClInclude Include="src\bufferpool.h" />
     <ClInclude Include="src\taskpool.h" />
     <ClInclude Include="src\progressmeter.h" />
     <ClInclude Include="src\recoverypacket.h" />

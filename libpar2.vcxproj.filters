@@ -149,6 +149,9 @@
     <ClInclude Include="src\foreach_parallel.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\bufferpool.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="src\taskpool.h">
       <Filter>Header Files</Filter>
     </ClInclude>

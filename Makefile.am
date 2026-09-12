@@ -43,6 +43,7 @@ libpar2_a_SOURCES = src/crc.cpp src/crc.h \
 	src/par2repairer.cpp src/par2repairer.h \
 	src/par2repairersourcefile.cpp src/par2repairersourcefile.h \
 	src/foreach_parallel.h \
+	src/bufferpool.h \
 	src/taskpool.h \
 	src/progressmeter.h \
 	src/recoverypacket.cpp src/recoverypacket.h \
@@ -200,7 +201,7 @@ EXTRA_DIST = \
 
 # Programs that need to be compiled for the test suite.
 # These are the unit tests.
-check_PROGRAMS = tests/letype_test tests/crc_test tests/md5_test tests/diskfile_test tests/filechecksummer_test tests/libpar2_test tests/commandline_test tests/descriptionpacket_test tests/criticalpacket_test tests/reedsolomon_test tests/galois_test tests/foreach_parallel_test tests/taskpool_test tests/utf8_test
+check_PROGRAMS = tests/letype_test tests/crc_test tests/md5_test tests/diskfile_test tests/filechecksummer_test tests/libpar2_test tests/commandline_test tests/descriptionpacket_test tests/criticalpacket_test tests/reedsolomon_test tests/galois_test tests/foreach_parallel_test tests/taskpool_test tests/bufferpool_test tests/utf8_test
 
 tests_letype_test_SOURCES = src/letype_test.cpp src/letype.h
 
@@ -235,6 +236,9 @@ tests_foreach_parallel_test_LDADD = libpar2.a
 
 tests_taskpool_test_SOURCES = src/taskpool_test.cpp src/taskpool.h
 tests_taskpool_test_LDADD = libpar2.a
+
+tests_bufferpool_test_SOURCES = src/bufferpool_test.cpp src/bufferpool.h
+tests_bufferpool_test_LDADD = libpar2.a
 
 tests_utf8_test_SOURCES = src/utf8_test.cpp src/utf8.cpp src/utf8.h
 
