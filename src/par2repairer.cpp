@@ -2731,7 +2731,8 @@ bool Par2Repairer::ComputeRSmatrix(void)
 
 // The files being read take the buffers they read into from these, which
 // between them hold two batches for each of the filecount files which may be
-// read at once
+// read at once. A batch is a whole number of blocks, at least one, and no more
+// than MAX_CHUNK_SIZE unless a single block is already larger than that.
 void Par2Repairer::ResetScanBuffers(const size_t filecount)
 {
   // The blocks of a file are only checked where they are expected to be when
@@ -2755,8 +2756,12 @@ void Par2Repairer::ResetScanBuffers(const size_t filecount)
 
   const u32 readers = FileThreads(filecount);
 
-  scanbuffers.Reset(2 * readers,
-                    (size_t)std::max(1u, totalthreads / readers) * (size_t)blocksize);
+  const size_t batchsize = (size_t)std::max(1u, totalthreads / readers) * (size_t)blocksize;
+  const size_t maxbatchsize = MAX_CHUNK_SIZE != 0
+    ? std::max((size_t)blocksize, (size_t)MAX_CHUNK_SIZE)
+    : batchsize;
+
+  scanbuffers.Reset(2 * readers, std::min(batchsize, maxbatchsize));
 }
 
 // Allocate memory buffers for reading and writing data to disk.
