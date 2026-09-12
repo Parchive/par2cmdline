@@ -48,6 +48,7 @@ $unitTestExes = @(
     "criticalpacket_test.exe",
     "reedsolomon_test.exe",
     "galois_test.exe",
+    "taskpool_test.exe",
     "utf8_test.exe"
 )
 

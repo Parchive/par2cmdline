@@ -245,6 +245,7 @@ private:
 
 #include "letype.h"
 #include "foreach_parallel.h"
+#include "taskpool.h"
 #include "progressmeter.h"
 
 #include "galois.h"
