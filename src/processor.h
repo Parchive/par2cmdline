@@ -21,6 +21,7 @@
 #define __PROCESSOR_H__
 
 #include <future>
+#include <vector>
 
 // Multiplies input blocks by the Reed Solomon matrix and accumulates the
 // results. One input block is submitted against every output block at once, so
@@ -36,6 +37,7 @@
 // every input block for each chunk:
 //
 //   Init
+//   OfferErasures                        repairing only
 //   for each chunk:
 //     SetChunkLength
 //     ResetOutput
@@ -47,7 +49,7 @@
 //     for each output block:
 //       PeekOutput, and GetOutput where it gives nothing
 //
-// Only the methods declared pure need implementing. The two carrying a body
+// Only the methods declared pure need implementing. The three carrying a body
 // are chances to do less work, and an implementation which overrides none of
 // them is correct.
 class Processor
@@ -81,6 +83,21 @@ public:
     return false;
   }
 
+  // Offer the erasure pattern rather than a solved matrix. present[index] says
+  // whether input block index was found, and exponents holds those of the
+  // exponentcount recovery blocks standing in for the ones that were not, in
+  // the order they are submitted after the blocks that were found. An
+  // implementation that solves the erasure for itself returns true, and is
+  // given no factors from then on; the caller does not invert the matrix at
+  // all. Only repair offers this, creation having no erasures to solve.
+  virtual bool OfferErasures(const std::vector<bool> &present, const u16 *exponents, u32 exponentcount)
+  {
+    (void)present;
+    (void)exponents;
+    (void)exponentcount;
+    return false;
+  }
+
   // Wait until AddInput will not block. The caller holds a bounded number of
   // submissions in flight and calls this before each of them.
   virtual void WaitForAdd(void) = 0;
@@ -91,6 +108,9 @@ public:
   // inputindex to say which input block this is:
   //
   //   creating, it is the source block, counting from zero
+  //   repairing, it counts the submissions: first the source blocks which were
+  //   found, in the order present marks them, then one for each exponent
+  //   OfferErasures was given, in that order
   //
   // Called from one thread, and always after WaitForAdd. The returned future
   // becomes ready once data may be overwritten, and one which is ready

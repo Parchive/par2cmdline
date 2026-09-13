@@ -91,6 +91,8 @@ Par2Repairer::Par2Repairer(std::ostream &sout, std::ostream &serr, const NoiseLe
   availableblockcount = 0;
   missingblockcount = 0;
 
+  ownfactors = false;
+
   memset(windowtable, 0, sizeof(windowtable));
 
   blocksallocated = false;
@@ -258,6 +260,15 @@ Result Par2Repairer::Process(
         if (!CreateTargetFiles())
           return eFileIOError;
 
+        // Allocate memory buffers for reading and writing data to disk, and
+        // build the processor, which is offered the erasures below.
+        if (!AllocateBuffers(memorylimit))
+        {
+          // Delete all of the partly reconstructed files
+          DeleteIncompleteTargetFiles();
+          return eMemoryError;
+        }
+
         // Work out which data blocks are available, which need to be copied
         // directly to the output, and which need to be recreated, and compute
         // the appropriate Reed Solomon matrix.
@@ -270,14 +281,6 @@ Result Par2Repairer::Process(
 
         if (noiselevel > nlSilent)
           sout << '\n';
-
-        // Allocate memory buffers for reading and writing data to disk.
-        if (!AllocateBuffers(memorylimit))
-        {
-          // Delete all of the partly reconstructed files
-          DeleteIncompleteTargetFiles();
-          return eMemoryError;
-        }
 
         // Set the total amount of data to be processed.
         ProgressMeter<u64> progress(sout, missingblockcount > 0 ? "Repairing: " : "Processing: ", blocksize * sourceblockcount);
@@ -2707,6 +2710,9 @@ bool Par2Repairer::ComputeRSmatrix(void)
   // Start iterating through the available recovery packets
   std::map<u32,RecoveryPacket*>::iterator rp = recoverypacketmap.begin();
 
+  // The exponents of those recovery blocks, kept for the processor
+  std::vector<u16> exponents;
+
   // Continue to fill the remaining list of data blocks to be read
   while (inputblock != inputblocks.end())
   {
@@ -2729,12 +2735,22 @@ bool Par2Repairer::ComputeRSmatrix(void)
     if (!rs.SetOutput(true, (u16)exponent))
       return false;
 
+    exponents.push_back((u16)exponent);
+
     ++inputblock;
     ++rp;
   }
 
   // If we need to, compute and solve the RS matrix
   if (missingblockcount == 0)
+    return true;
+
+  // Offer the erasure pattern, so that an implementation able to solve it for
+  // itself is not made to wait for the matrix to be inverted only to read
+  // columns out of it
+  ownfactors = processor->OfferErasures(present, exponents.data(), (u32)exponents.size());
+
+  if (ownfactors)
     return true;
 
   bool success = rs.Compute(noiselevel, sout, serr);
@@ -2844,8 +2860,8 @@ bool Par2Repairer::ProcessData(u64 blockoffset, size_t blocklength, ProgressMete
     processor->SetChunkLength(blocklength);
     processor->ResetOutput();
 
-    // The matrix column for one input block
-    std::vector<u16> factors(missingblockcount);
+    // The matrix column for one input block, unused when the processor has its own
+    std::vector<u16> factors(ownfactors ? 0 : missingblockcount);
 
     // Every buffer starts free
     std::future<void> bufferfree[NUM_TRANSFER_BUFFERS];
@@ -2903,11 +2919,15 @@ bool Par2Repairer::ProcessData(u64 blockoffset, size_t blocklength, ProgressMete
       }
 
       // Look up the matrix column and process the data against every output block
-      for (u32 outputindex=0; outputindex<missingblockcount; outputindex++)
-        factors[outputindex] = rs.GetFactor(inputindex, outputindex);
+      if (!ownfactors)
+      {
+        for (u32 outputindex=0; outputindex<missingblockcount; outputindex++)
+          factors[outputindex] = rs.GetFactor(inputindex, outputindex);
+      }
 
       processor->WaitForAdd();
-      bufferfree[bufferindex] = processor->AddInput(inputbuffer, blocklength, inputindex, factors.data());
+      bufferfree[bufferindex] = processor->AddInput(inputbuffer, blocklength, inputindex,
+                                                    ownfactors ? NULL : factors.data());
       bufferindex = (bufferindex + 1) % NUM_TRANSFER_BUFFERS;
 
       if (noiselevel > nlQuiet)
