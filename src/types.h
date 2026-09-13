@@ -1,7 +1,7 @@
 //  This file is part of par2cmdline (a PAR 2.0 compatible file verification and
 //  repair tool). See http://parchive.sourceforge.net for details of PAR 2.0.
 //
-//  Copyright (c) 2026 Michael Nightingale
+//  Copyright (c) 2003 Peter Brian Clements
 //
 //  par2cmdline is free software; you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License as published by
@@ -17,29 +17,24 @@
 //  along with this program; if not, write to the Free Software
 //  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-#ifndef __BACKENDS_H__
-#define __BACKENDS_H__
+#ifndef __TYPES_H__
+#define __TYPES_H__
 
-#include <cstddef>
-#include <functional>
-#include <memory>
+#include <cstdint>
 
-#include "processor.h"
-#include "types.h"
+typedef std::uint8_t  u8;
+typedef std::int8_t   i8;
+typedef std::uint16_t u16;
+typedef std::int16_t  i16;
+typedef std::uint32_t u32;
+typedef std::int32_t  i32;
+typedef std::uint64_t u64;
+typedef std::int64_t  i64;
 
-// The budgets a backend is built with. What it accumulates is given separately,
-// by Processor::Init, once the number of recovery blocks is known.
-struct ProcessorConfig
-{
-  u32    numthreads;   // The thread budget, from -t
-  size_t memorylimit;  // The memory budget, from -m
-};
+static_assert(sizeof(u8) == 1 && sizeof(i8) == 1
+		&& sizeof(u16) == 2 && sizeof(i16) == 2
+		&& sizeof(u32) == 4 && sizeof(i32) == 4
+		&& sizeof(u64) == 8 && sizeof(i64) == 8,
+		"the integer types are the widths their names give");
 
-// The implementations an application supplies. A factory left empty selects the
-// one built into par2cmdline.
-struct Backends
-{
-  std::function<std::unique_ptr<Processor>(const ProcessorConfig &)> processor;
-};
-
-#endif // __BACKENDS_H__
+#endif // __TYPES_H__

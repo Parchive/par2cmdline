@@ -47,6 +47,7 @@ libpar2_a_SOURCES = src/crc.cpp src/crc.h \
 	src/taskpool.h \
 	src/backends.h \
 	src/processor.h \
+	src/types.h \
 	src/reference_processor.h \
 	src/progressmeter.h \
 	src/recoverypacket.cpp src/recoverypacket.h \

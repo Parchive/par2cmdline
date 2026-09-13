@@ -20,8 +20,11 @@
 #ifndef __PROCESSOR_H__
 #define __PROCESSOR_H__
 
+#include <cstddef>
 #include <future>
 #include <vector>
+
+#include "types.h"
 
 // Multiplies input blocks by the Reed Solomon matrix and accumulates the
 // results. One input block is submitted against every output block at once, so
