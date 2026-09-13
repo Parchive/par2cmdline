@@ -496,6 +496,12 @@ bool Par2Verifier::GetFileInfo(std::vector<Par2FileInfo> *files) const
   return impl->GetFileInfo(files);
 }
 
+bool Par2Verifier::GetBlockChecksums(const std::string &filename,
+                                    std::vector<u32> *crcs) const
+{
+  return impl->GetBlockChecksums(filename, crcs);
+}
+
 std::vector<std::string> Par2Verifier::GetBackupFiles(void) const
 {
   std::vector<std::string> files;

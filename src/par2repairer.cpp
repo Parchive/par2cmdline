@@ -551,12 +551,39 @@ Result Par2Repairer::RepairFiles(const size_t memorylimit, const std::string &ba
 }
 
 
-// The source file the set records under that name
+// The source file the set records under that name, when it has a
+// verification packet
 Par2RepairerSourceFile *Par2Repairer::FindSourceFile(const std::string &filename) const
 {
   auto sf = sourcefilesbyname.find(filename);
+  if (sf == sourcefilesbyname.end() || 0 == sf->second->GetVerificationPacket())
+    return 0;
 
-  return sf == sourcefilesbyname.end() ? 0 : sf->second;
+  return sf->second;
+}
+
+// The CRC32 the set records for each block of a file
+bool Par2Repairer::GetBlockChecksums(const std::string &filename,
+                                    std::vector<u32> *crcs) const
+{
+  if (0 == crcs)
+    return false;
+
+  crcs->clear();
+
+  const Par2RepairerSourceFile *sourcefile = FindSourceFile(filename);
+  if (0 == sourcefile)
+    return false;
+
+  const VerificationPacket *verificationpacket = sourcefile->GetVerificationPacket();
+
+  const u32 blockcount = verificationpacket->BlockCount();
+  crcs->reserve(blockcount);
+
+  for (u32 blocknumber=0; blocknumber<blockcount; ++blocknumber)
+    crcs->push_back(verificationpacket->VerificationEntry(blocknumber)->crc);
+
+  return true;
 }
 
 // What the packets loaded so far describe
@@ -679,16 +706,11 @@ bool Par2Repairer::SetKnownBlocks(const std::string &filename,
   // length which would never be used is refused rather than quietly ignored.
   // Nothing is known before the packets are read, and the check is made again
   // when the blocks come to be used.
-  const Par2RepairerSourceFile *sourcefile = FindSourceFile(filename);
-  if (0 != sourcefile)
+  if (!sourcefilesbyname.empty())
   {
-    const VerificationPacket *verificationpacket = sourcefile->GetVerificationPacket();
-    if (0 == verificationpacket || blocks.size() != verificationpacket->BlockCount())
+    const Par2RepairerSourceFile *sourcefile = FindSourceFile(filename);
+    if (0 == sourcefile || blocks.size() != sourcefile->GetVerificationPacket()->BlockCount())
       return false;
-  }
-  else if (!sourcefilesbyname.empty())
-  {
-    return false;
   }
 
   knownblocks[filename] = blocks;
