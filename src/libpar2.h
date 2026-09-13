@@ -34,6 +34,12 @@ typedef std::int32_t  i32;
 typedef std::uint64_t u64;
 typedef std::int64_t  i64;
 
+static_assert(sizeof(u8) == 1 && sizeof(i8) == 1
+		&& sizeof(u16) == 2 && sizeof(i16) == 2
+		&& sizeof(u32) == 4 && sizeof(i32) == 4
+		&& sizeof(u64) == 8 && sizeof(i64) == 8,
+		"the integer types are the widths their names give");
+
 
 typedef enum
 {
