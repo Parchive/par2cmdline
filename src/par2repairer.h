@@ -156,17 +156,14 @@ protected:
   bool RemoveBackupFiles(void);
   bool RemoveParFiles(void);
 
+  // Make the buffers the files being scanned read into, or give them up when
+  // no file will have its blocks checked where they are expected to be
+  void ResetScanBuffers(const size_t filecount);
+
+  // The number of files to read at once, which is what limits how many are
+  // open at a time rather than how much of the work they get
   u32                                 FileThreads(size_t filecount) const
     {return (u32)std::max<size_t>(1, std::min<size_t>(filethreads, filecount));}
-
-  // Divides the threads between the files scanned at once and the blocks
-  // checked within one file. Returns the number of files to scan at once.
-  u32                                 SetBlockThreads(size_t filecount)
-    {
-      const u32 files = FileThreads(filecount);
-      blockthreads = std::max(1u, totalthreads / files);
-      return files;
-    }
 
 protected:
   std::ostream &sout; // stream for output (for commandline, this is cout)
@@ -179,8 +176,13 @@ protected:
   std::string               basepath;
 
   u32 totalthreads;            // Number of threads the whole repair may use
-  u32 filethreads;             // Number of threads for file processing
-  u32 blockthreads;            // Number of threads left to check one file's blocks
+  u32 filethreads;             // Number of files to read at once
+
+  // The threads which check the blocks of every file being read, the buffers
+  // those files read into, and how many files are being read at the moment
+  std::unique_ptr<TaskPool> blockpool;
+  BufferPool                scanbuffers;
+  std::atomic<u32>          activereaders;
 
   bool                      skipdata;                // Should we skip data whilst scanning
   u64                       skipleaway;              // The leaway +/- we should allow whilst scanning
