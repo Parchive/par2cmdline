@@ -2810,6 +2810,9 @@ bool Par2Repairer::AllocateBuffers(size_t memorylimit)
     chunksize = (size_t)blocksize;
   }
 
+  if (MAX_CHUNK_SIZE != 0 && chunksize > MAX_CHUNK_SIZE)
+    chunksize = MAX_CHUNK_SIZE;
+
   // Allocate the two buffers
   transferbuffer = new u8[(size_t)chunksize * NUM_TRANSFER_BUFFERS];
   outputbuffer = new u8[(size_t)chunksize];
@@ -2827,9 +2830,6 @@ bool Par2Repairer::AllocateBuffers(size_t memorylimit)
     serr << "Could not allocate buffer memory." << std::endl;
     return false;
   }
-
-  if (MAX_CHUNK_SIZE != 0 && chunksize > MAX_CHUNK_SIZE)
-    chunksize = MAX_CHUNK_SIZE;
 
   if (noiselevel >= nlDebug)
     sout << "[DEBUG] Process chunk size: " << chunksize << std::endl;
