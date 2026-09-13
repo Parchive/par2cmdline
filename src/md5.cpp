@@ -30,16 +30,32 @@ static char THIS_FILE[]=__FILE__;
 
 // Convert hash values to hex
 
+// Write length bytes into buffer as hex digits, and return where that left off
+static char* PrintBytes(const u8 *bytes, size_t length, char *buffer)
+{
+  static const char hexdigits[] = "0123456789ABCDEF";
+
+  for (size_t index = 0; index < length; index++)
+  {
+    *buffer++ = hexdigits[bytes[index] >> 4];
+    *buffer++ = hexdigits[bytes[index] & 0xf];
+  }
+
+  return buffer;
+}
+
+// Write the 32 hex digits of a 16 byte hash, in the order its bytes are stored,
+// into buffer, which must have room for them and a terminating null
+static void PrintHash(const u8 *hash, char *buffer)
+{
+  *PrintBytes(hash, 16, buffer) = 0;
+}
+
 std::ostream& operator<<(std::ostream &result, const MD5Hash &h)
 {
   char buffer[33];
 
-  snprintf(buffer, sizeof(buffer),
-          "%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X",
-          h.hash[15], h.hash[14], h.hash[13], h.hash[12],
-          h.hash[11], h.hash[10], h.hash[9],  h.hash[8],
-          h.hash[7],  h.hash[6],  h.hash[5],  h.hash[4],
-          h.hash[3],  h.hash[2],  h.hash[1],  h.hash[0]);
+  PrintHash(h.hash, buffer);
 
   return result << buffer;
 }
@@ -48,12 +64,7 @@ std::string MD5Hash::print(void) const
 {
   char buffer[33];
 
-  snprintf(buffer, sizeof(buffer),
-          "%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X",
-          hash[15], hash[14], hash[13], hash[12],
-          hash[11], hash[10], hash[9],  hash[8],
-          hash[7],  hash[6],  hash[5],  hash[4],
-          hash[3],  hash[2],  hash[1],  hash[0]);
+  PrintHash(hash, buffer);
 
   return buffer;
 }
@@ -338,15 +349,40 @@ MD5Hash MD5Context::Hash(void) const
   return output;
 }
 
+// Write the state, in the order Final stores its bytes, followed by the number of
+// bytes processed, into buffer, which must have room for 49 characters and a
+// terminating null
+static void PrintContext(const u32 *state, u64 bytes, char *buffer)
+{
+  u8 hash[16];
+
+  for (size_t index = 0; index < 4; index++)
+  {
+    // Convert the state from internal format to little endian format, as Final does
+    hash[4*index+3] = (u8)((state[index] >> 24) & 0xFF);
+    hash[4*index+2] = (u8)((state[index] >> 16) & 0xFF);
+    hash[4*index+1] = (u8)((state[index] >>  8) & 0xFF);
+    hash[4*index+0] = (u8)((state[index] >>  0) & 0xFF);
+  }
+
+  u8 count[8];
+
+  for (size_t index = 0; index < 8; index++)
+  {
+    // Most significant byte first, so the count reads as a number
+    count[index] = (u8)((bytes >> (56 - 8*index)) & 0xFF);
+  }
+
+  buffer = PrintBytes(hash, sizeof(hash), buffer);
+  *buffer++ = ':';
+  *PrintBytes(count, sizeof(count), buffer) = 0;
+}
+
 std::ostream& operator<<(std::ostream &result, const MD5Context &c)
 {
   char buffer[50];
 
-  snprintf(buffer, sizeof(buffer),
-          "%08X%08X%08X%08X:%08X%08X",
-          c.state[3],c.state[2],c.state[1],c.state[0],
-          (u32)((c.bytes >> 32) & 0xffffffff),
-          (u32)(c.bytes & 0xffffffff));
+  PrintContext(c.state, c.bytes, buffer);
 
   return result << buffer;
 }
@@ -355,11 +391,7 @@ std::string MD5Context::print(void) const
 {
   char buffer[50];
 
-  snprintf(buffer, sizeof(buffer),
-          "%08X%08X%08X%08X:%08X%08X",
-          state[3],state[2],state[1],state[0],
-          (u32)((bytes >> 32) & 0xffffffff),
-          (u32)(bytes & 0xffffffff));
+  PrintContext(state, bytes, buffer);
 
   return buffer;
 }

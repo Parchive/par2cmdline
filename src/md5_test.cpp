@@ -23,7 +23,9 @@
 
 #include "libpar2internal.h"
 
+#include <iomanip>
 #include <iostream>
+#include <sstream>
 #include <stdlib.h>
 
 #include "md5.h"
@@ -236,6 +238,62 @@ int test4() {
 }
 
 
+// Check that a hash prints as the bytes it stores, so it reads the same as it does
+// from md5sum and every other tool
+int checkprinted(const std::string &input, const std::string &expected) {
+  MD5Context context;
+  context.Update(input.c_str(), input.size());
+  MD5Hash hash;
+  context.Final(hash);
+
+  if (hash.print() != expected) {
+    std::cerr << "print gave " << hash.print()
+              << " rather than " << expected << std::endl;
+    return 1;
+  }
+
+  std::ostringstream streamed;
+  streamed << hash;
+  if (streamed.str() != expected) {
+    std::cerr << "operator<< gave " << streamed.str()
+              << " rather than " << expected << std::endl;
+    return 1;
+  }
+
+  // The context prints those same bytes, then the number it has processed
+  std::ostringstream wanted;
+  wanted << expected << ':' << std::hex << std::uppercase << std::setw(16)
+         << std::setfill('0') << context.Bytes();
+
+  const std::string printed = context.print();
+  if (printed != wanted.str()) {
+    std::cerr << "context print gave " << printed
+              << " rather than " << wanted.str() << std::endl;
+    return 1;
+  }
+
+  std::ostringstream context_streamed;
+  context_streamed << context;
+  if (context_streamed.str() != printed) {
+    std::cerr << "context operator<< gave " << context_streamed.str()
+              << " rather than " << printed << std::endl;
+    return 1;
+  }
+
+  return 0;
+}
+
+
+int test5() {
+  if (checkprinted("", "D41D8CD98F00B204E9800998ECF8427E"))
+    return 1;
+  if (checkprinted("abc", "900150983CD24FB0D6963F7D28E17F72"))
+    return 1;
+
+  return 0;
+}
+
+
 int main() {
   if (test1()) {
     std::cerr << "FAILED: test1" << std::endl;
@@ -251,6 +309,10 @@ int main() {
   }
   if (test4()) {
     std::cerr << "FAILED: test4" << std::endl;
+    return 1;
+  }
+  if (test5()) {
+    std::cerr << "FAILED: test5" << std::endl;
     return 1;
   }
 
