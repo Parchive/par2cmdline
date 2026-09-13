@@ -231,6 +231,14 @@ public:
   bool GetSetInfo(Par2SetInfo *info) const;
   bool GetFileInfo(std::vector<Par2FileInfo> *files) const;
 
+  // The CRC32 the set records for each block of the named file, one entry per
+  // block starting at block 0. The name is the one GetFileInfo reports.
+  //
+  // False when the set does not describe that file, or describes it without a
+  // verification packet, which is a file it cannot recover.
+  bool GetBlockChecksums(const std::string &filename,
+                         std::vector<u32> *crcs) const;
+
   // Accept the caller's word that these blocks of the named file are intact,
   // so that they are not read and hashed again. The name is the one reported
   // by GetFileInfo and blocks must have one entry per block of that file, set
