@@ -204,6 +204,21 @@ int main()
     }
     Check(totalblocks == info.datablocks, "GetFileInfo blocks add up");
 
+    for (const auto &file : files)
+    {
+      std::vector<par2::u32> crcs;
+      Check(verifier.GetBlockChecksums(file.filename, &crcs),
+            "GetBlockChecksums");
+      Check(crcs.size() == file.blockcount,
+            "GetBlockChecksums one entry per block");
+    }
+    {
+      std::vector<par2::u32> crcs;
+      Check(!verifier.GetBlockChecksums("not-in-the-set.bin", &crcs),
+            "GetBlockChecksums rejects an unknown name");
+      Check(crcs.empty(), "GetBlockChecksums clears on failure");
+    }
+
     Check(par2::eSuccess == verifier.Verify(noextras), "Verify healthy");
 
     par2::Par2VerifyResult status{};

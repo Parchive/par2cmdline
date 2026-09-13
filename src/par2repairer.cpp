@@ -550,6 +550,31 @@ Par2RepairerSourceFile *Par2Repairer::FindSourceFile(const std::string &filename
 }
 
 // List the files the loaded packets describe
+bool Par2Repairer::GetBlockChecksums(const std::string &filename,
+                                    std::vector<u32> *crcs) const
+{
+  if (0 == crcs)
+    return false;
+
+  crcs->clear();
+
+  const Par2RepairerSourceFile *sourcefile = FindSourceFile(filename);
+  if (0 == sourcefile)
+    return false;
+
+  const VerificationPacket *verificationpacket = sourcefile->GetVerificationPacket();
+  if (0 == verificationpacket)
+    return false;
+
+  const u32 blockcount = verificationpacket->BlockCount();
+  crcs->reserve(blockcount);
+
+  for (u32 blocknumber=0; blocknumber<blockcount; ++blocknumber)
+    crcs->push_back(verificationpacket->VerificationEntry(blocknumber)->crc);
+
+  return true;
+}
+
 bool Par2Repairer::GetFileInfo(std::vector<Par2FileInfo> *files) const
 {
   if (0 == files)
