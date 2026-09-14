@@ -89,6 +89,14 @@ namespace
       f.put((char)((i * 31 + seed * 7) & 0xff));
   }
 
+  // The index file and volumes of a set created with RECOVERYBLOCKS blocks
+  void RemoveSet(const std::string &base)
+  {
+    std::remove((base + ".par2").c_str());
+    for (const char *volume : {"vol00+1", "vol01+2", "vol03+4", "vol07+8", "vol15+5"})
+      std::remove((base + "." + volume + ".par2").c_str());
+  }
+
   bool MakeDirectory(const char *name)
   {
 #ifdef _WIN32
@@ -1516,6 +1524,11 @@ int main()
     // Nothing describes it yet, so it cannot be scanned
     Check(par2::eInsufficientCriticalData == verifier.VerifyFile(early),
           "a scan before the set is known says so");
+    CheckLastError(verifier, par2::eInsufficientCriticalData, "a scan before the set is known");
+
+    par2::Par2Error unknown;
+    Check(verifier.GetLastError(&unknown), "and it says why");
+    Check(unknown.code == par2::ecMainPacketMissing, "the reason is ecMainPacketMissing");
 
     // The PAR2 file arrives and the earlier scan is replayed against it
     Check(par2::eSuccess == verifier.AddPar2File("firstdir/first.par2"),
@@ -1527,6 +1540,55 @@ int main()
     Check(r.missingfilecount == 1, "and the one never scanned is missing");
 
     std::remove(early);
+  }
+
+  // A set which names one file on disk twice says so, rather than racing two
+  // threads to claim it
+  {
+    Check(MakeDirectory("twicedir"), "mkdir for the duplicate check");
+
+    const char *const once = "twicedir/once.data";
+    const char *const twicepar = "twicedir/twice.par2";
+
+    WriteData(once, 8, 30000);
+
+    // Named twice, so the set describes the same file on disk under two of
+    // its entries
+    std::vector<std::string> files;
+    files.emplace_back(once);
+    files.emplace_back(once);
+
+    Check(par2::eSuccess == par2::par2create(quiet, quiet, par2::nlSilent,
+                                             64 * 1024 * 1024, "twicedir/", 0, 2,
+                                             "twicedir/twice", files, BLOCKSIZE, 0,
+                                             par2::scVariable, 0, RECOVERYBLOCKS),
+          "par2create for the duplicate check");
+
+    Counting observer;
+    par2::Par2Verifier verifier(quiet, quiet, par2::nlSilent, "twicedir/");
+    verifier.SetObserver(&observer);
+
+    Check(par2::eSuccess == verifier.AddPar2File(twicepar), "AddPar2File for the duplicate check");
+
+    par2::Par2SetInfo info;
+    Check(verifier.GetSetInfo(&info), "GetSetInfo for the duplicate check");
+    Check(info.recoverablefilecount == 2, "the set describes the file twice");
+
+    const par2::Result result = verifier.Verify();
+    Check(par2::eFileIOError == result, "a set which names one file twice says so");
+    CheckLastError(verifier, result, "a set which names one file twice");
+
+    par2::Par2Error error;
+    Check(verifier.GetLastError(&error), "and it says why");
+    Check(error.code == par2::ecDuplicateSourceFile, "the reason is ecDuplicateSourceFile");
+    std::vector<par2::Par2FileInfo> twicefiles;
+    verifier.GetFileInfo(&twicefiles);
+    Check(!twicefiles.empty() && error.filename == twicefiles[0].localfilename,
+          "naming the file both entries point at");
+    Check(observer.errors == 1, "reported once rather than for both entries");
+
+    std::remove(once);
+    RemoveSet("twicedir/twice");
   }
 
   // A file which cannot be read, fed in once the set is whole, leaves it whole
@@ -1596,6 +1658,12 @@ int main()
           "a repair which cannot build a processor says so");
     Check(asked == 1, "the application's processor was asked for");
     Check(budget == 3, "and built with the thread count the handle was given");
+    CheckLastError(verifier, par2::eMemoryError, "a repair with no processor");
+
+    // The application's own code failing is not the disk failing
+    par2::Par2Error noprocessor;
+    Check(verifier.GetLastError(&noprocessor), "and it says why");
+    Check(noprocessor.code == par2::ecProcessorFailed, "the reason is ecProcessorFailed");
 
     std::remove(own);
     std::remove(ownpar);
