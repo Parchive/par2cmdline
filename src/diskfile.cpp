@@ -243,7 +243,13 @@ bool DiskFile::Write(u64 _offset, const void *buffer, size_t length, LengthType 
 
     if (wrote != write)
     {
-      LockedStream(*serr) << "INFO: Incomplete write to \"" << filename << "\" at offset " << _offset << ".  Expected to write " << write << " bytes and wrote " << wrote << " bytes." << std::endl;
+      std::ostringstream message;
+      message << "Incomplete write to \"" << filename << "\" at offset " << _offset << ".  Expected to write " << write << " bytes and wrote " << wrote << " bytes.";
+
+      LockedStream(*serr) << "INFO: " << message.str() << std::endl;
+
+      if (errorlog)
+        errorlog->Warn(wcIncompleteWrite, message.str(), filename);
     }
 
     offset += wrote;
@@ -341,7 +347,13 @@ bool DiskFile::Read(u64 _offset, void *buffer, size_t length, LengthType maxleng
 
     if (want != got)
     {
-      LockedStream(*serr) << "Incomplete read from \"" << filename << "\" at offset " << _offset << ".  Tried to read " << want << " bytes and received " << got << " bytes." << std::endl;
+      std::ostringstream message;
+      message << "Incomplete read from \"" << filename << "\" at offset " << _offset << ".  Tried to read " << want << " bytes and received " << got << " bytes.";
+
+      LockedStream(*serr) << message.str() << std::endl;
+
+      if (errorlog)
+        errorlog->Warn(wcIncompleteRead, message.str(), filename);
     }
 
     _offset += got;
