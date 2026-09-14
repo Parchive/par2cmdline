@@ -167,6 +167,21 @@ typedef enum WarningCode
 } WarningCode;
 
 
+// Which step of the work a progress report belongs to. Each step runs its own
+// count from 0 to 1000, and a step with nothing to do is not reported at all.
+typedef enum Phase
+{
+  phLoading,        // Reading the packets of one PAR2 file, once for each file
+  phHashing,        // Reading the source files a create was given
+  phScanning,       // Checking what is on disk against what the set records
+  phConstructing,   // Building the Reed Solomon matrix
+  phSolving,        // Solving it, which only a repair with missing blocks needs
+  phProcessing,     // Computing recovery data, or rebuilding missing blocks
+  phVerifyingRepair,// Reading back what a repair has just written
+
+} Phase;
+
+
 // Something worth knowing which did not stop the work.
 struct Par2Warning
 {
@@ -254,19 +269,19 @@ public:
   // order they arrive in is not the order the set ends up recording them in.
   virtual void OnFile(const std::string &filename) {}
 
-  // Progress through the current step, in thousandths, running upwards and
-  // starting again at each step which reports it. Which step a run belongs to
-  // is not reported.
+  // Progress through one step of the work, in thousandths, running upwards and
+  // starting again at 0 for each step. phase says which step it is, so an
+  // application can name what it is waiting for and can tell a fresh run from
+  // a count going backwards.
   //
-  // AddPar2File runs it once for each PAR2 file it reads. A Verify runs it
-  // once. A Repair runs it for the matrix it builds, again for the matrix it
-  // solves when blocks are missing, again for the rebuild, and again for the
-  // pass reading back what it wrote.
+  // AddPar2File runs phLoading once for each PAR2 file it reads. A Verify runs
+  // phScanning. A Repair runs phConstructing, then phSolving when blocks are
+  // missing, then phProcessing, and then phVerifyingRepair unless it was asked
+  // not to read back what it wrote.
   //
-  // A Create runs it while the source files are hashed, again for the matrix
-  // it builds, and again while the recovery data is computed. It runs only
-  // once when it was asked for no recovery blocks at all.
-  virtual void OnProgress(u32 permille) {}
+  // A Create runs phHashing, then phConstructing and phProcessing, and only
+  // phHashing when it was asked for no recovery blocks at all.
+  virtual void OnProgress(Phase phase, u32 permille) {}
 
   // This file has been checked. blocksfound of blocksneeded were usable, both
   // zero for a PAR2 file, which has no blocks of its own to account for.
