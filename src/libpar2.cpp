@@ -933,7 +933,11 @@ Result Par2Creator::Create(const std::string &parfilename)
   }
 
   if (files.empty())
+  {
+    ReportError(lasterror, observer, ecInvalidSetting, "There are no files with any data to create a set for");
+
     return eInvalidCommandLineArguments;
+  }
 
   // A block count and a redundancy come to a block size and a recovery block
   // count for these files
@@ -948,6 +952,9 @@ Result Par2Creator::Create(const std::string &parfilename)
     if (0 != sourceblockcount
         && !ComputeBlockSizeFromCount(serr, &setblocksize, sourceblockcount, filesizes))
     {
+      ReportError(lasterror, observer, ecInvalidSetting,
+                  "The source block count cannot divide these files");
+
       return eInvalidCommandLineArguments;
     }
 

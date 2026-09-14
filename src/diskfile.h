@@ -85,8 +85,8 @@ public:
   bool Read(u64 offset, void *buffer, size_t length,
 	    LengthType maxlength = MAX_LENGTH);
 
-  // Close the file
-  void Close(void);
+  // Close the file, false when what was still buffered could not be written
+  bool Close(void);
 
   // Get the size of the file
   u64 FileSize(void) const {return filesize;}

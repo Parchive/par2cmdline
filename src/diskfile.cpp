@@ -352,13 +352,17 @@ bool DiskFile::Read(u64 _offset, void *buffer, size_t length, LengthType maxleng
   return true;
 }
 
-void DiskFile::Close(void)
+bool DiskFile::Close(void)
 {
+  bool closed = true;
+
   if (hFile != INVALID_HANDLE_VALUE)
   {
-    ::CloseHandle(hFile);
+    closed = (0 != ::CloseHandle(hFile));
     hFile = INVALID_HANDLE_VALUE;
   }
+
+  return closed;
 }
 
 std::string DiskFile::GetCanonicalPathname(std::string filename)
@@ -737,13 +741,17 @@ bool DiskFile::Read(u64 _offset, void *buffer, size_t length, LengthType maxleng
   return true;
 }
 
-void DiskFile::Close(void)
+bool DiskFile::Close(void)
 {
+  bool closed = true;
+
   if (file != 0)
   {
-    fclose(file);
+    closed = (0 == fclose(file));
     file = 0;
   }
+
+  return closed;
 }
 
 // Attempt to get the full pathname of the file

@@ -107,31 +107,32 @@ typedef enum ErrorCode
 {
   ecNone = 0,                   // Nothing failed
 
-  // The application asked for something in an order that cannot be honoured
+  // The application asked for something that cannot be honoured
   ecNotVerified = 1,            // A repair before anything was verified
+  ecInvalidSetting = 2,         // A setting a create was given cannot be used
 
   // The PAR2 files
-  ecPar2FileMissing = 2,        // The named PAR2 file is not there, and the files
+  ecPar2FileMissing = 3,        // The named PAR2 file is not there, and the files
                                 // named after it carried nothing new either
-  ecMainPacketMissing = 3,      // Nothing read so far says what the set contains
+  ecMainPacketMissing = 4,      // Nothing read so far says what the set contains
 
   // What the set describes
-  ecFileDescriptionMissing = 4, // The set names a recoverable file it carries no
+  ecFileDescriptionMissing = 5, // The set names a recoverable file it carries no
                                 // description of
-  ecDuplicateSourceFile = 5,    // Two of the set's files are one file on disk
-  ecTooManySourceBlocks = 6,    // The set needs more blocks than can be held
+  ecDuplicateSourceFile = 6,    // Two of the set's files are one file on disk
+  ecTooManySourceBlocks = 7,    // The set needs more blocks than can be held
 
   // Reading and writing
-  ecFileOpenFailed = 7,
-  ecFileCreateFailed = 8,
-  ecFileRenameFailed = 9,
-  ecFileReadFailed = 10,
-  ecFileWriteFailed = 11,
+  ecFileOpenFailed = 8,
+  ecFileCreateFailed = 9,
+  ecFileRenameFailed = 10,
+  ecFileReadFailed = 11,
+  ecFileWriteFailed = 12,
 
-  ecOutOfMemory = 12,           // A buffer could not be allocated
-  ecProcessorFailed = 13,       // The compute implementation could not do the work
+  ecOutOfMemory = 13,           // A buffer could not be allocated
+  ecProcessorFailed = 14,       // The compute implementation could not do the work
 
-  ecInternalError = 14,         // An invariant the library relies on did not hold
+  ecInternalError = 15,         // An invariant the library relies on did not hold
 
 } ErrorCode;
 
@@ -601,6 +602,10 @@ public:
   //
   // May be called more than once, with the settings changed in between, and
   // each call writes a whole set of its own.
+  //
+  // Every source file must be inside the basepath. One which is not fails the
+  // create with eInvalidCommandLineArguments and ecInvalidSetting, naming the
+  // file, before anything is read or written.
   //
   // Empty files and a file named twice are left out, and a create left with
   // no files fails with eInvalidCommandLineArguments.
