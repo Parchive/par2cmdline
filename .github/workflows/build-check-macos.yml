@@ -19,5 +19,5 @@ jobs:
         ./automake.sh
         ./configure
         make -j"$(sysctl -n hw.ncpu)"
-        make check
-        make distcheck
+        make check VERBOSE=yes
+        make distcheck VERBOSE=yes
