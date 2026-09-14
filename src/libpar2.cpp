@@ -255,11 +255,62 @@ void Par2Verifier::Restart(void)
   }
 }
 
+// Discards everything written to it
+class NullStream : public std::ostream
+{
+public:
+  NullStream(void)
+  : std::ostream(&buffer)
+  , buffer()
+  {
+  }
+
+private:
+  class Buffer : public std::streambuf
+  {
+  protected:
+    int_type overflow(int_type c) override
+    {
+      return c;
+    }
+
+    std::streamsize xsputn(const char *, std::streamsize n) override
+    {
+      return n;
+    }
+  };
+
+  Buffer buffer;
+};
+
 Par2Verifier::Par2Verifier(std::ostream &sout, std::ostream &serr, NoiseLevel noiselevel,
                            const std::string &_basepath, const Backends &_backends)
-: sout(sout)
+: nullstream()
+, sout(sout)
 , serr(serr)
 , noiselevel(noiselevel)
+, backends(_backends)
+, observer(0)
+, memorylimit(DEFAULT_MEMORY_LIMIT)
+, nthreads(0)
+, filethreads(0)
+, skipdata(false)
+, skipleaway(0)
+, par2files()
+, scannedfiles()
+, knownblocks()
+, verified(false)
+, basepath(NormaliseBasePath(_basepath))
+, lasterror()
+, impl(new Impl(sout, serr, noiselevel, basepath, backends))
+{
+}
+
+Par2Verifier::Par2Verifier(const std::string &_basepath, const Backends &_backends)
+: nullstream(new NullStream)
+, sout(*nullstream)
+, serr(*nullstream)
+, noiselevel(nlSilent)
 , backends(_backends)
 , observer(0)
 , memorylimit(DEFAULT_MEMORY_LIMIT)
@@ -544,9 +595,33 @@ void Par2Creator::TakeLastError(void)
 
 Par2Creator::Par2Creator(std::ostream &sout, std::ostream &serr, NoiseLevel noiselevel,
                          const std::string &_basepath, const Backends &_backends)
-: sout(sout)
+: nullstream()
+, sout(sout)
 , serr(serr)
 , noiselevel(noiselevel)
+, backends(_backends)
+, observer(0)
+, sourcefiles()
+, blocksize(0)
+, recoveryblockcount(0)
+, recoveryfilescheme(scVariable)
+, recoveryfilecount(0)
+, firstrecoveryblock(0)
+, memorylimit(DEFAULT_MEMORY_LIMIT)
+, nthreads(0)
+, filethreads(0)
+, cancelled(false)
+, basepath(NormaliseBasePath(_basepath))
+, lasterror()
+, impl(new Impl(sout, serr, noiselevel, backends))
+{
+}
+
+Par2Creator::Par2Creator(const std::string &_basepath, const Backends &_backends)
+: nullstream(new NullStream)
+, sout(*nullstream)
+, serr(*nullstream)
+, noiselevel(nlSilent)
 , backends(_backends)
 , observer(0)
 , sourcefiles()
