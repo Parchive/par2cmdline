@@ -101,16 +101,14 @@ int test1() {
   files = DiskFile::FindFiles(".", "input1*.txt", false);
   if (files->size() != 1 || *(files->begin()) != "." + fs + "input1.txt") {
     std::cout << "FindFiles failed on empty *" << std::endl;
-//TODO: Fix bug and uncomment this
-//    return 1;
+    return 1;
   }
   files = DiskFile::FindFiles(".", "i*p*t*.txt", false);
   if (files->size() != 2
       || find(files->begin(), files->end(), std::string("." + fs + "input1.txt")) == files->end()
       || find(files->begin(), files->end(), std::string("." + fs + "input2.txt")) == files->end()) {
     std::cout << "FindFiles failed on multiple *" << std::endl;
-//TODO: Fix bug and uncomment this
-//    return 1;
+    return 1;
   }
 
 
