@@ -2509,13 +2509,15 @@ bool Par2Repairer::RenameTargetFiles(void)
         // Rename it
         diskFileMap.Remove(targetfile);
 
-        if (!targetfile->Rename())
-          return false;
-
-        backuplist.push_back(targetfile);
+        const bool renamed = targetfile->Rename();
 
         bool success = diskFileMap.Insert(targetfile);
         assert(success);
+
+        if (!renamed)
+          return false;
+
+        backuplist.push_back(targetfile);
 
         // We no longer have a target file
         sourcefile->SetTargetExists(false);
@@ -2545,11 +2547,13 @@ bool Par2Repairer::RenameTargetFiles(void)
         // Rename it
         diskFileMap.Remove(targetfile);
 
-        if (!targetfile->Rename(sourcefile->TargetFileName()))
-          return false;
+        const bool renamed = targetfile->Rename(sourcefile->TargetFileName());
 
         bool success = diskFileMap.Insert(targetfile);
         assert(success);
+
+        if (!renamed)
+          return false;
 
         // This file is now the target file
         sourcefile->SetTargetExists(true);
