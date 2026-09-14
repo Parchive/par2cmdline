@@ -172,6 +172,13 @@ Result Par2SetCreator::PrepareCreation(void)
   if (!ComputeBlockCount())
     return IsCancelled() ? eCancelled : eInvalidCommandLineArguments;
 
+  // The exponent of the last recovery block has to fit in 16 bits
+  if ((u64)firstrecoveryblock + recoveryblockcount >= 65536)
+  {
+    serr << "First recovery block number is too high." << std::endl;
+    return eInvalidCommandLineArguments;
+  }
+
   // Determine how many recovery files to create.
   if (!ComputeRecoveryFileCount(sout,
 				serr,
