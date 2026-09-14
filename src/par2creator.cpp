@@ -342,7 +342,7 @@ Result Par2SetCreator::ComputeRecoveryData(void)
   }
 
   // Set the total amount of data to be processed.
-  ProgressMeter<u64> progress(sout, "Processing: ", blocksize * sourceblockcount, noiselevel, observer);
+  ProgressMeter<u64> progress(sout, "Processing: ", blocksize * sourceblockcount, noiselevel, phProcessing, observer);
 
   // Start at an offset of 0 within a block.
   u64 blockoffset = 0;
@@ -535,7 +535,7 @@ bool Par2SetCreator::OpenSourceFiles(void)
   for (size_t i=0; i<extrafiles.size(); ++i)
     mttotalsize += DiskFile::GetFileSize(extrafiles[i]);
 
-  ProgressMeter<u64> progress(sout, "", mttotalsize, noiselevel, observer);
+  ProgressMeter<u64> progress(sout, "", mttotalsize, noiselevel, phHashing, observer);
 
   foreach_parallel(extrafiles, GetFileThreads(), [&](const std::string &extrafile)
   {
@@ -559,7 +559,7 @@ bool Par2SetCreator::OpenSourceFiles(void)
 #endif
 
     if (observer)
-      observer->OnFile(reported);
+      observer->OnFile(progress.GetPhase(), reported);
 
     // Open the source file and compute its Hashes and CRCs.
     if (!sourcefile->Open(noiselevel, sout, serr, extrafile, blocksize, deferhashcomputation, basepath, progress, backends, &cancelled, &errorlog))
@@ -572,14 +572,14 @@ bool Par2SetCreator::OpenSourceFiles(void)
         errorlog.RecordIfNone(ecFileReadFailed, "Could not read the source file", extrafile);
 
       if (observer)
-        observer->OnFileDone(reported, 0, needed);
+        observer->OnFileDone(progress.GetPhase(), reported, 0, needed);
 
       return;
     }
 
     // Every block of a file just read is there by definition
     if (observer)
-      observer->OnFileDone(reported, sourcefile->BlockCount(), sourcefile->BlockCount());
+      observer->OnFileDone(progress.GetPhase(), reported, sourcefile->BlockCount(), sourcefile->BlockCount());
 
     // Record the file verification and file description packets
     // in the critical packet list.

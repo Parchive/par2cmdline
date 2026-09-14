@@ -177,7 +177,20 @@ class Canceller : public par2::Par2Observer
 public:
   par2::Par2Verifier *verifier;
   Canceller() : verifier(0) {}
-  void OnProgress(par2::u32) { if (verifier) verifier->Cancel(); }
+  void OnProgress(par2::Phase, par2::u32) override { if (verifier) verifier->Cancel(); }
+};
+
+// Stops a repair once it is reading back what it wrote
+class LateCanceller : public par2::Par2Observer
+{
+public:
+  par2::Par2Verifier *verifier;
+  LateCanceller() : verifier(0) {}
+  void OnProgress(par2::Phase phase, par2::u32) override
+  {
+    if (verifier && phase == par2::phVerifyingRepair)
+      verifier->Cancel();
+  }
 };
 
 // Counts what the observer is told, to show the callbacks arrive even when
@@ -187,7 +200,8 @@ class Counting : public par2::Par2Observer
 public:
   Counting()
     : setinfo(0), files(0), progress(0), done(0), errors(0), warnings(0),
-      lastinfo(), lasterror(), lastwarning(), last(0), wentbackwards(false), reached(false) {}
+      lastinfo(), lasterror(), lastwarning(), phases(), filephases(), last(0), wentbackwards(false),
+      reached(false) {}
 
   int setinfo, files, progress, done, errors, warnings;
 
@@ -200,6 +214,12 @@ public:
   // What the last OnWarning carried
   par2::Par2Warning lastwarning;
 
+  // The steps reported, in order, with a run of the same step collapsed
+  std::vector<par2::Phase> phases;
+
+  // The steps the files were reported in
+  std::vector<par2::Phase> filephases;
+
   // Enough to tell one run of progress from several
   par2::u32 last;
   bool wentbackwards, reached;
@@ -211,13 +231,14 @@ public:
     lastinfo = info;
   }
 
-  void OnFile(const std::string &) override
+  void OnFile(par2::Phase phase, const std::string &) override
   {
     std::lock_guard<std::mutex> lock(mutex);
     ++files;
+    filephases.push_back(phase);
   }
 
-  void OnFileDone(const std::string &, par2::u32, par2::u32) override
+  void OnFileDone(par2::Phase, const std::string &, par2::u32, par2::u32) override
   {
     std::lock_guard<std::mutex> lock(mutex);
     ++done;
@@ -237,16 +258,33 @@ public:
     lastwarning = warning;
   }
 
-  void OnProgress(par2::u32 permille)
+  void OnProgress(par2::Phase phase, par2::u32 permille) override
   {
     std::lock_guard<std::mutex> lock(mutex);
 
     ++progress;
+
+    if (phases.empty() || phases.back() != phase)
+    {
+      phases.push_back(phase);
+      last = 0;
+    }
+
     if (permille < last)
       wentbackwards = true;
     if (permille == 1000)
       reached = true;
     last = permille;
+  }
+
+  bool Saw(par2::Phase phase) const
+  {
+    return std::find(phases.begin(), phases.end(), phase) != phases.end();
+  }
+
+  bool SawFile(par2::Phase phase) const
+  {
+    return std::find(filephases.begin(), filephases.end(), phase) != filephases.end();
   }
 
 private:
@@ -1165,6 +1203,12 @@ int main()
     Check(observer.files - par2files == (int)observedcount,
           "one report per file in the set, on top of the PAR2 files");
 
+    // Reading the packets and scanning the data are told apart by the phase,
+    // in the order they happened
+    Check(observer.phases.size() == 2, "two steps were reported");
+    Check(observer.phases.front() == par2::phLoading, "the packets were read first");
+    Check(observer.phases.back() == par2::phScanning, "and the data scanned after");
+
     // A file the set describes but which is not on disk is announced and
     // finished like any other
     std::remove(observed[0]);
@@ -1205,13 +1249,23 @@ int main()
 
     Corrupt(data, 500, 400);
 
+    Counting observer;
     par2::Par2Verifier verifier(quiet, quiet, par2::nlSilent, "skipdir/");
+    verifier.SetObserver(&observer);
+
     Check(par2::eSuccess == verifier.AddPar2File("skipdir/skip.par2"),
           "AddPar2File for the skipped-verification check");
     Check(par2::eRepairPossible == verifier.Verify(),
           "the damage is repairable");
 
     Check(par2::eSuccess == verifier.Repair(false), "Repair without reading it back");
+
+    // Whether the read-back happened is a step of its own, so an application
+    // can see that it was skipped rather than infer it
+    Check(observer.Saw(par2::phScanning), "the data was scanned");
+    Check(observer.Saw(par2::phProcessing), "and the repair written");
+    Check(!observer.Saw(par2::phVerifyingRepair),
+          "but nothing was read back, which is what was asked for");
 
     // Nothing recounted the files, so the numbers still describe the damage
     par2::Par2VerifyResult stale{};
@@ -1221,12 +1275,56 @@ int main()
 
     // The repair itself was real, which a fresh verifier can say
     par2::Par2Verifier after(quiet, quiet, par2::nlSilent, "skipdir/");
+
     Check(par2::eSuccess == after.AddPar2File("skipdir/skip.par2"),
           "AddPar2File to check the repair");
     Check(par2::eSuccess == after.Verify(),
           "the file really was repaired");
 
     std::remove(data);
+  }
+
+  // A cancel once every block has been written only stops the checking, and
+  // the files the repair rebuilt are kept
+  {
+    Check(MakeDirectory("latedir"), "mkdir for the late cancel check");
+
+    const char *const data = "latedir/late.data";
+    const char *const backup = "latedir/late.data.1";
+    const char *const parfile = "latedir/late.par2";
+    const char *const vol = "latedir/late.vol0+8.par2";
+
+    WriteData(data, 25, 40000);
+
+    std::vector<std::string> files;
+    files.emplace_back(data);
+    Check(par2::eSuccess == par2::par2create(quiet, quiet, par2::nlSilent,
+                                             64 * 1024 * 1024, "latedir/", 0, 2,
+                                             "latedir/late", files, BLOCKSIZE, 0,
+                                             par2::scUniform, 1, 8),
+          "par2create for the late cancel check");
+
+    Corrupt(data, 1000, 5000);
+
+    LateCanceller canceller;
+    par2::Par2Verifier verifier(quiet, quiet, par2::nlSilent, "latedir/");
+    Check(par2::eSuccess == verifier.AddPar2File(parfile), "AddPar2File for the late cancel check");
+    Check(par2::eRepairPossible == verifier.Verify(), "the damage is found");
+
+    canceller.verifier = &verifier;
+    verifier.SetObserver(&canceller);
+
+    Check(par2::eCancelled == verifier.Repair(),
+          "a cancel while the repair reads back is still a cancel");
+
+    par2::Par2Verifier after(quiet, quiet, par2::nlSilent, "latedir/");
+    Check(par2::eSuccess == after.AddPar2File(parfile), "AddPar2File after the late cancel");
+    Check(par2::eSuccess == after.Verify(), "and the rebuilt file was kept, whole");
+
+    std::remove(data);
+    std::remove(backup);
+    std::remove(parfile);
+    std::remove(vol);
   }
 
   // A file found under another name is reported as a pair, and stays reported
@@ -2031,24 +2129,31 @@ int main()
 
     WriteData(stopped, 6, 400000);
 
-    // The set is only known once every source file has been read, so waiting
-    // for it puts the cancel in the pass which computes the recovery data
-    // rather than in the one which reads the files
+    // The phase says which pass a progress report belongs to, so the cancel can
+    // be aimed at the one which reads the source files or at the one which
+    // writes the recovery data
     class Stopper : public par2::Par2Observer
     {
     public:
       par2::Par2Creator *creator;
-      bool late, known;
-      Stopper(bool late) : creator(0), late(late), known(false) {}
-      void OnSetInfo(const par2::Par2SetInfo &) {known = true;}
-      void OnProgress(par2::u32) {if (creator && (known || !late)) creator->Cancel();}
+      par2::Phase wanted;
+      bool landed;
+      explicit Stopper(par2::Phase wanted) : creator(0), wanted(wanted), landed(false) {}
+      void OnProgress(par2::Phase phase, par2::u32) override
+      {
+        if (creator && phase == wanted)
+        {
+          landed = true;
+          creator->Cancel();
+        }
+      }
     };
 
     for (int late = 0; late < 2; ++late)
     {
       const std::string when = late ? "while writing" : "while reading";
 
-      Stopper stopper(late != 0);
+      Stopper stopper(late ? par2::phProcessing : par2::phHashing);
       par2::Par2Creator creator(quiet, quiet, par2::nlSilent, "stopdir/");
       stopper.creator = &creator;
       creator.SetObserver(&stopper);
@@ -2063,7 +2168,7 @@ int main()
 
       Check(par2::eCancelled == creator.Create(stoppedpar), "Create is cancelled " + when);
       CheckLastError(creator, par2::eCancelled, "a cancelled create " + when);
-      Check(stopper.known == (late != 0), "the cancel landed where it was meant to");
+      Check(stopper.landed, "the cancel landed in the phase it was meant to");
 
       par2::Par2Verifier gone(quiet, quiet, par2::nlSilent, "stopdir/");
       Check(par2::eFileIOError == gone.AddPar2File(stoppedpar),
@@ -2297,6 +2402,14 @@ int main()
     Check(creating.reached, "and saw the work reach the end");
     Check(creating.setinfo == 1, "and was told what the set is");
 
+    // A create hashes, builds a matrix and computes, in that order. It never
+    // solves one, having no missing blocks to solve for.
+    Check(creating.phases.size() == 3, "a create reports three steps");
+    Check(creating.phases[0] == par2::phHashing, "the source files first");
+    Check(creating.phases[1] == par2::phConstructing, "then the matrix");
+    Check(creating.phases[2] == par2::phProcessing, "then the recovery data");
+    Check(!creating.Saw(par2::phSolving), "and nothing to solve");
+
     Corrupt(source, 20000, 5000);
 
     Counting repairing;
@@ -2322,6 +2435,15 @@ int main()
     Check(scanned == 1, "the observer saw the file being scanned");
     Check(repairing.files == repairing.done, "and every file reported is a file finished");
     Check(repairing.progress > 0, "and was told how far along it was");
+
+    // A repair which rebuilds from recovery data works a matrix out first, and
+    // reads back what it wrote unless it was told not to
+    Check(repairing.Saw(par2::phConstructing), "the matrix was built");
+    Check(repairing.Saw(par2::phSolving), "and solved, because blocks were missing");
+    Check(repairing.Saw(par2::phProcessing), "and the missing blocks rebuilt");
+    Check(repairing.Saw(par2::phVerifyingRepair), "and the result read back");
+    Check(repairing.SawFile(par2::phVerifyingRepair),
+          "with the files read back reported as part of that step");
 
     // This one is written to serr by a handle which has one, whatever its
     // NoiseLevel. Without streams it is only recorded.
