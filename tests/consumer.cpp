@@ -164,6 +164,15 @@ namespace
 
 // Counts what the observer is told, to show the callbacks arrive even when
 // nothing is written to the output stream.
+// Stops the work at the first sign of progress
+class Canceller : public par2::Par2Observer
+{
+public:
+  par2::Par2Verifier *verifier;
+  Canceller() : verifier(0) {}
+  void OnProgress(par2::u32) { if (verifier) verifier->Cancel(); }
+};
+
 class Counting : public par2::Par2Observer
 {
 public:
@@ -598,24 +607,44 @@ int main()
 
   // Cancelling stops the work and says so
   {
-    class Canceller : public par2::Par2Observer
-    {
-    public:
-      par2::Par2Verifier *verifier;
-      Canceller() : verifier(0) {}
-      void OnProgress(par2::u32) { if (verifier) verifier->Cancel(); }
-    };
+    Canceller canceller;
+    par2::Par2Verifier verifier(quiet, quiet, par2::nlSilent);
 
+    Check(par2::eSuccess == verifier.AddPar2File(PARFILE), "AddPar2File before cancelling");
+
+    // Attached once the packets are in, so the cancel lands in the scan
+    canceller.verifier = &verifier;
+    verifier.SetObserver(&canceller);
+
+    Check(par2::eCancelled == verifier.Verify(noextras), "Verify is cancelled");
+    CheckLastError(verifier, par2::eCancelled, "a cancelled verify");
+
+    verifier.ClearCancel();
+  }
+
+  // Reading the packets reports progress, so it can be cancelled too
+  {
     Canceller canceller;
     par2::Par2Verifier verifier(quiet, quiet, par2::nlSilent);
     canceller.verifier = &verifier;
     verifier.SetObserver(&canceller);
 
-    Check(par2::eSuccess == verifier.AddPar2File(PARFILE), "AddPar2File before cancelling");
-    Check(par2::eCancelled == verifier.Verify(noextras), "Verify is cancelled");
-    CheckLastError(verifier, par2::eCancelled, "a cancelled verify");
+    Check(par2::eCancelled == verifier.AddPar2File(PARFILE),
+          "AddPar2File is cancelled while it reads");
+    CheckLastError(verifier, par2::eCancelled, "a cancelled AddPar2File");
 
+    // What it read is not a set it can describe, and the cancelled name was
+    // not remembered, so naming it again reads the rest
     verifier.ClearCancel();
+    verifier.SetObserver(0);
+
+    Check(par2::eSuccess == verifier.AddPar2File(PARFILE),
+          "and naming it again after ClearCancel reads it properly");
+
+    par2::Par2SetInfo info;
+    Check(verifier.GetSetInfo(&info), "which leaves a set it can describe");
+    Check(info.recoverablefilecount == DATACOUNT,
+          "and every file of it, so the second read picked up where the cancel stopped");
   }
 
   // Recovery data arriving a file at a time: what the scan found is kept, so
@@ -787,7 +816,14 @@ int main()
     // PAR2 files are announced too, and each is closed off the same way
     Check(observer.files > 0, "OnFile called while reading PAR2 files");
     Check(observer.files == observer.done, "and each one is finished");
-    Check(observer.progress == 0, "AddPar2File reports no progress");
+    Check(observer.progress > 0, "AddPar2File reports progress as it reads");
+    Check(observer.reached, "and each file it read was finished");
+
+    // Each file read is a run of its own, so the count starts again at each
+    // one. Only the scan below is a single run.
+    observer.last = 0;
+    observer.reached = false;
+    observer.wentbackwards = false;
 
     const int par2files = observer.files;
 

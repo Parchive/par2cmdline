@@ -62,7 +62,8 @@ public:
   bool SetOutput(bool present, u16 lowexponent, u16 highexponent);
 
   // Compute the RS Matrix
-  bool Compute(NoiseLevel noiselevel, std::ostream &sout, std::ostream &serr);
+  bool Compute(NoiseLevel noiselevel, std::ostream &sout, std::ostream &serr,
+               Par2Observer *observer = 0);
 
   // Process a block of data
   bool Process(size_t size,             // The size of the block of data
@@ -87,6 +88,7 @@ protected:
   bool GaussElim(NoiseLevel noiselevel,
 		 std::ostream &sout,
 		 std::ostream &serr,
+		 Par2Observer *observer,
 		 unsigned int rows,
                  unsigned int leftcols,
                  G *leftmatrix,
@@ -234,7 +236,8 @@ inline bool ReedSolomon<g>::SetOutput(bool present, u16 lowexponent, u16 highexp
 
 // Construct the Vandermonde matrix and solve it if necessary
 template<class g>
-inline bool ReedSolomon<g>::Compute(NoiseLevel noiselevel, std::ostream &sout, std::ostream &serr)
+inline bool ReedSolomon<g>::Compute(NoiseLevel noiselevel, std::ostream &sout, std::ostream &serr,
+                                    Par2Observer *observer)
 {
   u32 outcount = datamissing + parmissing;
   u32 incount = datapresent + datamissing;
@@ -253,7 +256,7 @@ inline bool ReedSolomon<g>::Compute(NoiseLevel noiselevel, std::ostream &sout, s
   if (noiselevel > nlQuiet)
     sout << "Computing Reed Solomon matrix." << std::endl;
 
-  ProgressMeter<u32> progress(sout, "Constructing: ", datamissing+parmissing, noiselevel);
+  ProgressMeter<u32> progress(sout, "Constructing: ", datamissing+parmissing, noiselevel, observer);
 
   /*  Layout of RS Matrix:
       NOTE: The second set of columns represents the parity vectors present,
@@ -379,7 +382,7 @@ inline bool ReedSolomon<g>::Compute(NoiseLevel noiselevel, std::ostream &sout, s
   {
     // Perform Gaussian Elimination and then delete the right matrix (which
     // will no longer be required).
-    bool success = GaussElim(noiselevel, sout, serr, outcount, incount, leftmatrix, rightmatrix, datamissing);
+    bool success = GaussElim(noiselevel, sout, serr, observer, outcount, incount, leftmatrix, rightmatrix, datamissing);
     delete [] rightmatrix;
     return success;
   }
@@ -389,7 +392,7 @@ inline bool ReedSolomon<g>::Compute(NoiseLevel noiselevel, std::ostream &sout, s
 
 // Use Gaussian Elimination to solve the matrices
 template<class g>
-inline bool ReedSolomon<g>::GaussElim(NoiseLevel noiselevel, std::ostream &sout, std::ostream &serr, unsigned int rows, unsigned int leftcols, G *leftmatrix, G *rightmatrix, unsigned int datamissing)
+inline bool ReedSolomon<g>::GaussElim(NoiseLevel noiselevel, std::ostream &sout, std::ostream &serr, Par2Observer *observer, unsigned int rows, unsigned int leftcols, G *leftmatrix, G *rightmatrix, unsigned int datamissing)
 {
   if (noiselevel >= nlDebug)
   {
@@ -426,7 +429,7 @@ inline bool ReedSolomon<g>::GaussElim(NoiseLevel noiselevel, std::ostream &sout,
 
   // Solve one row at a time
 
-  ProgressMeter<u32> progress(sout, "Solving: ", datamissing*rows, noiselevel);
+  ProgressMeter<u32> progress(sout, "Solving: ", datamissing*rows, noiselevel, observer);
 
   // For each row in the matrix
   for (unsigned int row=0; row<datamissing; row++)
