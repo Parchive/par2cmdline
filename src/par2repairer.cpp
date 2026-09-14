@@ -1259,57 +1259,56 @@ bool Par2Repairer::VerifySourceFiles(const std::string& basepath, std::vector<st
       }
     }
 
-    // Check to see if we have already used this file
-    bool b;
+    DiskFile *diskfile = new DiskFile(sout, serr);
+
+    // Does the target file exist
+    if (!diskfile->Open(file))
+    {
+      // The file does not exist.
+      delete diskfile;
+
+      if (noiselevel > nlSilent)
+      {
+        LockedStream(sout) << "Target: \"" << name << "\" - missing." << std::endl;
+      }
+
+      return;
+    }
+
+    // Remember that we have processed this file. Two source files of the set
+    // may name the same one, and the insert is what settles which thread gets
+    // it.
+    bool claimed;
     {
       std::lock_guard<std::mutex> lock(diskFileMapMutex);
-      b = diskFileMap.Find(file) != 0;
+      claimed = diskFileMap.Insert(diskfile);
     }
-    if (b)
+
+    if (!claimed)
     {
       // The file has already been used!
+      diskfile->Close();
+      delete diskfile;
+
       LockedStream(serr) << "Source file " << name << " is a duplicate." << std::endl;
 
       finalresult = false;
+
+      return;
     }
-    else
-    {
-      DiskFile *diskfile = new DiskFile(sout, serr);
 
-      // Does the target file exist
-      if (diskfile->Open(file))
-      {
-        // Yes. Record that fact.
-        sourcefile->SetTargetExists(true);
+    // Yes. Record that fact.
+    sourcefile->SetTargetExists(true);
 
-        // Remember that the DiskFile is the target file
-        sourcefile->SetTargetFile(diskfile);
+    // Remember that the DiskFile is the target file
+    sourcefile->SetTargetFile(diskfile);
 
-        // Remember that we have processed this file
-        bool success;
-        {
-          std::lock_guard<std::mutex> lock(diskFileMapMutex);
-          success = diskFileMap.Insert(diskfile);
-        }
-        assert(success);
-        // Do the actual verification
-        if (!VerifyDataFile(diskfile, sourcefile, basepath, progress))
-          finalresult = false;
+    // Do the actual verification
+    if (!VerifyDataFile(diskfile, sourcefile, basepath, progress))
+      finalresult = false;
 
-        // We have finished with the file for now
-        diskfile->Close();
-      }
-      else
-      {
-        // The file does not exist.
-        delete diskfile;
-
-        if (noiselevel > nlSilent)
-        {
-          LockedStream(sout) << "Target: \"" << name << "\" - missing." << std::endl;
-        }
-      }
-    }
+    // We have finished with the file for now
+    diskfile->Close();
   });
 
   // Find out how much data we have found
@@ -1359,13 +1358,21 @@ bool Par2Repairer::VerifyExtraFiles(const std::vector<std::string> &extrafiles, 
             return;
           }
 
-          // Remember that we have processed this file
-          bool success;
+          // Remember that we have processed this file. Another thread may be
+          // scanning the same one, and the insert is what settles which gets
+          // it.
+          bool claimed;
           {
             std::lock_guard<std::mutex> lock(diskFileMapMutex);
-            success = diskFileMap.Insert(diskfile);
+            claimed = diskFileMap.Insert(diskfile);
           }
-          assert(success);
+
+          if (!claimed)
+          {
+            diskfile->Close();
+            delete diskfile;
+            return;
+          }
 
           // Do the actual verification
           VerifyDataFile(diskfile, 0, basepath, progress, renameonly);
