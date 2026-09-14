@@ -18,4 +18,4 @@ jobs:
         ./automake.sh
         ./configure
         make -j"$(nproc)"
-        make check
+        make check VERBOSE=yes

@@ -16,5 +16,5 @@ jobs:
         ./automake.sh
         ./configure
         make -j"$(nproc)"
-        make check
-        make distcheck
+        make check VERBOSE=yes
+        make distcheck VERBOSE=yes
