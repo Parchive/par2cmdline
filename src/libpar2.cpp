@@ -605,8 +605,8 @@ Result Par2Verifier::AddPar2File(const std::string &_parfilename)
   const Par2Error added = lasterror;
 
   // Remembered even without the critical packets, so that a later restart
-  // replays it alongside the file that completes the set. A cancelled read is
-  // not.
+  // replays it alongside the file that completes the set. A cancelled load is
+  // not remembered, so that naming it again after ClearCancel reads the rest.
   if (result != eFileIOError && result != eCancelled)
   {
     par2files.push_back(parfilename);
