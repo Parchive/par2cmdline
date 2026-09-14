@@ -791,7 +791,7 @@ Result par2create(std::ostream &sout,
 		  const Backends &backends
 		  )
 {
-  Par2Creator creator(sout, serr, noiselevel, backends);
+  Par2SetCreator creator(sout, serr, noiselevel, backends);
   Result result = creator.Process(
 				  MemoryLimit(memorylimit),
 				  basepath,
