@@ -290,6 +290,9 @@ std::string BasePathFor(const std::string &parfilename);
 // alone.
 std::string WithSeparator(const std::string &path);
 
+// The name of a set, without the ".par2" its index file ends in
+std::string SetNameFor(const std::string &parfilename);
+
 } // namespace par2
 
 

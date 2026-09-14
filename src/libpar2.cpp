@@ -339,6 +339,16 @@ std::string WithSeparator(const std::string &path)
   return path + PATHSEP;
 }
 
+// The name of a set, without the ".par2" its index file ends in
+std::string SetNameFor(const std::string &parfilename)
+{
+  if (parfilename.length() > 5 &&
+      0 == stricmp(parfilename.substr(parfilename.length()-5, 5).c_str(), ".par2"))
+    return parfilename.substr(0, parfilename.length()-5);
+
+  return parfilename;
+}
+
 // Absolute and ending in a separator, which is the form every path this API
 // reports. The separator goes on first, so "." names the directory itself.
 // Empty is left alone.
@@ -774,6 +784,225 @@ void Par2Verifier::ClearCancel(void)
 }
 
 
+
+// Par2SetCreator carries out the work
+class Par2Creator::Impl : public Par2SetCreator
+{
+public:
+  Impl(std::ostream &sout, std::ostream &serr, NoiseLevel noiselevel, const Backends &backends)
+    : Par2SetCreator(sout, serr, noiselevel, backends)
+  {
+  }
+};
+
+// A create leaves the engine holding the packets of the set it wrote, so a
+// second one has to start from a new engine. Nothing is replayed into it:
+// every setting lives on the handle and is passed into the run.
+void Par2Creator::Restart(void)
+{
+  std::lock_guard<std::mutex> lock(cancelmutex);
+
+  impl = std::make_unique<Impl>(sout, serr, noiselevel, backends);
+  impl->SetObserver(observer);
+
+  if (cancelled)
+    impl->Cancel();
+}
+
+// The engine records the error, but Restart throws the engine away, so the
+// handle keeps its own copy of what the call it is returning from recorded. A
+// call which succeeded or was cancelled carries none.
+void Par2Creator::TakeLastError(const Result result)
+{
+  lasterror = Par2Error();
+  if (result != eSuccess && result != eCancelled)
+    impl->GetLastError(&lasterror);
+}
+
+Par2Creator::Par2Creator(std::ostream &sout, std::ostream &serr, NoiseLevel noiselevel,
+                         const std::string &_basepath, Backends _backends)
+: sout(sout)
+, serr(serr)
+, noiselevel(noiselevel)
+, backends(std::move(_backends))
+, observer(0)
+, sourcefiles()
+, blocksize(0)
+, sourceblockcount(0)
+, recoveryblockcount(0)
+, redundancy(0)
+, recoveryfilescheme(scVariable)
+, recoveryfilecount(0)
+, firstrecoveryblock(0)
+, memorylimit(MemoryLimit(0))
+, nthreads(0)
+, filethreads(0)
+, cancelled(false)
+, basepath(NormaliseBasePath(_basepath))
+, lasterror()
+, impl(new Impl(sout, serr, noiselevel, backends))
+{
+}
+
+Par2Creator::~Par2Creator() = default;
+
+void Par2Creator::SetObserver(Par2Observer *_observer)
+{
+  observer = _observer;
+  impl->SetObserver(_observer);
+}
+
+void Par2Creator::SetSourceFiles(const std::vector<std::string> &filenames)
+{
+  sourcefiles = filenames;
+}
+
+void Par2Creator::SetBlockSize(const u64 _blocksize)
+{
+  blocksize = _blocksize;
+  sourceblockcount = 0;
+}
+
+void Par2Creator::SetSourceBlockCount(const u32 blockcount)
+{
+  sourceblockcount = blockcount;
+  blocksize = 0;
+}
+
+void Par2Creator::SetRecoveryBlockCount(const u32 _recoveryblockcount)
+{
+  recoveryblockcount = _recoveryblockcount;
+  redundancy = 0;
+}
+
+void Par2Creator::SetRedundancy(const u32 percent)
+{
+  redundancy = percent;
+  recoveryblockcount = 0;
+}
+
+void Par2Creator::SetRecoveryFileScheme(const Scheme scheme, const u32 _recoveryfilecount)
+{
+  recoveryfilescheme = scheme;
+  recoveryfilecount = _recoveryfilecount;
+}
+
+void Par2Creator::SetFirstRecoveryBlock(const u32 firstblock)
+{
+  firstrecoveryblock = firstblock;
+}
+
+void Par2Creator::SetMemoryLimit(const size_t _memorylimit)
+{
+  memorylimit = MemoryLimit(_memorylimit);
+}
+
+void Par2Creator::SetThreadCounts(const u32 _nthreads, const u32 _filethreads)
+{
+  nthreads = _nthreads;
+  filethreads = _filethreads;
+}
+
+Result Par2Creator::Create(const std::string &parfilename)
+{
+  // Taken from the name of each set when none was given, before any file is
+  // read
+  const std::string setbasepath = basepath.empty()
+    ? NormaliseBasePath(BasePathFor(parfilename))
+    : basepath;
+
+  // The volume files are named after the set rather than after its index file,
+  // so the name is taken either way round
+  const std::string setname = SetNameFor(DiskFile::GetCanonicalPathname(parfilename));
+
+  // Resolved against the working directory, so that the names the set records
+  // come out relative to the basepath whatever the caller wrote them as. Empty
+  // files and a file named twice are left out.
+  std::vector<std::string> files;
+  files.reserve(sourcefiles.size());
+  std::set<std::string> seen;
+  for (const auto &sourcefile : sourcefiles)
+  {
+    const std::string file = DiskFile::GetCanonicalPathname(sourcefile);
+
+    if (DiskFile::FileExists(file) && 0 == DiskFile::GetFileSize(file))
+      continue;
+
+    if (seen.insert(file).second)
+      files.push_back(file);
+  }
+
+  if (files.empty())
+    return eInvalidCommandLineArguments;
+
+  // A block count and a redundancy come to a block size and a recovery block
+  // count for these files
+  u64 setblocksize = blocksize;
+  u32 setrecoveryblockcount = recoveryblockcount;
+  if (0 != sourceblockcount || 0 != redundancy)
+  {
+    std::vector<u64> filesizes;
+    for (const auto &file : files)
+      filesizes.push_back(DiskFile::GetFileSize(file));
+
+    if (0 != sourceblockcount
+        && !ComputeBlockSizeFromCount(serr, &setblocksize, sourceblockcount, filesizes))
+    {
+      return eInvalidCommandLineArguments;
+    }
+
+    if (0 != redundancy && 0 != setblocksize)
+    {
+      u32 blockcount = 0;
+      for (const u64 filesize : filesizes)
+        blockcount += (u32)((filesize + setblocksize - 1) / setblocksize);
+
+      setrecoveryblockcount = ComputeRecoveryBlockCountFromRedundancy(blockcount, redundancy);
+    }
+  }
+
+  Restart();
+
+  const Result result = impl->Process(memorylimit,
+                                      setbasepath,
+                                      nthreads,
+                                      filethreads,
+                                      setname,
+                                      files,
+                                      setblocksize,
+                                      firstrecoveryblock,
+                                      recoveryfilescheme,
+                                      recoveryfilecount,
+                                      setrecoveryblockcount);
+  TakeLastError(result);
+
+  return result;
+}
+
+void Par2Creator::Cancel(void)
+{
+  std::lock_guard<std::mutex> lock(cancelmutex);
+  cancelled = true;
+  impl->Cancel();
+}
+
+void Par2Creator::ClearCancel(void)
+{
+  std::lock_guard<std::mutex> lock(cancelmutex);
+  cancelled = false;
+  impl->ClearCancel();
+}
+
+bool Par2Creator::GetLastError(Par2Error *error) const
+{
+  if (0 == error || ecNone == lasterror.code)
+    return false;
+
+  *error = lasterror;
+  return true;
+}
+
+
 Result par2create(std::ostream &sout,
 		  std::ostream &serr,
 		  const NoiseLevel noiselevel,
@@ -930,6 +1159,12 @@ bool ComputeRecoveryFileCount(std::ostream &sout,
       // were missing. Other recovery files will have recovery blocks
       // distributed in an exponential scheme.
 
+      if (0 == blocksize || 0 == largestfilesize)
+      {
+        serr << "The source files are empty." << std::endl;
+        return false;
+      }
+
       u32 largest = (u32)((largestfilesize + blocksize-1) / blocksize);
       u32 whole = recoveryblockcount / largest;
       whole = (whole >= 1) ? whole-1 : 0;
@@ -945,6 +1180,113 @@ bool ComputeRecoveryFileCount(std::ostream &sout,
   }
 
   return true;
+}
+
+// Work out the block size which divides files of these sizes into blockcount
+// blocks, or as near to that as a multiple of 4 allows.
+bool ComputeBlockSizeFromCount(std::ostream &serr,
+			       u64 *blocksize,
+			       u32 blockcount,
+			       const std::vector<u64> &filesizes)
+{
+  if (blockcount < filesizes.size())
+  {
+    // The block count cannot be less than the number of files.
+
+    serr << "Block count (" << blockcount <<
+            ") cannot be smaller than the number of files(" << filesizes.size() << "). " << std::endl;
+    return false;
+  }
+  else if (blockcount == filesizes.size())
+  {
+    // If the block count is the same as the number of files, then the block
+    // size is the size of the largest file (rounded up to a multiple of 4).
+
+    u64 largestfilesize = 0;
+    for (std::vector<u64>::const_iterator i=filesizes.begin(); i!=filesizes.end(); i++)
+    {
+	u64 filesize = *i;
+	if (filesize > largestfilesize)
+	{
+	  largestfilesize = filesize;
+	}
+    }
+    *blocksize = (largestfilesize + 3) & ~3;
+  }
+  else
+  {
+    u64 totalsize = 0;
+    for (std::vector<u64>::const_iterator i=filesizes.begin(); i!=filesizes.end(); i++)
+    {
+      totalsize += (*i + 3) / 4;
+    }
+
+    if (blockcount > totalsize)
+    {
+      *blocksize = 4;
+    }
+    else
+    {
+      // Absolute lower bound and upper bound on the source block size that will
+      // result in the requested source block count.
+      u64 lowerBound = totalsize / blockcount;
+      u64 upperBound = (totalsize + blockcount - filesizes.size() - 1) / (blockcount - filesizes.size());
+
+      u64 count = 0;
+      u64 size;
+
+      do
+      {
+        size = (lowerBound + upperBound)/2;
+
+        count = 0;
+        for (std::vector<u64>::const_iterator i=filesizes.begin(); i!=filesizes.end(); i++)
+        {
+          count += ((*i+3)/4 + size-1) / size;
+        }
+        if (count > blockcount)
+        {
+          lowerBound = size+1;
+          if (lowerBound >= upperBound)
+          {
+            size = lowerBound;
+            count = 0;
+            for (std::vector<u64>::const_iterator i=filesizes.begin(); i!=filesizes.end(); i++)
+            {
+              count += ((*i+3)/4 + size-1) / size;
+            }
+          }
+        }
+        else
+        {
+          upperBound = size;
+        }
+      }
+      while (lowerBound < upperBound);
+
+      if (count > 32768)
+      {
+        serr << "Error calculating block size. cannot be higher than 32768." << std::endl;
+        return false;
+      }
+      else if (count == 0)
+      {
+        serr << "Error calculating block size. cannot be 0." << std::endl;
+        return false;
+      }
+
+      *blocksize = size*4;
+    }
+  }
+
+  return true;
+}
+
+// How many recovery blocks redundancy percent of sourceblockcount comes to,
+// and at least one.
+u32 ComputeRecoveryBlockCountFromRedundancy(u32 sourceblockcount, u32 redundancy)
+{
+  return std::max<u32>((sourceblockcount * redundancy + 50) / 100, 1);
 }
 
 } // namespace par2

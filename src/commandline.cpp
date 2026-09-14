@@ -1143,10 +1143,7 @@ bool CommandLine::CheckValuesAndSetDefaults() {
     }
 
     // Strip the ".par2" from the end of the filename of the main PAR2 file.
-    if (parfilename.length() > 5 && 0 == stricmp(parfilename.substr(parfilename.length()-5, 5).c_str(), ".par2"))
-    {
-      parfilename = parfilename.substr(0, parfilename.length()-5);
-    }
+    parfilename = SetNameFor(parfilename);
 
     if (DiskFile::FileExists(parfilename + ".par2"))
     {
@@ -1201,96 +1198,13 @@ bool CommandLine::ComputeBlockSize() {
 
   if (blocksize == 0) {
     // compute value from blockcount
-
-    if (blockcount < extrafiles.size())
+    std::vector<u64> filesizes;
+    for (std::vector<std::string>::const_iterator i=extrafiles.begin(); i!=extrafiles.end(); i++)
     {
-      // The block count cannot be less than the number of files.
-
-      std::cerr << "Block count (" << blockcount <<
-              ") cannot be smaller than the number of files(" << extrafiles.size() << "). " << std::endl;
-      return false;
+      filesizes.push_back(filesize_cache.get(*i));
     }
-    else if (blockcount == extrafiles.size())
-    {
-      // If the block count is the same as the number of files, then the block
-      // size is the size of the largest file (rounded up to a multiple of 4).
 
-      u64 largestfilesize = 0;
-      for (std::vector<std::string>::const_iterator i=extrafiles.begin(); i!=extrafiles.end(); i++)
-      {
-	u64 filesize = filesize_cache.get(*i);
-	if (filesize > largestfilesize)
-	{
-	  largestfilesize = filesize;
-	}
-      }
-      blocksize = (largestfilesize + 3) & ~3;
-    }
-    else
-    {
-      u64 totalsize = 0;
-      for (std::vector<std::string>::const_iterator i=extrafiles.begin(); i!=extrafiles.end(); i++)
-      {
-        totalsize += (filesize_cache.get(*i) + 3) / 4;
-      }
-
-      if (blockcount > totalsize)
-      {
-        blocksize = 4;
-      }
-      else
-      {
-        // Absolute lower bound and upper bound on the source block size that will
-        // result in the requested source block count.
-        u64 lowerBound = totalsize / blockcount;
-        u64 upperBound = (totalsize + blockcount - extrafiles.size() - 1) / (blockcount - extrafiles.size());
-
-        u64 count = 0;
-        u64 size;
-
-        do
-        {
-          size = (lowerBound + upperBound)/2;
-
-          count = 0;
-          for (std::vector<std::string>::const_iterator i=extrafiles.begin(); i!=extrafiles.end(); i++)
-          {
-            count += ((filesize_cache.get(*i)+3)/4 + size-1) / size;
-          }
-          if (count > blockcount)
-          {
-            lowerBound = size+1;
-            if (lowerBound >= upperBound)
-            {
-              size = lowerBound;
-              count = 0;
-              for (std::vector<std::string>::const_iterator i=extrafiles.begin(); i!=extrafiles.end(); i++)
-              {
-                count += ((filesize_cache.get(*i)+3)/4 + size-1) / size;
-              }
-            }
-          }
-          else
-          {
-            upperBound = size;
-          }
-        }
-        while (lowerBound < upperBound);
-
-        if (count > 32768)
-        {
-          std::cerr << "Error calculating block size. cannot be higher than 32768." << std::endl;
-          return false;
-        }
-        else if (count == 0)
-        {
-          std::cerr << "Error calculating block size. cannot be 0." << std::endl;
-          return false;
-        }
-
-        blocksize = size*4;
-      }
-    }
+    return ComputeBlockSizeFromCount(std::cerr, &blocksize, blockcount, filesizes);
   }
 
   return true;
@@ -1319,7 +1233,7 @@ bool CommandLine::ComputeRecoveryBlockCount(u32 *recoveryblockcount,
     // count is the number of input blocks
 
     // Determine recoveryblockcount
-    *recoveryblockcount = (sourceblockcount * redundancy + 50) / 100;
+    *recoveryblockcount = ComputeRecoveryBlockCountFromRedundancy(sourceblockcount, redundancy);
   }
   else if (redundancysize > 0)
   {
@@ -1367,10 +1281,6 @@ bool CommandLine::ComputeRecoveryBlockCount(u32 *recoveryblockcount,
     std::cerr << "Redundancy and Redundancysize not set." << std::endl;
     return false;
   }
-
-  // Force valid values if necessary
-  if (*recoveryblockcount == 0 && redundancy > 0)
-    *recoveryblockcount = 1;
 
   if (*recoveryblockcount > 65536)
   {
