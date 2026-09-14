@@ -1680,7 +1680,7 @@ bool Par2Repairer::CreateSourceFileList(void)
 
     if (sourcefile)
     {
-      sourcefile->ComputeTargetFileName(sout, serr, noiselevel, basepath);
+      sourcefile->ComputeTargetFileName(sout, serr, noiselevel, basepath, &errorlog);
     }
 
     sourcefiles.push_back(sourcefile);

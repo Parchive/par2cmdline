@@ -45,7 +45,7 @@ public:
   // Open the source file and compute the Hashes and CRCs.
   // cancelled asks the read to stop part way through a large file, which is
   // the only way a create of one big file can be stopped while it is hashed.
-  bool Open(NoiseLevel noiselevel, std::ostream &sout, std::ostream &serr, const std::string &extrafile, u64 blocksize, bool deferhashcomputation, std::string basepath, ProgressMeter<u64> &progress, const Backends &backends, const std::atomic<bool> *cancelled = 0);
+  bool Open(NoiseLevel noiselevel, std::ostream &sout, std::ostream &serr, const std::string &extrafile, u64 blocksize, bool deferhashcomputation, const std::string &basepath, ProgressMeter<u64> &progress, const Backends &backends, const std::atomic<bool> *cancelled = 0, const ErrorLog *errorlog = 0);
   void Close(void);
 
   // Recover the file description and file verification packets
