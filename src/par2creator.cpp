@@ -38,6 +38,7 @@ Par2CreatorEngine::Par2CreatorEngine(std::ostream &sout, std::ostream &serr, con
 , noiselevel(noiselevel)
 , backends(backends)
 , observer(0)
+, cancelled(false)
 , totalthreads(default_threads())
 , filethreads(_FILE_THREADS)
 , blocksize(0)
@@ -121,6 +122,9 @@ Result Par2CreatorEngine::Process(
   if (result != eSuccess)
     return result;
 
+  if (IsCancelled())
+    return eCancelled;
+
   result = CreateOutputFiles();
   if (result != eSuccess)
     return result;
@@ -159,7 +163,7 @@ Result Par2CreatorEngine::PrepareCreation(void)
   // Compute block size from block count or vice versa depending on which was
   // specified on the command line
   if (!ComputeBlockCount())
-    return eInvalidCommandLineArguments;
+    return IsCancelled() ? eCancelled : eInvalidCommandLineArguments;
 
   // Determine how many recovery files to create.
   if (!ComputeRecoveryFileCount(sout,
@@ -199,7 +203,7 @@ Result Par2CreatorEngine::HashSourceFiles(void)
   // Open all of the source files, compute the Hashes and CRC values, and store
   // the results in the file verification and file description packets.
   if (!OpenSourceFiles())
-    return eFileIOError;
+    return IsCancelled() ? eCancelled : eFileIOError;
 
   // Create the main packet and determine the setid to use with all packets
   if (!CreateMainPacket())
@@ -236,7 +240,10 @@ Result Par2CreatorEngine::CreateOutputFiles(void)
 {
   // Create all of the output files and allocate all packets to appropriate file offsets.
   if (!InitialiseOutputFiles())
-    return eFileIOError;
+  {
+    DeleteIncompleteRecoveryFiles();
+    return IsCancelled() ? eCancelled : eFileIOError;
+  }
 
   return eSuccess;
 }
@@ -267,7 +274,10 @@ Result Par2CreatorEngine::ComputeRecoveryData(void)
 
     // Read source data, process it through the RS matrix and write it to disk.
     if (!ProcessData(blockoffset, blocklength, progress))
-      return eFileIOError;
+    {
+      DeleteIncompleteRecoveryFiles();
+      return IsCancelled() ? eCancelled : eFileIOError;
+    }
 
     blockoffset += blocklength;
   }
@@ -298,7 +308,10 @@ Result Par2CreatorEngine::WriteCriticalData(void)
 
   // Write all other critical packets to disk.
   if (!WriteCriticalPackets())
-    return eFileIOError;
+  {
+    DeleteIncompleteRecoveryFiles();
+    return IsCancelled() ? eCancelled : eFileIOError;
+  }
 
   // Close all files.
   if (!CloseFiles())
@@ -335,6 +348,9 @@ bool Par2CreatorEngine::ComputeBlockCount(void)
   totaldatasize = 0;
   for (std::vector<std::string>::const_iterator i=extrafiles.begin(); i!=extrafiles.end(); i++)
   {
+    if (IsCancelled())
+      return false;
+
     u64 filesize = filesize_cache.get(*i);
     if (largestfilesize < filesize)
     {
@@ -430,7 +446,7 @@ bool Par2CreatorEngine::OpenSourceFiles(void)
 
   foreach_parallel(extrafiles, GetFileThreads(), [&](const std::string &extrafile)
   {
-    if (openfailed)
+    if (openfailed || IsCancelled())
       return;
 
     Par2CreatorSourceFile *sourcefile = new Par2CreatorSourceFile;
@@ -447,7 +463,7 @@ bool Par2CreatorEngine::OpenSourceFiles(void)
       observer->OnFile(name);
 
     // Open the source file and compute its Hashes and CRCs.
-    if (!sourcefile->Open(noiselevel, sout, serr, extrafile, blocksize, deferhashcomputation, basepath, progress, backends))
+    if (!sourcefile->Open(noiselevel, sout, serr, extrafile, blocksize, deferhashcomputation, basepath, progress, backends, &cancelled))
     {
       delete sourcefile;
       openfailed = true;
@@ -472,7 +488,7 @@ bool Par2CreatorEngine::OpenSourceFiles(void)
 
   });
 
-  if (openfailed)
+  if (openfailed || IsCancelled())
     return false;
 
   return true;
@@ -792,7 +808,7 @@ bool Par2CreatorEngine::InitialiseOutputFiles(void)
         offset += creatorpacket->PacketLength();
 
         // Create the file on disk and make it the required size
-        if (!recoveryfile->Create(fileallocation->filename, offset))
+        if (IsCancelled() || !recoveryfile->Create(fileallocation->filename, offset))
           return false;
 
         ++recoveryfile;
@@ -802,6 +818,28 @@ bool Par2CreatorEngine::InitialiseOutputFiles(void)
   }
 
   return true;
+}
+
+// Delete every recovery file created so far, so that a create which stops
+// part way leaves nothing of the set behind.
+//
+// The vector itself is left in place: recoverypackets and criticalpacketentries
+// hold pointers into it.
+void Par2CreatorEngine::DeleteIncompleteRecoveryFiles(void)
+{
+  for (std::vector<DiskFile>::iterator recoveryfile = recoveryfiles.begin();
+       recoveryfile != recoveryfiles.end();
+       ++recoveryfile)
+  {
+    // The allocation loop may not have reached this one
+    if (!recoveryfile->Exists())
+      continue;
+
+    if (recoveryfile->IsOpen())
+      recoveryfile->Close();
+
+    recoveryfile->Delete();
+  }
 }
 
 // Allocate memory buffers for reading and writing data to disk.
@@ -896,6 +934,14 @@ bool Par2CreatorEngine::ProcessData(u64 blockoffset, size_t blocklength, Progres
        sourceblock != sourceblocks.end();
        ++sourceblock, ++inputblock)
   {
+    if (IsCancelled())
+    {
+      if (lastopenfile != NULL)
+        lastopenfile->Close();
+
+      return false;
+    }
+
     // Are we reading from a new file?
     if (lastopenfile != (*sourceblock).GetDiskFile())
     {
@@ -965,6 +1011,9 @@ bool Par2CreatorEngine::ProcessData(u64 blockoffset, size_t blocklength, Progres
   // For each output block
   for (u32 outputblock=0; outputblock<recoveryblockcount;outputblock++)
   {
+    if (IsCancelled())
+      return false;
+
     // Take the accumulated output block from the processor
     const void *outbuf = processor->PeekOutput(outputblock);
     if (outbuf == NULL)
@@ -1051,7 +1100,7 @@ bool Par2CreatorEngine::WriteCriticalPackets(void)
   while (packetentry != criticalpacketentries.end())
   {
     // Write it to disk
-    if (!packetentry->WritePacket())
+    if (IsCancelled() || !packetentry->WritePacket())
       return false;
 
     ++packetentry;
