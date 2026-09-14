@@ -36,6 +36,13 @@ public:
               Backends backends = Backends());
   ~Par2SetCreator(void);
 
+  // Ask the operation in progress to stop as soon as it can, from any thread.
+  // Process then returns eCancelled, having removed any file it created.
+  // The flag stays set, so it must be cleared before reusing this object.
+  void Cancel(void) {cancelled.store(true, std::memory_order_relaxed);}
+  void ClearCancel(void) {cancelled.store(false, std::memory_order_relaxed);}
+  bool IsCancelled(void) const {return cancelled.load(std::memory_order_relaxed);}
+
   // Set an observer to be notified of progress and per-file results.
   // Pass 0 to stop reporting. The observer must outlive this object.
   void SetObserver(Par2Observer *_observer) {observer = _observer;}
@@ -128,6 +135,10 @@ protected:
   // Close all files.
   bool CloseFiles(void);
 
+  // Delete every recovery file created so far, so that a create which stops
+  // part way leaves nothing of the set behind.
+  void DeleteIncompleteRecoveryFiles(void);
+
   u32                                 GetFileThreads(void) const {return filethreads;}
 
 protected:
@@ -144,6 +155,8 @@ protected:
   const Backends backends;     // The implementations the application supplied
 
   Par2Observer *observer;      // Notified of progress, or 0
+
+  std::atomic<bool> cancelled; // Set by Cancel from any thread
 
   u32 totalthreads;            // Number of threads the whole create may use
   u32 filethreads;             // Number of threads for file processing
