@@ -207,13 +207,38 @@ int main()
       Check(crcs.empty(), "GetBlockChecksums clears on failure");
     }
 
+    {
+      std::vector<bool> found;
+      Check(!verifier.GetFoundBlocks(files[0].filename, &found),
+            "GetFoundBlocks says nothing before a verify");
+    }
+
     Check(par2::eSuccess == verifier.Verify(noextras), "Verify healthy");
+
+    par2::u32 foundblocks = 0;
+    for (size_t i = 0; i < files.size(); ++i)
+    {
+      std::vector<bool> found;
+      Check(verifier.GetFoundBlocks(files[i].filename, &found), "GetFoundBlocks");
+      Check(found.size() == files[i].blockcount,
+            "GetFoundBlocks one entry per block");
+      for (size_t b = 0; b < found.size(); ++b)
+        foundblocks += found[b] ? 1 : 0;
+    }
+    {
+      std::vector<bool> found;
+      Check(!verifier.GetFoundBlocks("not-in-the-set.bin", &found),
+            "GetFoundBlocks rejects an unknown name");
+      Check(found.empty(), "GetFoundBlocks clears on failure");
+    }
 
     par2::Par2VerifyResult status;
     Check(verifier.GetVerifyResult(&status), "GetVerifyResult");
     Check(status.completefilecount == DATACOUNT, "all files complete");
     Check(status.missingblockcount == 0, "nothing missing");
     Check(status.availableblockcount == info.datablocks, "every block available");
+    Check(foundblocks == status.availableblockcount,
+          "an intact set holds every block that is available");
     Check(status.recoveryblockcount == info.recoveryblocks,
           "the verify counts the same recovery blocks");
     Check(quiet.str().empty(), "nlSilent writes nothing");
@@ -330,8 +355,57 @@ int main()
     Check(par2::eSuccess == verifier.AddPar2File(PARFILE), "AddPar2File for damaged set");
     Check(par2::eRepairPossible == verifier.Verify(noextras),
           "Verify reports repair is possible");
+
+    // The set records its files in fileid order, not the order they were given
+    std::vector<par2::Par2FileInfo> damagedfiles;
+    verifier.GetFileInfo(&damagedfiles);
+    size_t which = damagedfiles.size();
+    for (size_t i = 0; i < damagedfiles.size(); ++i)
+      if (damagedfiles[i].filename == DATA[1])
+        which = i;
+    Check(which < damagedfiles.size(), "the damaged file is in the set");
+
+    std::vector<bool> damaged;
+    Check(verifier.GetFoundBlocks(damagedfiles[which].filename, &damaged),
+          "GetFoundBlocks for a damaged file");
+    Check(damaged.size() == damagedfiles[which].blockcount,
+          "GetFoundBlocks one entry per block of a damaged file");
+    size_t missing = 0;
+    for (size_t b = 0; b < damaged.size(); ++b)
+      missing += damaged[b] ? 0 : 1;
+    Check(missing > 0, "the damaged block is not found in the file");
+    Check(missing < damaged.size(), "the undamaged ones still are");
+
+    // The set's files are shifts of one periodic sequence, so the damaged
+    // block turns up elsewhere and the repair does not have to rebuild it
+    par2::Par2VerifyResult damagedstatus;
+    Check(verifier.GetVerifyResult(&damagedstatus), "GetVerifyResult for the damaged set");
+    Check(damagedstatus.damagedfilecount == 1, "one file is damaged");
+
+    // What one verifier found is what another may be told to take on trust
+    {
+      par2::Par2Verifier told(quiet, quiet, par2::nlSilent);
+      Check(par2::eSuccess == told.AddPar2File(PARFILE), "AddPar2File for the vouched set");
+      told.SetKnownBlocks(damagedfiles[which].filename, damaged);
+      Check(par2::eRepairPossible == told.Verify(noextras),
+            "the vouched blocks describe the same damage");
+
+      std::vector<bool> again;
+      Check(told.GetFoundBlocks(damagedfiles[which].filename, &again),
+            "GetFoundBlocks after vouching");
+      Check(again == damaged, "vouched blocks read back as found");
+    }
+
     Check(par2::eSuccess == verifier.Repair(), "Repair");
     Check(observer.repairs == 1, "OnRepairStart called");
+
+    std::vector<bool> repaired;
+    Check(verifier.GetFoundBlocks(damagedfiles[which].filename, &repaired),
+          "GetFoundBlocks after a repair which read back what it wrote");
+    size_t stillmissing = 0;
+    for (size_t b = 0; b < repaired.size(); ++b)
+      stillmissing += repaired[b] ? 0 : 1;
+    Check(stillmissing == 0, "every block is found once the file is repaired");
   }
 
   // What the repair renamed out of the way can be tidied up

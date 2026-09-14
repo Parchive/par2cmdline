@@ -570,6 +570,47 @@ bool Par2Repairer::GetBlockChecksums(const std::string &filename,
   return false;
 }
 
+// Which blocks of a file the last verification found
+bool Par2Repairer::GetFoundBlocks(const std::string &filename,
+                                  std::vector<bool> *blocks) const
+{
+  if (0 == blocks)
+    return false;
+
+  blocks->clear();
+
+  for (std::vector<Par2RepairerSourceFile*>::const_iterator sf = sourcefiles.begin();
+       sf != sourcefiles.end();
+       ++sf)
+  {
+    const Par2RepairerSourceFile *sourcefile = *sf;
+    if (0 == sourcefile || 0 == sourcefile->GetDescriptionPacket())
+      continue;
+
+    if (LocalFileName(sourcefile) != filename)
+      continue;
+
+    const VerificationPacket *verificationpacket = sourcefile->GetVerificationPacket();
+    if (0 == verificationpacket)
+      return false;
+
+    const u32 blockcount = verificationpacket->BlockCount();
+    blocks->reserve(blockcount);
+
+    const DiskFile *targetfile = sourcefile->GetTargetFile();
+
+    std::vector<DataBlock>::iterator sourceblock = sourcefile->SourceBlocks();
+    for (u32 blocknumber=0; blocknumber<blockcount; ++blocknumber, ++sourceblock)
+      blocks->push_back(sourceblock->IsSet()
+                        && sourceblock->GetDiskFile() == targetfile
+                        && sourceblock->GetOffset() == blocknumber * blocksize);
+
+    return true;
+  }
+
+  return false;
+}
+
 bool Par2Repairer::GetFileInfo(std::vector<Par2FileInfo> *files) const
 {
   if (0 == files)

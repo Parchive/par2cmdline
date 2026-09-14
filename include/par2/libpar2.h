@@ -239,6 +239,31 @@ public:
   bool GetBlockChecksums(const std::string &filename,
                          std::vector<u32> *crcs) const;
 
+  // Which blocks of the named file the last verify found in that file at their
+  // own offsets, one entry per block starting at block 0. The name is the one
+  // GetFileInfo reports, and the entries line up one for one with the
+  // checksums GetBlockChecksums returns and with what SetKnownBlocks takes, so
+  // what this reports may be handed straight back to another verifier.
+  //
+  // This is what the file itself holds, not what a repair has available. A
+  // block which is not here may still have been found somewhere else - in
+  // another file of the set, or at a shifted offset in this one - and
+  // GetVerifyResult counts those as available. Summing these will therefore
+  // not always reach availableblockcount.
+  //
+  // A block the caller vouched for through SetKnownBlocks reads back as found,
+  // since the verify made no distinction.
+  //
+  // Reads the same as GetVerifyResult does around a repair: after one which
+  // read back what it wrote it describes the repaired files, and after one
+  // which did not it still describes the state before the repair.
+  //
+  // False until something has been verified, when the set does not describe
+  // that file, or when it describes it without a verification packet, which
+  // is a file it cannot recover.
+  bool GetFoundBlocks(const std::string &filename,
+                      std::vector<bool> *blocks) const;
+
   // Accept the caller's word that these blocks of the named file are intact,
   // so that they are not read and hashed again. The name is the one reported
   // by GetFileInfo and blocks must have one entry per block of that file, set
