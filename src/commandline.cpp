@@ -1022,7 +1022,18 @@ u64 CommandLine::GetTotalPhysicalMemory()
 {
   long pages = sysconf(_SC_PHYS_PAGES);
   long page_size = sysconf(_SC_PAGESIZE);
-  return pages*page_size;
+
+  // sysconf() returns -1 on error; treat that (or any other non-positive
+  // result) as "unable to detect", consistent with the other platform
+  // implementations of this function returning 0 in that case.
+  if (pages <= 0 || page_size <= 0)
+    return 0;
+
+  // Multiply as u64 so the result can't overflow: on a platform where
+  // "long" is only 32 bits wide, pages*page_size could otherwise wrap
+  // around before being widened to the u64 return type, even though both
+  // factors individually fit in a "long".
+  return (u64)pages * (u64)page_size;
 }
 #else
 // default version == unable to request memory size
