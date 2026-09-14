@@ -148,25 +148,26 @@ public:
     // file and nothing new arrived.
     const u32 before = packetsloaded;
 
-    // Read it again even if it has been seen before
+    // Read it again even if it has been seen before. What a cancel left read is
+    // prepared all the same, so that no packet stays unchecked.
     bool opened = true;
-    if (!LoadPackets(parfilename, none, true, &opened) || IsCancelled())
-    {
-      if (IsCancelled())
-        return eCancelled;
+    const bool loaded = LoadPackets(parfilename, none, true, &opened);
+    const bool stopped = IsCancelled();
 
+    if (!loaded && !stopped)
+    {
       errorlog.Record(ecInternalError, "Could not load the PAR2 packets", parfilename);
       return eLogicError;
     }
 
-    if (packetsloaded == before && !DiskFile::FileExists(parfilename))
+    if (!stopped && packetsloaded == before && !DiskFile::FileExists(parfilename))
     {
       errorlog.Record(ecPar2FileMissing, "There is no such PAR2 file", parfilename);
       return eFileIOError;
     }
 
     // Nor is one which is there but could not be opened
-    if (packetsloaded == before && !opened)
+    if (!stopped && packetsloaded == before && !opened)
       return eFileIOError;
 
     prepared = PreparePackets();
@@ -177,7 +178,7 @@ public:
       *setchanged = (sourceblockcount != blocksbefore) || (DescribedFileCount() != filesbefore)
                     || (VerifiableFileCount() != verifiablebefore);
 
-    return prepared;
+    return stopped ? eCancelled : prepared;
   }
 
   // What the packets read so far amount to, recorded as Add records it
@@ -614,8 +615,8 @@ Result Par2Verifier::AddPar2File(const std::string &_parfilename)
   const Par2Error added = lasterror;
 
   // Remembered even without the critical packets, so that a later restart
-  // replays it alongside the file that completes the set. A cancelled read is
-  // not.
+  // replays it alongside the file that completes the set. A cancelled load is
+  // not remembered, so that naming it again after ClearCancel reads the rest.
   if (result != eFileIOError && result != eCancelled)
   {
     par2files.push_back(parfilename);
