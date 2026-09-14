@@ -95,6 +95,54 @@ typedef enum Result
 } Result;
 
 
+// Why an operation failed, refining the Result it returned.
+//
+// Only a failure carries one. The Results which report an outcome rather than
+// a failure - eSuccess, eRepairPossible, eRepairNotPossible, eRepairFailed and
+// eCancelled - leave it ecNone, because GetVerifyResult already describes them.
+typedef enum ErrorCode
+{
+  ecNone = 0,                   // Nothing failed
+
+  // The application asked for something in an order that cannot be honoured
+  ecNotVerified = 1,            // A repair before anything was verified
+
+  // The PAR2 files
+  ecPar2FileMissing = 2,        // The named PAR2 file is not there, and the files
+                                // named after it carried nothing new either
+  ecMainPacketMissing = 3,      // Nothing read so far says what the set contains
+
+  // What the set describes
+  ecFileDescriptionMissing = 4, // The set names a recoverable file it carries no
+                                // description of
+  ecDuplicateSourceFile = 5,    // Two of the set's files are one file on disk
+  ecTooManySourceBlocks = 6,    // The set needs more blocks than can be held
+
+  // Reading and writing
+  ecFileOpenFailed = 7,
+  ecFileCreateFailed = 8,
+  ecFileRenameFailed = 9,
+  ecFileReadFailed = 10,
+  ecFileWriteFailed = 11,
+
+  ecOutOfMemory = 12,           // A buffer could not be allocated
+  ecProcessorFailed = 13,       // The compute implementation could not do the work
+
+  ecInternalError = 14,         // An invariant the library relies on did not hold
+
+} ErrorCode;
+
+
+// Why an operation failed.
+struct Par2Error
+{
+  ErrorCode code{};       // ecNone when nothing failed
+  std::string message;    // One line, without a trailing newline. May be empty.
+  std::string filename;   // The absolute path of the file it concerns, empty
+                          // when it concerns none
+};
+
+
 // What a PAR2 set describes, known once its packets have been loaded
 struct Par2SetInfo
 {
@@ -197,6 +245,12 @@ public:
   virtual void OnFileDone(const std::string &filename,
                           u32 blocksfound,
                           u32 blocksneeded) {}
+
+  // Something went wrong. Called once per error as it is found, from the
+  // thread that found it, so a caller wanting every error rather than only the
+  // first collects them here. The operation may carry on and may still
+  // succeed: an error reading one extra file does not fail a verify.
+  virtual void OnError(const Par2Error &error) {}
 };
 
 
