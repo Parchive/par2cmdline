@@ -1004,7 +1004,7 @@ bool Par2Repairer::LoadPacketsFromFile(const std::string &filename, bool reread)
     u8 *buffer = new u8[buffersize];
 
     // Progress indicator
-    ProgressMeter<u64> progress(sout, "Loading: ", filesize, noiselevel);
+    ProgressMeter<u64> progress(sout, "Loading: ", filesize, noiselevel, observer);
 
     // Start at the beginning of the file
     u64 offset = 0;
@@ -3503,7 +3503,7 @@ bool Par2Repairer::ComputeRSmatrix(void)
   if (ownfactors)
     return true;
 
-  bool success = rs.Compute(noiselevel, sout, serr);
+  bool success = rs.Compute(noiselevel, sout, serr, observer);
 
   return success;
 }

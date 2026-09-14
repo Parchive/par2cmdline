@@ -229,13 +229,18 @@ public:
   // order they arrive in is not the order the set ends up recording them in.
   virtual void OnFile(const std::string &filename) {}
 
-  // Progress through the current operation, in thousandths, running upwards
-  // once per Verify and once per phase of a Repair - the rebuild, and then the
-  // pass reading back what it wrote. AddPar2File reports no progress.
+  // Progress through the current step, in thousandths, running upwards and
+  // starting again at each step which reports it. Which step a run belongs to
+  // is not reported.
   //
-  // A Create runs it twice, once while the source files are hashed and once
-  // while the recovery data is computed, and only once when it was asked for
-  // no recovery blocks at all.
+  // AddPar2File runs it once for each PAR2 file it reads. A Verify runs it
+  // once. A Repair runs it for the matrix it builds, again for the matrix it
+  // solves when blocks are missing, again for the rebuild, and again for the
+  // pass reading back what it wrote.
+  //
+  // A Create runs it while the source files are hashed, again for the matrix
+  // it builds, and again while the recovery data is computed. It runs only
+  // once when it was asked for no recovery blocks at all.
   virtual void OnProgress(u32 permille) {}
 
   // This file has been checked. blocksfound of blocksneeded were usable, both
@@ -311,6 +316,10 @@ public:
   // Adding a file after Verify has run is allowed: the next Verify starts a
   // fresh pass over the data, so it reflects both the added file and whatever
   // is on disk at that point.
+  //
+  // Reading reports progress, so a Cancel can stop it. eCancelled then means
+  // the file was only read as far as the cancel, and it is not remembered:
+  // name it again after ClearCancel to read the rest.
   Result AddPar2File(const std::string &parfilename);
 
   // What the packets added so far describe. False until a PAR2 file with the
