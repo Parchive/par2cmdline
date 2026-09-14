@@ -1338,6 +1338,127 @@ int main()
     std::remove(ownpar);
   }
 
+  // A set built through the handle is the same set, and the observer hears
+  // about the work even at nlSilent
+  {
+    Check(MakeDirectory("madedir"), "mkdir for the create handle check");
+
+    const char *const made = "madedir/made.data";
+    const char *const madepar = "madedir/made.par2";
+
+    WriteData(made, 5, 40000);
+
+    Counting observer;
+    par2::Par2Creator creator(quiet, quiet, par2::nlSilent, "madedir/");
+    creator.SetObserver(&observer);
+    creator.AddSourceFile(made);
+    creator.SetBlockSize(BLOCKSIZE);
+    creator.SetRecoveryBlockCount(RECOVERYBLOCKS);
+    creator.SetRecoveryFileScheme(par2::scVariable);
+
+    // Zero for either of these leaves it at the library's own default
+    creator.SetMemoryLimit(0);
+    creator.SetThreadCounts(0, 0);
+
+    Check(par2::eSuccess == creator.Create(madepar), "Create through the handle");
+
+    par2::Par2Error error;
+    Check(!creator.GetLastError(&error), "a create which worked reports no error");
+
+    Check(observer.files == 1, "OnFile for the source file");
+    Check(observer.done == 1, "and an OnFileDone to pair with it");
+    Check(observer.setinfo == 1, "OnSetInfo once the set is known");
+    Check(observer.lastinfo.recoverablefilecount == 1, "OnSetInfo file count");
+    Check(observer.lastinfo.blocksize == BLOCKSIZE, "OnSetInfo blocksize");
+    Check(observer.lastinfo.recoveryblocks == RECOVERYBLOCKS, "OnSetInfo recovery blocks");
+    Check(observer.lastinfo.datasize == 40000, "OnSetInfo data size");
+
+    // The guards which used to stop this reaching the meter are gone
+    Check(observer.progress > 0, "OnProgress even at nlSilent");
+    Check(observer.reached, "and it reaches a thousand");
+
+    // The name it was given is the name of the set, not of a set called after it
+    {
+      std::ifstream twice("madedir/made.par2.par2", std::ios::binary);
+      Check(!twice.is_open(), "the .par2 suffix was not applied twice");
+    }
+
+    // The set it wrote is a set
+    par2::Par2Verifier verifier(quiet, quiet, par2::nlSilent, "madedir/");
+    Check(par2::eSuccess == verifier.AddPar2File(madepar), "AddPar2File for the made set");
+    Check(par2::eSuccess == verifier.Verify(noextras), "the made set verifies clean");
+
+    std::remove(made);
+    std::remove(madepar);
+  }
+
+  // A create asked to stop leaves nothing of the set behind, whether it is
+  // stopped while it reads the source files or while it writes the set
+  {
+    Check(MakeDirectory("stopdir"), "mkdir for the create cancel check");
+
+    const char *const stopped = "stopdir/stopped.data";
+    const char *const stoppedpar = "stopdir/stopped.par2";
+
+    WriteData(stopped, 6, 400000);
+
+    // The set is only known once every source file has been read, so waiting
+    // for it puts the cancel in the pass which computes the recovery data
+    // rather than in the one which reads the files
+    class Stopper : public par2::Par2Observer
+    {
+    public:
+      par2::Par2Creator *creator;
+      bool late, known;
+      Stopper(bool late) : creator(0), late(late), known(false) {}
+      void OnSetInfo(const par2::Par2SetInfo &) {known = true;}
+      void OnProgress(par2::u32) {if (creator && (known || !late)) creator->Cancel();}
+    };
+
+    for (int late = 0; late < 2; ++late)
+    {
+      const std::string when = late ? "while writing" : "while reading";
+
+      Stopper stopper(late != 0);
+      par2::Par2Creator creator(quiet, quiet, par2::nlSilent, "stopdir/");
+      stopper.creator = &creator;
+      creator.SetObserver(&stopper);
+      creator.AddSourceFile(stopped);
+      creator.SetBlockSize(BLOCKSIZE);
+      creator.SetRecoveryBlockCount(RECOVERYBLOCKS);
+      creator.SetRecoveryFileScheme(par2::scVariable);
+
+      // Too little for one pass, so the source files are hashed as they are
+      // read and there is progress to cancel on during that
+      creator.SetMemoryLimit(BLOCKSIZE * 4);
+
+      Check(par2::eCancelled == creator.Create(stoppedpar), "Create is cancelled " + when);
+      Check(stopper.known == (late != 0), "the cancel landed where it was meant to");
+
+      par2::Par2Verifier gone(quiet, quiet, par2::nlSilent, "stopdir/");
+      Check(par2::eFileIOError == gone.AddPar2File(stoppedpar),
+            "and no PAR2 file was left behind " + when);
+    }
+
+    // The same handle creates a whole set once the request is withdrawn
+    par2::Par2Creator creator(quiet, quiet, par2::nlSilent, "stopdir/");
+    creator.AddSourceFile(stopped);
+    creator.SetBlockSize(BLOCKSIZE);
+    creator.SetRecoveryBlockCount(RECOVERYBLOCKS);
+    creator.SetRecoveryFileScheme(par2::scVariable);
+    creator.Cancel();
+    creator.ClearCancel();
+
+    Check(par2::eSuccess == creator.Create(stoppedpar), "Create again after clearing");
+
+    par2::Par2Verifier verifier(quiet, quiet, par2::nlSilent, "stopdir/");
+    Check(par2::eSuccess == verifier.AddPar2File(stoppedpar), "AddPar2File for the second set");
+    Check(par2::eSuccess == verifier.Verify(noextras), "the second set verifies clean");
+
+    std::remove(stopped);
+    std::remove(stoppedpar);
+  }
+
   for (size_t i = 0; i < DATACOUNT; ++i)
     std::remove(DATA[i]);
 

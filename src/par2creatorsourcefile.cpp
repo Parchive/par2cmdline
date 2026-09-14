@@ -64,7 +64,8 @@ bool Par2CreatorSourceFile::Open(NoiseLevel noiselevel, std::ostream &sout, std:
 
   // Determine what filename to record in the PAR2 files
   parfilename = diskfilename;
-  parfilename.erase(0, basepath.length());
+  if (0 == parfilename.compare(0, basepath.length(), basepath))
+    parfilename.erase(0, basepath.length());
   parfilename = DescriptionPacket::TranslateFilenameFromLocalToPar2(sout, serr, noiselevel, parfilename);
 
   // Create the Description and Verification packets
