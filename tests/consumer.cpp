@@ -111,18 +111,22 @@ class Counting : public par2::Par2Observer
 public:
   Counting()
     : setinfo(0), files(0), progress(0), done(0), repairs(0),
-      last(0), wentbackwards(false), reached(false) {}
+      lastinfo(), last(0), wentbackwards(false), reached(false) {}
 
   int setinfo, files, progress, done, repairs;
+
+  // What the last OnSetInfo carried
+  par2::Par2SetInfo lastinfo;
 
   // Enough to tell one run of progress from several
   par2::u32 last;
   bool wentbackwards, reached;
 
-  void OnSetInfo(const par2::Par2SetInfo &)
+  void OnSetInfo(const par2::Par2SetInfo &info)
   {
     std::lock_guard<std::mutex> lock(mutex);
     ++setinfo;
+    lastinfo = info;
   }
 
   void OnFile(const std::string &)
@@ -190,6 +194,12 @@ int main()
     Check(setidset, "GetSetInfo setid");
     // Counted from the packets, so it reads before anything has been verified
     Check(info.recoveryblocks == RECOVERYBLOCKS, "GetSetInfo recovery blocks");
+
+    Check(observer.setinfo == 1, "OnSetInfo once");
+    Check(observer.lastinfo.recoveryblocks == RECOVERYBLOCKS,
+          "OnSetInfo recovery blocks");
+    Check(observer.lastinfo.datablocks == info.datablocks, "OnSetInfo data blocks");
+    Check(observer.lastinfo.blocksize == info.blocksize, "OnSetInfo blocksize");
 
     std::vector<par2::Par2FileInfo> files;
     Check(verifier.GetFileInfo(&files), "GetFileInfo");
