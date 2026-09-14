@@ -71,6 +71,11 @@ public:
       return eFileIOError;
     }
 
+    // Loading stops where the cancel reached it, so the packets read so far do
+    // not describe the whole of what was named and are not worth preparing
+    if (IsCancelled())
+      return eCancelled;
+
     const Result result = PreparePackets();
 
     if (setchanged)
@@ -410,8 +415,9 @@ Result Par2Verifier::AddPar2File(const std::string &parfilename)
   const Par2Error added = lasterror;
 
   // Remembered even without the critical packets, so that a later restart
-  // replays it alongside the file that completes the set
-  if (result != eFileIOError)
+  // replays it alongside the file that completes the set. A cancelled load is
+  // not remembered, so that naming it again after ClearCancel reads the rest.
+  if (result != eFileIOError && result != eCancelled)
     par2files.push_back(parfilename);
 
   // Extra recovery data leaves what the scan found still true, so it is kept

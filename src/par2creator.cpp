@@ -964,7 +964,7 @@ bool Par2CreatorEngine::ComputeRSMatrix(void)
     return false;
 
   // Compute the RS matrix
-  if (!rs.Compute(noiselevel, sout, serr))
+  if (!rs.Compute(noiselevel, sout, serr, observer))
     return false;
 
   return true;
