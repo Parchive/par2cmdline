@@ -89,6 +89,22 @@ namespace
     Check(!said || !error.message.empty(), what + " gives a message");
   }
 
+  // The same rule for a create, which reports no outcome of its own
+  void CheckLastError(const par2::Par2Creator &creator, const par2::Result result,
+                      const std::string &what)
+  {
+    const bool failed = (result != par2::eSuccess && result != par2::eCancelled);
+
+    par2::Par2Error error;
+    error.code = par2::ecInternalError;
+
+    const bool said = creator.GetLastError(&error);
+
+    Check(said == failed, what + " reports an error only if it failed");
+    Check(!said || error.code != par2::ecNone, what + " gives a code");
+    Check(!said || !error.message.empty(), what + " gives a message");
+  }
+
   void WriteData(const char *name, unsigned seed, size_t bytes)
   {
     std::ofstream f(name, std::ios::binary | std::ios::trunc);
@@ -1528,6 +1544,7 @@ int main()
     creator.SetThreadCounts(0, 0);
 
     Check(par2::eSuccess == creator.Create(madepar), "Create through the handle");
+    CheckLastError(creator, par2::eSuccess, "a create which worked");
 
     par2::Par2Error error;
     Check(!creator.GetLastError(&error), "a create which worked reports no error");
@@ -1600,6 +1617,7 @@ int main()
       creator.SetMemoryLimit(BLOCKSIZE * 4);
 
       Check(par2::eCancelled == creator.Create(stoppedpar), "Create is cancelled " + when);
+      CheckLastError(creator, par2::eCancelled, "a cancelled create " + when);
       Check(stopper.known == (late != 0), "the cancel landed where it was meant to");
 
       par2::Par2Verifier gone(quiet, quiet, par2::nlSilent, "stopdir/");
@@ -1624,6 +1642,127 @@ int main()
 
     std::remove(stopped);
     std::remove(stoppedpar);
+  }
+
+  // A create says what was wrong with what it was asked to do
+  {
+    Check(MakeDirectory("baddir"), "mkdir for the create error check");
+
+    const char *const bad = "baddir/bad.data";
+    const char *const badpar = "baddir/bad.par2";
+
+    WriteData(bad, 7, 30000);
+
+    // A block size which is not a multiple of four
+    {
+      Counting observer;
+      par2::Par2Creator creator(quiet, quiet, par2::nlSilent, "baddir/");
+      creator.SetObserver(&observer);
+      creator.AddSourceFile(bad);
+      creator.SetBlockSize(BLOCKSIZE + 1);
+      creator.SetRecoveryBlockCount(RECOVERYBLOCKS);
+
+      const par2::Result result = creator.Create(badpar);
+      Check(par2::eInvalidCommandLineArguments == result, "an unusable block size says so");
+      CheckLastError(creator, result, "an unusable block size");
+
+      par2::Par2Error error;
+      Check(creator.GetLastError(&error), "and it says why");
+      Check(error.code == par2::ecInvalidSetting, "the reason is ecInvalidSetting");
+      Check(observer.errors == 1, "the observer heard about it too");
+    }
+
+    // Declining to supply a processor is reported rather than quietly falling back
+    {
+      int asked = 0;
+      par2::u32 budget = 0;
+      par2::Backends backends;
+      backends.processor = [&asked, &budget](const par2::ProcessorConfig &config)
+      {
+        ++asked;
+        budget = config.numthreads;
+        return std::unique_ptr<par2::Processor>();
+      };
+
+      par2::Par2Creator creator(quiet, quiet, par2::nlSilent, "baddir/", backends);
+      creator.AddSourceFile(bad);
+      creator.SetBlockSize(BLOCKSIZE);
+      creator.SetRecoveryBlockCount(RECOVERYBLOCKS);
+      creator.SetThreadCounts(3, 1);
+
+      const par2::Result result = creator.Create(badpar);
+      Check(par2::eMemoryError == result, "a create which cannot build a processor says so");
+      Check(asked == 1, "the application's processor was asked for");
+      Check(budget == 3, "and built with the thread count the handle was given");
+      CheckLastError(creator, result, "a create with no processor");
+
+      par2::Par2Error error;
+      Check(creator.GetLastError(&error), "and it says why");
+      Check(error.code == par2::ecProcessorFailed, "the reason is ecProcessorFailed");
+
+      // What it had already written is taken away again
+      par2::Par2Verifier gone(quiet, quiet, par2::nlSilent, "baddir/");
+      Check(par2::eFileIOError == gone.AddPar2File(badpar),
+            "and a create which failed leaves no set behind");
+    }
+
+    // A source file outside the basepath cannot be named relative to it
+    {
+      Counting observer;
+      par2::Par2Creator creator(quiet, quiet, par2::nlSilent, "baddir/");
+      creator.SetObserver(&observer);
+      creator.AddSourceFile(DATA[1]);
+      creator.SetBlockSize(BLOCKSIZE);
+      creator.SetRecoveryBlockCount(RECOVERYBLOCKS);
+
+      const par2::Result result = creator.Create(badpar);
+      Check(par2::eInvalidCommandLineArguments == result, "a file outside the basepath says so");
+      CheckLastError(creator, result, "a file outside the basepath");
+
+      par2::Par2Error error;
+      Check(creator.GetLastError(&error), "and it says why");
+      Check(error.code == par2::ecInvalidSetting, "the reason is ecInvalidSetting");
+      Check(error.filename.find(DATA[1]) != std::string::npos, "naming the file");
+      Check(observer.errors == 1, "the observer heard about it too");
+
+      par2::Par2Verifier none(quiet, quiet, par2::nlSilent, "baddir/");
+      Check(par2::eFileIOError == none.AddPar2File(badpar), "and nothing was written");
+    }
+
+    // With no basepath given, each Create takes the directory of its own set
+    {
+      Check(MakeDirectory("baddir/sub"), "mkdir for the per-set basepath check");
+
+      const char *const inner = "baddir/sub/inner.data";
+      WriteData(inner, 9, 20000);
+
+      par2::Par2Creator creator(quiet, quiet, par2::nlSilent);
+      creator.AddSourceFile(inner);
+      creator.SetBlockSize(BLOCKSIZE);
+      creator.SetRecoveryBlockCount(4);
+      creator.SetRecoveryFileScheme(par2::scUniform, 1);
+
+      Check(par2::eSuccess == creator.Create("baddir/outer.par2"),
+            "the first set, above the file");
+      Check(par2::eSuccess == creator.Create("baddir/sub/inner.par2"),
+            "and the second, beside it");
+
+      par2::Par2Verifier verifier(quiet, quiet, par2::nlSilent);
+      std::vector<par2::Par2FileInfo> info;
+      Check(par2::eSuccess == verifier.AddPar2File("baddir/sub/inner.par2") &&
+            verifier.GetFileInfo(&info),
+            "GetFileInfo for the second set");
+      Check(info.size() == 1 && info[0].filename == "inner.data",
+            "whose name is relative to its own directory, not the first set's");
+
+      std::remove(inner);
+      std::remove("baddir/outer.par2");
+      std::remove("baddir/outer.vol0+4.par2");
+      std::remove("baddir/sub/inner.par2");
+      std::remove("baddir/sub/inner.vol0+4.par2");
+    }
+
+    std::remove(bad);
   }
 
   for (const char *name : DATA)

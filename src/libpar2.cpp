@@ -665,6 +665,24 @@ Result Par2Creator::Create(const std::string &parfilename)
     files.push_back(DiskFile::GetCanonicalPathname(sourcefile));
   }
 
+  // A set records each name relative to the basepath, so a file outside it
+  // cannot be described
+  for (const auto &file : files)
+  {
+    if (file.compare(0, setbasepath.length(), setbasepath) != 0)
+    {
+      lasterror = Par2Error();
+      lasterror.code = ecInvalidSetting;
+      lasterror.message = "The file is not inside the basepath";
+      lasterror.filename = file;
+
+      if (observer)
+        observer->OnError(lasterror);
+
+      return eInvalidCommandLineArguments;
+    }
+  }
+
   Restart();
 
   const Result result = impl->Process(memorylimit,
