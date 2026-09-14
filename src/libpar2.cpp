@@ -342,6 +342,18 @@ bool Par2Verifier::GetBlockChecksums(const std::string &filename,
   return impl->GetBlockChecksums(filename, crcs);
 }
 
+// Guarded by verified, unlike GetBlockChecksums: before anything has been
+// scanned every block would read as not found, which is not the same as
+// nothing having been looked at.
+bool Par2Verifier::GetFoundBlocks(const std::string &filename,
+                                  std::vector<bool> *blocks) const
+{
+  if (!verified)
+    return false;
+
+  return impl->GetFoundBlocks(filename, blocks);
+}
+
 bool Par2Verifier::GetBackupFiles(std::vector<std::string> *files) const
 {
   return impl->GetBackupFiles(files);
