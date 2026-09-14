@@ -214,7 +214,7 @@ Result Par1Repairer::Process(const size_t memorylimit,
           sout << '\n';
 
         // Set the total amount of data to be processed.
-        ProgressMeter<u64> progress(sout, "Repairing: ", blocksize * sourcefiles.size() * verifylist.size(), noiselevel);
+        ProgressMeter<u64> progress(sout, "Repairing: ", blocksize * sourcefiles.size() * verifylist.size(), noiselevel, phProcessing);
 
         // Start at an offset of 0 within a block.
         u64 blockoffset = 0;
@@ -793,7 +793,7 @@ bool Par1Repairer::VerifyDataFile(DiskFile *diskfile, Par1RepairerSourceFile *so
         u64 offset = 16384;
         std::string message = "Scanning: \"";
         message.append(name).append("\": ");
-        ProgressMeter<u64> progress(sout, message, filesize, noiselevel);
+        ProgressMeter<u64> progress(sout, message, filesize, noiselevel, phScanning);
         while (offset < filesize)
         {
           want = (size_t)std::min((u64)buffersize, filesize-offset);

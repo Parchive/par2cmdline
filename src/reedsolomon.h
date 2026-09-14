@@ -256,7 +256,7 @@ inline bool ReedSolomon<g>::Compute(NoiseLevel noiselevel, std::ostream &sout, s
   if (noiselevel > nlQuiet)
     sout << "Computing Reed Solomon matrix." << std::endl;
 
-  ProgressMeter<u32> progress(sout, "Constructing: ", datamissing+parmissing, noiselevel, observer);
+  ProgressMeter<u32> progress(sout, "Constructing: ", datamissing+parmissing, noiselevel, phConstructing, observer);
 
   /*  Layout of RS Matrix:
       NOTE: The second set of columns represents the parity vectors present,
@@ -296,8 +296,7 @@ inline bool ReedSolomon<g>::Compute(NoiseLevel noiselevel, std::ostream &sout, s
   // One row for each present recovery block that will be used for a missing data block
   for (unsigned int row=0; row<datamissing; row++)
   {
-    if (noiselevel > nlQuiet)
-      progress.Update(row);
+    progress.Update(row);
 
     // Get the exponent of the next present recovery block
     while (!outputrow->present)
@@ -337,8 +336,7 @@ inline bool ReedSolomon<g>::Compute(NoiseLevel noiselevel, std::ostream &sout, s
   outputrow = outputrows.begin();
   for (unsigned int row=0; row<parmissing; row++)
   {
-    if (noiselevel > nlQuiet)
-      progress.Update(row+datamissing);
+    progress.Update(row+datamissing);
 
     // Get the exponent of the next missing recovery block
     while (outputrow->present)
@@ -374,6 +372,8 @@ inline bool ReedSolomon<g>::Compute(NoiseLevel noiselevel, std::ostream &sout, s
 
     outputrow++;
   }
+  progress.Update(datamissing+parmissing);
+
   if (noiselevel > nlQuiet)
     sout << "Constructing: done." << std::endl;
 
@@ -429,7 +429,7 @@ inline bool ReedSolomon<g>::GaussElim(NoiseLevel noiselevel, std::ostream &sout,
 
   // Solve one row at a time
 
-  ProgressMeter<u32> progress(sout, "Solving: ", datamissing*rows, noiselevel, observer);
+  ProgressMeter<u32> progress(sout, "Solving: ", datamissing*rows, noiselevel, phSolving, observer);
 
   // For each row in the matrix
   for (unsigned int row=0; row<datamissing; row++)
@@ -469,8 +469,7 @@ inline bool ReedSolomon<g>::GaussElim(NoiseLevel noiselevel, std::ostream &sout,
     // For every other row in the matrix
     for (unsigned int row2=0; row2<rows; row2++)
     {
-      if (noiselevel > nlQuiet)
-        progress.Update(row*rows+row2);
+      progress.Update(row*rows+row2);
 
       if (row != row2)
       {
@@ -518,6 +517,8 @@ inline bool ReedSolomon<g>::GaussElim(NoiseLevel noiselevel, std::ostream &sout,
       }
     }
   }
+  progress.Update(datamissing*rows);
+
   if (noiselevel > nlQuiet)
     sout << "Solving: done." << std::endl;
   if (noiselevel >= nlDebug)
