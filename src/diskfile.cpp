@@ -47,15 +47,25 @@ static char THIS_FILE[]=__FILE__;
 namespace par2
 {
 
+DiskFile::Failure::~Failure(void)
+{
+  LockedStream(*file.serr) << message.str() << std::endl;
+
+  if (file.errorlog)
+    file.errorlog->Record(code, message.str(), name);
+}
+
+
 #ifdef _WIN32
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #define OffsetType __int64
 #define MaxOffset 0x7fffffffffffffffI64
 
-DiskFile::DiskFile(std::ostream &sout, std::ostream &serr)
+DiskFile::DiskFile(std::ostream &sout, std::ostream &serr, ErrorLog *errorlog)
 : sout(&sout)
 , serr(&serr)
+, errorlog(errorlog)
 {
   filename = "";
   filesize = 0;
@@ -93,7 +103,7 @@ bool DiskFile::CreateParentDirectory(std::string _pathname)
     std::wstring wpath;
     if (!utf8::Utf8ToWide(path, wpath))
     {
-      LockedStream(*serr) << "Could not convert \"" << path << "\" to a wide string." << std::endl;
+      Failure(*this, ecFileCreateFailed, path) << "Could not convert \"" << path << "\" to a wide string.";
       return false;
     }
 
@@ -108,7 +118,7 @@ bool DiskFile::CreateParentDirectory(std::string _pathname)
     {
       DWORD error = ::GetLastError();
 
-      LockedStream(*serr) << "Could not create the " << path << " directory: " << ErrorMessage(error) << std::endl;
+      Failure(*this, ecFileCreateFailed, path) << "Could not create the " << path << " directory: " << ErrorMessage(error);
 
       return false;
     }
@@ -132,7 +142,7 @@ bool DiskFile::Create(std::string _filename, u64 _filesize)
   std::wstring wfilename;
   if (!utf8::Utf8ToWide(_filename, wfilename))
   {
-    LockedStream(*serr) << "Could not convert \"" << _filename << "\" to a wide string." << std::endl;
+    Failure(*this, ecFileCreateFailed, _filename) << "Could not convert \"" << _filename << "\" to a wide string.";
     return false;
   }
 
@@ -141,7 +151,7 @@ bool DiskFile::Create(std::string _filename, u64 _filesize)
   {
     DWORD error = ::GetLastError();
 
-    LockedStream(*serr) << "Could not create \"" << _filename << "\": " << ErrorMessage(error) << std::endl;
+    Failure(*this, ecFileCreateFailed, _filename) << "Could not create \"" << _filename << "\": " << ErrorMessage(error);
 
     return false;
   }
@@ -157,7 +167,7 @@ bool DiskFile::Create(std::string _filename, u64 _filesize)
     {
       DWORD error = ::GetLastError();
 
-      LockedStream(*serr) << "Could not set size of \"" << _filename << "\": " << ErrorMessage(error) << std::endl;
+      Failure(*this, ecFileCreateFailed, _filename) << "Could not set size of \"" << _filename << "\": " << ErrorMessage(error);
 
       ::CloseHandle(hFile);
       hFile = INVALID_HANDLE_VALUE;
@@ -171,7 +181,7 @@ bool DiskFile::Create(std::string _filename, u64 _filesize)
     {
       DWORD error = ::GetLastError();
 
-      LockedStream(*serr) << "Could not set size of \"" << _filename << "\": " << ErrorMessage(error) << std::endl;
+      Failure(*this, ecFileCreateFailed, _filename) << "Could not set size of \"" << _filename << "\": " << ErrorMessage(error);
 
       ::CloseHandle(hFile);
       hFile = INVALID_HANDLE_VALUE;
@@ -204,7 +214,7 @@ bool DiskFile::Write(u64 _offset, const void *buffer, size_t length, LengthType 
     {
       DWORD error = ::GetLastError();
 
-      LockedStream(*serr) << "Could not write " << (u64)length << " bytes to \"" << filename << "\" at offset " << _offset << ": " << ErrorMessage(error) << std::endl;
+      Failure(*this, ecFileWriteFailed, filename) << "Could not write " << (u64)length << " bytes to \"" << filename << "\" at offset " << _offset << ": " << ErrorMessage(error);
 
       return false;
     }
@@ -226,7 +236,7 @@ bool DiskFile::Write(u64 _offset, const void *buffer, size_t length, LengthType 
     {
       DWORD error = ::GetLastError();
 
-      LockedStream(*serr) << "Could not write " << write << " bytes to \"" << filename << "\" at offset " << _offset << ": " << ErrorMessage(error) << std::endl;
+      Failure(*this, ecFileWriteFailed, filename) << "Could not write " << write << " bytes to \"" << filename << "\" at offset " << _offset << ": " << ErrorMessage(error);
 
       return false;
     }
@@ -261,7 +271,7 @@ bool DiskFile::Open(const std::string &_filename, u64 _filesize)
   std::wstring wfilename;
   if (!utf8::Utf8ToWide(_filename, wfilename))
   {
-    LockedStream(*serr) << "Could not convert \"" << _filename << "\" to a wide string." << std::endl;
+    Failure(*this, ecFileCreateFailed, _filename) << "Could not convert \"" << _filename << "\" to a wide string.";
     return false;
   }
 
@@ -276,7 +286,7 @@ bool DiskFile::Open(const std::string &_filename, u64 _filesize)
     case ERROR_PATH_NOT_FOUND:
       break;
     default:
-      LockedStream(*serr) << "Could not open \"" << _filename << "\": " << ErrorMessage(error) << std::endl;
+      Failure(*this, ecFileOpenFailed, _filename) << "Could not open \"" << _filename << "\": " << ErrorMessage(error);
     }
 
     return false;
@@ -317,14 +327,14 @@ bool DiskFile::Read(u64 _offset, void *buffer, size_t length, LengthType maxleng
     {
       DWORD error = ::GetLastError();
 
-      LockedStream(*serr) << "Could not read " << (u64)length << " bytes from \"" << filename << "\" at offset " << _offset << ": " << ErrorMessage(error) << std::endl;
+      Failure(*this, ecFileReadFailed, filename) << "Could not read " << (u64)length << " bytes from \"" << filename << "\" at offset " << _offset << ": " << ErrorMessage(error);
 
       return false;
     }
 
     if (got == 0)
     {
-      LockedStream(*serr) << "Could not read " << (u64)length << " bytes from \"" << filename << "\" at offset " << _offset << ": unexpected end of file." << std::endl;
+      Failure(*this, ecFileReadFailed, filename) << "Could not read " << (u64)length << " bytes from \"" << filename << "\" at offset " << _offset << ": unexpected end of file.";
 
       return false;
     }
@@ -487,9 +497,10 @@ bool DiskFile::FileExists(std::string filename)
 #define MaxOffset ((std::numeric_limits<OffsetType>::max)())
 
 
-DiskFile::DiskFile(std::ostream &sout, std::ostream &serr)
+DiskFile::DiskFile(std::ostream &sout, std::ostream &serr, ErrorLog *errorlog)
 : sout(&sout)
 , serr(&serr)
+, errorlog(errorlog)
 {
   //filename;
   filesize = 0;
@@ -531,7 +542,7 @@ bool DiskFile::CreateParentDirectory(std::string _pathname)
 
     if (mkdir(path.c_str(), S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH))
     {
-      LockedStream(*serr) << "Could not create the " << path << " directory: " << strerror(errno) << std::endl;
+      Failure(*this, ecFileCreateFailed, path) << "Could not create the " << path << " directory: " << strerror(errno);
       return false;
     }
   }
@@ -552,14 +563,14 @@ bool DiskFile::Create(std::string _filename, u64 _filesize)
 
   if (_filesize > (u64)MaxOffset)
   {
-    LockedStream(*serr) << "Requested file size for " << _filename << " is too large." << std::endl;
+    Failure(*this, ecFileCreateFailed, _filename) << "Requested file size for " << _filename << " is too large.";
     return false;
   }
 
   int fd = open(_filename.c_str(), O_WRONLY | O_CREAT | O_EXCL | O_NOFOLLOW, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
   if (fd < 0)
   {
-    LockedStream(*serr) << "Could not create " << _filename << ": " << strerror(errno) << std::endl;
+    Failure(*this, ecFileCreateFailed, _filename) << "Could not create " << _filename << ": " << strerror(errno);
 
     return false;
   }
@@ -572,7 +583,7 @@ bool DiskFile::Create(std::string _filename, u64 _filesize)
     ::remove(filename.c_str());
     errno = savederrno;
 
-    LockedStream(*serr) << "Could not create " << _filename << ": " << strerror(errno) << std::endl;
+    Failure(*this, ecFileCreateFailed, _filename) << "Could not create " << _filename << ": " << strerror(errno);
 
     return false;
   }
@@ -581,7 +592,7 @@ bool DiskFile::Create(std::string _filename, u64 _filesize)
   {
     if (fseek(file, (OffsetType)_filesize-1, SEEK_SET))
     {
-      LockedStream(*serr) << "Could not set end of file of " << _filename << ": " << strerror(errno) << std::endl;
+      Failure(*this, ecFileCreateFailed, _filename) << "Could not set end of file of " << _filename << ": " << strerror(errno);
 
       fclose(file);
       file = 0;
@@ -591,7 +602,7 @@ bool DiskFile::Create(std::string _filename, u64 _filesize)
 
     if (1 != fwrite(&_filesize, 1, 1, file))
     {
-      LockedStream(*serr) << "Could not set end of file of " << _filename << ": " << strerror(errno) << std::endl;
+      Failure(*this, ecFileCreateFailed, _filename) << "Could not set end of file of " << _filename << ": " << strerror(errno);
 
       fclose(file);
       file = 0;
@@ -616,14 +627,14 @@ bool DiskFile::Write(u64 _offset, const void *buffer, size_t length, LengthType 
   {
     if (_offset > (u64)MaxOffset)
     {
-        LockedStream(*serr) << "Could not write " << (u64)length << " bytes to " << filename << " at offset " << _offset << std::endl;
+        Failure(*this, ecFileWriteFailed, filename) << "Could not write " << (u64)length << " bytes to " << filename << " at offset " << _offset;
       return false;
     }
 
 
     if (fseek(file, (OffsetType)_offset, SEEK_SET))
     {
-      LockedStream(*serr) << "Could not write " << (u64)length << " bytes to " << filename << " at offset " << _offset << ": " << strerror(errno) << std::endl;
+      Failure(*this, ecFileWriteFailed, filename) << "Could not write " << (u64)length << " bytes to " << filename << " at offset " << _offset << ": " << strerror(errno);
       return false;
     }
     offset = _offset;
@@ -640,7 +651,7 @@ bool DiskFile::Write(u64 _offset, const void *buffer, size_t length, LengthType 
     LengthType wrote = fwrite(buffer, 1, write, file);
     if (wrote != write)
     {
-      LockedStream(*serr) << "Could not write " << (u64)length << " bytes to " << filename << " at offset " << _offset << ": " << strerror(errno) << std::endl;
+      Failure(*this, ecFileWriteFailed, filename) << "Could not write " << (u64)length << " bytes to " << filename << " at offset " << _offset << ": " << strerror(errno);
       return false;
     }
 
@@ -668,7 +679,7 @@ bool DiskFile::Open(const std::string &_filename, u64 _filesize)
 
   if (_filesize > (u64)MaxOffset)
   {
-    LockedStream(*serr) << "File size for " << _filename << " is too large." << std::endl;
+    Failure(*this, ecFileOpenFailed, _filename) << "File size for " << _filename << " is too large.";
     return false;
   }
 
@@ -692,7 +703,7 @@ bool DiskFile::Read(u64 _offset, void *buffer, size_t length, LengthType maxleng
 
   if (_offset > (u64)MaxOffset)
   {
-    LockedStream(*serr) << "Could not read " << (u64)length << " bytes from " << filename << " at offset " << _offset << std::endl;
+    Failure(*this, ecFileReadFailed, filename) << "Could not read " << (u64)length << " bytes from " << filename << " at offset " << _offset;
     return false;
   }
 
@@ -711,7 +722,7 @@ bool DiskFile::Read(u64 _offset, void *buffer, size_t length, LengthType maxleng
     {
       // NOTE: This can happen on error or when hitting the end-of-file.
 
-      LockedStream(*serr) << "Could not read " << (u64)length << " bytes from " << filename << " at offset " << _offset << ": " << strerror(errno) << std::endl;
+      Failure(*this, ecFileReadFailed, filename) << "Could not read " << (u64)length << " bytes from " << filename << " at offset " << _offset << ": " << strerror(errno);
       return false;
     }
 
@@ -1073,13 +1084,13 @@ bool DiskFile::Rename(void)
     // Check path length against maximum
     if (newname.length() > _MAX_PATH)
     {
-      LockedStream(*serr) << filename << " pathlength is more than " << _MAX_PATH << "." << std::endl;
+      Failure(*this, ecFileRenameFailed, filename) << filename << " pathlength is more than " << _MAX_PATH << ".";
       return false;
     }
 
     if (!utf8::Utf8ToWide(newname, wnewname))
     {
-      LockedStream(*serr) << "Could not convert \"" << newname << "\" to a wide string." << std::endl;
+      Failure(*this, ecFileRenameFailed, filename) << "Could not convert \"" << newname << "\" to a wide string.";
       return false;
     }
 
@@ -1103,7 +1114,7 @@ bool DiskFile::Rename(void)
     // Check path length against maximum
     if (newname.length() > _MAX_PATH)
     {
-      LockedStream(*serr) << filename << " pathlength is more than " << _MAX_PATH << "." << std::endl;
+      Failure(*this, ecFileRenameFailed, filename) << filename << " pathlength is more than " << _MAX_PATH << ".";
       return false;
     }
   } while (stat(newname.c_str(), &st) == 0);
@@ -1152,7 +1163,7 @@ bool DiskFile::Rename(std::string _filename)
     return true;
   }
 
-  LockedStream(*serr) << filename << " cannot be renamed to " << _filename << std::endl;
+  Failure(*this, ecFileRenameFailed, filename) << filename << " cannot be renamed to " << _filename;
 
   return false;
 }
@@ -1168,7 +1179,7 @@ bool DiskFile::Rename(std::string _filename)
     return true;
   }
 
-  LockedStream(*serr) << filename << " cannot be renamed to " << _filename << std::endl;
+  Failure(*this, ecFileRenameFailed, filename) << filename << " cannot be renamed to " << _filename;
 
   return false;
 }
