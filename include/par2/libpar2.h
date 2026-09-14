@@ -292,6 +292,18 @@ public:
   Par2Verifier(std::ostream &sout, std::ostream &serr, NoiseLevel noiselevel,
                const std::string &basepath = std::string(),
                Backends backends = Backends());
+
+  // Built without streams nothing is written anywhere, and the work is
+  // followed through an observer instead. There is no NoiseLevel because
+  // everything it governs is written output. The one exception is on Windows,
+  // where a filename which is not valid UTF-8 is reported on stderr as it is
+  // converted.
+  //
+  // The observer is told exactly what it is told otherwise: OnSetInfo, OnFile,
+  // OnFileDone, OnProgress and OnError all arrive unchanged.
+  explicit Par2Verifier(const std::string &basepath,
+                        Backends backends = Backends());
+
   ~Par2Verifier();
 
   Par2Verifier(const Par2Verifier &) = delete;
@@ -499,10 +511,13 @@ public:
 private:
   class Impl;
 
+  Par2Verifier(std::unique_ptr<std::ostream> nullstream, const std::string &basepath, Backends backends);
+
   void Restart(void);
   void TakeLastError(const Result result);
   void RecordLastError(const ErrorCode code, const std::string &message);
 
+  std::unique_ptr<std::ostream> nullstream;
   std::ostream &sout;
   std::ostream &serr;
   NoiseLevel noiselevel;
@@ -549,6 +564,14 @@ public:
   Par2Creator(std::ostream &sout, std::ostream &serr, NoiseLevel noiselevel,
               const std::string &basepath = std::string(),
               Backends backends = Backends());
+
+  // Built without streams nothing is written anywhere, and the work is
+  // followed through an observer instead. There is no NoiseLevel because
+  // everything it governs is written output. The one exception is on Windows,
+  // where a filename which is not valid UTF-8 is reported on stderr as it is
+  // converted.
+  explicit Par2Creator(const std::string &basepath,
+                       Backends backends = Backends());
   ~Par2Creator();
 
   Par2Creator(const Par2Creator &) = delete;
@@ -625,9 +648,12 @@ public:
 private:
   class Impl;
 
+  Par2Creator(std::unique_ptr<std::ostream> nullstream, const std::string &basepath, Backends backends);
+
   void Restart(void);
   void TakeLastError(const Result result);
 
+  std::unique_ptr<std::ostream> nullstream;
   std::ostream &sout;
   std::ostream &serr;
   NoiseLevel noiselevel;

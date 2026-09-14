@@ -444,9 +444,38 @@ void Par2Verifier::Restart(void)
   impl->SetObserver(observer);
 }
 
+// Discards everything written to it
+class NullStream : public std::ostream
+{
+public:
+  NullStream(void)
+  : std::ostream(&buffer)
+  , buffer()
+  {
+  }
+
+private:
+  class Buffer : public std::streambuf
+  {
+  protected:
+    int_type overflow(int_type c) override
+    {
+      return c;
+    }
+
+    std::streamsize xsputn(const char *, std::streamsize n) override
+    {
+      return n;
+    }
+  };
+
+  Buffer buffer;
+};
+
 Par2Verifier::Par2Verifier(std::ostream &sout, std::ostream &serr, NoiseLevel noiselevel,
                            const std::string &_basepath, Backends _backends)
-: sout(sout)
+: nullstream()
+, sout(sout)
 , serr(serr)
 , noiselevel(noiselevel)
 , backends(std::move(_backends))
@@ -470,6 +499,17 @@ Par2Verifier::Par2Verifier(std::ostream &sout, std::ostream &serr, NoiseLevel no
 , lasterror()
 , impl(new Impl(sout, serr, noiselevel, basepath, backends))
 {
+}
+
+Par2Verifier::Par2Verifier(const std::string &_basepath, Backends _backends)
+: Par2Verifier(std::unique_ptr<std::ostream>(new NullStream), _basepath, std::move(_backends))
+{
+}
+
+Par2Verifier::Par2Verifier(std::unique_ptr<std::ostream> _nullstream, const std::string &_basepath, Backends _backends)
+: Par2Verifier(*_nullstream, *_nullstream, nlSilent, _basepath, std::move(_backends))
+{
+  nullstream = std::move(_nullstream);
 }
 
 Par2Verifier::~Par2Verifier() = default;
@@ -821,7 +861,8 @@ void Par2Creator::TakeLastError(const Result result)
 
 Par2Creator::Par2Creator(std::ostream &sout, std::ostream &serr, NoiseLevel noiselevel,
                          const std::string &_basepath, Backends _backends)
-: sout(sout)
+: nullstream()
+, sout(sout)
 , serr(serr)
 , noiselevel(noiselevel)
 , backends(std::move(_backends))
@@ -842,6 +883,17 @@ Par2Creator::Par2Creator(std::ostream &sout, std::ostream &serr, NoiseLevel nois
 , lasterror()
 , impl(new Impl(sout, serr, noiselevel, backends))
 {
+}
+
+Par2Creator::Par2Creator(const std::string &_basepath, Backends _backends)
+: Par2Creator(std::unique_ptr<std::ostream>(new NullStream), _basepath, std::move(_backends))
+{
+}
+
+Par2Creator::Par2Creator(std::unique_ptr<std::ostream> _nullstream, const std::string &_basepath, Backends _backends)
+: Par2Creator(*_nullstream, *_nullstream, nlSilent, _basepath, std::move(_backends))
+{
+  nullstream = std::move(_nullstream);
 }
 
 Par2Creator::~Par2Creator() = default;
