@@ -339,17 +339,30 @@ template<> bool ReedSolomon<Galois16>::InternalProcess(const Galois16 &factor, s
 //#endif
   }
 #else
-  // Treat the buffers as arrays of 16-bit Galois values.
+  // Treat the buffers as arrays of 16-bit Galois values, each stored as two
+  // bytes in a fixed little-endian order. Recovery data has to be portable
+  // between little- and big-endian hosts, so the bytes are read and written
+  // explicitly here rather than reinterpreting the buffer as an array of
+  // native u16/Galois16 values, which would only give the right answer on
+  // a little-endian host (this is the same little-endian symbol layout the
+  // LONGMULTIPLY path above produces, whichever host it runs on).
+  u8 *src = (u8 *)inputbuffer;
+  u8 *end = &((u8*)inputbuffer)[size];
+  u8 *dst = (u8 *)outputbuffer;
 
-  // BUG: This only works for __LITTLE_ENDIAN
-  Galois16 *src = (Galois16 *)inputbuffer;
-  Galois16 *end = (Galois16 *)&((u8*)inputbuffer)[size];
-  Galois16 *dst = (Galois16 *)outputbuffer;
-
-  // Process the data
+  // Process the data, two bytes (one Galois16 symbol) at a time
   while (src < end)
   {
-    *dst++ += *src++ * factor;
+    Galois16 s = (u16)(src[0] | (src[1] << 8));
+    Galois16 d = (u16)(dst[0] | (dst[1] << 8));
+
+    d += s * factor;
+
+    dst[0] = (u8)(d & 0xff);
+    dst[1] = (u8)((d >> 8) & 0xff);
+
+    src += 2;
+    dst += 2;
   }
 #endif
 
