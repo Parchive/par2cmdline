@@ -31,8 +31,8 @@ class Par2Verifier::Impl : public Par2Repairer
 {
 public:
   Impl(std::ostream &sout, std::ostream &serr, NoiseLevel noiselevel,
-       const std::string &_basepath)
-    : Par2Repairer(sout, serr, noiselevel)
+       const std::string &_basepath, const Backends &backends)
+    : Par2Repairer(sout, serr, noiselevel, backends)
   {
     basepath = _basepath;
   }
@@ -198,7 +198,7 @@ static std::string BasePathFor(const std::string &parfilename)
 // read again, which is cheap next to scanning the data files.
 void Par2Verifier::Restart(void)
 {
-  impl.reset(new Impl(sout, serr, noiselevel, basepath));
+  impl.reset(new Impl(sout, serr, noiselevel, basepath, backends));
   impl->SetObserver(observer);
   impl->SetDataSkipping(skipdata, skipleaway);
 
@@ -230,10 +230,11 @@ void Par2Verifier::Restart(void)
 }
 
 Par2Verifier::Par2Verifier(std::ostream &sout, std::ostream &serr, NoiseLevel noiselevel,
-                           const std::string &_basepath)
+                           const std::string &_basepath, const Backends &_backends)
 : sout(sout)
 , serr(serr)
 , noiselevel(noiselevel)
+, backends(_backends)
 , observer(0)
 , memorylimit(DEFAULT_MEMORY_LIMIT)
 , nthreads(0)
@@ -245,7 +246,7 @@ Par2Verifier::Par2Verifier(std::ostream &sout, std::ostream &serr, NoiseLevel no
 , knownblocks()
 , verified(false)
 , basepath(NormaliseBasePath(_basepath))
-, impl(new Impl(sout, serr, noiselevel, basepath))
+, impl(new Impl(sout, serr, noiselevel, basepath, backends))
 {
 }
 
