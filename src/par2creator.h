@@ -29,12 +29,12 @@ class CreatorPacket;
 class CriticalPacket;
 
 
-class Par2Creator
+class Par2SetCreator
 {
 public:
-  Par2Creator(std::ostream &sout, std::ostream &serr, const NoiseLevel noiselevel,
+  Par2SetCreator(std::ostream &sout, std::ostream &serr, const NoiseLevel noiselevel,
               const Backends &backends = Backends());
-  ~Par2Creator(void);
+  ~Par2SetCreator(void);
 
   // Create recovery files from the source files specified on the command line
   Result Process(const size_t memorylimit,
