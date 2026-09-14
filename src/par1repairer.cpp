@@ -882,15 +882,9 @@ bool Par1Repairer::VerifyDataFile(DiskFile *diskfile, Par1RepairerSourceFile *so
               << "\"."
               << std::endl;
       }
-    }
-    else
-    {
-      // WARNING - this branch does nothing.  The "if" above
-      // makes sure of that.  I don't know if it's the result
-      // of a bad merge or what.  I couldn't figure out what
-      // the original author meant.  If you can figure that
-      // out, please fix it!
-      if (noiselevel > nlSilent)
+      // We were not looking for a specific file: report which source
+      // file this one turned out to be a match for.
+      else
       {
         std::string targetname;
         DiskFile::SplitFilename(match->FileName(), path, targetname);
