@@ -37,6 +37,7 @@ Par2SetCreator::Par2SetCreator(std::ostream &sout, std::ostream &serr, const Noi
 , serr(serr)
 , noiselevel(noiselevel)
 , backends(backends)
+, observer(0)
 , totalthreads(default_threads())
 , filethreads(_FILE_THREADS)
 , blocksize(0)
@@ -204,6 +205,20 @@ Result Par2SetCreator::HashSourceFiles(void)
   if (!CreateMainPacket())
     return eLogicError;
 
+  if (observer)
+  {
+    Par2SetInfo info;
+    memcpy(info.setid.data(), mainpacket->SetId().hash, sizeof(mainpacket->SetId().hash));
+    info.blocksize = blocksize;
+    info.datablocks = sourceblockcount;
+    info.recoveryblocks = recoveryblockcount;
+    info.recoverablefilecount = sourcefilecount;
+    info.otherfilecount = 0;
+    info.datasize = totaldatasize;
+
+    observer->OnSetInfo(info);
+  }
+
   // Create the creator packet.
   if (!CreateCreatorPacket())
     return eLogicError;
@@ -241,7 +256,7 @@ Result Par2SetCreator::ComputeRecoveryData(void)
     return eLogicError;
 
   // Set the total amount of data to be processed.
-  ProgressMeter<u64> progress(sout, "Processing: ", blocksize * sourceblockcount, noiselevel);
+  ProgressMeter<u64> progress(sout, "Processing: ", blocksize * sourceblockcount, noiselevel, observer);
 
   // Start at an offset of 0 within a block.
   u64 blockoffset = 0;
@@ -411,7 +426,7 @@ bool Par2SetCreator::OpenSourceFiles(void)
   for (size_t i=0; i<extrafiles.size(); ++i)
     mttotalsize += DiskFile::GetFileSize(extrafiles[i]);
 
-  ProgressMeter<u64> progress(sout, "", mttotalsize, noiselevel);
+  ProgressMeter<u64> progress(sout, "", mttotalsize, noiselevel, observer);
 
   foreach_parallel(extrafiles, GetFileThreads(), [&](const std::string &extrafile)
   {
@@ -428,13 +443,24 @@ bool Par2SetCreator::OpenSourceFiles(void)
       LockedStream(sout) << "Opening: " << name << std::endl;
     }
 
+    if (observer)
+      observer->OnFile(name);
+
     // Open the source file and compute its Hashes and CRCs.
     if (!sourcefile->Open(noiselevel, sout, serr, extrafile, blocksize, deferhashcomputation, basepath, progress, backends))
     {
       delete sourcefile;
       openfailed = true;
+
+      if (observer)
+        observer->OnFileDone(name, 0, 0);
+
       return;
     }
+
+    // Every block of a file just read is there by definition
+    if (observer)
+      observer->OnFileDone(name, sourcefile->BlockCount(), sourcefile->BlockCount());
 
     // Record the file verification and file description packets
     // in the critical packet list.
@@ -927,8 +953,7 @@ bool Par2SetCreator::ProcessData(u64 blockoffset, size_t blocklength, ProgressMe
     bufferfree[bufferindex] = processor->AddInput(inputbuffer, blocklength, inputblock, column);
     bufferindex = (bufferindex + 1) % NUM_TRANSFER_BUFFERS;
 
-    if (noiselevel > nlQuiet)
-      progress.Add(blocklength);
+    progress.Add(blocklength);
 
     // Work out which source file the next block belongs to
     if (++sourceindex >= (*sourcefile)->BlockCount())
