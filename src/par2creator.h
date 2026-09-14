@@ -45,7 +45,15 @@ public:
 
   // Set an observer to be notified of progress and per-file results.
   // Pass 0 to stop reporting. The observer must outlive this object.
-  void SetObserver(Par2Observer *_observer) {observer = _observer;}
+  void SetObserver(Par2Observer *_observer)
+  {
+    observer = _observer;
+    errorlog.SetObserver(_observer);
+  }
+
+  // Why the last operation failed, and forgetting it before the next one
+  bool GetLastError(Par2Error *error) const {return errorlog.First(error);}
+  void ClearLastError(void) {errorlog.Clear();}
 
   // Create recovery files from the source files specified on the command line
   Result Process(const size_t memorylimit,
@@ -150,6 +158,8 @@ protected:
   std::string basepath;                   // What the source file names are relative to
   std::vector<std::string> extrafiles;    // The source files
   size_t memorylimit{};                   // How much memory the work may use
+
+  ErrorLog errorlog;           // Why the last operation failed
 
   const NoiseLevel noiselevel; // How noisy we should be
   const Backends backends;     // The implementations the application supplied

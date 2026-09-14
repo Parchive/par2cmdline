@@ -212,7 +212,8 @@ class Par2Observer
 public:
   virtual ~Par2Observer() = default;
 
-  // The recovery set has been identified
+  // The recovery set has been identified. A Create only knows this once it has
+  // read every source file, so it arrives near the end rather than the start.
   virtual void OnSetInfo(const Par2SetInfo &info) {}
 
   // Work has started on a file: one the set describes, or a PAR2 file being
@@ -222,11 +223,18 @@ public:
   // A file the set does not name - a PAR2 file, or an extra file offered to a
   // verify - is named as it is on this one, and keeps that name for both
   // reports.
+  //
+  // Several files are read at once, so a Create's pairs interleave, and the
+  // order they arrive in is not the order the set ends up recording them in.
   virtual void OnFile(const std::string &filename) {}
 
   // Progress through the current operation, in thousandths, running upwards
   // once per Verify and once per phase of a Repair - the rebuild, and then the
   // pass reading back what it wrote. AddPar2File reports no progress.
+  //
+  // A Create runs it twice, once while the source files are hashed and once
+  // while the recovery data is computed, and only once when it was asked for
+  // no recovery blocks at all.
   virtual void OnProgress(u32 permille) {}
 
   // This file has been checked. blocksfound of blocksneeded were usable, both
@@ -476,6 +484,106 @@ private:
   std::map<std::string, std::vector<bool> > knownblocks;
   bool verified;
   bool scanned;
+  std::string basepath;
+  Par2Error lasterror;
+  std::unique_ptr<Impl> impl;
+};
+
+
+// Creates a PAR2 set from an application, with progress, cancellation and the
+// implementations the application supplies. The one-shot par2create below does
+// the same job in a single call.
+//
+// A create never writes over an existing file: if any file of the set it
+// would write is already there, it fails with eFileIOError. A cancel, or a
+// failure before the set is complete, deletes the recovery files that create
+// had made, and nothing else.
+class Par2Creator
+{
+public:
+  // basepath is what the names recorded in the set are relative to. Left empty
+  // it is taken from the directory of the name passed to each Create.
+  //
+  // backends holds the implementations the application supplies, each of which
+  // falls back to the one built in when it is left empty.
+  Par2Creator(std::ostream &sout, std::ostream &serr, NoiseLevel noiselevel,
+              const std::string &basepath = std::string(),
+              Backends backends = Backends());
+  ~Par2Creator();
+
+  Par2Creator(const Par2Creator &) = delete;
+  Par2Creator &operator=(const Par2Creator &) = delete;
+
+  // Notify this observer of progress and per-file results. Pass 0 to stop.
+  // The observer must outlive this object.
+  void SetObserver(Par2Observer *observer);
+
+  // The files the set will describe and be able to recover. Adding one reads
+  // nothing: anything wrong with it is reported by Create.
+  void AddSourceFile(const std::string &filename);
+  void AddSourceFiles(const std::vector<std::string> &filenames);
+
+  // The size of each block, which must be a multiple of 4. Required.
+  void SetBlockSize(const u64 blocksize);
+
+  // How many recovery blocks to compute. Zero creates a set which describes
+  // the files without being able to repair any of them.
+  void SetRecoveryBlockCount(const u32 recoveryblockcount);
+
+  // How those blocks are spread over the recovery files. recoveryfilecount is
+  // only read by scUniform, and zero lets the library choose.
+  void SetRecoveryFileScheme(const Scheme scheme, const u32 recoveryfilecount = 0);
+
+  // The exponent the first recovery block is computed with, for creating a set
+  // which extends another.
+  void SetFirstRecoveryBlock(const u32 firstblock);
+
+  // How much memory the work may use. Zero leaves it at the default.
+  void SetMemoryLimit(const size_t memorylimit);
+
+  // The -t and -T equivalents. Either left zero stays at the default.
+  void SetThreadCounts(const u32 nthreads, const u32 filethreads);
+
+  // Create the set, writing parfilename and the volume files beside it. A
+  // trailing ".par2" is optional: the volume files are named after the set
+  // rather than after its index file, so "set" and "set.par2" mean the same.
+  //
+  // May be called more than once, with the settings changed in between, and
+  // each call writes a whole set of its own.
+  Result Create(const std::string &parfilename);
+
+  // Ask the work in progress to stop, from any thread. Create then returns
+  // eCancelled, leaving no PAR2 file behind: every recovery file it had
+  // created, the index file included, is deleted. The source files are only
+  // read, never written. The request stays in force until ClearCancel.
+  void Cancel(void);
+  void ClearCancel(void);
+
+  // Why the last call failed, refining the Result it returned. See ErrorCode
+  // for which Results carry one.
+  bool GetLastError(Par2Error *error) const;
+
+private:
+  class Impl;
+
+  void Restart(void);
+  void TakeLastError(void);
+
+  std::ostream &sout;
+  std::ostream &serr;
+  NoiseLevel noiselevel;
+  Backends backends;
+  Par2Observer *observer;
+  std::vector<std::string> sourcefiles;
+  u64 blocksize;
+  u32 recoveryblockcount;
+  Scheme recoveryfilescheme;
+  u32 recoveryfilecount;
+  u32 firstrecoveryblock;
+  size_t memorylimit;
+  u32 nthreads;
+  u32 filethreads;
+  bool cancelled;
   std::string basepath;
   Par2Error lasterror;
   std::unique_ptr<Impl> impl;
