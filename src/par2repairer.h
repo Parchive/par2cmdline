@@ -56,7 +56,15 @@ public:
 
   // Set an observer to be notified of progress and per-file results.
   // Pass 0 to stop reporting. The observer must outlive this object.
-  void SetObserver(Par2Observer *_observer) {observer = _observer;}
+  void SetObserver(Par2Observer *_observer)
+  {
+    observer = _observer;
+    errorlog.SetObserver(_observer);
+  }
+
+  // Why the last operation failed, and forgetting it before the next one
+  bool GetLastError(Par2Error *error) const {return errorlog.First(error);}
+  void ClearLastError(void) {errorlog.Clear();}
 
   // List the files the loaded packets describe. Available once packets have
   // been loaded and prepared.
@@ -260,6 +268,8 @@ protected:
 protected:
   std::ostream &sout; // stream for output (for commandline, this is cout)
   std::ostream &serr; // stream for errors (for commandline, this is cerr)
+
+  ErrorLog errorlog;  // Why the last operation failed
 
   const NoiseLevel noiselevel;              // OnScreen display
   const Backends backends;                  // The implementations the application supplied
