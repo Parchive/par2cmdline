@@ -100,6 +100,8 @@ Result Par2CreatorEngine::Process(
 			    const u32 _recoveryfilecount,
 			    const u32 _recoveryblockcount)
 {
+  ClearLastError();
+
   // Get information from commandline
   memorylimit = _memorylimit;
   basepath = _basepath;
@@ -158,12 +160,21 @@ void Par2CreatorEngine::ApplyThreadCounts(const u32 nthreads, const u32 _filethr
 Result Par2CreatorEngine::PrepareCreation(void)
 {
   if (!CheckBasepath(parfilename))
+  {
+    errorlog.RecordIfNone(ecFileCreateFailed, "Could not write beside the set", parfilename);
     return eFileIOError;
+  }
 
   // Compute block size from block count or vice versa depending on which was
   // specified on the command line
   if (!ComputeBlockCount())
-    return IsCancelled() ? eCancelled : eInvalidCommandLineArguments;
+  {
+    if (IsCancelled())
+      return eCancelled;
+
+    errorlog.RecordIfNone(ecInvalidSetting, "The block size cannot be used");
+    return eInvalidCommandLineArguments;
+  }
 
   // Determine how many recovery files to create.
   if (!ComputeRecoveryFileCount(sout,
@@ -173,12 +184,16 @@ Result Par2CreatorEngine::PrepareCreation(void)
 				recoveryblockcount,
 				largestfilesize,
 				blocksize)) {
+    errorlog.RecordIfNone(ecInvalidSetting, "The recovery file scheme cannot be used");
     return eInvalidCommandLineArguments;
   }
 
   // Determine how much recovery data can be computed on one pass
   if (!CalculateProcessBlockSize(memorylimit))
+  {
+    errorlog.RecordIfNone(ecInternalError, "Could not work out how much to process at a time");
     return eLogicError;
+  }
 
   if (recoveryblockcount > 0 && noiselevel >= nlDebug)
     sout << "[DEBUG] Process chunk size: " << chunksize << std::endl;
@@ -203,11 +218,20 @@ Result Par2CreatorEngine::HashSourceFiles(void)
   // Open all of the source files, compute the Hashes and CRC values, and store
   // the results in the file verification and file description packets.
   if (!OpenSourceFiles())
-    return IsCancelled() ? eCancelled : eFileIOError;
+  {
+    if (IsCancelled())
+      return eCancelled;
+
+    errorlog.RecordIfNone(ecFileReadFailed, "Could not read the source files");
+    return eFileIOError;
+  }
 
   // Create the main packet and determine the setid to use with all packets
   if (!CreateMainPacket())
+  {
+    errorlog.RecordIfNone(ecInternalError, "Could not build the packet describing the set");
     return eLogicError;
+  }
 
   if (observer)
   {
@@ -225,11 +249,17 @@ Result Par2CreatorEngine::HashSourceFiles(void)
 
   // Create the creator packet.
   if (!CreateCreatorPacket())
+  {
+    errorlog.RecordIfNone(ecInternalError, "Could not build the creator packet");
     return eLogicError;
+  }
 
   // Initialise all of the source blocks ready to start reading data from the source files.
   if (!CreateSourceBlocks())
+  {
+    errorlog.RecordIfNone(ecInternalError, "Could not lay out the source blocks");
     return eLogicError;
+  }
 
   return eSuccess;
 }
@@ -242,7 +272,12 @@ Result Par2CreatorEngine::CreateOutputFiles(void)
   if (!InitialiseOutputFiles())
   {
     DeleteIncompleteRecoveryFiles();
-    return IsCancelled() ? eCancelled : eFileIOError;
+
+    if (IsCancelled())
+      return eCancelled;
+
+    errorlog.RecordIfNone(ecFileCreateFailed, "Could not create the recovery files");
+    return eFileIOError;
   }
 
   return eSuccess;
@@ -256,11 +291,18 @@ Result Par2CreatorEngine::ComputeRecoveryData(void)
 
   // Allocate memory buffers for reading and writing data to disk.
   if (!AllocateBuffers(memorylimit))
+  {
+    DeleteIncompleteRecoveryFiles();
     return eMemoryError;
+  }
 
   // Compute the Reed Solomon matrix
   if (!ComputeRSMatrix())
+  {
+    DeleteIncompleteRecoveryFiles();
+    errorlog.RecordIfNone(ecProcessorFailed, "Could not compute the Reed Solomon matrix");
     return eLogicError;
+  }
 
   // Set the total amount of data to be processed.
   ProgressMeter<u64> progress(sout, "Processing: ", blocksize * sourceblockcount, noiselevel, observer);
@@ -276,7 +318,12 @@ Result Par2CreatorEngine::ComputeRecoveryData(void)
     if (!ProcessData(blockoffset, blocklength, progress))
     {
       DeleteIncompleteRecoveryFiles();
-      return IsCancelled() ? eCancelled : eFileIOError;
+
+      if (IsCancelled())
+        return eCancelled;
+
+      errorlog.RecordIfNone(ecProcessorFailed, "Could not compute the recovery blocks");
+      return eFileIOError;
     }
 
     blockoffset += blocklength;
@@ -287,11 +334,19 @@ Result Par2CreatorEngine::ComputeRecoveryData(void)
 
   // Finish computation of the recovery packets and write the headers to disk.
   if (!WriteRecoveryPacketHeaders())
+  {
+    DeleteIncompleteRecoveryFiles();
+    errorlog.RecordIfNone(ecFileWriteFailed, "Could not write the recovery packet headers");
     return eFileIOError;
+  }
 
   // Finish computing the full file hash values of the source files
   if (!FinishFileHashComputation())
+  {
+    DeleteIncompleteRecoveryFiles();
+    errorlog.RecordIfNone(ecInternalError, "Could not finish hashing the source files");
     return eLogicError;
+  }
 
   return eSuccess;
 }
@@ -301,7 +356,11 @@ Result Par2CreatorEngine::WriteCriticalData(void)
 {
   // Fill in all remaining details in the critical packets.
   if (!FinishCriticalPackets())
+  {
+    DeleteIncompleteRecoveryFiles();
+    errorlog.RecordIfNone(ecInternalError, "Could not finish the packets describing the set");
     return eLogicError;
+  }
 
   if (noiselevel > nlQuiet)
     sout << "Writing verification packets" << std::endl;
@@ -310,12 +369,20 @@ Result Par2CreatorEngine::WriteCriticalData(void)
   if (!WriteCriticalPackets())
   {
     DeleteIncompleteRecoveryFiles();
-    return IsCancelled() ? eCancelled : eFileIOError;
+
+    if (IsCancelled())
+      return eCancelled;
+
+    errorlog.RecordIfNone(ecFileWriteFailed, "Could not write the packets describing the set");
+    return eFileIOError;
   }
 
   // Close all files.
   if (!CloseFiles())
+  {
+    errorlog.RecordIfNone(ecFileWriteFailed, "Could not close the recovery files");
     return eFileIOError;
+  }
 
   return eSuccess;
 }
@@ -324,7 +391,7 @@ Result Par2CreatorEngine::WriteCriticalData(void)
 bool Par2CreatorEngine::CheckBasepath(const std::string &parfilename)
 {
   std::string checkfilename = parfilename + ".check.par2";
-  std::unique_ptr<DiskFile> diskfile(new DiskFile(sout, serr));
+  std::unique_ptr<DiskFile> diskfile(new DiskFile(sout, serr, &errorlog));
   size_t dummysize = 4096;
 
   if (!diskfile->Create(checkfilename, dummysize))
@@ -363,12 +430,14 @@ bool Par2CreatorEngine::ComputeBlockCount(void)
   if (blocksize == 0)
   {
     serr << "ERROR: Block size was zero!" << std::endl;
+    errorlog.Record(ecInvalidSetting, "The block size was zero");
     return false;
   }
 
   if (blocksize % 4 != 0)
   {
     serr << "ERROR: Block size was not a multiple of 4 bytes!" << std::endl;
+    errorlog.Record(ecInvalidSetting, "The block size was not a multiple of 4 bytes");
     return false;
   }
 
@@ -383,6 +452,7 @@ bool Par2CreatorEngine::ComputeBlockCount(void)
   if (count > 32768)
   {
     serr << "Block size is too small. It would require " << count << "blocks." << std::endl;
+    errorlog.Record(ecTooManySourceBlocks, "The block size would need more blocks than can be held");
     return false;
   }
 
@@ -721,7 +791,7 @@ bool Par2CreatorEngine::InitialiseOutputFiles(void)
 
   // Allocate the recovery files
   {
-    recoveryfiles.resize(recoveryfilecount+1, DiskFile(sout, serr)); // pass default constructor.
+    recoveryfiles.resize(recoveryfilecount+1, DiskFile(sout, serr, &errorlog)); // pass default constructor.
 
     // Sort critical packets, so we get consistency.
     criticalpackets.sort(CriticalPacket::CompareLess);
@@ -851,6 +921,7 @@ bool Par2CreatorEngine::AllocateBuffers(size_t memorylimit)
   if (transferbuffer == NULL || outputbuffer == NULL)
   {
     serr << "Could not allocate buffer memory." << std::endl;
+    errorlog.Record(ecOutOfMemory, "Could not allocate the transfer buffers");
     return false;
   }
 
@@ -862,9 +933,17 @@ bool Par2CreatorEngine::AllocateBuffers(size_t memorylimit)
     ? backends.processor(config)
     : std::unique_ptr<Processor>(new ReferenceProcessor(rs, totalthreads));
 
-  if (!processor || !processor->Init(chunksize, recoveryblockcount))
+  if (!processor)
   {
     serr << "Could not allocate buffer memory." << std::endl;
+    errorlog.Record(ecProcessorFailed, "The processor the application supplied built nothing");
+    return false;
+  }
+
+  if (!processor->Init(chunksize, recoveryblockcount))
+  {
+    serr << "Could not allocate buffer memory." << std::endl;
+    errorlog.Record(ecOutOfMemory, "The processor could not allocate its buffers");
     return false;
   }
 

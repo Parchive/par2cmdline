@@ -104,8 +104,9 @@ typedef enum ErrorCode
 {
   ecNone = 0,                 // Nothing failed
 
-  // The application asked for something in an order that cannot be honoured
+  // The application asked for something that cannot be honoured
   ecNotVerified,              // Repair or Reassess before anything was verified
+  ecInvalidSetting,           // A setting a create was given cannot be used
 
   // The PAR2 files
   ecPar2FileMissing,          // The named PAR2 file is not there, and the files
