@@ -1594,6 +1594,88 @@ int main()
     std::remove(bad);
   }
 
+  // A handle built without streams, which is how an application that shows the
+  // work itself uses the library
+  {
+    Check(MakeDirectory("streamlessdir"), "mkdir for the streamless check");
+
+    const char *const source = "streamlessdir/streamless.data";
+    const char *const set = "streamlessdir/streamless.par2";
+
+    WriteData(source, 37, 60000);
+
+    // Whatever the library would have written, nothing reaches the stream the
+    // rest of this test shares
+    const size_t written = quiet.str().size();
+
+    Counting creating;
+    {
+      par2::Par2Creator creator("streamlessdir/");
+      creator.SetObserver(&creating);
+      creator.AddSourceFile(source);
+      creator.SetBlockSize(BLOCKSIZE);
+      creator.SetRecoveryBlockCount(RECOVERYBLOCKS);
+      creator.SetMemoryLimit(BLOCKSIZE * 4);
+
+      Check(par2::eSuccess == creator.Create(set), "a create with no streams");
+    }
+
+    Check(creating.files == 1, "the observer saw the file being hashed");
+    Check(creating.done == 1, "and saw it finish");
+    Check(creating.progress > 0, "and was told how far along it was");
+    Check(creating.reached, "and saw the work reach the end");
+    Check(creating.setinfo == 1, "and was told what the set is");
+
+    Corrupt(source, 20000, 5000);
+
+    Counting repairing;
+    int scanned = 0;
+    {
+      par2::Par2Verifier verifier("streamlessdir/");
+      verifier.SetObserver(&repairing);
+
+      Check(par2::eSuccess == verifier.AddPar2File(set), "AddPar2File with no streams");
+
+      // The PAR2 files are announced too, so only what arrives after them
+      // belongs to the set's own file
+      const int par2files = repairing.files;
+
+      Check(par2::eRepairPossible == verifier.Verify(noextras),
+            "a verify with no streams still finds the damage");
+
+      scanned = repairing.files - par2files;
+
+      Check(par2::eSuccess == verifier.Repair(), "and the repair works");
+    }
+
+    Check(scanned == 1, "the observer saw the file being scanned");
+    Check(repairing.files == repairing.done, "and every file reported is a file finished");
+    Check(repairing.progress > 0, "and was told how far along it was");
+    Check(repairing.repairs == 1, "and was told when the repair began");
+
+    // This one is written to serr by a handle which has one, whatever its
+    // NoiseLevel. Without streams it is only recorded.
+    {
+      const char *const notaset = "streamlessdir/notaset.par2";
+      WriteData(notaset, 11, 5000);
+
+      par2::Par2Verifier verifier("streamlessdir/");
+      Check(par2::eInsufficientCriticalData == verifier.AddPar2File(notaset),
+            "AddPar2File on a file which is not a set");
+
+      par2::Par2Error error;
+      Check(verifier.GetLastError(&error), "and it says why without a stream to say it on");
+      Check(error.code == par2::ecMainPacketMissing, "the reason is ecMainPacketMissing");
+
+      std::remove(notaset);
+    }
+
+    Check(quiet.str().size() == written, "and nothing at all was written to a stream");
+
+    std::remove(source);
+    std::remove(set);
+  }
+
   for (size_t i = 0; i < DATACOUNT; ++i)
     std::remove(DATA[i]);
 
