@@ -330,7 +330,7 @@ Result Par2Repairer::ScanFile(const std::string &filename, const std::string &ba
     }
   }
 
-  DiskFile *diskfile = new DiskFile(sout, serr);
+  auto *diskfile = new DiskFile(sout, serr, &errorlog);
   if (!diskfile->Open(pathname))
   {
     delete diskfile;
@@ -1810,7 +1810,7 @@ static bool SortSourceFilesByFileName(Par2RepairerSourceFile *low,
 }
 
 // Attempt to verify all of the source files
-bool Par2Repairer::VerifySourceFiles(const std::string& basepath, std::vector<std::string>& extrafiles)
+bool Par2Repairer::VerifySourceFiles(const std::string &basepath, std::vector<std::string>& extrafiles)
 {
   if (noiselevel > nlQuiet)
     sout << "\nVerifying source files:\n" << std::endl;
@@ -1901,7 +1901,7 @@ bool Par2Repairer::VerifySourceFiles(const std::string& basepath, std::vector<st
       }
     }
 
-    DiskFile *diskfile = new DiskFile(sout, serr);
+    auto *diskfile = new DiskFile(sout, serr, &errorlog);
 
     // Does the target file exist
     if (!diskfile->Open(file))
@@ -2012,7 +2012,7 @@ bool Par2Repairer::VerifyExtraFiles(const std::vector<std::string> &extrafiles, 
         }
         if (b)
         {
-          DiskFile *diskfile = new DiskFile(sout, serr);
+          auto *diskfile = new DiskFile(sout, serr, &errorlog);
 
           // Does the file exist
           if (!diskfile->Open(filename))
@@ -3343,7 +3343,7 @@ bool Par2Repairer::CreateTargetFiles(void)
       // If the file does not exist
       if (!sourcefile->GetTargetExists())
       {
-        DiskFile *targetfile = new DiskFile(sout, serr);
+        auto *targetfile = new DiskFile(sout, serr, &errorlog);
         std::string filename = sourcefile->TargetFileName();
         u64 filesize = sourcefile->GetDescriptionPacket()->FileSize();
 
@@ -3660,6 +3660,8 @@ bool Par2Repairer::ProcessData(u64 blockoffset, size_t blocklength, ProgressMete
         lastopenfile = (*inputblock)->GetDiskFile();
         if (!lastopenfile->Open())
         {
+          errorlog.Record(ecFileOpenFailed, "Could not reopen the file to read from",
+                          lastopenfile->FileName());
           failed = true;
           break;
         }
@@ -3746,6 +3748,8 @@ bool Par2Repairer::ProcessData(u64 blockoffset, size_t blocklength, ProgressMete
           lastopenfile = (*inputblock)->GetDiskFile();
           if (!lastopenfile->Open())
           {
+            errorlog.Record(ecFileOpenFailed, "Could not reopen the file to read from",
+                            lastopenfile->FileName());
             return false;
           }
         }

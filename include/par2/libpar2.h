@@ -95,9 +95,11 @@ typedef enum Result
 
 // Why an operation failed, refining the Result it returned.
 //
-// Only a failure carries one. The Results which report an outcome rather than
-// a failure - eSuccess, eRepairPossible, eRepairNotPossible, eRepairFailed and
-// eCancelled - leave it ecNone, because GetVerifyResult already describes them.
+// Every Result which reports a failure carries one, and eSuccess and
+// eCancelled never do. The Results which report damage - eRepairPossible,
+// eRepairNotPossible and eRepairFailed - are described by GetVerifyResult, and
+// carry one only when something went wrong with a particular file on the way
+// there, such as a data file which could not be read.
 typedef enum ErrorCode
 {
   ecNone = 0,                 // Nothing failed
@@ -437,10 +439,8 @@ public:
   // GetVerifyResult still describes the state before the repair.
   Result Repair(const bool verifyafter = true);
 
-  // Why the last call failed, refining the Result it returned. False when it
-  // did not fail, so that the Results which report an outcome rather than a
-  // failure - eSuccess, eRepairPossible, eRepairNotPossible, eRepairFailed
-  // and eCancelled - all read as no error.
+  // Why the last call failed, refining the Result it returned. See ErrorCode
+  // for which Results carry one.
   //
   // Describes only the call that returned last, and the first thing that went
   // wrong during it. An observer's OnError sees every one of them as it
