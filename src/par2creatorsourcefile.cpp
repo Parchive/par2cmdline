@@ -53,7 +53,7 @@ Par2CreatorSourceFile::~Par2CreatorSourceFile(void)
 // 16k of the file, and then compute the FileId and store the results
 // in a file description packet and a file verification packet.
 
-bool Par2CreatorSourceFile::Open(NoiseLevel noiselevel, std::ostream &sout, std::ostream &serr, const std::string &extrafile, u64 blocksize, bool deferhashcomputation, std::string basepath, ProgressMeter<u64> &progress, const Backends &backends, const std::atomic<bool> *cancelled)
+bool Par2CreatorSourceFile::Open(NoiseLevel noiselevel, std::ostream &sout, std::ostream &serr, const std::string &extrafile, u64 blocksize, bool deferhashcomputation, std::string basepath, ProgressMeter<u64> &progress, const Backends &backends, const std::atomic<bool> *cancelled, const ErrorLog *errorlog)
 {
   // Get the filename and filesize
   diskfilename = extrafile;
@@ -66,7 +66,7 @@ bool Par2CreatorSourceFile::Open(NoiseLevel noiselevel, std::ostream &sout, std:
   parfilename = diskfilename;
   if (0 == parfilename.compare(0, basepath.length(), basepath))
     parfilename.erase(0, basepath.length());
-  parfilename = DescriptionPacket::TranslateFilenameFromLocalToPar2(sout, serr, noiselevel, parfilename);
+  parfilename = DescriptionPacket::TranslateFilenameFromLocalToPar2(sout, serr, noiselevel, parfilename, errorlog);
 
   // Create the Description and Verification packets
   descriptionpacket = new DescriptionPacket;

@@ -143,6 +143,39 @@ struct Par2Error
 };
 
 
+// Something worth knowing which did not stop the work. Unlike an error it is
+// only reported as it happens, through Par2Observer::OnWarning, because
+// nothing about the outcome depends on it.
+typedef enum WarningCode
+{
+  wcNone = 0,
+
+  // A name the set records which this system may not accept as it stands: it
+  // holds a character, a separator or a drive letter which some systems
+  // reserve, it climbs out of the directory with "..", or it is over 255
+  // characters long
+  wcFilenameUnsafe,
+
+  // The name a file will be written under is not the name the set records,
+  // because the recorded one could not be used as it stands
+  wcFilenameChanged,
+
+  // A read or a write moved fewer bytes than were asked for
+  wcIncompleteWrite,
+  wcIncompleteRead,
+
+} WarningCode;
+
+
+// Something worth knowing which did not stop the work.
+struct Par2Warning
+{
+  WarningCode code;
+  std::string message;    // One line, without a trailing newline
+  std::string filename;   // The file it concerns, empty when it concerns none
+};
+
+
 // What a PAR2 set describes, known once its packets have been loaded
 struct Par2SetInfo
 {
@@ -249,6 +282,15 @@ public:
   // first collects them here. The operation may carry on and may still
   // succeed: an error reading one extra file does not fail a verify.
   virtual void OnError(const Par2Error &error) {}
+
+  // Something worth knowing which did not stop the work, most often a filename
+  // the set records that this system will not take as it stands. Called once
+  // per warning as it is found, from the thread that found it.
+  //
+  // Nothing else reports these: there is no GetLastWarning, because no outcome
+  // depends on them. The NoiseLevel does not affect them either, though it
+  // still decides whether the same thing is written to the error stream.
+  virtual void OnWarning(const Par2Warning &warning) {}
 };
 
 

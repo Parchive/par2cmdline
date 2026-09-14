@@ -584,7 +584,7 @@ std::string Par2Repairer::LocalFileName(const Par2RepairerSourceFile *sourcefile
     return std::string();
 
   return DescriptionPacket::TranslateFilenameFromPar2ToLocal(
-           sout, serr, nlSilent, sourcefile->GetDescriptionPacket()->FileName());
+           sout, serr, nlSilent, sourcefile->GetDescriptionPacket()->FileName(), &errorlog);
 }
 
 // List the files the loaded packets describe

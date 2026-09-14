@@ -79,6 +79,23 @@ public:
       observer->OnError(error);
   }
 
+  // Report something which did not stop the work. Nothing is kept: the
+  // observer is the only place it goes.
+  void Warn(const WarningCode code,
+            const std::string &message,
+            const std::string &filename = std::string()) const
+  {
+    if (0 == observer)
+      return;
+
+    Par2Warning warning;
+    warning.code = code;
+    warning.message = message;
+    warning.filename = filename;
+
+    observer->OnWarning(warning);
+  }
+
   // Record this only when nothing has been recorded yet, so that a step which
   // summarises a failure does not repeat what the step below it already said.
   void RecordIfNone(const ErrorCode code,
