@@ -1623,7 +1623,7 @@ bool Par2Repairer::CreateSourceFileList(void)
 
     if (sourcefile)
     {
-      sourcefile->ComputeTargetFileName(sout, serr, noiselevel, basepath);
+      sourcefile->ComputeTargetFileName(sout, serr, noiselevel, basepath, &errorlog);
 
       // Need actual filesize on disk for mt-progress line
       sourcefile->SetDiskFileSize();

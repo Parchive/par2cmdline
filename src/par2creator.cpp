@@ -533,7 +533,7 @@ bool Par2SetCreator::OpenSourceFiles(void)
       observer->OnFile(name);
 
     // Open the source file and compute its Hashes and CRCs.
-    if (!sourcefile->Open(noiselevel, sout, serr, extrafile, blocksize, deferhashcomputation, basepath, progress, backends, &cancelled))
+    if (!sourcefile->Open(noiselevel, sout, serr, extrafile, blocksize, deferhashcomputation, basepath, progress, backends, &cancelled, &errorlog))
     {
       delete sourcefile;
       openfailed = true;

@@ -177,16 +177,19 @@ class Counting : public par2::Par2Observer
 {
 public:
   Counting()
-    : setinfo(0), files(0), progress(0), done(0), repairs(0), errors(0),
-      lastinfo(), lasterror(), last(0), wentbackwards(false), reached(false) {}
+    : setinfo(0), files(0), progress(0), done(0), repairs(0), errors(0), warnings(0),
+      lastinfo(), lasterror(), lastwarning(), last(0), wentbackwards(false), reached(false) {}
 
-  int setinfo, files, progress, done, repairs, errors;
+  int setinfo, files, progress, done, repairs, errors, warnings;
 
   // What the last OnSetInfo carried
   par2::Par2SetInfo lastinfo;
 
   // What the last OnError carried
   par2::Par2Error lasterror;
+
+  // What the last OnWarning carried
+  par2::Par2Warning lastwarning;
 
   // Enough to tell one run of progress from several
   par2::u32 last;
@@ -222,6 +225,13 @@ public:
     std::lock_guard<std::mutex> lock(mutex);
     ++errors;
     lasterror = error;
+  }
+
+  void OnWarning(const par2::Par2Warning &warning)
+  {
+    std::lock_guard<std::mutex> lock(mutex);
+    ++warnings;
+    lastwarning = warning;
   }
 
   void OnProgress(par2::u32 permille)
@@ -1711,6 +1721,39 @@ int main()
     std::remove(source);
     std::remove(set);
   }
+
+  // A name the set has to record is reported when this system may not take it
+  // back, without the work stopping
+#ifndef _WIN32
+  {
+    Check(MakeDirectory("warndir"), "mkdir for the warning check");
+
+    const char *const odd = "warndir/what?now.data";
+    const char *const oddpar = "warndir/what.par2";
+
+    WriteData(odd, 13, 30000);
+
+    Counting observer;
+    par2::Par2Creator creator("warndir/");
+    creator.SetObserver(&observer);
+    creator.AddSourceFile(odd);
+    creator.SetBlockSize(BLOCKSIZE);
+    creator.SetRecoveryBlockCount(RECOVERYBLOCKS);
+
+    Check(par2::eSuccess == creator.Create(oddpar),
+          "an awkward name does not stop a create");
+    Check(observer.errors == 0, "and is not an error");
+    Check(observer.warnings > 0, "but it is reported");
+    Check(observer.lastwarning.code == par2::wcFilenameUnsafe,
+          "as a name some systems will not take");
+    Check(observer.lastwarning.filename == "what?now.data",
+          "naming the file it concerns, as the set records it");
+    Check(observer.lastwarning.message.find('?') != std::string::npos,
+          "and saying what about the name");
+
+    std::remove(odd);
+  }
+#endif
 
   for (size_t i = 0; i < DATACOUNT; ++i)
     std::remove(DATA[i]);
