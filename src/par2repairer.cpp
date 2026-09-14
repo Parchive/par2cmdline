@@ -884,7 +884,8 @@ static std::string ReportedName(const Par2RepairerSourceFile *sourcefile, const 
 // Files that have already been loaded are skipped.
 bool Par2Repairer::LoadPackets(const std::string &parfilename,
                               const std::vector<std::string> &extrafiles,
-                              bool reread)
+                              bool reread,
+                              bool *opened)
 {
   // Determine the searchpath from the location of the main PAR2 file
   std::string name;
@@ -894,7 +895,7 @@ bool Par2Repairer::LoadPackets(const std::string &parfilename,
     par2list.push_back(parfilename);
 
   // Load packets from the main PAR2 file, which is the only one reread applies to
-  if (!LoadPacketsFromFile(searchpath + name, reread))
+  if (!LoadPacketsFromFile(searchpath + name, reread, opened))
     return false;
 
   // Load packets from other PAR2 files with names based on the original PAR2 file
@@ -973,7 +974,7 @@ Result Par2Repairer::PreparePackets(void)
 
 // Load the packets from the specified file. reread asks for a file that has
 // already been processed to be read again.
-bool Par2Repairer::LoadPacketsFromFile(const std::string &filename, bool reread)
+bool Par2Repairer::LoadPacketsFromFile(const std::string &filename, bool reread, bool *opened)
 {
   DiskFile *known = diskFileMap.Find(filename);
 
@@ -1003,7 +1004,11 @@ bool Par2Repairer::LoadPacketsFromFile(const std::string &filename, bool reread)
     known->Close();
 
     if (!known->Open(filename))
+    {
+      if (opened)
+        *opened = false;
       return true;
+    }
   }
   else
   {
@@ -1015,6 +1020,8 @@ bool Par2Repairer::LoadPacketsFromFile(const std::string &filename, bool reread)
       // If we could not open the file, ignore the error and
       // proceed to the next file
       delete diskfile;
+      if (opened)
+        *opened = false;
       return true;
     }
   }

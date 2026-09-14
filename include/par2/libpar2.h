@@ -456,9 +456,9 @@ public:
 
   // Rebuild whatever Verify found to be missing or damaged.
   //
-  // Returns eLogicError if nothing has been verified yet or since the last
-  // Repair, and eRepairNotPossible if the recovery blocks added so far are too
-  // few to rebuild what is missing.
+  // Returns eLogicError with ecNotVerified if nothing has been verified yet or
+  // since the last Repair, and eRepairNotPossible if the recovery blocks added
+  // so far are too few to rebuild what is missing.
   //
   // verifyafter reads back and hashes everything that was rebuilt, and is
   // what turns a repair that did not work into eRepairFailed. With it off the
@@ -466,6 +466,16 @@ public:
   // GetVerifyResult still describes the state before the repair, except that
   // the files renamed into place are counted as complete.
   Result Repair(const bool verifyafter = true);
+
+  // Why the last call failed, refining the Result it returned. False when it
+  // did not fail, so that the Results which report an outcome rather than a
+  // failure - eSuccess, eRepairPossible, eRepairNotPossible, eRepairFailed
+  // and eCancelled - all read as no error.
+  //
+  // Describes only the last AddPar2File, Verify, VerifyFile or Repair, and the
+  // first thing that went wrong during it. An observer's OnError sees every
+  // one of them as it happens, which is what a parallel scan needs.
+  bool GetLastError(Par2Error *error) const;
 
   // Ask the work in progress to stop, from any thread. Verify or Repair then
   // returns eCancelled, having removed any partly written files. A repair which
@@ -478,6 +488,8 @@ private:
   class Impl;
 
   void Restart(void);
+  void TakeLastError(const Result result);
+  void RecordLastError(const ErrorCode code, const std::string &message);
 
   std::ostream &sout;
   std::ostream &serr;
@@ -501,6 +513,7 @@ private:
   bool cancelled;
   bool restarting;
   std::string basepath;
+  Par2Error lasterror;
   std::unique_ptr<Impl> impl;
 };
 

@@ -110,6 +110,7 @@ public:
        const std::string &_basepath, const Backends &backends)
     : Par2Repairer(sout, serr, noiselevel, backends)
     , prepared(eInsufficientCriticalData)
+    , preparefailure()
   {
     basepath = _basepath;
   }
@@ -132,6 +133,8 @@ public:
   // different shape, which is what makes an earlier scan of the data useless
   Result Add(const std::string &parfilename, bool *setchanged)
   {
+    ClearLastError();
+
     const std::vector<std::string> none;
 
     const u32 blocksbefore = sourceblockcount;
@@ -146,13 +149,29 @@ public:
     const u32 before = packetsloaded;
 
     // Read it again even if it has been seen before
-    if (!LoadPackets(parfilename, none, true) || IsCancelled())
-      return IsCancelled() ? eCancelled : eLogicError;
+    bool opened = true;
+    if (!LoadPackets(parfilename, none, true, &opened) || IsCancelled())
+    {
+      if (IsCancelled())
+        return eCancelled;
+
+      errorlog.Record(ecInternalError, "Could not load the PAR2 packets", parfilename);
+      return eLogicError;
+    }
 
     if (packetsloaded == before && !DiskFile::FileExists(parfilename))
+    {
+      errorlog.Record(ecPar2FileMissing, "There is no such PAR2 file", parfilename);
+      return eFileIOError;
+    }
+
+    // Nor is one which is there but could not be opened
+    if (packetsloaded == before && !opened)
       return eFileIOError;
 
     prepared = PreparePackets();
+    preparefailure = Par2Error();
+    errorlog.First(&preparefailure);
 
     if (setchanged)
       *setchanged = (sourceblockcount != blocksbefore) || (DescribedFileCount() != filesbefore)
@@ -161,9 +180,14 @@ public:
     return prepared;
   }
 
-  // What the packets read so far amount to
-  Result Prepared(void) const
+  // What the packets read so far amount to, recorded as Add records it
+  Result Prepared(void)
   {
+    ClearLastError();
+
+    if (prepared != eSuccess)
+      errorlog.Record(preparefailure.code, preparefailure.message, preparefailure.filename);
+
     return prepared;
   }
 
@@ -226,8 +250,13 @@ public:
   Result Scan(const std::string &filename, const size_t memorylimit,
               const u32 _nthreads, const u32 _filethreads)
   {
-    if (prepared != eSuccess)
+    ClearLastError();
+
+    if (0 != mainpacket && prepared != eSuccess)
+    {
+      errorlog.Record(preparefailure.code, preparefailure.message, preparefailure.filename);
       return prepared;
+    }
 
     ApplyThreadCounts(_nthreads, _filethreads);
     ApplyMemoryLimit(memorylimit);
@@ -246,8 +275,19 @@ public:
                const u32 _nthreads,
                const u32 _filethreads)
   {
+    ClearLastError();
+
+    if (0 == mainpacket)
+    {
+      errorlog.Record(ecMainPacketMissing, "The PAR2 files do not describe a set");
+      return eInsufficientCriticalData;
+    }
+
     if (prepared != eSuccess)
+    {
+      errorlog.Record(preparefailure.code, preparefailure.message, preparefailure.filename);
       return prepared;
+    }
 
     ApplyThreadCounts(_nthreads, _filethreads);
     ApplyMemoryLimit(memorylimit);
@@ -262,8 +302,19 @@ public:
                  const u32 _filethreads,
                  const bool verifyafter)
   {
+    ClearLastError();
+
+    if (0 == mainpacket)
+    {
+      errorlog.Record(ecMainPacketMissing, "The PAR2 files do not describe a set");
+      return eInsufficientCriticalData;
+    }
+
     if (prepared != eSuccess)
+    {
+      errorlog.Record(preparefailure.code, preparefailure.message, preparefailure.filename);
       return prepared;
+    }
 
     ApplyThreadCounts(_nthreads, _filethreads);
 
@@ -272,6 +323,7 @@ public:
 
 private:
   Result prepared;                          // What the last PreparePackets returned
+  Par2Error preparefailure;                 // and why, when it failed
 };
 
 // Append a path separator unless there is one already. Empty is left alone.
@@ -405,11 +457,50 @@ Par2Verifier::Par2Verifier(std::ostream &sout, std::ostream &serr, NoiseLevel no
 , cancelled(false)
 , restarting(false)
 , basepath(NormaliseBasePath(_basepath))
+, lasterror()
 , impl(new Impl(sout, serr, noiselevel, basepath, backends))
 {
 }
 
 Par2Verifier::~Par2Verifier() = default;
+
+// The engine records the error, but Restart throws the engine away, so the
+// handle keeps its own copy of what the call it is returning from recorded. A
+// call which succeeded or was cancelled carries none.
+void Par2Verifier::TakeLastError(const Result result)
+{
+  lasterror = Par2Error();
+  if (result != eSuccess && result != eCancelled)
+    impl->GetLastError(&lasterror);
+}
+
+// Make an error the one the call reports, and tell the observer
+static void ReportError(Par2Error &lasterror, Par2Observer *observer, const ErrorCode code,
+                        const std::string &message, const std::string &filename = std::string())
+{
+  lasterror = Par2Error();
+  lasterror.code = code;
+  lasterror.message = message;
+  lasterror.filename = filename;
+
+  if (observer)
+    observer->OnError(lasterror);
+}
+
+// What the handle itself has to report, rather than the work it delegates
+void Par2Verifier::RecordLastError(const ErrorCode code, const std::string &message)
+{
+  ReportError(lasterror, observer, code, message);
+}
+
+bool Par2Verifier::GetLastError(Par2Error *error) const
+{
+  if (0 == error || ecNone == lasterror.code)
+    return false;
+
+  *error = lasterror;
+  return true;
+}
 
 void Par2Verifier::SetObserver(Par2Observer *_observer)
 {
@@ -450,7 +541,11 @@ Result Par2Verifier::AddPar2File(const std::string &_parfilename)
   // Naming the same file again reads nothing more, and says what the packets
   // read so far amount to
   if (std::find(par2files.begin(), par2files.end(), parfilename) != par2files.end())
-    return impl->Prepared();
+  {
+    const Result result = impl->Prepared();
+    TakeLastError(result);
+    return result;
+  }
 
   // Take it from the first PAR2 file named, before any packets are read
   const bool derived = basepath.empty();
@@ -462,6 +557,11 @@ Result Par2Verifier::AddPar2File(const std::string &_parfilename)
 
   bool setchanged = false;
   const Result result = impl->Add(parfilename, &setchanged);
+
+  // Restart replays the scans through VerifyFile, which would otherwise leave
+  // the handle holding what the replay found rather than what Add recorded
+  TakeLastError(result);
+  const Par2Error added = lasterror;
 
   // Remembered even without the critical packets, so that a later restart
   // replays it alongside the file that completes the set. A cancelled read is
@@ -483,6 +583,8 @@ Result Par2Verifier::AddPar2File(const std::string &_parfilename)
   // the same restart.
   if (setchanged && (scanned || !scannedfiles.empty()))
     Restart();
+
+  lasterror = added;
 
   return result;
 }
@@ -572,6 +674,7 @@ Result Par2Verifier::Verify(const std::vector<std::string> &extrafiles)
   verified = false;
 
   const Result result = impl->Check(extrafiles, memorylimit, nthreads, filethreads);
+  TakeLastError(result);
 
   if (result != eInsufficientCriticalData)
     scanned = true;
@@ -593,6 +696,7 @@ Result Par2Verifier::VerifyFile(const std::string &filename)
   }
 
   const Result result = impl->Scan(filename, memorylimit, nthreads, filethreads);
+  TakeLastError(result);
 
   if (result != eInsufficientCriticalData)
     scanned = true;
@@ -614,13 +718,22 @@ Result Par2Verifier::VerifyFile(const std::string &filename)
 Result Par2Verifier::Repair(const bool verifyafter)
 {
   if (!verified)
+  {
+    RecordLastError(ecNotVerified, "Nothing has been verified yet");
     return eLogicError;
+  }
 
   if (repaired)
+  {
+    RecordLastError(ecNotVerified, "Nothing has been verified since the last repair");
     return eLogicError;
+  }
 
   if (!impl->CanRepair())
+  {
+    lasterror = Par2Error();
     return eRepairNotPossible;
+  }
 
   Par2VerifyResult before;
   impl->GetVerifyResult(&before);
@@ -637,6 +750,7 @@ Result Par2Verifier::Repair(const bool verifyafter)
   // A repair which only renames files writes nothing to read back
   readback = result == eSuccess
              && (verifyafter || before.damagedfilecount + before.missingfilecount == 0);
+  TakeLastError(result);
 
   return result;
 }

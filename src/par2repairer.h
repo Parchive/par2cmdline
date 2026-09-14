@@ -125,10 +125,12 @@ protected:
                        std::vector<char>      &matched,
                        u32                    &matchcount);
 
-  // Load packets from a PAR2 file, the files named after it, and the extra files
+  // Load packets from a PAR2 file, the files named after it, and the extra files.
+  // opened, when given, is cleared if the PAR2 file itself could not be opened.
   bool LoadPackets(const std::string &parfilename,
                    const std::vector<std::string> &extrafiles,
-                   bool reread = false);
+                   bool reread = false,
+                   bool *opened = 0);
   // Work out what the packets loaded so far describe
   Result PreparePackets(void);
 
@@ -149,8 +151,8 @@ protected:
   Result RepairFiles(const size_t memorylimit, const std::string &basepath,
                      bool verifyafter = true);
 
-  // Load packets from the specified file
-  bool LoadPacketsFromFile(const std::string &filename, bool reread = false);
+  // Load packets from the specified file, clearing opened if it could not be opened
+  bool LoadPacketsFromFile(const std::string &filename, bool reread = false, bool *opened = 0);
   // Finish loading a recovery packet
   bool LoadRecoveryPacket(DiskFile *diskfile, u64 offset, PACKET_HEADER &header);
   // Finish loading a file description packet
