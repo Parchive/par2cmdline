@@ -219,8 +219,7 @@ bool Par2CreatorSourceFile::Open(NoiseLevel noiselevel, std::ostream &sout, std:
         }
       }
 
-      if (noiselevel > nlQuiet)
-        progress.Add(want);
+      progress.Add(want);
 
       offset += want;
     }
