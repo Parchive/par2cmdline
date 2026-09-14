@@ -36,6 +36,10 @@ public:
               Backends backends = Backends());
   ~Par2SetCreator(void);
 
+  // Set an observer to be notified of progress and per-file results.
+  // Pass 0 to stop reporting. The observer must outlive this object.
+  void SetObserver(Par2Observer *_observer) {observer = _observer;}
+
   // Create recovery files from the source files specified on the command line
   Result Process(const size_t memorylimit,
 		 const std::string &basepath,
@@ -138,6 +142,8 @@ protected:
 
   const NoiseLevel noiselevel; // How noisy we should be
   const Backends backends;     // The implementations the application supplied
+
+  Par2Observer *observer;      // Notified of progress, or 0
 
   u32 totalthreads;            // Number of threads the whole create may use
   u32 filethreads;             // Number of threads for file processing
