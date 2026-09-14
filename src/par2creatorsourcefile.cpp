@@ -90,20 +90,18 @@ bool Par2CreatorSourceFile::Open(NoiseLevel noiselevel, std::ostream &sout, std:
     size_t buffersize = 16 * 1024;
     if (buffersize > filesize)
       buffersize = (size_t)filesize;
-    char *buffer = new char[buffersize];
+    std::unique_ptr<char[]> buffer(new char[buffersize]);
 
     // Read the data from the file
-    if (!diskfile->Read(0, buffer, buffersize))
+    if (!diskfile->Read(0, buffer.get(), buffersize))
     {
       diskfile->Close();
-      delete [] buffer;
       return false;
     }
 
     // Compute the hash of the data read from the file
     MD5Context context;
-    context.Update(buffer, buffersize);
-    delete [] buffer;
+    context.Update(buffer.get(), buffersize);
     MD5Hash hash;
     context.Final(hash);
 
@@ -124,7 +122,7 @@ bool Par2CreatorSourceFile::Open(NoiseLevel noiselevel, std::ostream &sout, std:
     size_t buffersize = 1024*1024;
     if (buffersize > std::min(blocksize,filesize))
       buffersize = (size_t)std::min(blocksize,filesize);
-    char *buffer = new char[buffersize];
+    std::unique_ptr<char[]> buffer(new char[buffersize]);
 
     // Get ready to start reading source file to compute the hashes and crcs
     u64 offset = 0;
@@ -142,17 +140,16 @@ bool Par2CreatorSourceFile::Open(NoiseLevel noiselevel, std::ostream &sout, std:
       size_t want = (size_t)std::min(filesize-offset, (u64)buffersize);
 
       // Read some data from the file into the buffer
-      if (!diskfile->Read(offset, buffer, want))
+      if (!diskfile->Read(offset, buffer.get(), want))
       {
         diskfile->Close();
-        delete [] buffer;
         return false;
       }
 
       // If the new data passes the 16k boundary, compute the 16k hash for the file
       if (offset < 16384 && offset + want >= 16384)
       {
-        filecontext.Update(buffer, (size_t)(16384-offset));
+        filecontext.Update(buffer.get(), (size_t)(16384-offset));
 
         MD5Context temp = filecontext;
         MD5Hash hash;
@@ -168,7 +165,7 @@ bool Par2CreatorSourceFile::Open(NoiseLevel noiselevel, std::ostream &sout, std:
       }
       else
       {
-        filecontext.Update(buffer, want);
+        filecontext.Update(buffer.get(), want);
       }
 
       // Get ready to update block hashes and crcs
@@ -242,8 +239,6 @@ bool Par2CreatorSourceFile::Open(NoiseLevel noiselevel, std::ostream &sout, std:
       // Store the 16k hash in the file description packet.
       descriptionpacket->Hash16k(filehash);
     }
-
-    delete [] buffer;
 
     // Compute the fileid and store it in the verification packet.
     descriptionpacket->ComputeFileId();
