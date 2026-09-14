@@ -2778,9 +2778,12 @@ bool Par2Repairer::AllocateBuffers(size_t memorylimit)
     chunksize = (size_t)blocksize;
   }
 
-  // Allocate the two buffers
-  inputbuffer = new u8[(size_t)chunksize];
-  outputbuffer = new u8[(size_t)chunksize * missingblockcount];
+  // Allocate the two buffers. Use the non-throwing form so a failed
+  // allocation is reported through the normal error path below instead of
+  // via an uncaught std::bad_alloc (plain "new[]" never returns NULL on
+  // failure, it throws).
+  inputbuffer = new(std::nothrow) u8[(size_t)chunksize];
+  outputbuffer = new(std::nothrow) u8[(size_t)chunksize * missingblockcount];
 
   if (MAX_CHUNK_SIZE != 0 && chunksize > MAX_CHUNK_SIZE)
     chunksize = MAX_CHUNK_SIZE;
