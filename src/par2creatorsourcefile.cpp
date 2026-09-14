@@ -53,7 +53,7 @@ Par2CreatorSourceFile::~Par2CreatorSourceFile(void)
 // 16k of the file, and then compute the FileId and store the results
 // in a file description packet and a file verification packet.
 
-bool Par2CreatorSourceFile::Open(NoiseLevel noiselevel, std::ostream &sout, std::ostream &serr, const std::string &extrafile, u64 blocksize, bool deferhashcomputation, std::string basepath, ProgressMeter<u64> &progress, const Backends &backends)
+bool Par2CreatorSourceFile::Open(NoiseLevel noiselevel, std::ostream &sout, std::ostream &serr, const std::string &extrafile, u64 blocksize, bool deferhashcomputation, std::string basepath, ProgressMeter<u64> &progress, const Backends &backends, const std::atomic<bool> *cancelled)
 {
   // Get the filename and filesize
   diskfilename = extrafile;
@@ -149,6 +149,13 @@ bool Par2CreatorSourceFile::Open(NoiseLevel noiselevel, std::ostream &sout, std:
     // Whilst we have not reached the end of the file
     while (offset < filesize)
     {
+      if (cancelled && cancelled->load(std::memory_order_relaxed))
+      {
+        diskfile->Close();
+        delete [] buffer;
+        return false;
+      }
+
       // Work out how much we can read
       size_t want = (size_t)std::min(filesize-offset, (u64)buffersize);
 
