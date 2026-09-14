@@ -1666,6 +1666,7 @@ bool Par2Repairer::AllocateSourceBlocks(void)
       if (blockcount > ((u32)~0) - sourceblockcount)
       {
         serr << "Too many source blocks in recovery set." << std::endl;
+        errorlog.Record(ecTooManySourceBlocks, "Too many source blocks in the recovery set");
         return false;
       }
 
@@ -1842,6 +1843,12 @@ bool Par2Repairer::VerifySourceFiles(const std::string& basepath, std::vector<st
       {
         serr << "No details available for recoverable file number " << filenumber+1 << ".\nRecovery will not be possible." << std::endl;
 
+        {
+          std::ostringstream message;
+          message << "No details available for recoverable file number " << filenumber+1;
+          errorlog.Record(ecFileDescriptionMissing, message.str());
+        }
+
         // Set error but let verification of other files continue
         finalresult = false;
       }
@@ -1934,6 +1941,8 @@ bool Par2Repairer::VerifySourceFiles(const std::string& basepath, std::vector<st
       delete diskfile;
 
       LockedStream(serr) << "Source file " << name << " is a duplicate." << std::endl;
+
+      errorlog.Record(ecDuplicateSourceFile, "The set names this file more than once", name);
 
       if (observer)
       {
@@ -3440,7 +3449,10 @@ bool Par2Repairer::ComputeRSmatrix(void)
 
   // Set the number of source blocks and which of them are present
   if (!rs.SetInput(present, sout, serr))
+  {
+    errorlog.Record(ecProcessorFailed, "Could not give the source blocks to the Reed Solomon matrix");
     return false;
+  }
 
   // Start iterating through the available recovery packets
   std::map<u32,RecoveryPacket*>::iterator rp = recoverypacketmap.begin();
@@ -3468,7 +3480,10 @@ bool Par2Repairer::ComputeRSmatrix(void)
     // Record that the corresponding exponent value is the next one
     // to use in the RS matrix
     if (!rs.SetOutput(true, (u16)exponent))
+    {
+      errorlog.Record(ecProcessorFailed, "Could not give a recovery block to the Reed Solomon matrix");
       return false;
+    }
 
     exponents.push_back((u16)exponent);
 
@@ -3560,9 +3575,17 @@ bool Par2Repairer::AllocateBuffers(size_t memorylimit)
     ? backends.processor(config)
     : std::unique_ptr<Processor>(new ReferenceProcessor(rs, totalthreads));
 
-  if (!processor || !processor->Init((size_t)chunksize, missingblockcount))
+  if (!processor)
   {
     serr << "Could not allocate buffer memory." << std::endl;
+    errorlog.Record(ecProcessorFailed, "The processor the application supplied built nothing");
+    return false;
+  }
+
+  if (!processor->Init((size_t)chunksize, missingblockcount))
+  {
+    serr << "Could not allocate buffer memory." << std::endl;
+    errorlog.Record(ecOutOfMemory, "The processor could not allocate its buffers");
     return false;
   }
 
@@ -3572,6 +3595,7 @@ bool Par2Repairer::AllocateBuffers(size_t memorylimit)
   if (transferbuffer == NULL || outputbuffer == NULL)
   {
     serr << "Could not allocate buffer memory." << std::endl;
+    errorlog.Record(ecOutOfMemory, "Could not allocate the transfer buffers");
     return false;
   }
 
@@ -3766,6 +3790,7 @@ bool Par2Repairer::ProcessData(u64 blockoffset, size_t blocklength, ProgressMete
       if (!processor->GetOutput(outputindex, outputbuffer))
       {
         serr << "Could not read the repaired data back from the processor." << std::endl;
+        errorlog.Record(ecProcessorFailed, "The processor could not return the rebuilt data");
         return false;
       }
       outbuf = outputbuffer;
