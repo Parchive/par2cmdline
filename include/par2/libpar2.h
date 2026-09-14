@@ -206,8 +206,12 @@ public:
   //
   // Left empty it is taken from the first PAR2 file added. Pass "." for the
   // working directory.
+  //
+  // backends holds the implementations the application supplies, each of which
+  // falls back to the one built in when it is left empty.
   Par2Verifier(std::ostream &sout, std::ostream &serr, NoiseLevel noiselevel,
-               const std::string &basepath = std::string());
+               const std::string &basepath = std::string(),
+               const Backends &backends = Backends());
   ~Par2Verifier();
 
   Par2Verifier(const Par2Verifier &) = delete;
@@ -394,6 +398,7 @@ private:
   std::ostream &sout;
   std::ostream &serr;
   NoiseLevel noiselevel;
+  Backends backends;
   Par2Observer *observer;
   size_t memorylimit;
   u32 nthreads;
