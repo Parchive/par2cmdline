@@ -914,7 +914,23 @@ Result Par2Creator::Create(const std::string &parfilename)
   }
 
   if (files.empty())
+  {
+    ReportError(lasterror, observer, ecInvalidSetting, "There are no files with any data to create a set for");
+
     return eInvalidCommandLineArguments;
+  }
+
+  // A set records each name relative to the basepath, so a file outside it
+  // cannot be described
+  for (const auto &file : files)
+  {
+    if (file.compare(0, setbasepath.length(), setbasepath) != 0)
+    {
+      ReportError(lasterror, observer, ecInvalidSetting, "The file is not inside the basepath", file);
+
+      return eInvalidCommandLineArguments;
+    }
+  }
 
   Restart();
 

@@ -106,8 +106,9 @@ typedef enum ErrorCode
 {
   ecNone = 0,                 // Nothing failed
 
-  // The application asked for something in an order that cannot be honoured
+  // The application asked for something that cannot be honoured
   ecNotVerified,              // Repair or Reassess before anything was verified
+  ecInvalidSetting,           // A setting a create was given cannot be used
 
   // The PAR2 files
   ecPar2FileMissing,          // The named PAR2 file is not there, and the files
@@ -587,6 +588,10 @@ public:
   //
   // May be called more than once, with the settings changed in between, and
   // each call writes a whole set of its own.
+  //
+  // Every source file must be inside the basepath. One which is not fails the
+  // create with eInvalidCommandLineArguments and ecInvalidSetting, naming the
+  // file, before anything is read or written.
   //
   // Empty files and a file named twice are left out, and a create left with
   // no files fails with eInvalidCommandLineArguments.
