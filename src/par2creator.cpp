@@ -32,7 +32,7 @@ static char THIS_FILE[]=__FILE__;
 #endif
 
 
-Par2Creator::Par2Creator(std::ostream &sout, std::ostream &serr, const NoiseLevel noiselevel, const Backends &backends)
+Par2CreatorEngine::Par2CreatorEngine(std::ostream &sout, std::ostream &serr, const NoiseLevel noiselevel, const Backends &backends)
 : sout(sout)
 , serr(serr)
 , noiselevel(noiselevel)
@@ -68,7 +68,7 @@ Par2Creator::Par2Creator(std::ostream &sout, std::ostream &serr, const NoiseLeve
 {
 }
 
-Par2Creator::~Par2Creator(void)
+Par2CreatorEngine::~Par2CreatorEngine(void)
 {
   delete mainpacket;
   delete creatorpacket;
@@ -84,7 +84,7 @@ Par2Creator::~Par2Creator(void)
   }
 }
 
-Result Par2Creator::Process(
+Result Par2CreatorEngine::Process(
 			    const size_t memorylimit,
 			    const std::string &basepath,
 			    const u32 nthreads,
@@ -230,7 +230,7 @@ Result Par2Creator::Process(
 }
 
 // Check basepath permission
-bool Par2Creator::CheckBasepath(const std::string &parfilename)
+bool Par2CreatorEngine::CheckBasepath(const std::string &parfilename)
 {
   std::string checkfilename = parfilename + ".check.par2";
   std::unique_ptr<DiskFile> diskfile(new DiskFile(sout, serr));
@@ -249,7 +249,7 @@ bool Par2Creator::CheckBasepath(const std::string &parfilename)
 
 // Compute block size from block count or vice versa depending on which was
 // specified on the command line
-bool Par2Creator::ComputeBlockCount(const std::vector<std::string> &extrafiles)
+bool Par2CreatorEngine::ComputeBlockCount(const std::vector<std::string> &extrafiles)
 {
   FileSizeCache filesize_cache;
 
@@ -298,7 +298,7 @@ bool Par2Creator::ComputeBlockCount(const std::vector<std::string> &extrafiles)
 
 
 // Determine how much recovery data can be computed on one pass
-bool Par2Creator::CalculateProcessBlockSize(size_t memorylimit)
+bool Par2CreatorEngine::CalculateProcessBlockSize(size_t memorylimit)
 {
   // Are we computing any recovery blocks
   if (recoveryblockcount == 0)
@@ -337,7 +337,7 @@ bool Par2Creator::CalculateProcessBlockSize(size_t memorylimit)
 
 // Open all of the source files, compute the Hashes and CRC values, and store
 // the results in the file verification and file description packets.
-bool Par2Creator::OpenSourceFiles(const std::vector<std::string> &extrafiles, std::string basepath)
+bool Par2CreatorEngine::OpenSourceFiles(const std::vector<std::string> &extrafiles, std::string basepath)
 {
   std::atomic<bool> openfailed(false);
 
@@ -392,7 +392,7 @@ bool Par2Creator::OpenSourceFiles(const std::vector<std::string> &extrafiles, st
 }
 
 // Create the main packet and determine the setid to use with all packets
-bool Par2Creator::CreateMainPacket(void)
+bool Par2CreatorEngine::CreateMainPacket(void)
 {
   // Construct the main packet from the list of source files and the block size.
   mainpacket = new MainPacket;
@@ -405,7 +405,7 @@ bool Par2Creator::CreateMainPacket(void)
 }
 
 // Create the creator packet.
-bool Par2Creator::CreateCreatorPacket(void)
+bool Par2CreatorEngine::CreateCreatorPacket(void)
 {
   // Construct the creator packet
   creatorpacket = new CreatorPacket;
@@ -415,7 +415,7 @@ bool Par2Creator::CreateCreatorPacket(void)
 }
 
 // Initialise all of the source blocks ready to start reading data from the source files.
-bool Par2Creator::CreateSourceBlocks(void)
+bool Par2CreatorEngine::CreateSourceBlocks(void)
 {
   // Allocate the array of source blocks
   sourceblocks.resize(sourceblockcount);
@@ -451,7 +451,7 @@ public:
 };
 
 // Create all of the output files and allocate all packets to appropriate file offsets.
-bool Par2Creator::InitialiseOutputFiles(const std::string &parfilename)
+bool Par2CreatorEngine::InitialiseOutputFiles(const std::string &parfilename)
 {
   // Allocate the recovery packets
   recoverypackets.resize(recoveryblockcount);
@@ -718,7 +718,7 @@ bool Par2Creator::InitialiseOutputFiles(const std::string &parfilename)
 }
 
 // Allocate memory buffers for reading and writing data to disk.
-bool Par2Creator::AllocateBuffers(size_t memorylimit)
+bool Par2CreatorEngine::AllocateBuffers(size_t memorylimit)
 {
   transferbuffer = new u8[chunksize * NUM_TRANSFER_BUFFERS];
   outputbuffer = new u8[chunksize];
@@ -747,7 +747,7 @@ bool Par2Creator::AllocateBuffers(size_t memorylimit)
 }
 
 // Compute the Reed Solomon matrix
-bool Par2Creator::ComputeRSMatrix(void)
+bool Par2CreatorEngine::ComputeRSMatrix(void)
 {
   // Set the number of input blocks
   if (!rs.SetInput(sourceblockcount, sout, serr))
@@ -767,7 +767,7 @@ bool Par2Creator::ComputeRSMatrix(void)
 }
 
 // Read source data, process it through the RS matrix and write it to disk.
-bool Par2Creator::ProcessData(u64 blockoffset, size_t blocklength, ProgressMeter<u64> &progress)
+bool Par2CreatorEngine::ProcessData(u64 blockoffset, size_t blocklength, ProgressMeter<u64> &progress)
 {
   processor->SetChunkLength(blocklength);
   processor->ResetOutput();
@@ -903,7 +903,7 @@ bool Par2Creator::ProcessData(u64 blockoffset, size_t blocklength, ProgressMeter
 }
 
 // Finish computation of the recovery packets and write the headers to disk.
-bool Par2Creator::WriteRecoveryPacketHeaders(void)
+bool Par2CreatorEngine::WriteRecoveryPacketHeaders(void)
 {
   // For each recovery packet
   for (std::vector<RecoveryPacket>::iterator recoverypacket = recoverypackets.begin();
@@ -918,7 +918,7 @@ bool Par2Creator::WriteRecoveryPacketHeaders(void)
   return true;
 }
 
-bool Par2Creator::FinishFileHashComputation(void)
+bool Par2CreatorEngine::FinishFileHashComputation(void)
 {
   // If we deferred the computation of the full file hash, then we finish it now
   if (deferhashcomputation)
@@ -938,7 +938,7 @@ bool Par2Creator::FinishFileHashComputation(void)
 }
 
 // Fill in all remaining details in the critical packets.
-bool Par2Creator::FinishCriticalPackets(void)
+bool Par2CreatorEngine::FinishCriticalPackets(void)
 {
   // Get the setid from the main packet
   const MD5Hash &setid = mainpacket->SetId();
@@ -957,7 +957,7 @@ bool Par2Creator::FinishCriticalPackets(void)
 }
 
 // Write all other critical packets to disk.
-bool Par2Creator::WriteCriticalPackets(void)
+bool Par2CreatorEngine::WriteCriticalPackets(void)
 {
   std::list<CriticalPacketEntry>::const_iterator packetentry = criticalpacketentries.begin();
 
@@ -975,7 +975,7 @@ bool Par2Creator::WriteCriticalPackets(void)
 }
 
 // Close all files.
-bool Par2Creator::CloseFiles(void)
+bool Par2CreatorEngine::CloseFiles(void)
 {
 //  // Close each source file.
 //  for (std::vector<Par2CreatorSourceFile*>::iterator sourcefile = sourcefiles.begin();
