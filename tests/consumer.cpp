@@ -62,6 +62,25 @@ namespace
     ++failures;
   }
 
+  // A Result which reports a failure always says why; one which reports an
+  // outcome never does, however unwelcome the outcome is.
+  void CheckLastError(const par2::Par2Verifier &verifier, const par2::Result result,
+                      const std::string &what)
+  {
+    const bool failed = (result == par2::eInvalidCommandLineArguments ||
+                         result == par2::eInsufficientCriticalData ||
+                         result == par2::eFileIOError ||
+                         result == par2::eLogicError ||
+                         result == par2::eMemoryError);
+
+    par2::Par2Error error;
+    error.code = par2::ecInternalError;
+
+    Check(verifier.GetLastError(&error) == failed, what + " reports an error only if it failed");
+    Check(!failed || error.code != par2::ecNone, what + " gives a code");
+    Check(!failed || !error.message.empty(), what + " gives a message");
+  }
+
   void WriteData(const char *name, unsigned seed, size_t bytes)
   {
     std::ofstream f(name, std::ios::binary | std::ios::trunc);
@@ -111,13 +130,16 @@ class Counting : public par2::Par2Observer
 {
 public:
   Counting()
-    : setinfo(0), files(0), progress(0), done(0), repairs(0),
-      lastinfo(), last(0), wentbackwards(false), reached(false) {}
+    : setinfo(0), files(0), progress(0), done(0), repairs(0), errors(0),
+      lastinfo(), lasterror(), last(0), wentbackwards(false), reached(false) {}
 
-  int setinfo, files, progress, done, repairs;
+  int setinfo, files, progress, done, repairs, errors;
 
   // What the last OnSetInfo carried
   par2::Par2SetInfo lastinfo;
+
+  // What the last OnError carried
+  par2::Par2Error lasterror;
 
   // Enough to tell one run of progress from several
   par2::u32 last;
@@ -146,6 +168,13 @@ public:
   {
     std::lock_guard<std::mutex> lock(mutex);
     ++repairs;
+  }
+
+  void OnError(const par2::Par2Error &error)
+  {
+    std::lock_guard<std::mutex> lock(mutex);
+    ++errors;
+    lasterror = error;
   }
 
   void OnProgress(par2::u32 permille)
@@ -184,6 +213,7 @@ int main()
     verifier.SetObserver(&observer);
 
     Check(par2::eSuccess == verifier.AddPar2File(PARFILE), "AddPar2File");
+    CheckLastError(verifier, par2::eSuccess, "AddPar2File");
 
     par2::Par2SetInfo info;
     Check(verifier.GetSetInfo(&info), "GetSetInfo");
@@ -383,6 +413,7 @@ int main()
     Check(par2::eSuccess == verifier.AddPar2File(PARFILE), "AddPar2File for damaged set");
     Check(par2::eRepairPossible == verifier.Verify(noextras),
           "Verify reports repair is possible");
+    CheckLastError(verifier, par2::eRepairPossible, "a verify that found damage");
 
     // The set records its files in fileid order, not the order they were given
     std::vector<par2::Par2FileInfo> damagedfiles;
@@ -544,6 +575,7 @@ int main()
 
     Check(par2::eSuccess == verifier.AddPar2File(PARFILE), "AddPar2File before cancelling");
     Check(par2::eCancelled == verifier.Verify(noextras), "Verify is cancelled");
+    CheckLastError(verifier, par2::eCancelled, "a cancelled verify");
 
     verifier.ClearCancel();
   }
@@ -606,8 +638,18 @@ int main()
 
   // Reassess before anything has been verified says so
   {
+    Counting observer;
     par2::Par2Verifier verifier(quiet, quiet, par2::nlSilent);
+    verifier.SetObserver(&observer);
+
     Check(par2::eLogicError == verifier.Reassess(), "Reassess needs a verify first");
+    CheckLastError(verifier, par2::eLogicError, "Reassess without a verify");
+
+    par2::Par2Error error;
+    Check(verifier.GetLastError(&error), "Reassess without a verify says why");
+    Check(error.code == par2::ecNotVerified, "and the reason is ecNotVerified");
+    Check(observer.errors == 1, "the observer hears about it too");
+    Check(observer.lasterror.code == par2::ecNotVerified, "with the same code");
   }
 
   // A PAR2 file seen while it was still being written is read again when the
@@ -968,6 +1010,12 @@ int main()
     par2::Par2Verifier nothing(quiet, quiet, par2::nlSilent);
     Check(par2::eFileIOError == nothing.AddPar2File("no-such-set-at-all.par2"),
           "a name that yields nothing is eFileIOError");
+    CheckLastError(nothing, par2::eFileIOError, "a name that yields nothing");
+
+    par2::Par2Error error;
+    Check(nothing.GetLastError(&error), "and it says why");
+    Check(error.code == par2::ecPar2FileMissing, "the reason is ecPar2FileMissing");
+    Check(error.filename == "no-such-set-at-all.par2", "naming the file it looked for");
   }
 
   // A set may describe files in subdirectories, so neither name is
@@ -1020,10 +1068,18 @@ int main()
   {
     par2::Par2Verifier verifier(quiet, quiet, par2::nlSilent);
     Check(par2::eLogicError == verifier.Repair(), "Repair needs a verify first");
+    CheckLastError(verifier, par2::eLogicError, "Repair without a verify");
+
+    par2::Par2Error error;
+    Check(verifier.GetLastError(&error), "Repair without a verify says why");
+    Check(error.code == par2::ecNotVerified, "and the reason is ecNotVerified");
 
     Check(par2::eSuccess == verifier.AddPar2File(PARFILE), "AddPar2File for the repair guard");
+    CheckLastError(verifier, par2::eSuccess, "AddPar2File for the repair guard");
     Check(par2::eLogicError == verifier.Repair(),
           "adding packets is still not a verify");
+    Check(verifier.GetLastError(&error), "adding packets does not make it verified");
+    Check(error.code == par2::ecNotVerified, "so the reason is still ecNotVerified");
 
     // Lose more blocks than the set can rebuild, so repair is genuinely
     // impossible, then ask for one anyway.
@@ -1038,8 +1094,10 @@ int main()
 
     Check(par2::eRepairNotPossible == verifier.Verify(noextras),
           "every file gone is beyond repair");
+    CheckLastError(verifier, par2::eRepairNotPossible, "a verify beyond repair");
     Check(par2::eRepairNotPossible == verifier.Repair(),
           "Repair says so too, rather than crashing");
+    CheckLastError(verifier, par2::eRepairNotPossible, "a repair that cannot be done");
 
     // Put them back byte for byte, so the set still matches for anything added
     // after this. WriteData is deterministic, so no new par2create is needed.
