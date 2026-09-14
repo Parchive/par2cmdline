@@ -73,12 +73,20 @@ namespace
                          result == par2::eLogicError ||
                          result == par2::eMemoryError);
 
+    // A verify which reports damage may still have met a file it could not
+    // read, which is worth keeping rather than a contradiction
+    const bool damaged = (result == par2::eRepairPossible ||
+                          result == par2::eRepairNotPossible ||
+                          result == par2::eRepairFailed);
+
     par2::Par2Error error;
     error.code = par2::ecInternalError;
 
-    Check(verifier.GetLastError(&error) == failed, what + " reports an error only if it failed");
-    Check(!failed || error.code != par2::ecNone, what + " gives a code");
-    Check(!failed || !error.message.empty(), what + " gives a message");
+    const bool said = verifier.GetLastError(&error);
+
+    Check(failed ? said : (damaged || !said), what + " reports an error only if it failed");
+    Check(!said || error.code != par2::ecNone, what + " gives a code");
+    Check(!said || !error.message.empty(), what + " gives a message");
   }
 
   void WriteData(const char *name, unsigned seed, size_t bytes)
@@ -87,6 +95,20 @@ namespace
     for (size_t i = 0; i < bytes; ++i)
       f.put((char)((i * 31 + seed * 7) & 0xff));
   }
+
+#ifndef _WIN32
+  // Running as a user who may write to a read-only directory anyway would
+  // prove nothing, so the check that relies on it asks first.
+  bool CanWriteInto(const char *directory)
+  {
+    const std::string probe = std::string(directory) + "/probe";
+    std::ofstream f(probe.c_str(), std::ios::binary | std::ios::trunc);
+    const bool ok = f.good();
+    f.close();
+    std::remove(probe.c_str());
+    return ok;
+  }
+#endif
 
   bool MakeDirectory(const char *name)
   {
@@ -1260,6 +1282,59 @@ int main()
     std::remove(once);
     std::remove(twicepar);
   }
+
+  // What went wrong with one file is reported as the operation on that file,
+  // rather than as an I/O error with nothing attached
+#ifndef _WIN32
+  {
+    Check(MakeDirectory("rodir"), "mkdir for the read-only check");
+
+    const char *const locked = "rodir/locked.data";
+    const char *const lockedpar = "rodir/locked.par2";
+
+    WriteData(locked, 3, 30000);
+    std::vector<std::string> files(1, std::string(locked));
+
+    Check(par2::eSuccess == par2::par2create(quiet, quiet, par2::nlSilent,
+                                             64 * 1024 * 1024, "rodir/", 0, 2,
+                                             lockedpar, files, BLOCKSIZE, 0,
+                                             par2::scVariable, 0, 20),
+          "par2create for the read-only check");
+
+    Corrupt(locked, 5000, 2000);
+
+    Counting observer;
+    par2::Par2Verifier verifier(quiet, quiet, par2::nlSilent, "rodir/");
+    verifier.SetObserver(&observer);
+
+    Check(par2::eSuccess == verifier.AddPar2File(lockedpar),
+          "AddPar2File for the read-only check");
+    Check(par2::eRepairPossible == verifier.Verify(noextras),
+          "the damaged file needs repairing");
+
+    const bool closed = (chmod("rodir", 0555) == 0) && !CanWriteInto("rodir");
+
+    if (closed)
+    {
+      const par2::Result result = verifier.Repair();
+
+      Check(par2::eFileIOError == result, "a repair which cannot write says so");
+      CheckLastError(verifier, result, "a repair which cannot write");
+
+      par2::Par2Error error;
+      Check(verifier.GetLastError(&error), "and it says why");
+      Check(error.code == par2::ecFileRenameFailed, "naming the operation on the file");
+      Check(error.filename.find("locked.data") != std::string::npos,
+            "and the file it was working on");
+      Check(observer.errors > 0, "the observer heard about it as it happened");
+    }
+
+    chmod("rodir", 0755);
+
+    std::remove(locked);
+    std::remove(lockedpar);
+  }
+#endif
 
   // The implementations an application supplies reach the work the handle does,
   // rather than being dropped in favour of the ones built in
