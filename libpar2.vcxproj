@@ -88,6 +88,7 @@
     <ClInclude Include="src\datablock.h" />
     <ClInclude Include="src\descriptionpacket.h" />
     <ClInclude Include="src\diskfile.h" />
+    <ClInclude Include="src\errorlog.h" />
     <ClInclude Include="src\filechecksummer.h" />
     <ClInclude Include="src\galois.h" />
     <ClInclude Include="src\letype.h" />

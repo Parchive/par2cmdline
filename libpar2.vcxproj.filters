@@ -107,6 +107,9 @@
     <ClInclude Include="src\diskfile.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\errorlog.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="src\filechecksummer.h">
       <Filter>Header Files</Filter>
     </ClInclude>

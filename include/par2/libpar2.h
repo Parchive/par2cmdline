@@ -93,6 +93,53 @@ typedef enum Result
 } Result;
 
 
+// Why an operation failed, refining the Result it returned.
+//
+// Only a failure carries one. The Results which report an outcome rather than
+// a failure - eSuccess, eRepairPossible, eRepairNotPossible, eRepairFailed and
+// eCancelled - leave it ecNone, because GetVerifyResult already describes them.
+typedef enum ErrorCode
+{
+  ecNone = 0,                 // Nothing failed
+
+  // The application asked for something in an order that cannot be honoured
+  ecNotVerified,              // Repair or Reassess before anything was verified
+
+  // The PAR2 files
+  ecPar2FileMissing,          // The named PAR2 file is not there, and the files
+                              // named after it carried nothing new either
+  ecMainPacketMissing,        // Nothing read so far says what the set contains
+
+  // What the set describes
+  ecFileDescriptionMissing,   // The set names a recoverable file it carries no
+                              // description of
+  ecDuplicateSourceFile,      // Two of the set's files are one file on disk
+  ecTooManySourceBlocks,      // The set needs more blocks than can be held
+
+  // Reading and writing
+  ecFileOpenFailed,
+  ecFileCreateFailed,
+  ecFileRenameFailed,
+  ecFileReadFailed,
+  ecFileWriteFailed,
+
+  ecOutOfMemory,              // A buffer could not be allocated
+  ecProcessorFailed,          // The compute implementation could not do the work
+
+  ecInternalError,            // An invariant the library relies on did not hold
+
+} ErrorCode;
+
+
+// Why an operation failed.
+struct Par2Error
+{
+  ErrorCode code;         // ecNone when nothing failed
+  std::string message;    // One line, without a trailing newline. May be empty.
+  std::string filename;   // The file it concerns, empty when it concerns none
+};
+
+
 // What a PAR2 set describes, known once its packets have been loaded
 struct Par2SetInfo
 {
@@ -180,6 +227,12 @@ public:
 
   // Repair is about to start
   virtual void OnRepairStart(void) {}
+
+  // Something went wrong. Called once per error as it is found, from the
+  // thread that found it, so a caller wanting every error rather than only the
+  // first collects them here. The operation may carry on and may still
+  // succeed: an error reading one extra file does not fail a verify.
+  virtual void OnError(const Par2Error &error) {}
 };
 
 
