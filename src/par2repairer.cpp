@@ -586,6 +586,51 @@ bool Par2Repairer::GetBlockChecksums(const std::string &filename,
   return true;
 }
 
+// Which blocks of a file the last verification found
+bool Par2Repairer::GetFoundBlocks(const std::string &filename,
+                                  std::vector<bool> *blocks) const
+{
+  if (0 == blocks)
+    return false;
+
+  blocks->clear();
+
+  const Par2RepairerSourceFile *sourcefile = FindSourceFile(filename);
+  if (0 == sourcefile)
+    return false;
+
+  const VerificationPacket *verificationpacket = sourcefile->GetVerificationPacket();
+
+  const u32 blockcount = verificationpacket->BlockCount();
+  const DiskFile *targetfile = sourcefile->GetTargetFile();
+  if (0 == targetfile)
+    return false;
+
+  blocks->reserve(blockcount);
+
+  // A complete file holds every block where it belongs
+  const bool whole = sourcefile->GetCompleteFile() == targetfile;
+
+  auto sourceblock = sourcefile->SourceBlocks();
+  for (u32 blocknumber=0; blocknumber<blockcount; ++blocknumber, ++sourceblock)
+    blocks->push_back(whole
+                      || (sourceblock->IsSet()
+                          && sourceblock->GetDiskFile() == targetfile
+                          && sourceblock->GetOffset() == blocknumber * blocksize));
+
+  // A file with no block where it belongs says nothing, unless no block of
+  // the set was found in it at all
+  if (std::find(blocks->begin(), blocks->end(), true) == blocks->end()
+      && std::any_of(sourceblocks.begin(), sourceblocks.end(),
+                     [targetfile](const DataBlock &block) { return block.GetDiskFile() == targetfile; }))
+  {
+    blocks->clear();
+    return false;
+  }
+
+  return true;
+}
+
 // What the packets loaded so far describe
 bool Par2Repairer::GetSetInfo(Par2SetInfo *info) const
 {

@@ -401,6 +401,7 @@ Par2Verifier::Par2Verifier(std::ostream &sout, std::ostream &serr, NoiseLevel no
 , verified(false)
 , scanned(false)
 , repaired(false)
+, readback(false)
 , cancelled(false)
 , restarting(false)
 , basepath(NormaliseBasePath(_basepath))
@@ -500,6 +501,19 @@ bool Par2Verifier::GetBlockChecksums(const std::string &filename,
                                     std::vector<u32> *crcs) const
 {
   return impl->GetBlockChecksums(filename, crcs);
+}
+
+// Guarded by verified, unlike GetBlockChecksums: before anything has been
+// scanned every block would read as not found, which is not the same as
+// nothing having been looked at. After a repair which rebuilt files without
+// reading them back, what was found describes the files it replaced.
+bool Par2Verifier::GetFoundBlocks(const std::string &filename,
+                                  std::vector<bool> *blocks) const
+{
+  if (!verified || (repaired && !readback))
+    return false;
+
+  return impl->GetFoundBlocks(filename, blocks);
 }
 
 std::vector<std::string> Par2Verifier::GetBackupFiles(void) const
@@ -608,6 +622,9 @@ Result Par2Verifier::Repair(const bool verifyafter)
   if (!impl->CanRepair())
     return eRepairNotPossible;
 
+  Par2VerifyResult before;
+  impl->GetVerifyResult(&before);
+
   // A repair forgets every block vouched for
   for (const auto &kb : knownblocks)
     impl->SetKnownBlocks(kb.first, std::vector<bool>());
@@ -615,7 +632,13 @@ Result Par2Verifier::Repair(const bool verifyafter)
 
   repaired = true;
 
-  return impl->Rebuild(memorylimit, nthreads, filethreads, verifyafter);
+  const Result result = impl->Rebuild(memorylimit, nthreads, filethreads, verifyafter);
+
+  // A repair which only renames files writes nothing to read back
+  readback = result == eSuccess
+             && (verifyafter || before.damagedfilecount + before.missingfilecount == 0);
+
+  return result;
 }
 
 void Par2Verifier::Cancel(void)
