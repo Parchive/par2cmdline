@@ -26,6 +26,7 @@
 
 #include <cstdio>
 #include <fstream>
+#include <memory>
 #include <mutex>
 
 #ifdef _WIN32
@@ -1248,6 +1249,54 @@ int main()
     Check(r.missingfilecount == 1, "and the one never scanned is missing");
 
     std::remove(early);
+  }
+
+  // The implementations an application supplies reach the work the handle does,
+  // rather than being dropped in favour of the ones built in
+  {
+    Check(MakeDirectory("backends"), "mkdir for the backend check");
+
+    const char *const own = "backends/own.data";
+    const char *const ownpar = "backends/own.par2";
+
+    WriteData(own, 9, 30000);
+    std::vector<std::string> files(1, std::string(own));
+
+    Check(par2::eSuccess == par2::par2create(quiet, quiet, par2::nlSilent,
+                                             64 * 1024 * 1024, "backends/", 0, 2,
+                                             ownpar, files, BLOCKSIZE, 0,
+                                             par2::scVariable, 0, 20),
+          "par2create for the backend check");
+
+    Corrupt(own, 5000, 2000);
+
+    int asked = 0;
+    par2::u32 budget = 0;
+    par2::Backends backends;
+    backends.processor = [&asked, &budget](const par2::ProcessorConfig &config)
+    {
+      ++asked;
+      budget = config.numthreads;
+      return std::unique_ptr<par2::Processor>();
+    };
+
+    par2::Par2Verifier verifier(quiet, quiet, par2::nlSilent, "backends/", backends);
+
+    // What the handle was told, rather than whatever the library would pick
+    verifier.SetThreadCounts(3, 1);
+
+    Check(par2::eSuccess == verifier.AddPar2File(ownpar), "AddPar2File for the backend check");
+    Check(par2::eRepairPossible == verifier.Verify(noextras),
+          "the damaged file needs repairing");
+
+    // Declining to supply one is reported rather than quietly falling back
+    Check(par2::eMemoryError == verifier.Repair(),
+          "a repair which cannot build a processor says so");
+    Check(asked == 1, "the application's processor was asked for");
+    Check(budget == 3, "and built with the thread count the handle was given");
+
+    std::remove(own);
+    std::remove(ownpar);
   }
 
   for (const char *name : DATA)
