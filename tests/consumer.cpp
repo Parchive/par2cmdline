@@ -186,16 +186,19 @@ class Counting : public par2::Par2Observer
 {
 public:
   Counting()
-    : setinfo(0), files(0), progress(0), done(0), errors(0),
-      lastinfo(), lasterror(), last(0), wentbackwards(false), reached(false) {}
+    : setinfo(0), files(0), progress(0), done(0), errors(0), warnings(0),
+      lastinfo(), lasterror(), lastwarning(), last(0), wentbackwards(false), reached(false) {}
 
-  int setinfo, files, progress, done, errors;
+  int setinfo, files, progress, done, errors, warnings;
 
   // What the last OnSetInfo carried
   par2::Par2SetInfo lastinfo;
 
   // What the last OnError carried
   par2::Par2Error lasterror;
+
+  // What the last OnWarning carried
+  par2::Par2Warning lastwarning;
 
   // Enough to tell one run of progress from several
   par2::u32 last;
@@ -225,6 +228,13 @@ public:
     std::lock_guard<std::mutex> lock(mutex);
     ++errors;
     lasterror = error;
+  }
+
+  void OnWarning(const par2::Par2Warning &warning) override
+  {
+    std::lock_guard<std::mutex> lock(mutex);
+    ++warnings;
+    lastwarning = warning;
   }
 
   void OnProgress(par2::u32 permille)
@@ -2336,6 +2346,69 @@ int main()
     std::remove((std::string(source) + ".1").c_str());
     RemoveSet("streamlessdir/streamless");
   }
+
+  // A name the set has to record is reported when this system may not take it
+  // back, without the work stopping
+#ifndef _WIN32
+  {
+    Check(MakeDirectory("warndir"), "mkdir for the warning check");
+
+    const char *const odd = "warndir/what?now.data";
+    const char *const oddpar = "warndir/what.par2";
+
+    WriteData(odd, 13, 30000);
+
+    Counting observer;
+    par2::Par2Creator creator("warndir/");
+    creator.SetObserver(&observer);
+    creator.SetSourceFiles({odd});
+    creator.SetBlockSize(BLOCKSIZE);
+    creator.SetRecoveryBlockCount(RECOVERYBLOCKS);
+
+    Check(par2::eSuccess == creator.Create(oddpar),
+          "an awkward name does not stop a create");
+    Check(observer.errors == 0, "and is not an error");
+    Check(observer.warnings > 0, "but it is reported");
+    Check(observer.lastwarning.code == par2::wcFilenameUnsafe,
+          "as a name some systems will not take");
+    Check(observer.lastwarning.filename == "what?now.data",
+          "naming the file it concerns, as the set records it");
+    Check(observer.lastwarning.message.find('?') != std::string::npos,
+          "and saying what about the name");
+
+    std::remove(odd);
+    RemoveSet("warndir/what");
+
+    // A name this system changes is reported once, not again for every PAR2
+    // file added
+    {
+      const char *const slashed = "warndir/back\\slash.data";
+      WriteData(slashed, 17, 30000);
+      Check(par2::eSuccess == par2::par2create(quiet, quiet, par2::nlSilent,
+                                               64 * 1024 * 1024, "warndir/", 0, 2,
+                                               "warndir/slashed", std::vector<std::string>(1, slashed),
+                                               BLOCKSIZE, 0, par2::scVariable, 0, RECOVERYBLOCKS),
+            "par2create for the repeated warning check");
+
+      Counting watching;
+      par2::Par2Verifier verifier(quiet, quiet, par2::nlSilent, "warndir/");
+      verifier.SetObserver(&watching);
+
+      Check(par2::eSuccess == verifier.AddPar2File("warndir/slashed.par2"),
+            "AddPar2File for the repeated warning check");
+      const int warned = watching.warnings;
+      Check(warned > 0 && watching.lastwarning.code == par2::wcFilenameChanged,
+            "the changed name is reported");
+
+      Check(par2::eSuccess == verifier.AddPar2File("warndir/slashed.vol00+1.par2"),
+            "AddPar2File for a volume of it");
+      Check(watching.warnings == warned, "and not again for the volume");
+
+      std::remove(slashed);
+      RemoveSet("warndir/slashed");
+    }
+  }
+#endif
 
   for (const char *name : DATA)
     std::remove(name);
