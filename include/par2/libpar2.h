@@ -260,6 +260,10 @@ public:
 };
 
 
+// Discards everything written to it. A handle built without streams writes
+// into one of these.
+class NullStream;
+
 // Verifies and repairs one PAR2 set.
 //
 // PAR2 files are added one at a time, so a caller which is still collecting
@@ -284,6 +288,16 @@ public:
   Par2Verifier(std::ostream &sout, std::ostream &serr, NoiseLevel noiselevel,
                const std::string &basepath = std::string(),
                Backends backends = Backends());
+
+  // Built without streams nothing is written anywhere, and the work is
+  // followed through an observer instead. There is no NoiseLevel because
+  // everything it governs is written output.
+  //
+  // The observer is told exactly what it is told otherwise: OnSetInfo, OnFile,
+  // OnFileDone, OnProgress and OnError all arrive unchanged.
+  explicit Par2Verifier(const std::string &basepath = std::string(),
+                        Backends backends = Backends());
+
   ~Par2Verifier();
 
   Par2Verifier(const Par2Verifier &) = delete;
@@ -493,10 +507,13 @@ public:
 private:
   class Impl;
 
+  Par2Verifier(std::unique_ptr<NullStream> nullstream, const std::string &basepath, Backends backends);
+
   void Restart(void);
   void TakeLastError(void);
   void RecordLastError(const ErrorCode code, const std::string &message);
 
+  std::unique_ptr<NullStream> nullstream;
   std::ostream &sout;
   std::ostream &serr;
   NoiseLevel noiselevel;
@@ -543,6 +560,12 @@ public:
   Par2Creator(std::ostream &sout, std::ostream &serr, NoiseLevel noiselevel,
               const std::string &basepath = std::string(),
               Backends backends = Backends());
+
+  // Built without streams nothing is written anywhere, and the work is
+  // followed through an observer instead. There is no NoiseLevel because
+  // everything it governs is written output.
+  explicit Par2Creator(const std::string &basepath = std::string(),
+                       Backends backends = Backends());
   ~Par2Creator();
 
   Par2Creator(const Par2Creator &) = delete;
@@ -611,9 +634,12 @@ public:
 private:
   class Impl;
 
+  Par2Creator(std::unique_ptr<NullStream> nullstream, const std::string &basepath, Backends backends);
+
   void Restart(void);
   void TakeLastError(void);
 
+  std::unique_ptr<NullStream> nullstream;
   std::ostream &sout;
   std::ostream &serr;
   NoiseLevel noiselevel;
