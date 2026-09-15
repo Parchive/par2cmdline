@@ -15,8 +15,8 @@ jobs:
 
     - name: Build
       run: |
-        cmake -B build-cmake -DCMAKE_BUILD_TYPE=Debug
-        cmake --build build-cmake -j"$(nproc)"
+        cmake -B build-cmake -G Ninja -DCMAKE_BUILD_TYPE=Debug
+        cmake --build build-cmake
 
     # Runs tests
     # The shell scripts use the PARVALGRINDOPTS env var when set.

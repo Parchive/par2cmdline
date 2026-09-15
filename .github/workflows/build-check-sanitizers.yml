@@ -13,8 +13,8 @@ jobs:
 
     - name: Build and test (ASan + UBSan)
       run: |
-        cmake -B build-cmake -DCMAKE_BUILD_TYPE=Debug \
+        cmake -B build-cmake -G Ninja -DCMAKE_BUILD_TYPE=Debug \
           -DCMAKE_CXX_FLAGS="-g -O1 -fsanitize=address,undefined -fno-omit-frame-pointer" \
           -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address,undefined"
-        cmake --build build-cmake -j"$(nproc)"
+        cmake --build build-cmake
         ctest --test-dir build-cmake --output-on-failure
