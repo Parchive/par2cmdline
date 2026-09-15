@@ -1,0 +1,25 @@
+# Where install() put par2 and its page: a directory given as an absolute path
+# is used as it stands, and any other is under the prefix being installed to
+function(par2_installed_dir var dir)
+  if(NOT IS_ABSOLUTE "${dir}")
+    set(dir "${CMAKE_INSTALL_PREFIX}/${dir}")
+  endif()
+  set(${var} "$ENV{DESTDIR}${dir}" PARENT_SCOPE)
+endfunction()
+
+par2_installed_dir(par2_bindir "@CMAKE_INSTALL_BINDIR@")
+par2_installed_dir(par2_man1dir "@CMAKE_INSTALL_MANDIR@/man1")
+
+function(par2_link dir original alias)
+  message(STATUS "Linking: ${dir}/${alias}")
+  if(@PAR2_SYMLINK_ALIASES@)
+    file(CREATE_LINK ${original} "${dir}/${alias}" SYMBOLIC)
+  else()
+    file(CREATE_LINK "${dir}/${original}" "${dir}/${alias}" COPY_ON_ERROR)
+  endif()
+endfunction()
+
+foreach(alias par2create par2verify par2repair)
+  par2_link("${par2_bindir}" par2@CMAKE_EXECUTABLE_SUFFIX@ ${alias}@CMAKE_EXECUTABLE_SUFFIX@)
+  par2_link("${par2_man1dir}" par2.1 ${alias}.1)
+endforeach()

@@ -1,0 +1,11 @@
+/* version.h.in.  Processed by CMake to produce <par2/version.h>.  */
+
+#ifndef PAR2_VERSION_H
+#define PAR2_VERSION_H
+
+#define PAR2_VERSION "@PROJECT_VERSION@"
+#define PAR2_VERSION_MAJOR @PROJECT_VERSION_MAJOR@
+#define PAR2_VERSION_MINOR @PROJECT_VERSION_MINOR@
+#define PAR2_VERSION_PATCH @PROJECT_VERSION_PATCH@
+
+#endif // PAR2_VERSION_H
