@@ -57,17 +57,23 @@ If you have MS Visual Studio .NET, then just open the *par2cmdline.sln* file and
 
 To compile on Linux and other Unix variants use the following commands:
 
-    ./automake.sh
-    ./configure
-    make
-    make check
-    make install
+    cmake -B build -DCMAKE_BUILD_TYPE=Release
+    cmake --build build -j
+    ctest --test-dir build
+    cmake --install build
 
 For FreeBSD you must install the following dependencies:
 
-    pkg install git automake
+    pkg install git cmake
 
-See *INSTALL* for full details on how to use the *configure* script.
+The build takes the following options:
+
+    -DPAR2_BUILD_TOOL=OFF     build only the library
+    -DPAR2_BUILD_TESTS=OFF    skip the test suite
+    -DPAR2_INSTALL=OFF        skip the install rules
+
+An application embeds the library with either `add_subdirectory` or, once it is
+installed, `find_package(par2)`, and links `par2::par2`.
 
 ## Using par2cmdline
 

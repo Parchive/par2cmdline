@@ -1,11 +1,6 @@
 #!/usr/bin/env bash
 
-export CFLAGS="-g -O0"
-export CXXFLAGS="-g -O0"
+set -e
 
-# automake
-./automake.sh
-# configure
-./configure
-# make
-make
+cmake -B build-cmake -DCMAKE_BUILD_TYPE=Debug
+cmake --build build-cmake -j

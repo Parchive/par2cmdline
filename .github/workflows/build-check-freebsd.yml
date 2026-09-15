@@ -23,9 +23,7 @@ jobs:
 
     - name: Build and test
       run: |
-        sudo pkg install -y autoconf automake libtool
-        ./automake.sh
-        ./configure
-        make -j"$(nproc)"
-        make check VERBOSE=yes
-        make distcheck VERBOSE=yes
+        sudo pkg install -y cmake
+        cmake -B build -DCMAKE_BUILD_TYPE=Release
+        cmake --build build -j"$(nproc)"
+        ctest --test-dir build --output-on-failure
