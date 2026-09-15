@@ -20,6 +20,14 @@ tests/runtest*
 tests/*_test
 tests/.dirstamp
 
+# cmake output
+/build-cmake/
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+CTestTestfile.cmake
+Testing/
+
 # autotools output
 aclocal.m4
 autom4te.cache/
