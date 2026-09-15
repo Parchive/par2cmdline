@@ -209,7 +209,7 @@ Result Par2Repairer::Process(
   if (!ComputeWindowTable())
     return eLogicError;
 
-  ResetScanBuffers(std::max(sourcefiles.size(), extrafiles.size()));
+  ResetScanBuffers(std::max(sourcefiles.size(), extrafiles.size()), memorylimit);
 
   // Attempt to verify all of the source files
   if (!VerifySourceFiles(basepath, extrafiles))
@@ -311,7 +311,7 @@ Result Par2Repairer::Process(
         outputbuffer = 0;
 
         // Verify that all of the reconstructed target files are now correct
-        ResetScanBuffers(verifylist.size());
+        ResetScanBuffers(verifylist.size(), memorylimit);
 
         if (!VerifyTargetFiles(basepath))
         {
@@ -2743,9 +2743,12 @@ bool Par2Repairer::ComputeRSmatrix(void)
 
 // The files being read take the buffers they read into from these, which
 // between them hold two batches for each of the filecount files which may be
-// read at once. A batch is a whole number of blocks, at least one, and no more
-// than MAX_CHUNK_SIZE unless a single block is already larger than that.
-void Par2Repairer::ResetScanBuffers(const size_t filecount)
+// read at once. A batch is a whole number of blocks: SCAN_BATCH_PER_THREAD of
+// them for every thread which will check it, fewer where the buffers would
+// take more than memorylimit between them, and never fewer than one each. The
+// buffers are given up before a repair allocates the ones it works through, so
+// the two never hold that memory at the same time.
+void Par2Repairer::ResetScanBuffers(const size_t filecount, const size_t memorylimit)
 {
   // The blocks of a file are only checked where they are expected to be when
   // there are verification packets to check them against and more than one
@@ -2767,13 +2770,13 @@ void Par2Repairer::ResetScanBuffers(const size_t filecount)
   }
 
   const u32 readers = FileThreads(filecount);
+  const u32 workers = std::max(1u, totalthreads / readers);
 
-  const size_t batchsize = (size_t)std::max(1u, totalthreads / readers) * (size_t)blocksize;
-  const size_t maxbatchsize = MAX_CHUNK_SIZE != 0
-    ? std::max((size_t)blocksize, (size_t)MAX_CHUNK_SIZE)
-    : batchsize;
+  const size_t affordable = std::max<size_t>(1, memorylimit / (2 * readers) / (size_t)blocksize);
 
-  scanbuffers.Reset(2 * readers, std::min(batchsize, maxbatchsize));
+  const u32 blocksperbatch = (u32)std::min<size_t>((size_t)workers * SCAN_BATCH_PER_THREAD, affordable);
+
+  scanbuffers.Reset(2 * readers, (size_t)blocksperbatch * (size_t)blocksize);
 }
 
 // Allocate memory buffers for reading and writing data to disk.
