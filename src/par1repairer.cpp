@@ -309,7 +309,7 @@ bool Par1Repairer::LoadRecoveryFile(std::string filename)
   {
     // Allocate a buffer to read data into
     size_t buffersize = (size_t)std::min((u64)1048576, filesize);
-    u8 *buffer = new u8[buffersize];
+    std::unique_ptr<u8[]> buffer(new u8[buffersize]);
 
     do
     {
@@ -336,10 +336,10 @@ bool Par1Repairer::LoadRecoveryFile(std::string filename)
       {
         // How much data should we read?
         size_t want = (size_t)std::min((u64)buffersize, filesize-offset);
-        if (!diskfile->Read(offset, buffer, want))
+        if (!diskfile->Read(offset, buffer.get(), want))
           break;
 
-        context.Update(buffer, want);
+        context.Update(buffer.get(), want);
 
         offset += want;
       }
@@ -510,8 +510,6 @@ bool Par1Repairer::LoadRecoveryFile(std::string filename)
         }
       }
     } while (false);
-
-    delete [] buffer;
   }
 
   // We have finished with the file for now
@@ -753,19 +751,18 @@ bool Par1Repairer::VerifyDataFile(DiskFile *diskfile, Par1RepairerSourceFile *so
   {
     // Allocate a buffer to compute the file hash
     size_t buffersize = (size_t)std::min((u64)1048576, filesize);
-    char *buffer = new char[buffersize];
+    std::unique_ptr<char[]> buffer(new char[buffersize]);
 
     // Read the first 16k of the file
     size_t want = (size_t)std::min((u64)16384, filesize);
-    if (!diskfile->Read(0, buffer, want))
+    if (!diskfile->Read(0, buffer.get(), want))
     {
-      delete [] buffer;
       return false;
     }
 
     // Compute the MD5 hash of the first 16k
     MD5Context contextfull;
-    contextfull.Update(buffer, want);
+    contextfull.Update(buffer.get(), want);
     MD5Context context16k = contextfull;
     MD5Hash hash16k;
     context16k.Final(hash16k);
@@ -795,13 +792,12 @@ bool Par1Repairer::VerifyDataFile(DiskFile *diskfile, Par1RepairerSourceFile *so
         {
           want = (size_t)std::min((u64)buffersize, filesize-offset);
 
-          if (!diskfile->Read(offset, buffer, want))
+          if (!diskfile->Read(offset, buffer.get(), want))
           {
-            delete [] buffer;
             return false;
           }
 
-          contextfull.Update(buffer, want);
+          contextfull.Update(buffer.get(), want);
 
           offset += want;
 
@@ -853,8 +849,6 @@ bool Par1Repairer::VerifyDataFile(DiskFile *diskfile, Par1RepairerSourceFile *so
         }
       }
     }
-
-    delete [] buffer;
   }
 
   // Did we find a match
@@ -882,15 +876,9 @@ bool Par1Repairer::VerifyDataFile(DiskFile *diskfile, Par1RepairerSourceFile *so
               << "\"."
               << std::endl;
       }
-    }
-    else
-    {
-      // WARNING - this branch does nothing.  The "if" above
-      // makes sure of that.  I don't know if it's the result
-      // of a bad merge or what.  I couldn't figure out what
-      // the original author meant.  If you can figure that
-      // out, please fix it!
-      if (noiselevel > nlSilent)
+      // We were not looking for a specific file: report which source
+      // file this one turned out to be a match for.
+      else
       {
         std::string targetname;
         DiskFile::SplitFilename(match->FileName(), path, targetname);

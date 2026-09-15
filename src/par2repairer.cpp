@@ -391,7 +391,7 @@ bool Par2Repairer::LoadPacketsFromFile(std::string filename)
     // critical packet (i.e. file verification, file description, main,
     // and creator), but not necessarily a whole recovery packet.
     size_t buffersize = (size_t)std::min((u64)1048576, filesize);
-    u8 *buffer = new u8[buffersize];
+    std::unique_ptr<u8[]> buffer(new u8[buffersize]);
 
     // Progress indicator
     ProgressMeter<u64> progress(sout, "Loading: ", filesize);
@@ -422,14 +422,14 @@ bool Par2Repairer::LoadPacketsFromFile(std::string filename)
           size_t want = (size_t)std::min((u64)buffersize, filesize-offset);
 
           // Fill the buffer
-          if (!diskfile->Read(offset, buffer, want))
+          if (!diskfile->Read(offset, buffer.get(), want))
           {
             offset = filesize;
             break;
           }
 
           // Scan the buffer for the magic value
-          u8 *current = buffer;
+          u8 *current = buffer.get();
           u8 *limit = &buffer[want-sizeof(PACKET_HEADER)];
           while (current <= limit && packet_magic != ((PACKET_HEADER*)current)->magic)
           {
@@ -437,7 +437,7 @@ bool Par2Repairer::LoadPacketsFromFile(std::string filename)
           }
 
           // What file offset did we reach
-          offset += current-buffer;
+          offset += current-buffer.get();
 
           // Did we find the magic
           if (current <= limit)
@@ -476,10 +476,10 @@ bool Par2Repairer::LoadPacketsFromFile(std::string filename)
       {
         size_t want = (size_t)std::min((u64)buffersize, limit-current);
 
-        if (!diskfile->Read(current, buffer, want))
+        if (!diskfile->Read(current, buffer.get(), want))
           break;
 
-        context.Update(buffer, want);
+        context.Update(buffer.get(), want);
 
         current += want;
       }
@@ -554,8 +554,6 @@ bool Par2Repairer::LoadPacketsFromFile(std::string filename)
     }
     if (noiselevel > nlQuiet)
       progress.Update(offset);
-
-    delete [] buffer;
   }
 
   // We have finished with the file for now
@@ -1459,7 +1457,11 @@ bool Par2Repairer::VerifyDataFile(DiskFile *diskfile, Par2RepairerSourceFile *so
       if (buffersize > std::min(blocksize, filesize))
         buffersize = (size_t)std::min(blocksize, filesize);
 
-      char *buffer = new char[buffersize];
+      // A std::unique_ptr rather than a bare "new[]"/"delete[]" pair: the
+      // previous plain-pointer version only freed the buffer on the early
+      // "Read() failed" return below and leaked it on every successful
+      // completion of this loop (the common case).
+      std::unique_ptr<char[]> buffer(new char[buffersize]);
 
       u64 offset = 0;
 
@@ -1469,16 +1471,15 @@ bool Par2Repairer::VerifyDataFile(DiskFile *diskfile, Par2RepairerSourceFile *so
       {
         size_t want = (size_t)std::min((u64)buffersize, filesize-offset);
 
-        if (!diskfile->Read(offset, buffer, want))
+        if (!diskfile->Read(offset, buffer.get(), want))
         {
-          delete [] buffer;
           return false;
         }
 
         // Will the newly read data reach the 16k boundary
         if (offset < 16384 && offset + want >= 16384)
         {
-          context.Update(buffer, (size_t)(16384-offset));
+          context.Update(buffer.get(), (size_t)(16384-offset));
 
           // Compute the 16k hash
           MD5Context temp = context;
@@ -1492,7 +1493,7 @@ bool Par2Repairer::VerifyDataFile(DiskFile *diskfile, Par2RepairerSourceFile *so
         }
         else
         {
-          context.Update(buffer, want);
+          context.Update(buffer.get(), want);
         }
 
         offset += want;
@@ -2793,9 +2794,12 @@ bool Par2Repairer::AllocateBuffers(size_t memorylimit)
     chunksize = (size_t)blocksize;
   }
 
-  // Allocate the two buffers
-  inputbuffer = new u8[(size_t)chunksize];
-  outputbuffer = new u8[(size_t)chunksize * missingblockcount];
+  // Allocate the two buffers. Use the non-throwing form so a failed
+  // allocation is reported through the normal error path below instead of
+  // via an uncaught std::bad_alloc (plain "new[]" never returns NULL on
+  // failure, it throws).
+  inputbuffer = new(std::nothrow) u8[(size_t)chunksize];
+  outputbuffer = new(std::nothrow) u8[(size_t)chunksize * missingblockcount];
 
   if (MAX_CHUNK_SIZE != 0 && chunksize > MAX_CHUNK_SIZE)
     chunksize = MAX_CHUNK_SIZE;

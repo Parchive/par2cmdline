@@ -716,8 +716,11 @@ bool Par2Creator::InitialiseOutputFiles(const std::string &parfilename)
 // Allocate memory buffers for reading and writing data to disk.
 bool Par2Creator::AllocateBuffers(void)
 {
-  inputbuffer = new u8[chunksize];
-  outputbuffer = new u8[chunksize * recoveryblockcount];
+  // Use the non-throwing form so a failed allocation is reported through
+  // the normal error path below instead of via an uncaught std::bad_alloc
+  // (plain "new[]" never returns NULL on failure, it throws).
+  inputbuffer = new(std::nothrow) u8[chunksize];
+  outputbuffer = new(std::nothrow) u8[chunksize * recoveryblockcount];
 
   if (inputbuffer == NULL || outputbuffer == NULL)
   {
