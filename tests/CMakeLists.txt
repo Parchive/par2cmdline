@@ -69,8 +69,15 @@ function(par2_add_unit_test name)
   set(workdir "${CMAKE_CURRENT_BINARY_DIR}/${name}.run")
   file(MAKE_DIRECTORY "${workdir}")
 
-  add_test(NAME ${name} COMMAND ${name}
-    WORKING_DIRECTORY "${workdir}")
+  if(WIN32)
+    add_test(NAME ${name} COMMAND ${name}
+      WORKING_DIRECTORY "${workdir}")
+  else()
+    add_test(NAME ${name}
+      COMMAND /bin/sh "${CMAKE_CURRENT_SOURCE_DIR}/unit_test_runner" "$<TARGET_FILE:${name}>"
+      WORKING_DIRECTORY "${workdir}")
+  endif()
+
   set_tests_properties(${name} PROPERTIES SKIP_RETURN_CODE ${PAR2_SKIP_RETURN_CODE})
 endfunction()
 

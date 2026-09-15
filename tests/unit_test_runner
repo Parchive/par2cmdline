@@ -1,0 +1,16 @@
+#!/bin/sh
+
+# Run one unit test, under valgrind when PARVALGRINDOPTS is set.
+
+if [ -z "$1" ]
+then
+    echo "usage: run_unit_test <binary>" >&2
+    exit 1
+fi
+
+if [ -n "${PARVALGRINDOPTS+set}" ]
+then
+    exec valgrind $PARVALGRINDOPTS "$@"
+fi
+
+exec "$@"

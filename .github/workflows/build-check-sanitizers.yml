@@ -12,10 +12,9 @@ jobs:
     - uses: actions/checkout@v7
 
     - name: Build and test (ASan + UBSan)
-      env:
-        CXXFLAGS: -g -O1 -fsanitize=address,undefined -fno-omit-frame-pointer
       run: |
-        ./automake.sh
-        ./configure
-        make -j"$(nproc)"
-        make check VERBOSE=yes
+        cmake -B build -DCMAKE_BUILD_TYPE=Debug \
+          -DCMAKE_CXX_FLAGS="-g -O1 -fsanitize=address,undefined -fno-omit-frame-pointer" \
+          -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address,undefined"
+        cmake --build build -j"$(nproc)"
+        ctest --test-dir build --output-on-failure
