@@ -13,8 +13,14 @@ jobs:
 
     - name: Build and test
       run: |
-        ./automake.sh
-        ./configure
-        make -j"$(nproc)"
-        make check VERBOSE=yes
-        make distcheck VERBOSE=yes
+        cmake -B build -DCMAKE_BUILD_TYPE=Release -DPAR2_KEEP_ASSERTS=ON
+        cmake --build build -j"$(nproc)"
+        ctest --test-dir build --output-on-failure
+
+    - name: Build and test from the source archive
+      run: |
+        version=$(sed -n 's/^  VERSION \([0-9.]*\)$/\1/p' CMakeLists.txt)
+        git archive --prefix="par2cmdline-$version/" HEAD | tar -x -C "$RUNNER_TEMP"
+        cmake -S "$RUNNER_TEMP/par2cmdline-$version" -B "$RUNNER_TEMP/dist" -DCMAKE_BUILD_TYPE=Release -DPAR2_KEEP_ASSERTS=ON
+        cmake --build "$RUNNER_TEMP/dist" -j"$(nproc)"
+        ctest --test-dir "$RUNNER_TEMP/dist" --output-on-failure

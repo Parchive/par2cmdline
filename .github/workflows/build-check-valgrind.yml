@@ -15,9 +15,8 @@ jobs:
 
     - name: Build
       run: |
-        ./automake.sh
-        ./configure
-        make -j"$(nproc)"
+        cmake -B build -DCMAKE_BUILD_TYPE=Debug
+        cmake --build build -j"$(nproc)"
 
     # Runs tests
     # The shell scripts use the PARVALGRINDOPTS env var when set.
@@ -26,8 +25,4 @@ jobs:
     - name: Run tests under valgrind
       env:
         PARVALGRINDOPTS: --leak-check=full --error-exitcode=1 --errors-for-leak-kinds=all --quiet --suppressions=${{ github.workspace }}/valgrind.supp
-      run: make check VERBOSE=yes
-
-    - name: Output logs to gain insights
-      if: always()
-      run: find ./tests/ -mindepth 1 -maxdepth 1 -type f -iname '*.log' | sort -V | while read -r logfile; do echo "==="; echo "$logfile"; echo "==="; cat "$logfile"; done
+      run: ctest --test-dir build --output-on-failure
