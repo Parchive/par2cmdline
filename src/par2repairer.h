@@ -158,7 +158,7 @@ protected:
 
   // Make the buffers the files being scanned read into, or give them up when
   // no file will have its blocks checked where they are expected to be
-  void ResetScanBuffers(const size_t filecount);
+  void ResetScanBuffers(const size_t filecount, const size_t memorylimit);
 
   // The number of files to read at once, which is what limits how many are
   // open at a time rather than how much of the work they get
