@@ -33,6 +33,7 @@ else()
 endif()
 
 option(PAR2_BUILD_TOOL "Build the par2 command line tool" ${PAR2_IS_TOP_LEVEL})
+option(PAR2_BUILD_TESTS "Build the test suite" ${PAR2_IS_TOP_LEVEL})
 option(PAR2_KEEP_ASSERTS "Keep assert checks in optimised builds" OFF)
 
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
@@ -196,4 +197,9 @@ if(PAR2_BUILD_TOOL)
   endif()
 
   target_link_libraries(par2 PRIVATE libpar2)
+endif()
+
+if(PAR2_BUILD_TESTS)
+  enable_testing()
+  add_subdirectory(tests)
 endif()
