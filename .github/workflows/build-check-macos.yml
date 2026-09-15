@@ -11,13 +11,8 @@ jobs:
     steps:
     - uses: actions/checkout@v7
 
-    - name: prepare
-      run: brew install automake
-
     - name: Build and test
       run: |
-        ./automake.sh
-        ./configure
-        make -j"$(sysctl -n hw.ncpu)"
-        make check VERBOSE=yes
-        make distcheck VERBOSE=yes
+        cmake -B build -DCMAKE_BUILD_TYPE=Release -DPAR2_KEEP_ASSERTS=ON
+        cmake --build build -j"$(sysctl -n hw.ncpu)"
+        ctest --test-dir build --output-on-failure

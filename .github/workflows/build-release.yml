@@ -36,14 +36,19 @@ jobs:
       matrix:
         include:
         - arch: amd64
-          configure_host:
-          xcc:
+          cmake_args:
         - arch: arm64
-          configure_host: --host=aarch64-linux-gnu
-          xcc: aarch64-linux-gnu-
+          cmake_args: >-
+            -DCMAKE_SYSTEM_NAME=Linux
+            -DCMAKE_SYSTEM_PROCESSOR=aarch64
+            -DCMAKE_C_COMPILER=aarch64-linux-gnu-gcc
+            -DCMAKE_CXX_COMPILER=aarch64-linux-gnu-g++
         - arch: armhf
-          configure_host: --host=armv7l-linux-gnueabihf
-          xcc: arm-linux-gnueabihf-
+          cmake_args: >-
+            -DCMAKE_SYSTEM_NAME=Linux
+            -DCMAKE_SYSTEM_PROCESSOR=armv7l
+            -DCMAKE_C_COMPILER=arm-linux-gnueabihf-gcc
+            -DCMAKE_CXX_COMPILER=arm-linux-gnueabihf-g++
 
     runs-on: ubuntu-latest
 
@@ -64,21 +69,19 @@ jobs:
         esac
 
     - name: Build
-      env:
-        CC: ${{ matrix.xcc }}gcc
-        CXX: ${{ matrix.xcc }}g++
-        LDFLAGS: -static -s
       run: |
-        ./automake.sh
-        ./configure ${{ matrix.configure_host }}
-        make -j"$(nproc)"
+        cmake -B build -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_EXE_LINKER_FLAGS="-static -s" \
+          -DPAR2_BUILD_TESTS=OFF \
+          ${{ matrix.cmake_args }}
+        cmake --build build -j"$(nproc)"
 
     - name: Upload binary artifact
       uses: actions/upload-artifact@v7
       with:
         name: par2cmdline-linux-${{ matrix.arch }}
         path: |
-          par2
+          build/par2
         retention-days: 5
 
   build-windows:
@@ -124,36 +127,32 @@ jobs:
       matrix:
         include:
         - arch: amd64
-          xcxxflags: -arch x86_64 -mmacosx-version-min=10.13
+          osx_arch: x86_64
+          osx_target: '10.13'
         - arch: arm64
-          xcxxflags: -arch arm64 -mmacosx-version-min=11.0
+          osx_arch: arm64
+          osx_target: '11.0'
 
     runs-on: macos-latest
 
     steps:
     - uses: actions/checkout@v7
 
-    - name: prepare
-      run: brew install automake
-
-    # NOTE: setting CFLAGS/CXXFLAGS suppresses autoconf's default "-g -O2",
-    # so -O2 must be passed explicitly or the build ends up unoptimised.
     - name: Build
-      env:
-        CFLAGS: -O3 ${{ matrix.xcxxflags }}
-        CXXFLAGS: -O3 ${{ matrix.xcxxflags }}
       run: |
-        ./automake.sh
-        ./configure
-        make -j"$(sysctl -n hw.ncpu)"
-        strip par2
+        cmake -B build -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_OSX_ARCHITECTURES=${{ matrix.osx_arch }} \
+          -DCMAKE_OSX_DEPLOYMENT_TARGET=${{ matrix.osx_target }} \
+          -DPAR2_BUILD_TESTS=OFF
+        cmake --build build -j"$(sysctl -n hw.ncpu)"
+        strip build/par2
 
     - name: Upload binary artifact
       uses: actions/upload-artifact@v7
       with:
         name: par2cmdline-macos-${{ matrix.arch }}
         path: |
-          par2
+          build/par2
         retention-days: 5
 
   build-macos-universal:
@@ -228,25 +227,29 @@ jobs:
           | tar -xJ -C sysroot ./usr/include ./usr/lib ./lib
 
     - name: Build
-      env:
-        LDFLAGS: -static -s
       run: |
         SYSROOT="$PWD/sysroot"
-        ./automake.sh
-        ./configure --host=${{ matrix.triple }} \
-          CC="clang --target=${{ matrix.triple }} --sysroot=$SYSROOT -fuse-ld=lld" \
-          CXX="clang++ --target=${{ matrix.triple }} --sysroot=$SYSROOT -stdlib=libc++ -fuse-ld=lld"
-        make -j"$(nproc)"
+        cmake -B build -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_SYSTEM_NAME=FreeBSD \
+          -DCMAKE_SYSROOT="$SYSROOT" \
+          -DCMAKE_C_COMPILER=clang \
+          -DCMAKE_C_COMPILER_TARGET=${{ matrix.triple }} \
+          -DCMAKE_CXX_COMPILER=clang++ \
+          -DCMAKE_CXX_COMPILER_TARGET=${{ matrix.triple }} \
+          -DCMAKE_CXX_FLAGS="-stdlib=libc++" \
+          -DCMAKE_EXE_LINKER_FLAGS="-fuse-ld=lld -static -s" \
+          -DPAR2_BUILD_TESTS=OFF
+        cmake --build build -j"$(nproc)"
 
     - name: Verify the binary targets FreeBSD
       run: |
-        file par2
-        file par2 | grep -q "FreeBSD" || { echo "not a FreeBSD binary"; exit 1; }
+        file build/par2
+        file build/par2 | grep -q "FreeBSD" || { echo "not a FreeBSD binary"; exit 1; }
 
     - name: Upload binary artifact
       uses: actions/upload-artifact@v7
       with:
         name: par2cmdline-freebsd-${{ matrix.arch }}
         path: |
-          par2
+          build/par2
         retention-days: 5
