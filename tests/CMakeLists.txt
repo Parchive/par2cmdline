@@ -65,7 +65,13 @@ function(par2_add_unit_test name)
     target_link_libraries(${name} PRIVATE Threads::Threads ${PAR2_ATOMIC_LIBRARY})
   endif()
 
-  add_test(NAME ${name} COMMAND ${name})
+  if(WIN32)
+    add_test(NAME ${name} COMMAND ${name})
+  else()
+    add_test(NAME ${name}
+      COMMAND /bin/sh "${CMAKE_CURRENT_SOURCE_DIR}/unit_test_runner" "$<TARGET_FILE:${name}>")
+  endif()
+
   set_tests_properties(${name} PROPERTIES SKIP_RETURN_CODE ${PAR2_SKIP_RETURN_CODE})
 endfunction()
 

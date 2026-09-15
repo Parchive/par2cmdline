@@ -28,23 +28,6 @@ cmake_install.cmake
 CTestTestfile.cmake
 Testing/
 
-# autotools output
-aclocal.m4
-autom4te.cache/
-compile
-test-driver
-Makefile.in
-Makefile
-config.h
-config.status
-configure
-stamp-h
-stamp-h1
-src/.dirstamp
-install-sh
-missing
-ar-lib
-
 # windows
 Release/
 Debug/

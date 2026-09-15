@@ -1,12 +1,9 @@
 #!/usr/bin/env bash
 
-export CFLAGS="-O3 -pipe -fstack-protector-strong"
-export CXXFLAGS="-O3 -pipe -fstack-protector-strong"
-export LDFLAGS="-static -s"
+set -e
 
-# automake
-./automake.sh
-# configure
-./configure
-# make
-make
+cmake -B build-cmake -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_C_FLAGS="-pipe -fstack-protector-strong" \
+  -DCMAKE_CXX_FLAGS="-pipe -fstack-protector-strong" \
+  -DCMAKE_EXE_LINKER_FLAGS="-static -s"
+cmake --build build-cmake -j
