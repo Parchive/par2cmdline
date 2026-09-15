@@ -34,6 +34,7 @@ endif()
 
 option(PAR2_BUILD_TOOL "Build the par2 command line tool" ${PAR2_IS_TOP_LEVEL})
 option(PAR2_BUILD_TESTS "Build the test suite" ${PAR2_IS_TOP_LEVEL})
+option(PAR2_INSTALL "Generate the install rules" ${PAR2_IS_TOP_LEVEL})
 option(PAR2_KEEP_ASSERTS "Keep assert checks in optimised builds" OFF)
 
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
@@ -202,4 +203,52 @@ endif()
 if(PAR2_BUILD_TESTS)
   enable_testing()
   add_subdirectory(tests)
+endif()
+
+if(PAR2_INSTALL)
+  include(CMakePackageConfigHelpers)
+
+  install(TARGETS libpar2
+    EXPORT par2-targets
+    ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+  )
+
+  install(DIRECTORY include/par2 DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
+
+  install(EXPORT par2-targets
+    FILE par2-targets.cmake
+    NAMESPACE par2::
+    DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/par2"
+  )
+
+  configure_package_config_file(
+    cmake/par2-config.cmake.in
+    "${PROJECT_BINARY_DIR}/par2-config.cmake"
+    INSTALL_DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/par2"
+  )
+
+  write_basic_package_version_file(
+    "${PROJECT_BINARY_DIR}/par2-config-version.cmake"
+    COMPATIBILITY SameMajorVersion
+  )
+
+  install(FILES
+    "${PROJECT_BINARY_DIR}/par2-config.cmake"
+    "${PROJECT_BINARY_DIR}/par2-config-version.cmake"
+    DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/par2"
+  )
+
+  if(PAR2_BUILD_TOOL)
+    install(TARGETS par2 RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}")
+    install(FILES man/par2.1 DESTINATION "${CMAKE_INSTALL_MANDIR}/man1")
+
+    if(NOT WIN32)
+      configure_file(
+        cmake/install-aliases.cmake.in
+        "${PROJECT_BINARY_DIR}/install-aliases.cmake"
+        @ONLY
+      )
+      install(SCRIPT "${PROJECT_BINARY_DIR}/install-aliases.cmake")
+    endif()
+  endif()
 endif()
