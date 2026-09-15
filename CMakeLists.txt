@@ -63,6 +63,22 @@ configure_file(cmake/config.h.in "${PROJECT_BINARY_DIR}/config.h")
 
 find_package(Threads REQUIRED)
 
+set(PAR2_OPTIMISED "$<OR:$<CONFIG:Release>,$<CONFIG:RelWithDebInfo>>")
+
+function(par2_add_size_options target)
+  if(MSVC)
+    target_compile_options(${target} PRIVATE
+      "$<${PAR2_OPTIMISED}:/Gy>"
+      "$<${PAR2_OPTIMISED}:/Gw>"
+    )
+  else()
+    target_compile_options(${target} PRIVATE
+      "$<${PAR2_OPTIMISED}:-ffunction-sections>"
+      "$<${PAR2_OPTIMISED}:-fdata-sections>"
+    )
+  endif()
+endfunction()
+
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}")
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}")
 foreach(config ${CMAKE_CONFIGURATION_TYPES})
@@ -154,6 +170,8 @@ else()
   target_compile_options(libpar2 PRIVATE -Wall)
 endif()
 
+par2_add_size_options(libpar2)
+
 target_link_libraries(libpar2 PUBLIC Threads::Threads ${PAR2_ATOMIC_LIBRARY})
 
 if(PAR2_BUILD_TOOL)
@@ -195,6 +213,19 @@ if(PAR2_BUILD_TOOL)
 
   if(MINGW)
     target_link_options(par2 PRIVATE -municode)
+  endif()
+
+  par2_add_size_options(par2)
+
+  if(MSVC)
+    target_link_options(par2 PRIVATE
+      "$<${PAR2_OPTIMISED}:/OPT:REF>"
+      "$<${PAR2_OPTIMISED}:/OPT:ICF>"
+    )
+  elseif(APPLE)
+    target_link_options(par2 PRIVATE "$<${PAR2_OPTIMISED}:-Wl,-dead_strip>")
+  else()
+    target_link_options(par2 PRIVATE "$<${PAR2_OPTIMISED}:-Wl,--gc-sections>")
   endif()
 
   target_link_libraries(par2 PRIVATE libpar2)
