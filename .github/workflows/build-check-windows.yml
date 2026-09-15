@@ -12,16 +12,10 @@ jobs:
     steps:
     - uses: actions/checkout@v7
 
-    - name: Add MSBuild to PATH
-      uses: microsoft/setup-msbuild@v3
-
     - name: Build
-      run: msbuild -property:Configuration=Release -property:Platform=x64 par2cmdline.sln
-
-    - name: Build Unit Tests
-      run: msbuild -property:Configuration=UnitTests-Release -property:Platform=x64 par2cmdline.sln
+      run: |
+        cmake -B build-cmake -A x64 -DPAR2_KEEP_ASSERTS=ON
+        cmake --build build-cmake --config Release -j
 
     - name: Run Tests
-      shell: pwsh
-      run: |
-        .\tests\run_tests.ps1 -Par2Binary ".\x64\Release\par2.exe"
+      run: ctest --test-dir build-cmake -C Release --output-on-failure

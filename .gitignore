@@ -29,12 +29,9 @@ CTestTestfile.cmake
 Testing/
 
 # windows
-Release/
-Debug/
 *.old
-*.vcxproj.user
-*.suo
 .vs/
+out/
 
 test.*
 # Linux perf record output

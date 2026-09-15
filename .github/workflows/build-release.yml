@@ -70,18 +70,18 @@ jobs:
 
     - name: Build
       run: |
-        cmake -B build -DCMAKE_BUILD_TYPE=Release \
+        cmake -B build-cmake -DCMAKE_BUILD_TYPE=Release \
           -DCMAKE_EXE_LINKER_FLAGS="-static -s" \
           -DPAR2_BUILD_TESTS=OFF \
           ${{ matrix.cmake_args }}
-        cmake --build build -j"$(nproc)"
+        cmake --build build-cmake -j"$(nproc)"
 
     - name: Upload binary artifact
       uses: actions/upload-artifact@v7
       with:
         name: par2cmdline-linux-${{ matrix.arch }}
         path: |
-          build/par2
+          build-cmake/par2
         retention-days: 5
 
   build-windows:
@@ -103,18 +103,17 @@ jobs:
     steps:
     - uses: actions/checkout@v7
 
-    - name: Add MSBuild to PATH
-      uses: microsoft/setup-msbuild@v3
-
     - name: Build
-      run: msbuild -property:Configuration=Release -property:Platform=${{ matrix.platform }} par2cmdline.sln
+      run: |
+        cmake -B build-cmake -A ${{ matrix.platform }} -DPAR2_BUILD_TESTS=OFF
+        cmake --build build-cmake --config Release -j
 
     - name: Upload binary artifact
       uses: actions/upload-artifact@v7
       with:
         name: par2cmdline-win-${{ matrix.name }}
         path: |
-          ${{ matrix.platform }}/Release/par2.exe
+          build-cmake/par2.exe
         retention-days: 5
 
   build-macos:
@@ -140,19 +139,19 @@ jobs:
 
     - name: Build
       run: |
-        cmake -B build -DCMAKE_BUILD_TYPE=Release \
+        cmake -B build-cmake -DCMAKE_BUILD_TYPE=Release \
           -DCMAKE_OSX_ARCHITECTURES=${{ matrix.osx_arch }} \
           -DCMAKE_OSX_DEPLOYMENT_TARGET=${{ matrix.osx_target }} \
           -DPAR2_BUILD_TESTS=OFF
-        cmake --build build -j"$(sysctl -n hw.ncpu)"
-        strip build/par2
+        cmake --build build-cmake -j"$(sysctl -n hw.ncpu)"
+        strip build-cmake/par2
 
     - name: Upload binary artifact
       uses: actions/upload-artifact@v7
       with:
         name: par2cmdline-macos-${{ matrix.arch }}
         path: |
-          build/par2
+          build-cmake/par2
         retention-days: 5
 
   build-macos-universal:
@@ -229,7 +228,7 @@ jobs:
     - name: Build
       run: |
         SYSROOT="$PWD/sysroot"
-        cmake -B build -DCMAKE_BUILD_TYPE=Release \
+        cmake -B build-cmake -DCMAKE_BUILD_TYPE=Release \
           -DCMAKE_SYSTEM_NAME=FreeBSD \
           -DCMAKE_SYSROOT="$SYSROOT" \
           -DCMAKE_C_COMPILER=clang \
@@ -239,17 +238,17 @@ jobs:
           -DCMAKE_CXX_FLAGS="-stdlib=libc++" \
           -DCMAKE_EXE_LINKER_FLAGS="-fuse-ld=lld -static -s" \
           -DPAR2_BUILD_TESTS=OFF
-        cmake --build build -j"$(nproc)"
+        cmake --build build-cmake -j"$(nproc)"
 
     - name: Verify the binary targets FreeBSD
       run: |
-        file build/par2
-        file build/par2 | grep -q "FreeBSD" || { echo "not a FreeBSD binary"; exit 1; }
+        file build-cmake/par2
+        file build-cmake/par2 | grep -q "FreeBSD" || { echo "not a FreeBSD binary"; exit 1; }
 
     - name: Upload binary artifact
       uses: actions/upload-artifact@v7
       with:
         name: par2cmdline-freebsd-${{ matrix.arch }}
         path: |
-          build/par2
+          build-cmake/par2
         retention-days: 5
