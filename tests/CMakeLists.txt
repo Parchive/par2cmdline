@@ -65,7 +65,7 @@ function(par2_add_unit_test name)
     target_link_libraries(${name} PRIVATE Threads::Threads ${PAR2_ATOMIC_LIBRARY})
   endif()
 
-  if(WIN32)
+  if(CMAKE_HOST_WIN32)
     add_test(NAME ${name} COMMAND ${name})
   else()
     add_test(NAME ${name}
@@ -105,12 +105,16 @@ endif()
 
 # The integration tests run the built binary from the build root, where they
 # also create and remove their own working directories.
-file(RELATIVE_PATH PAR2_SRCDIR "${PROJECT_BINARY_DIR}" "${PROJECT_SOURCE_DIR}")
+# The scripts read srcdir relative to the directory they run in, which they
+# resolve through getcwd, so both ends have to be real paths.
+get_filename_component(PAR2_REAL_BINARY_DIR "${PROJECT_BINARY_DIR}" REALPATH)
+get_filename_component(PAR2_REAL_SOURCE_DIR "${PROJECT_SOURCE_DIR}" REALPATH)
+file(RELATIVE_PATH PAR2_SRCDIR "${PAR2_REAL_BINARY_DIR}" "${PAR2_REAL_SOURCE_DIR}")
 if(PAR2_SRCDIR STREQUAL "")
   set(PAR2_SRCDIR ".")
 endif()
 
-if(WIN32)
+if(CMAKE_HOST_WIN32)
   file(GLOB PAR2_INTEGRATION_TESTS CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/test[0-9]*.ps1")
 else()
@@ -124,12 +128,12 @@ list(SORT PAR2_INTEGRATION_TESTS)
 foreach(script ${PAR2_INTEGRATION_TESTS})
   get_filename_component(name "${script}" NAME_WE)
 
-  if(WIN32)
+  if(CMAKE_HOST_WIN32)
     add_test(NAME ${name}
       COMMAND pwsh -NoProfile -File "${script}"
       WORKING_DIRECTORY "${PROJECT_BINARY_DIR}")
     set_tests_properties(${name} PROPERTIES
-      ENVIRONMENT "PARBINARY=$<TARGET_FILE:par2>")
+      ENVIRONMENT "PARBINARY=${PROJECT_BINARY_DIR}/par2${CMAKE_EXECUTABLE_SUFFIX}")
   else()
     add_test(NAME ${name}
       COMMAND /bin/sh "${script}"
@@ -143,7 +147,7 @@ foreach(script ${PAR2_INTEGRATION_TESTS})
     RUN_SERIAL TRUE)
 endforeach()
 
-if(NOT WIN32)
+if(NOT CMAKE_HOST_WIN32)
   if(PAR2_ATOMIC_LIBRARY)
     set(PAR2_CONSUMER_LIBS "-l${PAR2_ATOMIC_LIBRARY}")
   else()
@@ -151,7 +155,31 @@ if(NOT WIN32)
   endif()
 
   string(TOUPPER "${CMAKE_BUILD_TYPE}" PAR2_BUILD_TYPE)
-  string(STRIP "${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_${PAR2_BUILD_TYPE}}" PAR2_CONSUMER_CXXFLAGS)
+  set(PAR2_CONSUMER_CXXFLAGS "${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_${PAR2_BUILD_TYPE}}")
+
+  # A generator which hands the SDK to the compiler itself leaves it out of the
+  # flags, and the consumer is compiled by hand.
+  if(APPLE)
+    set(PAR2_SDK "${CMAKE_OSX_SYSROOT}")
+    if(NOT IS_DIRECTORY "${PAR2_SDK}")
+      if(NOT PAR2_SDK)
+        set(PAR2_SDK macosx)
+      endif()
+      execute_process(COMMAND xcrun --sdk "${PAR2_SDK}" --show-sdk-path
+        OUTPUT_VARIABLE PAR2_SDK
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        ERROR_QUIET)
+    endif()
+    if(IS_DIRECTORY "${PAR2_SDK}")
+      string(APPEND PAR2_CONSUMER_CXXFLAGS " -isysroot ${PAR2_SDK}")
+    endif()
+  endif()
+  if(APPLE AND CMAKE_OSX_DEPLOYMENT_TARGET)
+    string(APPEND PAR2_CONSUMER_CXXFLAGS
+      " -mmacosx-version-min=${CMAKE_OSX_DEPLOYMENT_TARGET}")
+  endif()
+
+  string(STRIP "${PAR2_CONSUMER_CXXFLAGS}" PAR2_CONSUMER_CXXFLAGS)
   if(PAR2_CONSUMER_CXXFLAGS STREQUAL "")
     set(PAR2_CONSUMER_CXXFLAGS "-O0")
   endif()

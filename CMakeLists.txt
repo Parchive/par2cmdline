@@ -26,6 +26,11 @@ project(par2cmdline
   LANGUAGES CXX
 )
 
+if(CMAKE_SOURCE_DIR STREQUAL CMAKE_BINARY_DIR)
+  message(FATAL_ERROR
+    "par2cmdline is built out of source: cmake -B build-cmake")
+endif()
+
 if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
   set(PAR2_IS_TOP_LEVEL TRUE)
 else()
