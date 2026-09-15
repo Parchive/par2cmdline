@@ -13,6 +13,6 @@ jobs:
 
     - name: Build and test
       run: |
-        cmake -B build-cmake -DCMAKE_BUILD_TYPE=Release -DPAR2_KEEP_ASSERTS=ON
-        cmake --build build-cmake -j"$(sysctl -n hw.ncpu)"
+        cmake -B build-cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DPAR2_KEEP_ASSERTS=ON
+        cmake --build build-cmake
         ctest --test-dir build-cmake --output-on-failure
