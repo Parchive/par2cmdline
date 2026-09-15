@@ -13,6 +13,6 @@ jobs:
 
     - name: Build and test
       run: |
-        cmake -B build -DCMAKE_BUILD_TYPE=Release
-        cmake --build build -j"$(sysctl -n hw.ncpu)"
-        ctest --test-dir build --output-on-failure
+        cmake -B build-cmake -DCMAKE_BUILD_TYPE=Release
+        cmake --build build-cmake -j"$(sysctl -n hw.ncpu)"
+        ctest --test-dir build-cmake --output-on-failure

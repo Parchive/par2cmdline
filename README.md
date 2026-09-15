@@ -53,14 +53,21 @@ You should have received par2cmdline in the form of source code which you can co
 
 If you have only downloaded a precompiled executable, then the source code should be available from the same location where you downloaded the executable from.
 
-If you have MS Visual Studio .NET, then just open the *par2cmdline.sln* file and compile. You should then copy *par2cmdline.exe* to an appropriate location that is on your path.
+On Windows, open the source directory in Visual Studio, which reads
+*CMakeLists.txt* directly, or build it from a command prompt:
+
+    cmake -B build-cmake -A x64
+    cmake --build build-cmake --config Release
+    ctest --test-dir build-cmake -C Release
+
+You should then copy *par2.exe* to an appropriate location that is on your path.
 
 To compile on Linux and other Unix variants use the following commands:
 
-    cmake -B build -DCMAKE_BUILD_TYPE=Release
-    cmake --build build -j
-    ctest --test-dir build
-    cmake --install build
+    cmake -B build-cmake -DCMAKE_BUILD_TYPE=Release
+    cmake --build build-cmake -j"$(getconf _NPROCESSORS_ONLN)"
+    ctest --test-dir build-cmake
+    cmake --install build-cmake
 
 For FreeBSD you must install the following dependencies:
 
