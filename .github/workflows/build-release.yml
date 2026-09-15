@@ -70,11 +70,11 @@ jobs:
 
     - name: Build
       run: |
-        cmake -B build-cmake -DCMAKE_BUILD_TYPE=Release \
+        cmake -B build-cmake -G Ninja -DCMAKE_BUILD_TYPE=Release \
           -DCMAKE_EXE_LINKER_FLAGS="-static -s" \
           -DPAR2_BUILD_TESTS=OFF \
           ${{ matrix.cmake_args }}
-        cmake --build build-cmake -j"$(nproc)"
+        cmake --build build-cmake
 
     - name: Upload binary artifact
       uses: actions/upload-artifact@v7
@@ -139,11 +139,11 @@ jobs:
 
     - name: Build
       run: |
-        cmake -B build-cmake -DCMAKE_BUILD_TYPE=Release \
+        cmake -B build-cmake -G Ninja -DCMAKE_BUILD_TYPE=Release \
           -DCMAKE_OSX_ARCHITECTURES=${{ matrix.osx_arch }} \
           -DCMAKE_OSX_DEPLOYMENT_TARGET=${{ matrix.osx_target }} \
           -DPAR2_BUILD_TESTS=OFF
-        cmake --build build-cmake -j"$(sysctl -n hw.ncpu)"
+        cmake --build build-cmake
         strip build-cmake/par2
 
     - name: Upload binary artifact
@@ -228,7 +228,7 @@ jobs:
     - name: Build
       run: |
         SYSROOT="$PWD/sysroot"
-        cmake -B build-cmake -DCMAKE_BUILD_TYPE=Release \
+        cmake -B build-cmake -G Ninja -DCMAKE_BUILD_TYPE=Release \
           -DCMAKE_SYSTEM_NAME=FreeBSD \
           -DCMAKE_SYSROOT="$SYSROOT" \
           -DCMAKE_C_COMPILER=clang \
@@ -238,7 +238,7 @@ jobs:
           -DCMAKE_CXX_FLAGS="-stdlib=libc++" \
           -DCMAKE_EXE_LINKER_FLAGS="-fuse-ld=lld -static -s" \
           -DPAR2_BUILD_TESTS=OFF
-        cmake --build build-cmake -j"$(nproc)"
+        cmake --build build-cmake
 
     - name: Verify the binary targets FreeBSD
       run: |
