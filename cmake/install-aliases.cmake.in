@@ -1,0 +1,10 @@
+set(par2_bindir "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/@CMAKE_INSTALL_BINDIR@")
+set(par2_man1dir "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/@CMAKE_INSTALL_MANDIR@/man1")
+
+foreach(alias par2create par2verify par2repair)
+  message(STATUS "Linking: ${par2_bindir}/${alias}")
+  file(CREATE_LINK par2 "${par2_bindir}/${alias}" SYMBOLIC)
+
+  message(STATUS "Linking: ${par2_man1dir}/${alias}.1")
+  file(CREATE_LINK par2.1 "${par2_man1dir}/${alias}.1" SYMBOLIC)
+endforeach()
