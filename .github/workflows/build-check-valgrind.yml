@@ -15,8 +15,8 @@ jobs:
 
     - name: Build
       run: |
-        cmake -B build -DCMAKE_BUILD_TYPE=Debug
-        cmake --build build -j"$(nproc)"
+        cmake -B build-cmake -DCMAKE_BUILD_TYPE=Debug
+        cmake --build build-cmake -j"$(nproc)"
 
     # Runs tests
     # The shell scripts use the PARVALGRINDOPTS env var when set.
@@ -25,4 +25,4 @@ jobs:
     - name: Run tests under valgrind
       env:
         PARVALGRINDOPTS: --leak-check=full --error-exitcode=1 --errors-for-leak-kinds=all --quiet --suppressions=${{ github.workspace }}/valgrind.supp
-      run: ctest --test-dir build --output-on-failure
+      run: ctest --test-dir build-cmake --output-on-failure

@@ -32,6 +32,11 @@ else()
   set(PAR2_IS_TOP_LEVEL FALSE)
 endif()
 
+if(PAR2_IS_TOP_LEVEL AND CMAKE_SOURCE_DIR STREQUAL CMAKE_BINARY_DIR)
+  message(FATAL_ERROR
+    "par2cmdline is built out of source: cmake -B build-cmake")
+endif()
+
 option(PAR2_BUILD_TOOL "Build the par2 command line tool" ${PAR2_IS_TOP_LEVEL})
 option(PAR2_BUILD_TESTS "Build the test suite" ${PAR2_IS_TOP_LEVEL})
 option(PAR2_INSTALL "Generate the install rules" ${PAR2_IS_TOP_LEVEL})
@@ -48,10 +53,6 @@ if(PAR2_KEEP_ASSERTS)
   foreach(config RELEASE RELWITHDEBINFO MINSIZEREL)
     string(REGEX REPLACE "[-/]DNDEBUG" "" CMAKE_CXX_FLAGS_${config} "${CMAKE_CXX_FLAGS_${config}}")
   endforeach()
-endif()
-
-if(PAR2_IS_TOP_LEVEL AND MSVC)
-  set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 endif()
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
