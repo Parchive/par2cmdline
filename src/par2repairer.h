@@ -24,7 +24,8 @@
 class Par2Repairer
 {
 public:
-  Par2Repairer(std::ostream &sout, std::ostream &serr, const NoiseLevel noiselevel);
+  Par2Repairer(std::ostream &sout, std::ostream &serr, const NoiseLevel noiselevel,
+               const Backends &backends = Backends());
   ~Par2Repairer(void);
 
   Result Process(const size_t memorylimit,
@@ -170,6 +171,7 @@ protected:
   std::ostream &serr; // stream for errors (for commandline, this is cerr)
 
   const NoiseLevel noiselevel;              // OnScreen display
+  const Backends backends;                  // The implementations the application supplied
 
   std::string               searchpath;              // Where to find files on disk
 
@@ -232,8 +234,10 @@ protected:
 
   ReedSolomon<Galois16>     rs;                      // The Reed Solomon matrix.
 
-  void                     *inputbuffer;             // Buffer for reading DataBlocks (chunksize)
-  void                     *outputbuffer;            // Buffer for writing DataBlocks (chunksize * missingblockcount)
+  void                     *transferbuffer;          // Input blocks in flight (chunksize * NUM_TRANSFER_BUFFERS)
+  void                     *outputbuffer;            // Buffer for writing DataBlocks (chunksize)
+  std::unique_ptr<Processor> processor;              // Multiplies the input blocks by the RS matrix
+  bool                      ownfactors;              // Whether the processor solved the erasure itself
 };
 
 #endif // __PAR2REPAIRER_H__

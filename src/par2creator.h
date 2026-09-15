@@ -29,7 +29,8 @@ class CriticalPacket;
 class Par2Creator
 {
 public:
-  Par2Creator(std::ostream &sout, std::ostream &serr, const NoiseLevel noiselevel);
+  Par2Creator(std::ostream &sout, std::ostream &serr, const NoiseLevel noiselevel,
+              const Backends &backends = Backends());
   ~Par2Creator(void);
 
   // Create recovery files from the source files specified on the command line
@@ -76,7 +77,7 @@ protected:
   bool InitialiseOutputFiles(const std::string &par2filename);
 
   // Allocate memory buffers for reading and writing data to disk.
-  bool AllocateBuffers(void);
+  bool AllocateBuffers(size_t memorylimit);
 
   // Compute the Reed Solomon matrix
   bool ComputeRSMatrix(void);
@@ -106,6 +107,7 @@ protected:
   std::ostream &serr; // stream for errors (for commandline, this is cerr)
 
   const NoiseLevel noiselevel; // How noisy we should be
+  const Backends backends;     // The implementations the application supplied
 
   u32 totalthreads;            // Number of threads the whole create may use
   u32 filethreads;             // Number of threads for file processing
@@ -114,8 +116,9 @@ protected:
   size_t chunksize;   // How much of each block will be processed at a
                       // time (due to memory constraints).
 
-  void *inputbuffer;  // chunksize
-  void *outputbuffer; // chunksize * recoveryblockcount
+  void *transferbuffer; // chunksize * NUM_TRANSFER_BUFFERS
+  void *outputbuffer; // chunksize
+  std::unique_ptr<Processor> processor; // Multiplies the input blocks by the RS matrix
 
   u32 sourcefilecount;   // Number of source files for which recovery data will be computed.
   u32 sourceblockcount;  // Total number of data blocks that the source files will be

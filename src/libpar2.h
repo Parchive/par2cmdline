@@ -20,25 +20,14 @@
 #ifndef __LIBPAR2_H__
 #define __LIBPAR2_H__
 
-#include <cstdint>
 #include <ostream>
 #include <string>
 #include <vector>
 
-typedef std::uint8_t  u8;
-typedef std::int8_t   i8;
-typedef std::uint16_t u16;
-typedef std::int16_t  i16;
-typedef std::uint32_t u32;
-typedef std::int32_t  i32;
-typedef std::uint64_t u64;
-typedef std::int64_t  i64;
-
-static_assert(sizeof(u8) == 1 && sizeof(i8) == 1
-		&& sizeof(u16) == 2 && sizeof(i16) == 2
-		&& sizeof(u32) == 4 && sizeof(i32) == 4
-		&& sizeof(u64) == 8 && sizeof(i64) == 8,
-		"the integer types are the widths their names give");
+#include "types.h"
+#include "processor.h"
+#include "hasher.h"
+#include "backends.h"
 
 
 typedef enum
@@ -107,7 +96,8 @@ Result par2create(std::ostream &sout,
 			  const u32 firstblock,
 			  const Scheme recoveryfilescheme,
 			  const u32 recoveryfilecount,
-			  const u32 recoveryblockcount
+			  const u32 recoveryblockcount,
+			  const Backends &backends = Backends()
 			  );
 
 
@@ -125,7 +115,8 @@ Result par2repair(std::ostream &sout,
 		  const bool renameonly,
 		  const bool skipdata,
 		  const u64 skipleaway,
-		  const bool fullhash = false
+		  const bool fullhash = false,
+		  const Backends &backends = Backends()
 		  );
 
 

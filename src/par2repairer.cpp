@@ -47,10 +47,11 @@ bool Par2Repairer::IsPar2Filename(const std::string &filename)
     && ext[4] == '2');
 }
 
-Par2Repairer::Par2Repairer(std::ostream &sout, std::ostream &serr, const NoiseLevel noiselevel)
+Par2Repairer::Par2Repairer(std::ostream &sout, std::ostream &serr, const NoiseLevel noiselevel, const Backends &backends)
 : sout(sout)
 , serr(serr)
 , noiselevel(noiselevel)
+, backends(backends)
 , searchpath()
 , basepath()
 , totalthreads(default_threads())
@@ -90,6 +91,8 @@ Par2Repairer::Par2Repairer(std::ostream &sout, std::ostream &serr, const NoiseLe
   availableblockcount = 0;
   missingblockcount = 0;
 
+  ownfactors = false;
+
   memset(windowtable, 0, sizeof(windowtable));
 
   blocksallocated = false;
@@ -99,13 +102,13 @@ Par2Repairer::Par2Repairer(std::ostream &sout, std::ostream &serr, const NoiseLe
   damagedfilecount = 0;
   missingfilecount = 0;
 
-  inputbuffer = 0;
+  transferbuffer = 0;
   outputbuffer = 0;
 }
 
 Par2Repairer::~Par2Repairer(void)
 {
-  delete [] (u8*)inputbuffer;
+  delete [] (u8*)transferbuffer;
   delete [] (u8*)outputbuffer;
 
   std::map<u32,RecoveryPacket*>::iterator rp = recoverypacketmap.begin();
@@ -257,6 +260,15 @@ Result Par2Repairer::Process(
         if (!CreateTargetFiles())
           return eFileIOError;
 
+        // Allocate memory buffers for reading and writing data to disk, and
+        // build the processor, which is offered the erasures below.
+        if (!AllocateBuffers(memorylimit))
+        {
+          // Delete all of the partly reconstructed files
+          DeleteIncompleteTargetFiles();
+          return eMemoryError;
+        }
+
         // Work out which data blocks are available, which need to be copied
         // directly to the output, and which need to be recreated, and compute
         // the appropriate Reed Solomon matrix.
@@ -270,16 +282,8 @@ Result Par2Repairer::Process(
         if (noiselevel > nlSilent)
           sout << '\n';
 
-        // Allocate memory buffers for reading and writing data to disk.
-        if (!AllocateBuffers(memorylimit))
-        {
-          // Delete all of the partly reconstructed files
-          DeleteIncompleteTargetFiles();
-          return eMemoryError;
-        }
-
         // Set the total amount of data to be processed.
-        ProgressMeter<u64> progress(sout, missingblockcount > 0 ? "Repairing: " : "Processing: ", blocksize * sourceblockcount * (missingblockcount > 0 ? missingblockcount : 1));
+        ProgressMeter<u64> progress(sout, missingblockcount > 0 ? "Repairing: " : "Processing: ", blocksize * sourceblockcount);
 
         // Start at an offset of 0 within a block.
         u64 blockoffset = 0;
@@ -305,8 +309,8 @@ Result Par2Repairer::Process(
 
         // The repaired files are scanned into buffers of their own, so the ones
         // the repair read and wrote through are given up first
-        delete [] (u8*)inputbuffer;
-        inputbuffer = 0;
+        delete [] (u8*)transferbuffer;
+        transferbuffer = 0;
         delete [] (u8*)outputbuffer;
         outputbuffer = 0;
 
@@ -1638,23 +1642,74 @@ bool Par2Repairer::ScanDataFileAligned(DiskFile               *diskfile,   // [i
     return true;
   };
 
+  // A verification entry is the 20 bytes a block is expected to hash to, so the
+  // packet is handed to the hasher as it stands
+  static_assert(sizeof(FILEVERIFICATIONENTRY) == 20, "a verification entry is a block hash");
+
+  // A hasher belongs to one thread at a time, and the blocks of a batch go to
+  // whichever of the pool's threads and the threads waiting on it take them, so
+  // a block is checked with one taken for it and given back afterwards. There is
+  // one for every thread which could be checking this file at once
+  std::vector<std::unique_ptr<Hasher> > hashers;
+  std::vector<Hasher*>                  idle;
+  std::mutex                            idlemutex;
+
+  for (u32 i = 0; i < blockpool->ThreadCount() + filethreads; ++i)
+  {
+    HasherConfig config;
+
+    std::unique_ptr<Hasher> hasher = backends.hasher
+      ? backends.hasher(config)
+      : std::unique_ptr<Hasher>(new ReferenceHasher());
+
+    if (!hasher || !hasher->Init(filesize, (size_t)blocksize, false))
+      return false;
+
+    idle.push_back(hasher.get());
+    hashers.push_back(std::move(hasher));
+  }
+
+  struct Borrowed
+  {
+    Borrowed(std::vector<Hasher*> &idle, std::mutex &mutex)
+    : idle(idle)
+    , mutex(mutex)
+    {
+      std::lock_guard<std::mutex> lock(mutex);
+
+      hasher = idle.back();
+      idle.pop_back();
+    }
+
+    ~Borrowed(void)
+    {
+      std::lock_guard<std::mutex> lock(mutex);
+
+      idle.push_back(hasher);
+    }
+
+    std::vector<Hasher*> &idle;
+    std::mutex           &mutex;
+    Hasher               *hasher;
+  };
+
+  // One block goes in a submission, because that is how the pool hands them
+  // out. Filling the lanes of a hasher which takes several at once means having
+  // it hand out a range of them instead
   auto checkblock = [&](const char *from, const u32 first, const u32 block)
   {
     const u64 length = std::min(blocksize, filesize - static_cast<u64>(block) * blocksize);
     const char *data = &from[static_cast<size_t>(block - first) * blocksize];
-    const FILEVERIFICATIONENTRY *entry = verificationpacket->VerificationEntry(block);
 
-    const u32 checksum = ~0 ^ CRCUpdateBlock(~0, blocksize, data);
-    if (checksum != entry->crc)
-      return;
+    char result = 0;
 
-    MD5Context context;
-    context.Update(data, blocksize);
+    {
+      Borrowed borrowed(idle, idlemutex);
 
-    MD5Hash hash{};
-    context.Final(hash);
+      borrowed.hasher->CheckBlocks(data, 1, 0, verificationpacket->VerificationEntry(block), &result);
+    }
 
-    if (hash != entry->hash)
+    if (!result)
       return;
 
     matched[block] = 1;
@@ -2706,6 +2761,9 @@ bool Par2Repairer::ComputeRSmatrix(void)
   // Start iterating through the available recovery packets
   std::map<u32,RecoveryPacket*>::iterator rp = recoverypacketmap.begin();
 
+  // The exponents of those recovery blocks, kept for the processor
+  std::vector<u16> exponents;
+
   // Continue to fill the remaining list of data blocks to be read
   while (inputblock != inputblocks.end())
   {
@@ -2728,12 +2786,22 @@ bool Par2Repairer::ComputeRSmatrix(void)
     if (!rs.SetOutput(true, (u16)exponent))
       return false;
 
+    exponents.push_back((u16)exponent);
+
     ++inputblock;
     ++rp;
   }
 
   // If we need to, compute and solve the RS matrix
   if (missingblockcount == 0)
+    return true;
+
+  // Offer the erasure pattern, so that an implementation able to solve it for
+  // itself is not made to wait for the matrix to be inverted only to read
+  // columns out of it
+  ownfactors = processor->OfferErasures(present, exponents.data(), (u32)exponents.size());
+
+  if (ownfactors)
     return true;
 
   bool success = rs.Compute(noiselevel, sout, serr);
@@ -2793,17 +2861,31 @@ bool Par2Repairer::AllocateBuffers(size_t memorylimit)
     chunksize = (size_t)blocksize;
   }
 
-  // Allocate the two buffers
-  inputbuffer = new u8[(size_t)chunksize];
-  outputbuffer = new u8[(size_t)chunksize * missingblockcount];
-
   if (MAX_CHUNK_SIZE != 0 && chunksize > MAX_CHUNK_SIZE)
     chunksize = MAX_CHUNK_SIZE;
+
+  // Allocate the two buffers
+  transferbuffer = new u8[(size_t)chunksize * NUM_TRANSFER_BUFFERS];
+  outputbuffer = new u8[(size_t)chunksize];
+
+  ProcessorConfig config;
+  config.numthreads = totalthreads;
+  config.memorylimit = memorylimit;
+
+  processor = backends.processor
+    ? backends.processor(config)
+    : std::unique_ptr<Processor>(new ReferenceProcessor(rs, totalthreads));
+
+  if (!processor || !processor->Init((size_t)chunksize, missingblockcount))
+  {
+    serr << "Could not allocate buffer memory." << std::endl;
+    return false;
+  }
 
   if (noiselevel >= nlDebug)
     sout << "[DEBUG] Process chunk size: " << chunksize << std::endl;
 
-  if (inputbuffer == NULL || outputbuffer == NULL)
+  if (transferbuffer == NULL || outputbuffer == NULL)
   {
     serr << "Could not allocate buffer memory." << std::endl;
     return false;
@@ -2817,9 +2899,6 @@ bool Par2Repairer::ProcessData(u64 blockoffset, size_t blocklength, ProgressMete
 {
   u64 totalwritten = 0;
 
-  // Clear the output buffer
-  memset(outputbuffer, 0, (size_t)chunksize * missingblockcount);
-
   std::vector<DataBlock*>::iterator inputblock = inputblocks.begin();
   std::vector<DataBlock*>::iterator copyblock  = copyblocks.begin();
   u32                          inputindex = 0;
@@ -2829,9 +2908,21 @@ bool Par2Repairer::ProcessData(u64 blockoffset, size_t blocklength, ProgressMete
   // Are there any blocks which need to be reconstructed
   if (missingblockcount > 0)
   {
-    // The output blocks are divided between the same threads for every input
-    // block, so the threads are started once for the whole of the data
-    ParallelRunner runner(std::min<u32>(totalthreads, missingblockcount));
+    processor->SetChunkLength(blocklength);
+    processor->ResetOutput();
+
+    // The matrix column for one input block, unused when the processor has its own
+    std::vector<u16> factors(ownfactors ? 0 : missingblockcount);
+
+    // Every buffer starts free
+    std::future<void> bufferfree[NUM_TRANSFER_BUFFERS];
+    for (u32 buffer=0; buffer<NUM_TRANSFER_BUFFERS; buffer++)
+    {
+      std::promise<void> free;
+      free.set_value();
+      bufferfree[buffer] = free.get_future();
+    }
+    u32 bufferindex = 0;
 
     // For each input block
     while (inputblock != inputblocks.end())
@@ -2852,6 +2943,10 @@ bool Par2Repairer::ProcessData(u64 blockoffset, size_t blocklength, ProgressMete
           return false;
         }
       }
+
+      // Wait for the next input buffer to come free
+      void *inputbuffer = &((u8*)transferbuffer)[(size_t)chunksize * bufferindex];
+      bufferfree[bufferindex].get();
 
       // Read data from the current input block
       if (!(*inputblock)->ReadData(blockoffset, blocklength, inputbuffer))
@@ -2874,23 +2969,26 @@ bool Par2Repairer::ProcessData(u64 blockoffset, size_t blocklength, ProgressMete
         ++copyblock;
       }
 
-      // For each output block
-      runner.Run(0, missingblockcount, [&](size_t outputindex)
+      // Look up the matrix column and process the data against every output block
+      if (!ownfactors)
       {
-        u32 internalOutputindex = (u32) outputindex;
-        // Select the appropriate part of the output buffer
-        void *outbuf = &((u8*)outputbuffer)[chunksize * internalOutputindex];
+        for (u32 outputindex=0; outputindex<missingblockcount; outputindex++)
+          factors[outputindex] = rs.GetFactor(inputindex, outputindex);
+      }
 
-        // Process the data
-        rs.Process(blocklength, inputindex, inputbuffer, internalOutputindex, outbuf);
+      processor->WaitForAdd();
+      bufferfree[bufferindex] = processor->AddInput(inputbuffer, blocklength, inputindex,
+                                                    ownfactors ? NULL : factors.data());
+      bufferindex = (bufferindex + 1) % NUM_TRANSFER_BUFFERS;
 
-        if (noiselevel > nlQuiet)
-          progress.Add(blocklength);
-      });
+      if (noiselevel > nlQuiet)
+        progress.Add(blocklength);
 
       ++inputblock;
       ++inputindex;
     }
+
+    processor->EndInput();
   }
   else
   {
@@ -2920,11 +3018,11 @@ bool Par2Repairer::ProcessData(u64 blockoffset, size_t blocklength, ProgressMete
         }
 
         // Read data from the current input block
-        if (!(*inputblock)->ReadData(blockoffset, blocklength, inputbuffer))
+        if (!(*inputblock)->ReadData(blockoffset, blocklength, transferbuffer))
           return false;
 
         size_t wrote;
-        if (!(*copyblock)->WriteData(blockoffset, blocklength, inputbuffer, wrote))
+        if (!(*copyblock)->WriteData(blockoffset, blocklength, transferbuffer, wrote))
           return false;
         totalwritten += wrote;
       }
@@ -2950,8 +3048,17 @@ bool Par2Repairer::ProcessData(u64 blockoffset, size_t blocklength, ProgressMete
   std::vector<DataBlock*>::iterator outputblock = outputblocks.begin();
   for (u32 outputindex=0; outputindex<missingblockcount;outputindex++)
   {
-    // Select the appropriate part of the output buffer
-    char *outbuf = &((char*)outputbuffer)[chunksize * outputindex];
+    // Take the accumulated output block from the processor
+    const void *outbuf = processor->PeekOutput(outputindex);
+    if (outbuf == NULL)
+    {
+      if (!processor->GetOutput(outputindex, outputbuffer))
+      {
+        serr << "Could not read the repaired data back from the processor." << std::endl;
+        return false;
+      }
+      outbuf = outputbuffer;
+    }
 
     // Write the data to the target file
     size_t wrote;

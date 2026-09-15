@@ -29,15 +29,16 @@ static char THIS_FILE[]=__FILE__;
 #endif
 
 
-Par2Creator::Par2Creator(std::ostream &sout, std::ostream &serr, const NoiseLevel noiselevel)
+Par2Creator::Par2Creator(std::ostream &sout, std::ostream &serr, const NoiseLevel noiselevel, const Backends &backends)
 : sout(sout)
 , serr(serr)
 , noiselevel(noiselevel)
+, backends(backends)
 , totalthreads(default_threads())
 , filethreads(_FILE_THREADS)
 , blocksize(0)
 , chunksize(0)
-, inputbuffer(0)
+, transferbuffer(0)
 , outputbuffer(0)
 
 , sourcefilecount(0)
@@ -69,7 +70,7 @@ Par2Creator::~Par2Creator(void)
   delete mainpacket;
   delete creatorpacket;
 
-  delete [] (u8*)inputbuffer;
+  delete [] (u8*)transferbuffer;
   delete [] (u8*)outputbuffer;
 
   std::vector<Par2CreatorSourceFile*>::iterator sourcefile = sourcefiles.begin();
@@ -168,7 +169,7 @@ Result Par2Creator::Process(
   if (recoveryblockcount > 0)
   {
     // Allocate memory buffers for reading and writing data to disk.
-    if (!AllocateBuffers())
+    if (!AllocateBuffers(memorylimit))
       return eMemoryError;
 
     // Compute the Reed Solomon matrix
@@ -176,7 +177,7 @@ Result Par2Creator::Process(
       return eLogicError;
 
     // Set the total amount of data to be processed.
-    ProgressMeter<u64> progress(sout, "Processing: ", blocksize * sourceblockcount * recoveryblockcount);
+    ProgressMeter<u64> progress(sout, "Processing: ", blocksize * sourceblockcount);
 
     // Start at an offset of 0 within a block.
     u64 blockoffset = 0;
@@ -360,7 +361,7 @@ bool Par2Creator::OpenSourceFiles(const std::vector<std::string> &extrafiles, st
     }
 
     // Open the source file and compute its Hashes and CRCs.
-    if (!sourcefile->Open(noiselevel, sout, serr, extrafile, blocksize, deferhashcomputation, basepath, progress))
+    if (!sourcefile->Open(noiselevel, sout, serr, extrafile, blocksize, deferhashcomputation, basepath, progress, backends))
     {
       delete sourcefile;
       openfailed = true;
@@ -714,12 +715,26 @@ bool Par2Creator::InitialiseOutputFiles(const std::string &parfilename)
 }
 
 // Allocate memory buffers for reading and writing data to disk.
-bool Par2Creator::AllocateBuffers(void)
+bool Par2Creator::AllocateBuffers(size_t memorylimit)
 {
-  inputbuffer = new u8[chunksize];
-  outputbuffer = new u8[chunksize * recoveryblockcount];
+  transferbuffer = new u8[chunksize * NUM_TRANSFER_BUFFERS];
+  outputbuffer = new u8[chunksize];
 
-  if (inputbuffer == NULL || outputbuffer == NULL)
+  if (transferbuffer == NULL || outputbuffer == NULL)
+  {
+    serr << "Could not allocate buffer memory." << std::endl;
+    return false;
+  }
+
+  ProcessorConfig config;
+  config.numthreads = totalthreads;
+  config.memorylimit = memorylimit;
+
+  processor = backends.processor
+    ? backends.processor(config)
+    : std::unique_ptr<Processor>(new ReferenceProcessor(rs, totalthreads));
+
+  if (!processor || !processor->Init(chunksize, recoveryblockcount))
   {
     serr << "Could not allocate buffer memory." << std::endl;
     return false;
@@ -751,8 +766,29 @@ bool Par2Creator::ComputeRSMatrix(void)
 // Read source data, process it through the RS matrix and write it to disk.
 bool Par2Creator::ProcessData(u64 blockoffset, size_t blocklength, ProgressMeter<u64> &progress)
 {
-  // Clear the output buffer
-  memset(outputbuffer, 0, chunksize * recoveryblockcount);
+  processor->SetChunkLength(blocklength);
+  processor->ResetOutput();
+
+  // Offer the exponents, so that an implementation able to work out its own
+  // coefficients is not made to read a column out of the matrix.
+  std::vector<u16> exponents(recoveryblockcount);
+  for (u32 recoveryblock=0; recoveryblock<recoveryblockcount; recoveryblock++)
+    exponents[recoveryblock] = (u16)(firstrecoveryblock + recoveryblock);
+
+  const bool ownfactors = processor->OfferRecoveryExponents((u32)sourceblocks.size(), exponents.data(), recoveryblockcount);
+
+  // The matrix column for one input block, unused when the processor has its own
+  std::vector<u16> factors(ownfactors ? 0 : recoveryblockcount);
+
+  // Every buffer starts free
+  std::future<void> bufferfree[NUM_TRANSFER_BUFFERS];
+  for (u32 buffer=0; buffer<NUM_TRANSFER_BUFFERS; buffer++)
+  {
+    std::promise<void> free;
+    free.set_value();
+    bufferfree[buffer] = free.get_future();
+  }
+  u32 bufferindex = 0;
 
   // If we have deferred computation of the file hash and block crc and hashes
   // sourcefile and sourceindex will be used to update them during
@@ -764,10 +800,6 @@ bool Par2Creator::ProcessData(u64 blockoffset, size_t blocklength, ProgressMeter
   u32 inputblock;
 
   DiskFile *lastopenfile = NULL;
-
-  // The output blocks are divided between the same threads for every input
-  // block, so the threads are started once for the whole of the data
-  ParallelRunner runner(std::min<u32>(totalthreads, recoveryblockcount));
 
   // For each input block
   for ((sourceblock=sourceblocks.begin()),(inputblock=0);
@@ -791,6 +823,10 @@ bool Par2Creator::ProcessData(u64 blockoffset, size_t blocklength, ProgressMeter
       }
     }
 
+    // Wait for the next input buffer to come free
+    void *inputbuffer = &((u8*)transferbuffer)[chunksize * bufferindex];
+    bufferfree[bufferindex].get();
+
     // Read data from the current input block
     if (!sourceblock->ReadData(blockoffset, blocklength, inputbuffer))
       return false;
@@ -803,20 +839,20 @@ bool Par2Creator::ProcessData(u64 blockoffset, size_t blocklength, ProgressMeter
       (*sourcefile)->UpdateHashes(sourceindex, inputbuffer, blocklength);
     }
 
-    // For each output block
-    runner.Run(0, recoveryblockcount, [&](size_t outputblock)
+    // Look up the matrix column and process the data against every output block
+    if (!ownfactors)
     {
-      u32 internalOutputblock = (u32)outputblock;
+      for (u32 outputblock=0; outputblock<recoveryblockcount; outputblock++)
+        factors[outputblock] = rs.GetFactor(inputblock, outputblock);
+    }
 
-      // Select the appropriate part of the output buffer
-      void *outbuf = &((u8*)outputbuffer)[chunksize * internalOutputblock];
+    processor->WaitForAdd();
+    bufferfree[bufferindex] = processor->AddInput(inputbuffer, blocklength, inputblock,
+                                                  ownfactors ? NULL : factors.data());
+    bufferindex = (bufferindex + 1) % NUM_TRANSFER_BUFFERS;
 
-      // Process the data through the RS matrix
-      rs.Process(blocklength, inputblock, inputbuffer, internalOutputblock, outbuf);
-
-      if (noiselevel > nlQuiet)
-        progress.Add(blocklength);
-    });
+    if (noiselevel > nlQuiet)
+      progress.Add(blocklength);
 
     // Work out which source file the next block belongs to
     if (++sourceindex >= (*sourcefile)->BlockCount())
@@ -825,6 +861,8 @@ bool Par2Creator::ProcessData(u64 blockoffset, size_t blocklength, ProgressMeter
       ++sourcefile;
     }
   }
+
+  processor->EndInput();
 
   // Close the last file
   if (lastopenfile != NULL)
@@ -838,8 +876,17 @@ bool Par2Creator::ProcessData(u64 blockoffset, size_t blocklength, ProgressMeter
   // For each output block
   for (u32 outputblock=0; outputblock<recoveryblockcount;outputblock++)
   {
-    // Select the appropriate part of the output buffer
-    char *outbuf = &((char*)outputbuffer)[chunksize * outputblock];
+    // Take the accumulated output block from the processor
+    const void *outbuf = processor->PeekOutput(outputblock);
+    if (outbuf == NULL)
+    {
+      if (!processor->GetOutput(outputblock, outputbuffer))
+      {
+        serr << "Could not read the recovery data back from the processor." << std::endl;
+        return false;
+      }
+      outbuf = outputbuffer;
+    }
 
     // Write the data to the recovery packet
     if (!recoverypackets[outputblock].WriteData(blockoffset, blocklength, outbuf))

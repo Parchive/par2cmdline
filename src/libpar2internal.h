@@ -177,6 +177,10 @@ typedef unsigned int     size_t;
 #endif
 #endif
 
+// Input blocks held in flight, so that a backend still working on one block
+// does not stop the next being read.
+#define NUM_TRANSFER_BUFFERS 2
+
 #define MAX_CHUNK_SIZE 32*1048576 // too large chunks are likely detrimental to performance; set to 0 to disable
 #define SCAN_BATCH_PER_THREAD 2 // blocks in a batch for each thread checking it, so one which finishes early has more to take
 
@@ -276,6 +280,7 @@ private:
 #include "md5.h"
 #include "par2fileformat.h"
 #include "reedsolomon.h"
+#include "reference_processor.h"
 
 #include "diskfile.h"
 #include "datablock.h"
@@ -292,6 +297,7 @@ private:
 #include "par2repairersourcefile.h"
 
 #include "filechecksummer.h"
+#include "reference_hasher.h"
 #include "verificationhashtable.h"
 
 #include "par2creator.h"
