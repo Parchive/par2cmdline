@@ -63,9 +63,9 @@ class ProgressMeter
 
 public:
   ProgressMeter(std::ostream &sout, const std::string &message, TValue total) :
-    sout(sout), message(message), scale(1000.0f / total), current(0), printed(0) {}
+    sout(sout), message(message), scale(total != 0 ? 1000.0f / total : 0.0f), current(0), printed(0) {}
   ProgressMeter(std::ostream &sout, const char *message, TValue total) :
-    sout(sout), message(message), scale(1000.0f / total), current(0), printed(0) {}
+    sout(sout), message(message), scale(total != 0 ? 1000.0f / total : 0.0f), current(0), printed(0) {}
 
   // NOTE: Update() doesn't always update current value, so don't mix it with Add()
   void Update(TValue newval)
