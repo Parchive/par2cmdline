@@ -153,7 +153,13 @@ foreach(script ${PAR2_INTEGRATION_TESTS})
     RUN_SERIAL TRUE)
 endforeach()
 
-if(NOT CMAKE_HOST_WIN32)
+if(NOT MSVC)
+  if(CMAKE_HOST_WIN32)
+    find_program(PAR2_SH sh)
+  else()
+    set(PAR2_SH /bin/sh)
+  endif()
+
   if(PAR2_ATOMIC_LIBRARY)
     set(PAR2_CONSUMER_LIBS "-l${PAR2_ATOMIC_LIBRARY}")
   else()
@@ -190,12 +196,36 @@ if(NOT CMAKE_HOST_WIN32)
     set(PAR2_CONSUMER_CXXFLAGS "-O0")
   endif()
 
+  if(PAR2_SH)
+    add_test(NAME consumer_build
+      COMMAND "${PAR2_SH}" "${CMAKE_CURRENT_SOURCE_DIR}/consumer_build"
+      WORKING_DIRECTORY "${PROJECT_BINARY_DIR}")
+
+    set_tests_properties(consumer_build PROPERTIES
+      SKIP_RETURN_CODE ${PAR2_SKIP_RETURN_CODE}
+      ENVIRONMENT
+        "srcdir=${PAR2_SRCDIR};CXX=${CMAKE_CXX_COMPILER};CXXFLAGS=${PAR2_CONSUMER_CXXFLAGS};PTHREAD_FLAGS=${CMAKE_THREAD_LIBS_INIT};LIBS=${PAR2_CONSUMER_LIBS}")
+  endif()
+else()
+  if(CMAKE_GENERATOR_PLATFORM)
+    set(PAR2_CONSUMER_PLATFORM ${CMAKE_GENERATOR_PLATFORM})
+  else()
+    set(PAR2_CONSUMER_PLATFORM x64)
+  endif()
+
+  get_target_property(PAR2_CONSUMER_RUNTIME libpar2 MSVC_RUNTIME_LIBRARY)
+  if(NOT PAR2_CONSUMER_RUNTIME)
+    set(PAR2_CONSUMER_RUNTIME "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
+  endif()
+
   add_test(NAME consumer_build
-    COMMAND /bin/sh "${CMAKE_CURRENT_SOURCE_DIR}/consumer_build"
+    COMMAND pwsh -NoProfile -File "${CMAKE_CURRENT_SOURCE_DIR}/consumer_build.ps1"
+      -Platform ${PAR2_CONSUMER_PLATFORM}
+      -LibPath "$<TARGET_FILE:libpar2>"
+      -Runtime "${PAR2_CONSUMER_RUNTIME}"
     WORKING_DIRECTORY "${PROJECT_BINARY_DIR}")
 
   set_tests_properties(consumer_build PROPERTIES
     SKIP_RETURN_CODE ${PAR2_SKIP_RETURN_CODE}
-    ENVIRONMENT
-      "srcdir=${PAR2_SRCDIR};CXX=${CMAKE_CXX_COMPILER};CXXFLAGS=${PAR2_CONSUMER_CXXFLAGS};PTHREAD_FLAGS=${CMAKE_THREAD_LIBS_INIT};LIBS=${PAR2_CONSUMER_LIBS}")
+    ENVIRONMENT "srcdir=${PAR2_SRCDIR}")
 endif()

@@ -4,24 +4,40 @@
 # path, and no config.h.
 
 param(
-    [string]$Configuration = "Release",
-    [string]$Platform = "x64"
+    [string]$Platform = "x64",
+    [string]$LibPath = "",
+    [string]$Runtime = "MultiThreadedDLL"
 )
 
 $ErrorActionPreference = "Stop"
 
+$ExecDir = (Get-Location).Path
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-$RootDir = Split-Path -Parent $ScriptDir
+if ($env:srcdir -and $env:srcdir -ne ".") {
+    $RootDir = Join-Path $ExecDir $env:srcdir
+} else {
+    $RootDir = Split-Path -Parent $ScriptDir
+}
 $IncludeDir = Join-Path $RootDir "include"
-$LibPath = Join-Path $RootDir "$Platform\$Configuration\libpar2.lib"
+if (-not $LibPath) {
+    $LibPath = Join-Path $ExecDir "par2.lib"
+}
+
+$RuntimeFlag = switch ($Runtime) {
+    "MultiThreaded" { "/MT" }
+    "MultiThreadedDebug" { "/MTd" }
+    "MultiThreadedDLL" { "/MD" }
+    "MultiThreadedDebugDLL" { "/MDd" }
+    default { throw "Unknown MSVC runtime library: $Runtime" }
+}
 
 Write-Host "-------------------------------------------------------"
 Write-Host "An application can build against the public header alone"
 Write-Host "-------------------------------------------------------"
 
 if (-not (Test-Path $LibPath)) {
-    Write-Host "Skipping: libpar2.lib has not been built."
-    exit 0
+    Write-Host "Skipping: the library has not been built."
+    exit 77
 }
 
 function Find-VSEnvironment {
@@ -81,10 +97,10 @@ try {
 }
 catch {
     Write-Host "Skipping: $_"
-    exit 0
+    exit 77
 }
 
-$workdir = Join-Path $RootDir "runconsumer_build"
+$workdir = Join-Path $ExecDir "runconsumer_build"
 if (Test-Path $workdir) {
     Remove-Item $workdir -Force -Recurse
 }
@@ -113,7 +129,7 @@ try {
     $consumer = Join-Path $RootDir "tests\consumer.cpp"
 
     $result = Invoke-VCCommand -VcVarsAll $vcvarsall -Platform $Platform `
-        -Command "cl.exe /nologo /EHsc /std:c++17 /I `"$IncludeDir`" `"$consumer`" /Fe:consumer.exe /link `"$LibPath`""
+        -Command "cl.exe /nologo /EHsc /std:c++17 $RuntimeFlag /I `"$IncludeDir`" `"$consumer`" /Fe:consumer.exe /link `"$LibPath`""
 
     if ($result.ExitCode -ne 0) {
         $result.Output | ForEach-Object { Write-Host "    $_" }
