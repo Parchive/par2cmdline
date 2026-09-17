@@ -20,15 +20,17 @@
 #ifndef __REFERENCE_PROCESSOR_H__
 #define __REFERENCE_PROCESSOR_H__
 
-// Multiplies each input block by the matrix on numthreads threads and keeps the
-// accumulated output blocks in one buffer. Every submission is complete by the
-// time AddInput returns.
+// Multiplies each input block by the matrix on numthreads threads, which stay
+// alive from one submission to the next, and keeps the accumulated output
+// blocks in one buffer. Every submission is complete by the time AddInput
+// returns.
 class ReferenceProcessor : public Processor
 {
 public:
   ReferenceProcessor(ReedSolomon<Galois16> &rs, u32 numthreads)
     : rs(rs)
     , numthreads(numthreads)
+    , runner()
     , maxlength(0)
     , outputcount(0)
     , currentlength(0)
@@ -49,6 +51,8 @@ public:
     outputcount = _outputcount;
     currentlength = _maxlength;
     outputbuffer = new u8[maxlength * outputcount];
+
+    runner.reset(new ParallelRunner(std::min(numthreads, outputcount)));
 
     return outputbuffer != nullptr;
   }
@@ -71,7 +75,7 @@ public:
   {
     (void)inputindex;
 
-    foreach_parallel(0, outputcount, numthreads, [&](size_t outputindex)
+    runner->Run(0, outputcount, [&](size_t outputindex)
     {
       rs.MultiplyAdd(factors[outputindex], length, data, &outputbuffer[maxlength * outputindex]);
     });
@@ -99,6 +103,7 @@ public:
 private:
   ReedSolomon<Galois16> &rs;
   u32 numthreads;
+  std::unique_ptr<ParallelRunner> runner;
   size_t maxlength;
   u32 outputcount;
   size_t currentlength;
