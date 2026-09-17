@@ -216,7 +216,7 @@ std::string DescriptionPacket::TranslateFilenameFromLocalToPar2(std::ostream &so
       serr << "        are a way for an attacker to overwrite system files." << std::endl;
     }
   }
-  if (par2_encoded_filename.at(0) == '/')
+  if (!par2_encoded_filename.empty() && par2_encoded_filename.at(0) == '/')
   {
     if (noiselevel >= nlNormal)
     {
@@ -356,7 +356,7 @@ std::string DescriptionPacket::TranslateFilenameFromPar2ToLocal(std::ostream &so
 #else
   // On UNIX systems, we don't want to allow filename to start with a slash,
   // because someone could be sneakily trying to overwrite a system file.
-  if (local_filename.at(0) == '/')
+  if (!local_filename.empty() && local_filename.at(0) == '/')
   {
     if (noiselevel >= nlQuiet)
     {
