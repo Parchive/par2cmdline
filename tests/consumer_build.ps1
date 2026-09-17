@@ -4,24 +4,31 @@
 # path, and no config.h.
 
 param(
-    [string]$Configuration = "Release",
-    [string]$Platform = "x64"
+    [string]$Platform = "x64",
+    [string]$LibPath = ""
 )
 
 $ErrorActionPreference = "Stop"
 
+$ExecDir = (Get-Location).Path
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-$RootDir = Split-Path -Parent $ScriptDir
+if ($env:srcdir -and $env:srcdir -ne ".") {
+    $RootDir = Join-Path $ExecDir $env:srcdir
+} else {
+    $RootDir = Split-Path -Parent $ScriptDir
+}
 $IncludeDir = Join-Path $RootDir "include"
-$LibPath = Join-Path $RootDir "$Platform\$Configuration\libpar2.lib"
+if (-not $LibPath) {
+    $LibPath = Join-Path $ExecDir "libpar2.lib"
+}
 
 Write-Host "-------------------------------------------------------"
 Write-Host "An application can build against the public header alone"
 Write-Host "-------------------------------------------------------"
 
 if (-not (Test-Path $LibPath)) {
-    Write-Host "Skipping: libpar2.lib has not been built."
-    exit 0
+    Write-Host "Skipping: the library has not been built."
+    exit 77
 }
 
 function Find-VSEnvironment {
@@ -84,7 +91,7 @@ catch {
     exit 0
 }
 
-$workdir = Join-Path $RootDir "runconsumer_build"
+$workdir = Join-Path $ExecDir "runconsumer_build"
 if (Test-Path $workdir) {
     Remove-Item $workdir -Force -Recurse
 }
