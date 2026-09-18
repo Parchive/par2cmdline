@@ -99,6 +99,9 @@ function Invoke-Par2 {
         [switch]$ReturnObject,
 
         [Parameter(Mandatory=$false)]
+        [switch]$RawOutput,
+
+        [Parameter(Mandatory=$false)]
         [string]$RedirectStandardInput
     )
 
@@ -106,6 +109,33 @@ function Invoke-Par2 {
     $par2Path = $env:PARBINARY
     if (-not $par2Path) {
         throw "PARBINARY environment variable not set"
+    }
+
+    # RawOutput returns the streams as the tool wrote them, carriage returns
+    # and all. The capture below reads a line at a time, and a line ends at a
+    # carriage return as well as at a newline.
+    if ($RawOutput) {
+        $startInfo = New-Object System.Diagnostics.ProcessStartInfo
+        $startInfo.FileName = $par2Path
+        foreach ($argument in $Arguments) {
+            [void]$startInfo.ArgumentList.Add($argument)
+        }
+        $startInfo.WorkingDirectory = $PWD.Path
+        $startInfo.UseShellExecute = $false
+        $startInfo.RedirectStandardOutput = $true
+        $startInfo.RedirectStandardError = $true
+
+        $process = [System.Diagnostics.Process]::Start($startInfo)
+        $stdErrRead = $process.StandardError.ReadToEndAsync()
+        $stdOutContent = $process.StandardOutput.ReadToEnd()
+        $stdErrContent = $stdErrRead.GetAwaiter().GetResult()
+        $process.WaitForExit()
+
+        return [pscustomobject]@{
+            ExitCode = $process.ExitCode
+            StdOut = $stdOutContent
+            StdErr = $stdErrContent
+        }
     }
 
     $tempOut = [System.IO.Path]::GetTempFileName()
