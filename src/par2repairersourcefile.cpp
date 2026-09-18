@@ -93,6 +93,16 @@ void Par2RepairerSourceFile::ComputeTargetFileName(const std::string &path, File
   const bool first = targetfilename.empty();
   std::string filename = DescriptionPacket::TranslateFilenameFromPar2ToLocal(FileName(), first ? errorlog : 0);
 
+#ifndef _WIN32
+  // A name the set records in a code page is written in UTF-8
+  const std::string utf8 = FilenameToUtf8(filename);
+  if (utf8 != filename && first && errorlog)
+    errorlog->Warn(wcFilenameChanged,
+                   "The set records \"" + utf8 + "\" in a code page rather than UTF-8.",
+                   FileName());
+  filename = utf8;
+#endif
+
   targetfilename = path + filename;
 
   // The name in the description packet, when the unicode name is used instead

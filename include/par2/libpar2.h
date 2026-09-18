@@ -146,7 +146,8 @@ typedef enum WarningCode
   wcFilenameUnsafe = 1,
 
   // The name a file will be written under is not the name the set records,
-  // because the recorded one could not be used as it stands
+  // because the recorded one could not be used as it stands or is in a code
+  // page rather than UTF-8
   wcFilenameChanged = 2,
 
   // A read or a write moved fewer bytes than were asked for, and the rest was
