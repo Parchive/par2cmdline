@@ -22,6 +22,7 @@
 // on the include path and without config.h, the way an embedding application
 // sees libpar2. It creates its own recovery set, so it needs no fixtures.
 
+#include <par2/cli.h>
 #include <par2/libpar2.h>
 
 #include <cstdio>
@@ -1810,6 +1811,49 @@ int main()
     std::remove(odd);
   }
 #endif
+
+  // An application can run the command line itself, with the implementations
+  // it supplies
+  {
+    Check(MakeDirectory("clidir"), "mkdir for the command line check");
+
+    const char *const clidata = "clidir/cli.data";
+    const char *const clipar = "clidir/cli.par2";
+    const char *const cliset = "clidir/cli";
+
+    WriteData(clidata, 11, 30000);
+    std::vector<std::string> files(1, std::string(clidata));
+
+    Check(par2::eSuccess == par2::par2create(quiet, quiet, par2::nlSilent,
+                                             64 * 1024 * 1024, "clidir/", 0, 2,
+                                             cliset, files, BLOCKSIZE, 0,
+                                             par2::scVariable, 0, 20),
+          "par2create for the command line check");
+
+    const char *const verify[] = {"par2", "verify", "-q", "-q", clipar};
+
+    Check(par2::eSuccess == par2::run(5, verify),
+          "the command line verifies a set which is intact");
+
+    Corrupt(clidata, 5000, 2000);
+
+    int asked = 0;
+    par2::Backends backends;
+    backends.processor = [&asked](const par2::ProcessorConfig &)
+    {
+      ++asked;
+      return std::unique_ptr<par2::Processor>();
+    };
+
+    const char *const repair[] = {"par2", "repair", "-q", "-q", clipar};
+
+    Check(par2::eMemoryError == par2::run(5, repair, backends),
+          "a repair which cannot build the application's processor says so");
+    Check(asked == 1, "so the command line was given the application's own");
+
+    std::remove(clidata);
+    std::remove(clipar);
+  }
 
   for (size_t i = 0; i < DATACOUNT; ++i)
     std::remove(DATA[i]);

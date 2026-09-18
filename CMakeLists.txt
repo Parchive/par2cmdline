@@ -86,6 +86,7 @@ endforeach()
 
 set(PAR2_PUBLIC_HEADERS
   include/par2/backends.h
+  include/par2/cli.h
   include/par2/hasher.h
   include/par2/libpar2.h
   include/par2/processor.h
@@ -172,7 +173,9 @@ par2_add_size_options(libpar2)
 target_link_libraries(libpar2 PUBLIC Threads::Threads ${PAR2_ATOMIC_LIBRARY})
 
 add_library(par2cli STATIC
+  src/cli.cpp
   src/commandline.cpp src/commandline.h
+  include/par2/cli.h
 )
 
 add_library(par2::cli ALIAS par2cli)
@@ -279,7 +282,7 @@ endif()
 if(PAR2_INSTALL)
   include(CMakePackageConfigHelpers)
 
-  install(TARGETS libpar2
+  install(TARGETS libpar2 par2cli
     EXPORT par2-targets
     ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
   )

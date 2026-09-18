@@ -24,8 +24,8 @@ echo $dashes
 echo $banner
 echo $dashes
 
-if [ ! -f "$execdir/libpar2.a" ]; then
-    echo "Skipping: libpar2.a has not been built."
+if [ ! -f "$execdir/libpar2.a" ] || [ ! -f "$execdir/libpar2cli.a" ]; then
+    echo "Skipping: the libraries have not been built."
     cd "$execdir"
     rm -rf "run$testname"
     exit 77
@@ -47,7 +47,7 @@ done
 # Deliberately no -I for the source tree and no -DHAVE_CONFIG_H.
 $CXX $CXXFLAGS -std=c++17 -I"$srcdir/include" \
      "$srcdir/tests/consumer.cpp" -o consumer \
-     "$execdir/libpar2.a" $PTHREAD_FLAGS $LIBS \
+     "$execdir/libpar2cli.a" "$execdir/libpar2.a" $PTHREAD_FLAGS $LIBS \
   || { echo "ERROR: could not build against <par2/libpar2.h>" ; exit 1; } >&2
 
 # A program built for another platform can only be run through wine
