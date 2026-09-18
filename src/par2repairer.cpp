@@ -1641,6 +1641,9 @@ bool Par2Repairer::CheckPacketConsistency(void)
 // into the correct order and determine their filenames
 bool Par2Repairer::CreateSourceFileList(void)
 {
+  // The directories are read as they are before anything is repaired
+  FilenameMatcher matcher;
+
   // For each FileId entry in the main packet
   for (u32 filenumber=0; filenumber<mainpacket->TotalFileCount(); filenumber++)
   {
@@ -1652,7 +1655,7 @@ bool Par2Repairer::CreateSourceFileList(void)
 
     if (sourcefile)
     {
-      sourcefile->ComputeTargetFileName(basepath, &errorlog);
+      sourcefile->ComputeTargetFileName(basepath, matcher, &errorlog);
     }
 
     sourcefiles.push_back(sourcefile);

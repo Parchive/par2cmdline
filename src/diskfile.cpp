@@ -1212,6 +1212,9 @@ bool DiskFile::Rename(std::string _filename)
 {
   assert(hFile == INVALID_HANDLE_VALUE);
 
+  if (!CreateParentDirectory(_filename))
+    return false;
+
   std::wstring wfilename, _wfilename;
   if (utf8::Utf8ToWide(filename, wfilename) && utf8::Utf8ToWide(_filename, _wfilename) && ::MoveFileW(wfilename.c_str(), _wfilename.c_str()))
   {
@@ -1228,6 +1231,9 @@ bool DiskFile::Rename(std::string _filename)
 bool DiskFile::Rename(std::string _filename)
 {
   assert(file == 0);
+
+  if (!CreateParentDirectory(_filename))
+    return false;
 
   if (::rename(filename.c_str(), _filename.c_str()) == 0)
   {
