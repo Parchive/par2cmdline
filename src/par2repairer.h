@@ -120,8 +120,7 @@ protected:
                     Par2RepairerSourceFile* &sourcefile, // [in/out] The source file matched
                     MatchType               &matchtype,  // [out]    The type of match
                     MD5Hash                 &hashfull,   // [out]    The full hash of the file
-                    MD5Hash                 &hash16k,    // [out]    The hash of the first 16k
-                    u32                     &count);     // [out]    The number of blocks found
+                    MD5Hash                 &hash16k);   // [out]    The hash of the first 16k
 
   // Find out how much data we have found
   void UpdateVerificationResults(void);

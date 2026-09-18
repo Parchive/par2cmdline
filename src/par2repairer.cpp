@@ -1404,8 +1404,6 @@ bool Par2Repairer::VerifyDataFile(DiskFile *diskfile, Par2RepairerSourceFile *so
   // Are there any files that can be verified at the block level
   if (blockverifiable)
   {
-    u32 count;
-
     // Scan the file at the block level.
 
     if (!ScanDataFile(diskfile,   // [in]      The file to scan
@@ -1415,8 +1413,7 @@ bool Par2Repairer::VerifyDataFile(DiskFile *diskfile, Par2RepairerSourceFile *so
                       sourcefile, // [in/out]  Modified in the match is for another source file
                       matchtype,  // [out]
                       hashfull,   // [out]
-                      hash16k,    // [out]
-                      count))     // [out]
+                      hash16k))   // [out]
       return false;
 
     switch (matchtype)
@@ -1871,9 +1868,10 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
                                 Par2RepairerSourceFile* &sourcefile,  // [in/out]
                                 MatchType               &matchtype,   // [out]
                                 MD5Hash                 &hashfull,    // [out] only set if there are unverifiable source files
-                                MD5Hash                 &hash16k,     // [out] only set if there are unverifiable source files
-                                u32                     &count)       // [out]
+                                MD5Hash                 &hash16k)     // [out] only set if there are unverifiable source files
 {
+  u32 count = 0;
+
   // Remember which file we wanted to match
   Par2RepairerSourceFile *originalsourcefile = sourcefile;
 
