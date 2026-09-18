@@ -191,15 +191,36 @@ par2_add_size_options(libpar2)
 
 target_link_libraries(libpar2 PUBLIC Threads::Threads ${PAR2_ATOMIC_LIBRARY})
 
+add_library(par2cli STATIC
+  src/commandline.cpp src/commandline.h
+)
+
+add_library(par2::cli ALIAS par2cli)
+
+if(WIN32)
+  target_sources(par2cli PRIVATE src/wargs.cpp src/wargs.h)
+endif()
+
+set_target_properties(par2cli PROPERTIES
+  OUTPUT_NAME par2cli
+  EXPORT_NAME cli
+  POSITION_INDEPENDENT_CODE ON
+)
+
+target_include_directories(par2cli PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+)
+
+par2_add_internal_options(par2cli)
+par2_add_size_options(par2cli)
+
+target_link_libraries(par2cli PUBLIC libpar2)
+
 if(PAR2_BUILD_TOOL)
   add_executable(par2
     src/par2cmdline.cpp
-    src/commandline.cpp src/commandline.h
   )
-
-  if(WIN32)
-    target_sources(par2 PRIVATE src/wargs.cpp src/wargs.h)
-  endif()
 
   par2_add_internal_options(par2)
 
@@ -220,7 +241,7 @@ if(PAR2_BUILD_TOOL)
     target_link_options(par2 PRIVATE "$<${PAR2_OPTIMISED}:-Wl,--gc-sections>")
   endif()
 
-  target_link_libraries(par2 PRIVATE libpar2)
+  target_link_libraries(par2 PRIVATE par2cli)
 endif()
 
 if(PAR2_BUILD_TESTS)
