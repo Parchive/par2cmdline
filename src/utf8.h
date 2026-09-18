@@ -31,7 +31,8 @@ namespace utf8
 
   // False if the string is not well formed, leaving out untouched. Otherwise out
   // holds the conversion, and a path longer than MAX_DIR_PATH has gained a
-  // \\?\ or \\?\UNC prefix so that the Win32 calls accept it.
+  // \\?\ or \\?\UNC prefix so that the Win32 calls accept it. A string that is
+  // not valid UTF-8 is decoded with the ANSI code page instead.
   bool Utf8ToWide(const std::string& str, std::wstring& out);
   bool WideToUtf8(const std::wstring& str, std::string& out);
 
