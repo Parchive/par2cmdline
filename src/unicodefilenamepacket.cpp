@@ -95,28 +95,7 @@ bool UnicodeFilenamePacket::Utf16ToUtf8(const u8 *units, size_t count, std::stri
       return false;
     }
 
-    if (character < 0x80)
-    {
-      utf8 += (char)character;
-    }
-    else if (character < 0x800)
-    {
-      utf8 += (char)(0xC0 | (character >> 6));
-      utf8 += (char)(0x80 | (character & 0x3F));
-    }
-    else if (character < 0x10000)
-    {
-      utf8 += (char)(0xE0 | (character >> 12));
-      utf8 += (char)(0x80 | ((character >> 6) & 0x3F));
-      utf8 += (char)(0x80 | (character & 0x3F));
-    }
-    else
-    {
-      utf8 += (char)(0xF0 | (character >> 18));
-      utf8 += (char)(0x80 | ((character >> 12) & 0x3F));
-      utf8 += (char)(0x80 | ((character >> 6) & 0x3F));
-      utf8 += (char)(0x80 | (character & 0x3F));
-    }
+    AppendUtf8(utf8, character);
   }
 
   return true;

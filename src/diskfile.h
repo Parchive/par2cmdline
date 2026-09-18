@@ -117,11 +117,15 @@ public:
   }
 
   static bool FileExists(std::string filename);
+  static bool DirectoryExists(std::string path);
   static u64 GetFileSize(std::string filename);
 
   // Search the specified path for files which match the specified wildcard
   // and return their names in a list.
   static std::unique_ptr< std::list<std::string> > FindFiles(std::string path, std::string wildcard, bool recursive, bool followlinks = false);
+
+  // The directories in the specified path, not following symlinks.
+  static std::unique_ptr< std::list<std::string> > FindDirectories(std::string path);
 
 protected:
   // One failure, recorded for the application as one line of text.
