@@ -74,6 +74,8 @@ par2_add_unit_test(diskfile_test LINK_LIBPAR2
   SOURCES ${PROJECT_SOURCE_DIR}/src/diskfile.cpp)
 par2_add_unit_test(filechecksummer_test LINK_LIBPAR2
   SOURCES ${PROJECT_SOURCE_DIR}/src/filechecksummer.cpp)
+par2_add_unit_test(filenamematcher_test LINK_LIBPAR2
+  SOURCES ${PROJECT_SOURCE_DIR}/src/filenamematcher.cpp)
 par2_add_unit_test(descriptionpacket_test LINK_LIBPAR2
   SOURCES ${PROJECT_SOURCE_DIR}/src/descriptionpacket.cpp)
 par2_add_unit_test(unicodefilenamepacket_test LINK_LIBPAR2
