@@ -5,7 +5,8 @@
 
 param(
     [string]$Platform = "x64",
-    [string]$LibPath = ""
+    [string]$LibPath = "",
+    [string]$CliLibPath = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -21,13 +22,16 @@ $IncludeDir = Join-Path $RootDir "include"
 if (-not $LibPath) {
     $LibPath = Join-Path $ExecDir "libpar2.lib"
 }
+if (-not $CliLibPath) {
+    $CliLibPath = Join-Path $ExecDir "par2cli.lib"
+}
 
 Write-Host "-------------------------------------------------------"
 Write-Host "An application can build against the public header alone"
 Write-Host "-------------------------------------------------------"
 
-if (-not (Test-Path $LibPath)) {
-    Write-Host "Skipping: the library has not been built."
+if (-not (Test-Path $LibPath) -or -not (Test-Path $CliLibPath)) {
+    Write-Host "Skipping: the libraries have not been built."
     exit 77
 }
 
@@ -120,7 +124,7 @@ try {
     $consumer = Join-Path $RootDir "tests\consumer.cpp"
 
     $result = Invoke-VCCommand -VcVarsAll $vcvarsall -Platform $Platform `
-        -Command "cl.exe /nologo /EHsc /std:c++17 /I `"$IncludeDir`" `"$consumer`" /Fe:consumer.exe /link `"$LibPath`""
+        -Command "cl.exe /nologo /EHsc /std:c++17 /I `"$IncludeDir`" `"$consumer`" /Fe:consumer.exe /link `"$CliLibPath`" `"$LibPath`""
 
     if ($result.ExitCode -ne 0) {
         $result.Output | ForEach-Object { Write-Host "    $_" }
