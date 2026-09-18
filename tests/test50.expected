@@ -1,0 +1,160 @@
+$ par2 c -T1 -s1024 -c4 -n1 test.par2 data1.bin data2.bin data3.bin
+exit 0
+Block size: 1024
+Source file count: 3
+Source block count: 12
+Recovery block count: 4
+Recovery file count: 1
+
+Opening: data1.bin
+Opening: data2.bin
+Opening: data3.bin
+Computing Reed Solomon matrix.
+Constructing: done.
+Wrote 4096 bytes to disk
+Writing recovery packets
+Writing verification packets
+Done
+
+$ par2 v -T1 test.par2
+exit 0
+Loading "test.par2".
+Loaded 8 new packets
+Loading "test.par2".
+No new packets found
+Loading "test.vol0+4.par2".
+Loaded 4 new packets including 4 recovery blocks
+
+There are 3 recoverable files and 0 other files.
+The block size used was 1024 bytes.
+There are a total of 12 data blocks.
+The total size of the data files is 12288 bytes.
+
+Verifying source files:
+
+Opening: "data1.bin"
+Target: "data1.bin" - found.
+Opening: "data2.bin"
+Target: "data2.bin" - found.
+Opening: "data3.bin"
+Target: "data3.bin" - found.
+
+All files are correct, repair is not required.
+
+$ par2 v -T1 test.par2
+exit 1
+Loading "test.par2".
+Loaded 8 new packets
+Loading "test.par2".
+No new packets found
+Loading "test.vol0+4.par2".
+Loaded 4 new packets including 4 recovery blocks
+
+There are 3 recoverable files and 0 other files.
+The block size used was 1024 bytes.
+There are a total of 12 data blocks.
+The total size of the data files is 12288 bytes.
+
+Verifying source files:
+
+Opening: "data1.bin"
+Target: "data1.bin" - found.
+Opening: "data2.bin"
+Target: "data2.bin" - damaged. Found 3 of 4 data blocks.
+Opening: "data3.bin"
+Target: "data3.bin" - found.
+
+Scanning extra files:
+
+
+Repair is required.
+1 file(s) exist but are damaged.
+2 file(s) are ok.
+You have 11 out of 12 data blocks available.
+You have 4 recovery blocks available.
+Repair is possible.
+You have an excess of 3 recovery blocks.
+1 recovery blocks will be used to repair.
+
+$ par2 r -T1 test.par2
+exit 0
+Loading "test.par2".
+Loaded 8 new packets
+Loading "test.par2".
+No new packets found
+Loading "test.vol0+4.par2".
+Loaded 4 new packets including 4 recovery blocks
+
+There are 3 recoverable files and 0 other files.
+The block size used was 1024 bytes.
+There are a total of 12 data blocks.
+The total size of the data files is 12288 bytes.
+
+Verifying source files:
+
+Opening: "data1.bin"
+Target: "data1.bin" - found.
+Opening: "data2.bin"
+Target: "data2.bin" - damaged. Found 3 of 4 data blocks.
+Opening: "data3.bin"
+Target: "data3.bin" - found.
+
+Scanning extra files:
+
+
+Repair is required.
+1 file(s) exist but are damaged.
+2 file(s) are ok.
+You have 11 out of 12 data blocks available.
+You have 4 recovery blocks available.
+Repair is possible.
+You have an excess of 3 recovery blocks.
+1 recovery blocks will be used to repair.
+
+Computing Reed Solomon matrix.
+Constructing: done.
+Solving: done.
+
+Wrote 4096 bytes to disk
+
+Verifying repaired files:
+
+Opening: "data2.bin"
+Target: "data2.bin" - found.
+
+Repair complete.
+
+$ par2 v -T1 test.par2
+exit 2
+Loading "test.par2".
+Loaded 8 new packets
+Loading "test.par2".
+No new packets found
+Loading "test.vol0+4.par2".
+Loaded 4 new packets including 4 recovery blocks
+
+There are 3 recoverable files and 0 other files.
+The block size used was 1024 bytes.
+There are a total of 12 data blocks.
+The total size of the data files is 12288 bytes.
+
+Verifying source files:
+
+Opening: "data1.bin"
+File: "data1.bin" - no data found.
+Opening: "data2.bin"
+Target: "data2.bin" - found.
+Target: "data3.bin" - missing.
+
+Scanning extra files:
+
+
+Repair is required.
+1 file(s) are missing.
+1 file(s) exist but are damaged.
+1 file(s) are ok.
+You have 4 out of 12 data blocks available.
+You have 4 recovery blocks available.
+Repair is not possible.
+You need 4 more recovery blocks to be able to repair.
+

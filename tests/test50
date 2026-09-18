@@ -1,0 +1,90 @@
+#!/bin/sh
+
+execdir="$PWD"
+
+if [ -n "${PARVALGRINDOPTS+set}" ]
+then
+    PARBINARY="valgrind $PARVALGRINDOPTS $execdir/par2"
+elif [ "`which wine`" != "" ] && [ -f "$execdir/par2.exe" ]
+then
+    PARBINARY="wine $execdir/par2.exe"
+else
+    PARBINARY="$execdir/par2"
+fi
+
+if [ -z "$srcdir" ] || [ "." = "$srcdir" ]; then
+  srcdir="$PWD"
+  TESTDATA="$srcdir/tests"
+else
+  srcdir="$PWD/$srcdir"
+  TESTDATA="$srcdir/tests"
+fi
+
+TESTROOT="$PWD"
+
+testname=$(basename $0)
+rm -f "$testname.log"
+rm -rf "run$testname"
+
+mkdir "run$testname" && cd "run$testname" || { echo "ERROR: Could not change to test directory" ; exit 1; } >&2
+
+banner="What the tool prints is what was recorded"
+dashes=`echo "$banner" | sed s/./-/g`
+
+echo $dashes
+echo $banner
+echo $dashes
+
+# Record what a run prints, so that a change to it has to be made deliberately.
+# Files are read one at a time, so they are reported in the order the set
+# records them. The progress indicator rewrites its line with \r, so each line
+# is reduced to what was left on it, which is what a terminal shows, and a
+# binary run through wine ends its lines with \r\n.
+record() {
+    printf '$ par2 %s\n' "$*" >> actual
+    $PARBINARY "$@" > case.out 2>> stderr.log
+    printf 'exit %d\n' $? >> actual
+    awk '{ sub(/\r$/, ""); sub(/.*\r/, ""); print }' case.out >> actual
+    printf '\n' >> actual
+}
+
+# Three data files of four blocks of 1024 bytes. Each file holds different data
+# so that a block cannot be matched against the wrong file.
+for n in 1 2 3
+do
+    i=0
+    while [ $i -lt 64 ]; do
+        printf '%s%063d' "$n" $i
+        i=$((i + 1))
+    done > "data$n.bin"
+done
+
+record c -T1 -s1024 -c4 -n1 test.par2 data1.bin data2.bin data3.bin
+record v -T1 test.par2
+
+# One block of data2.bin is corrupt, which the recovery blocks can replace.
+printf 'XXXXXXXXXXXXXXXX' | dd of=data2.bin bs=1 seek=2048 conv=notrunc 2>/dev/null
+
+record v -T1 test.par2
+record r -T1 test.par2
+
+# More blocks are lost than there are recovery blocks to replace them.
+rm -f data3.bin
+for off in 0 1024 2048 3072
+do
+    printf 'XXXXXXXXXXXXXXXX' | dd of=data1.bin bs=1 seek=$off conv=notrunc 2>/dev/null
+done
+
+record v -T1 test.par2
+
+if ! diff -u "$TESTDATA/$testname.expected" actual
+then
+    echo "ERROR: The tool printed something other than what was recorded" >&2
+    cat stderr.log >&2
+    exit 1
+fi
+
+cd "$TESTROOT"
+rm -rf "run$testname"
+
+exit 0
