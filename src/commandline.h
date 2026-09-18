@@ -54,16 +54,18 @@ namespace par2
 class CommandLine
 {
 public:
+  // What is parsed is reported to sout and serr, or to std::cout and std::cerr
   CommandLine(void);
+  CommandLine(std::ostream &sout, std::ostream &serr);
 
   // Parse the supplied command line arguments.
   bool Parse(int argc, const char * const *argv);
 
 
-  static void showversion(void);
-  static void banner(void);
+  void showversion(void);
+  void banner(void);
   // Display details of the correct format for command line parameters.
-  static void usage(void);
+  void usage(void);
 
   // What operation will we be carrying out
   typedef enum
@@ -107,7 +109,9 @@ public:
   u32                                 GetFileThreads(void) {return filethreads;}
 
 
-  static bool ComputeRecoveryBlockCount(u32 *recoveryblockcount,
+  static bool ComputeRecoveryBlockCount(std::ostream &sout,
+					std::ostream &serr,
+					u32 *recoveryblockcount,
 					u32 sourceblockcount,
 					u64 blocksize,
 					u32 firstblock,
@@ -133,6 +137,9 @@ protected:
   bool ComputeRecoveryBlockCount();
 
   bool                         SetParFilename(std::string filename);
+
+  std::ostream &sout;          // Where the output is written
+  std::ostream &serr;          // and where the errors are
 
   FileSizeCache filesize_cache;// Caches the size of each file,
                                // to prevent multiple calls to OS.

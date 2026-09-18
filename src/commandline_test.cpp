@@ -36,7 +36,9 @@ using namespace par2;
 // recoveryblockset = true
 int test5() {
   u32 recoveryblockcount = 42;
-  bool success = CommandLine::ComputeRecoveryBlockCount(&recoveryblockcount,
+  bool success = CommandLine::ComputeRecoveryBlockCount(std::cout,
+							std::cerr,
+							&recoveryblockcount,
 							100,
 							4,
 							0,
@@ -58,7 +60,9 @@ int test5() {
 
 
   recoveryblockcount = 66000;
-  success = CommandLine::ComputeRecoveryBlockCount(&recoveryblockcount,
+  success = CommandLine::ComputeRecoveryBlockCount(std::cout,
+							std::cerr,
+							&recoveryblockcount,
 							100,
 							4,
 							0,
@@ -76,7 +80,9 @@ int test5() {
 
 
   recoveryblockcount = 6000;
-  success = CommandLine::ComputeRecoveryBlockCount(&recoveryblockcount,
+  success = CommandLine::ComputeRecoveryBlockCount(std::cout,
+							std::cerr,
+							&recoveryblockcount,
 							100,
 							4,
 							60000,
@@ -98,7 +104,9 @@ int test5() {
 // redundancy > 0
 int test6() {
   u32 recoveryblockcount = 0;
-  bool success = CommandLine::ComputeRecoveryBlockCount(&recoveryblockcount,
+  bool success = CommandLine::ComputeRecoveryBlockCount(std::cout,
+							std::cerr,
+							&recoveryblockcount,
 							100,
 							4,
 							0,
@@ -119,7 +127,9 @@ int test6() {
   }
 
   recoveryblockcount = 0;
-  success = CommandLine::ComputeRecoveryBlockCount(&recoveryblockcount,
+  success = CommandLine::ComputeRecoveryBlockCount(std::cout,
+							std::cerr,
+							&recoveryblockcount,
 							1000,
 							4,
 							0,
@@ -141,7 +151,9 @@ int test6() {
 
 
   recoveryblockcount = 0;
-  success = CommandLine::ComputeRecoveryBlockCount(&recoveryblockcount,
+  success = CommandLine::ComputeRecoveryBlockCount(std::cout,
+							std::cerr,
+							&recoveryblockcount,
 							10,
 							4,
 							0,
@@ -183,7 +195,9 @@ int test7_helper(int sourcefilecount, // not used by ComputeRecoveryBlockCount!
   const int overhead_perrecoveryblock = 68;
 
   u32 recoveryblockcount;
-  bool success = CommandLine::ComputeRecoveryBlockCount(&recoveryblockcount,
+  bool success = CommandLine::ComputeRecoveryBlockCount(std::cout,
+							std::cerr,
+							&recoveryblockcount,
 							sourceblockcount,
 							blocksize,
 							0,
@@ -252,7 +266,9 @@ int test7() {
 
   // if redundancy size is too small, still have 1 block
   u32 recoveryblockcount;
-  bool success = CommandLine::ComputeRecoveryBlockCount(&recoveryblockcount,
+  bool success = CommandLine::ComputeRecoveryBlockCount(std::cout,
+							std::cerr,
+							&recoveryblockcount,
 							1000,
 							1024,
 							0,
@@ -295,7 +311,9 @@ int test8_helper(int sourcefilecount, // not used by ComputeRecoveryBlockCount!
   const int overhead_perrecoveryblock = 68;
 
   u32 recoveryblockcount;
-  bool success = CommandLine::ComputeRecoveryBlockCount(&recoveryblockcount,
+  bool success = CommandLine::ComputeRecoveryBlockCount(std::cout,
+							std::cerr,
+							&recoveryblockcount,
 							sourceblockcount,
 							blocksize,
 							0,

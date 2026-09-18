@@ -192,7 +192,9 @@ par2_add_size_options(libpar2)
 target_link_libraries(libpar2 PUBLIC Threads::Threads ${PAR2_ATOMIC_LIBRARY})
 
 add_library(par2cli STATIC
+  src/cli.cpp
   src/commandline.cpp src/commandline.h
+  include/par2/cli.h
 )
 
 add_library(par2::cli ALIAS par2cli)
@@ -222,7 +224,7 @@ if(PAR2_BUILD_TOOL)
     src/par2cmdline.cpp
   )
 
-  par2_add_internal_options(par2)
+  par2_add_common_options(par2)
 
   if(MINGW)
     target_link_options(par2 PRIVATE -municode)
@@ -252,7 +254,7 @@ endif()
 if(PAR2_INSTALL)
   include(CMakePackageConfigHelpers)
 
-  install(TARGETS libpar2
+  install(TARGETS libpar2 par2cli
     EXPORT par2-targets
     ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
   )

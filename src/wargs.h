@@ -22,6 +22,8 @@
 
 #ifdef _WIN32
 
+#include <ostream>
+
 namespace par2
 {
 namespace utf8
@@ -29,7 +31,8 @@ namespace utf8
   class WideToUtf8ArgsAdapter final
   {
   public:
-    WideToUtf8ArgsAdapter(int argc, wchar_t* argv_[]) noexcept(false);
+    // An argument which cannot be used is skipped, and serr told which
+    WideToUtf8ArgsAdapter(int argc, wchar_t* argv_[], std::ostream &serr) noexcept(false);
 
     const char* const* GetUtf8Args() const noexcept;
 

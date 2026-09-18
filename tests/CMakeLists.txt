@@ -210,6 +210,7 @@ else()
     COMMAND pwsh -NoProfile -File "${CMAKE_CURRENT_SOURCE_DIR}/consumer_build.ps1"
       -Platform ${PAR2_CONSUMER_PLATFORM}
       -LibPath "$<TARGET_FILE:libpar2>"
+      -CliLibPath "$<TARGET_FILE:par2cli>"
       -Runtime "${PAR2_CONSUMER_RUNTIME}"
     WORKING_DIRECTORY "${PROJECT_BINARY_DIR}")
 

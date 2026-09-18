@@ -22,7 +22,6 @@
 #ifdef _WIN32
 
 #include <cstring>
-#include <iostream>
 #include <stdexcept>
 
 #include "utf8.h"
@@ -32,7 +31,7 @@ namespace par2
 {
 namespace utf8
 {
-  WideToUtf8ArgsAdapter::WideToUtf8ArgsAdapter(int argc, wchar_t* wargv[]) noexcept(false)
+  WideToUtf8ArgsAdapter::WideToUtf8ArgsAdapter(int argc, wchar_t* wargv[], std::ostream &serr) noexcept(false)
     : m_argv(nullptr)
     , m_argc(argc)
   {
@@ -48,7 +47,7 @@ namespace utf8
     {
       if (wargv[i] == nullptr)
       {
-        std::cerr
+        serr
           << "Invalid argument: encountered nullptr in wargv.\n"
              "Skipping argument " << i << "." << std::endl;
         continue;
@@ -57,7 +56,7 @@ namespace utf8
       std::string arg;
       if (!WideToUtf8(wargv[i], arg))
       {
-        std::cerr
+        serr
           << "Failed to convert wide to UTF-8 string.\n"
              "Skipping argument " << i << "." << std::endl;
         continue;

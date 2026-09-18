@@ -22,6 +22,7 @@
 // on the include path and without config.h, the way an embedding application
 // sees libpar2. It creates its own recovery set, so it needs no fixtures.
 
+#include <par2/cli.h>
 #include <par2/libpar2.h>
 
 #include <cstdio>
@@ -30,6 +31,7 @@
 #include <memory>
 #include <mutex>
 #include <new>
+#include <stdexcept>
 
 #ifdef _WIN32
 #include <direct.h>
@@ -2572,6 +2574,69 @@ int main()
     }
   }
 #endif
+
+  // An application can run the command line itself, with the implementations
+  // it supplies
+  {
+    Check(MakeDirectory("clidir"), "mkdir for the command line check");
+
+    const char *const clidata = "clidir/cli.data";
+    const char *const clipar = "clidir/cli.par2";
+    const char *const cliset = "clidir/cli";
+
+    WriteData(clidata, 11, 30000);
+    std::vector<std::string> files(1, std::string(clidata));
+
+    Check(par2::eSuccess == par2::par2create(quiet, quiet, par2::nlSilent,
+                                             64 * 1024 * 1024, "clidir/", 0, 2,
+                                             cliset, files, BLOCKSIZE, 0,
+                                             par2::scVariable, 0, 20),
+          "par2create for the command line check");
+
+    const char *const verify[] = {"par2", "verify", "-q", "-q", clipar};
+
+    Check(par2::eSuccess == par2::run(5, verify, quiet, quiet),
+          "the command line verifies a set which is intact");
+
+    std::ostringstream told;
+    const char *const version[] = {"par2", "-V"};
+    Check(par2::eSuccess == par2::run(2, version, told, told),
+          "the command line reports its version");
+    Check(told.str().find("version") != std::string::npos,
+          "on the stream it was given");
+
+    Corrupt(clidata, 5000, 2000);
+
+    int asked = 0;
+    par2::Backends backends;
+    backends.processor = [&asked](const par2::ProcessorConfig &)
+    {
+      ++asked;
+      return std::unique_ptr<par2::Processor>();
+    };
+
+    const char *const repair[] = {"par2", "repair", "-q", "-q", clipar};
+
+    Check(par2::eMemoryError == par2::run(5, repair, quiet, quiet, backends),
+          "a repair which cannot build the application's processor says so");
+    Check(asked == 1, "so the command line was given the application's own");
+
+    // and what it throws comes back as the result rather than out of run
+    par2::Backends throwing;
+    throwing.processor = [](const par2::ProcessorConfig &) -> std::unique_ptr<par2::Processor>
+    {
+      throw std::runtime_error("the application's processor failed");
+    };
+
+    std::ostringstream thrown;
+    Check(par2::eLogicError == par2::run(5, repair, quiet, thrown, throwing),
+          "a repair whose processor throws says so through the result");
+    Check(thrown.str().find("exception") != std::string::npos,
+          "and on the error stream it was given");
+
+    std::remove(clidata);
+    std::remove(clipar);
+  }
 
   // A repair needs a verify of its own, and what it renamed is scanned by a
   // new engine rather than the one which renamed it

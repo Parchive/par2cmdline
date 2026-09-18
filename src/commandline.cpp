@@ -42,7 +42,14 @@ namespace par2
 {
 
 CommandLine::CommandLine(void)
-: filesize_cache()
+: CommandLine(std::cout, std::cerr)
+{
+}
+
+CommandLine::CommandLine(std::ostream &_sout, std::ostream &_serr)
+: sout(_sout)
+, serr(_serr)
+, filesize_cache()
 , version(verUnknown)
 , noiselevel(nlUnknown)
 , memorylimit(0)
@@ -76,12 +83,12 @@ CommandLine::CommandLine(void)
 void CommandLine::showversion(void)
 {
   std::string version = PACKAGE " version " VERSION;
-  std::cout << version << std::endl;
+  sout << version << std::endl;
 }
 
 void CommandLine::banner(void)
 {
-  std::cout << "Copyright (C) 2003-2015 Peter Brian Clements.\n"
+  sout << "Copyright (C) 2003-2015 Peter Brian Clements.\n"
     "Copyright (C) 2011-2012 Marcel Partap.\n"
     "Copyright (C) 2012-2026 Ike Devolder.\n"
     "Copyright (C) 2014-2017 Jussi Kansanen.\n"
@@ -98,7 +105,7 @@ void CommandLine::banner(void)
 
 void CommandLine::usage(void)
 {
-  std::cout <<
+  sout <<
     "Usage:\n"
     "  par2 -h  : show this help\n"
     "  par2 -V  : show version\n"
@@ -117,11 +124,11 @@ void CommandLine::usage(void)
     "  -v [-v]  : Be more verbose\n"
     "  -q [-q]  : Be more quiet (-q -q gives silence)\n"
     "  -m<n>    : Memory (in MB) to use (default is half of total physical memory)\n";
-  std::cout <<
+  sout <<
     "  -t<n>    : Number of threads used for main processing (" << default_threads() << " detected)\n"
     "  -T<n>    : Number of files hashed in parallel\n"
     "             (" << _FILE_THREADS << " are the default)\n";
-  std::cout <<
+  sout <<
     "  --       : Treat all following arguments as filenames\n"
     "Options: (verify or repair)\n"
     "  -p       : Purge backup files and par files on successful recovery or\n"
@@ -150,7 +157,7 @@ void CommandLine::usage(void)
     "   @       : Process a listing of files specified in text (file) input \n"
     "             (eg. @filelist.txt, or bare @ to read from stdin) \n"
     "\n";
-  std::cout <<
+  sout <<
     "Example:\n"
     "   par2 repair *.par2\n"
     "\n";
@@ -184,11 +191,13 @@ bool CommandLine::Parse(int argc, const char * const *argv)
 
     if (sourceblockcount > 32768)
     {
-      std::cerr << "Too many source blocks (" << sourceblockcount << " > 32768)." << std::endl;
+      serr << "Too many source blocks (" << sourceblockcount << " > 32768)." << std::endl;
       return false;
     }
 
-    if (!ComputeRecoveryBlockCount(&recoveryblockcount,
+    if (!ComputeRecoveryBlockCount(sout,
+				   serr,
+				   &recoveryblockcount,
 				   sourceblockcount,
 				   blocksize,
 				   firstblock,
@@ -236,7 +245,7 @@ bool CommandLine::ReadArgs(int argc, const char * const *argv)
       else if (argv[0] == std::string("-VV"))
       {
 	showversion();
-	std::cout << '\n';
+	sout << '\n';
 	banner();
 	return true;
       }
@@ -268,7 +277,7 @@ bool CommandLine::ReadArgs(int argc, const char * const *argv)
   {
     if (argc<2)
     {
-      std::cerr << "Not enough command line arguments." << std::endl;
+      serr << "Not enough command line arguments." << std::endl;
       return false;
     }
 
@@ -290,7 +299,7 @@ bool CommandLine::ReadArgs(int argc, const char * const *argv)
 
     if (operation == opNone)
     {
-      std::cerr << "Invalid operation specified: " << argv[0] << std::endl;
+      serr << "Invalid operation specified: " << argv[0] << std::endl;
       return false;
     }
     argc--;
@@ -329,7 +338,7 @@ bool CommandLine::ReadArgs(int argc, const char * const *argv)
 
             if (! setparfile)
             {
-              std::cerr << "failed to set the main par file" << std::endl;
+              serr << "failed to set the main par file" << std::endl;
               return false;
             }
           }
@@ -338,17 +347,17 @@ bool CommandLine::ReadArgs(int argc, const char * const *argv)
           {
             if (operation != opCreate)
             {
-              std::cerr << "Cannot specify block count unless creating." << std::endl;
+              serr << "Cannot specify block count unless creating." << std::endl;
               return false;
             }
             if (blockcount > 0)
             {
-              std::cerr << "Cannot specify block count twice." << std::endl;
+              serr << "Cannot specify block count twice." << std::endl;
               return false;
             }
             else if (blocksize > 0)
             {
-              std::cerr << "Cannot specify both block count and block size." << std::endl;
+              serr << "Cannot specify both block count and block size." << std::endl;
               return false;
             }
 
@@ -360,7 +369,7 @@ bool CommandLine::ReadArgs(int argc, const char * const *argv)
             }
             if (0 == blockcount || blockcount > 32768 || *p)
             {
-              std::cerr << "Invalid block count option: " << argv[0] << std::endl;
+              serr << "Invalid block count option: " << argv[0] << std::endl;
               return false;
             }
           }
@@ -370,17 +379,17 @@ bool CommandLine::ReadArgs(int argc, const char * const *argv)
           {
             if (operation != opCreate)
             {
-              std::cerr << "Cannot specify block size unless creating." << std::endl;
+              serr << "Cannot specify block size unless creating." << std::endl;
               return false;
             }
             if (blocksize > 0)
             {
-              std::cerr << "Cannot specify block size twice." << std::endl;
+              serr << "Cannot specify block size twice." << std::endl;
               return false;
             }
             else if (blockcount > 0)
             {
-              std::cerr << "Cannot specify both block count and block size." << std::endl;
+              serr << "Cannot specify both block count and block size." << std::endl;
               return false;
             }
 
@@ -392,12 +401,12 @@ bool CommandLine::ReadArgs(int argc, const char * const *argv)
             }
             if (*p || blocksize == 0)
             {
-              std::cerr << "Invalid block size option: " << argv[0] << std::endl;
+              serr << "Invalid block size option: " << argv[0] << std::endl;
               return false;
             }
             if (blocksize & 3)
             {
-              std::cerr << "Block size must be a multiple of 4." << std::endl;
+              serr << "Block size must be a multiple of 4." << std::endl;
               return false;
             }
           }
@@ -416,7 +425,7 @@ bool CommandLine::ReadArgs(int argc, const char * const *argv)
 
             if (!nthreads)
             {
-              std::cerr << "Invalid thread option: " << argv[0] << std::endl;
+              serr << "Invalid thread option: " << argv[0] << std::endl;
               return false;
             }
 
@@ -438,7 +447,7 @@ bool CommandLine::ReadArgs(int argc, const char * const *argv)
 
             if (!filethreads)
             {
-              std::cerr << "Invalid file-thread option: " << argv[0] << std::endl;
+              serr << "Invalid file-thread option: " << argv[0] << std::endl;
               return false;
             }
           }
@@ -448,17 +457,17 @@ bool CommandLine::ReadArgs(int argc, const char * const *argv)
           {
             if (operation != opCreate)
             {
-              std::cerr << "Cannot specify redundancy unless creating." << std::endl;
+              serr << "Cannot specify redundancy unless creating." << std::endl;
               return false;
             }
             if (redundancyset)
             {
-              std::cerr << "Cannot specify redundancy twice." << std::endl;
+              serr << "Cannot specify redundancy twice." << std::endl;
               return false;
             }
             else if (recoveryblockcountset)
             {
-              std::cerr << "Cannot specify both redundancy and recovery block count." << std::endl;
+              serr << "Cannot specify both redundancy and recovery block count." << std::endl;
               return false;
             }
 
@@ -494,17 +503,17 @@ bool CommandLine::ReadArgs(int argc, const char * const *argv)
               }
               if (*p)
               {
-                std::cerr << "Invalid redundancy option: " << argv[0] << std::endl;
+                serr << "Invalid redundancy option: " << argv[0] << std::endl;
                 return false;
               }
               if (redundancy == 0 && recoveryfilecount > 0)
               {
-                std::cerr << "Cannot set redundancy to 0 and file count > 0" << std::endl;
+                serr << "Cannot set redundancy to 0 and file count > 0" << std::endl;
                 return false;
               }
 	      if (redundancy > 100)
 	      {
-	        std::cerr << "WARNING: Creating recovery file(s) with " << redundancy << "% redundancy." << std::endl;
+	        serr << "WARNING: Creating recovery file(s) with " << redundancy << "% redundancy." << std::endl;
 	      }
             }
             redundancyset = true;
@@ -515,17 +524,17 @@ bool CommandLine::ReadArgs(int argc, const char * const *argv)
           {
             if (operation != opCreate)
             {
-              std::cerr << "Cannot specify recovery block count unless creating." << std::endl;
+              serr << "Cannot specify recovery block count unless creating." << std::endl;
               return false;
             }
             if (recoveryblockcountset)
             {
-              std::cerr << "Cannot specify recovery block count twice." << std::endl;
+              serr << "Cannot specify recovery block count twice." << std::endl;
               return false;
             }
             else if (redundancyset)
             {
-              std::cerr << "Cannot specify both recovery block count and redundancy." << std::endl;
+              serr << "Cannot specify both recovery block count and redundancy." << std::endl;
               return false;
             }
 
@@ -537,12 +546,12 @@ bool CommandLine::ReadArgs(int argc, const char * const *argv)
             }
             if (recoveryblockcount > 32768 || *p)
             {
-              std::cerr << "Invalid recoveryblockcount option: " << argv[0] << std::endl;
+              serr << "Invalid recoveryblockcount option: " << argv[0] << std::endl;
               return false;
             }
             if (recoveryblockcount == 0 && recoveryfilecount > 0)
             {
-              std::cerr << "Cannot set recoveryblockcount to 0 and file count > 0" << std::endl;
+              serr << "Cannot set recoveryblockcount to 0 and file count > 0" << std::endl;
               return false;
             }
             recoveryblockcountset = true;
@@ -553,12 +562,12 @@ bool CommandLine::ReadArgs(int argc, const char * const *argv)
           {
             if (operation != opCreate)
             {
-              std::cerr << "Cannot specify first block number unless creating." << std::endl;
+              serr << "Cannot specify first block number unless creating." << std::endl;
               return false;
             }
             if (firstblock > 0)
             {
-              std::cerr << "Cannot specify first block twice." << std::endl;
+              serr << "Cannot specify first block twice." << std::endl;
               return false;
             }
 
@@ -570,7 +579,7 @@ bool CommandLine::ReadArgs(int argc, const char * const *argv)
             }
             if (firstblock > 32768 || *p)
             {
-              std::cerr << "Invalid first block option: " << argv[0] << std::endl;
+              serr << "Invalid first block option: " << argv[0] << std::endl;
               return false;
             }
           }
@@ -580,17 +589,17 @@ bool CommandLine::ReadArgs(int argc, const char * const *argv)
           {
             if (operation != opCreate)
             {
-              std::cerr << "Cannot specify uniform files unless creating." << std::endl;
+              serr << "Cannot specify uniform files unless creating." << std::endl;
               return false;
             }
             if (argv[0][2])
             {
-              std::cerr << "Invalid option: " << argv[0] << std::endl;
+              serr << "Invalid option: " << argv[0] << std::endl;
               return false;
             }
             if (recoveryfilescheme != scUnknown && recoveryfilescheme != scUniform)
             {
-              std::cerr << "Cannot specify two recovery file size schemes." << std::endl;
+              serr << "Cannot specify two recovery file size schemes." << std::endl;
               return false;
             }
 
@@ -602,22 +611,22 @@ bool CommandLine::ReadArgs(int argc, const char * const *argv)
           {
             if (operation != opCreate)
             {
-              std::cerr << "Cannot specify limit files unless creating." << std::endl;
+              serr << "Cannot specify limit files unless creating." << std::endl;
               return false;
             }
             if (argv[0][2])
             {
-              std::cerr << "Invalid option: " << argv[0] << std::endl;
+              serr << "Invalid option: " << argv[0] << std::endl;
               return false;
             }
             if (recoveryfilescheme != scUnknown)
             {
-              std::cerr << "Cannot specify two recovery file size schemes." << std::endl;
+              serr << "Cannot specify two recovery file size schemes." << std::endl;
               return false;
             }
             if (recoveryfilecount > 0)
             {
-              std::cerr << "Cannot specify limited size and number of files at the same time." << std::endl;
+              serr << "Cannot specify limited size and number of files at the same time." << std::endl;
               return false;
             }
 
@@ -629,23 +638,23 @@ bool CommandLine::ReadArgs(int argc, const char * const *argv)
           {
             if (operation != opCreate)
             {
-              std::cerr << "Cannot specify recovery file count unless creating." << std::endl;
+              serr << "Cannot specify recovery file count unless creating." << std::endl;
               return false;
             }
             if (recoveryfilecount > 0)
             {
-              std::cerr << "Cannot specify recovery file count twice." << std::endl;
+              serr << "Cannot specify recovery file count twice." << std::endl;
               return false;
             }
             // (Removed "Cannot set file count when redundancy is set to 0.")
             if (recoveryblockcountset && recoveryblockcount == 0)
             {
-              std::cerr << "Cannot set file count when recovery block count is set to 0." << std::endl;
+              serr << "Cannot set file count when recovery block count is set to 0." << std::endl;
               return false;
             }
             if (recoveryfilescheme == scLimited)
             {
-              std::cerr << "Cannot specify limited size and number of files at the same time." << std::endl;
+              serr << "Cannot specify limited size and number of files at the same time." << std::endl;
               return false;
             }
 
@@ -657,7 +666,7 @@ bool CommandLine::ReadArgs(int argc, const char * const *argv)
             }
             if (recoveryfilecount == 0 || *p)
             {
-              std::cerr << "Invalid recovery file count option: " << argv[0] << std::endl;
+              serr << "Invalid recovery file count option: " << argv[0] << std::endl;
               return false;
             }
 
@@ -667,8 +676,8 @@ bool CommandLine::ReadArgs(int argc, const char * const *argv)
             // the number 32 will overflow the u32 resulting in 1
             if (recoveryfilecount > 31)
             {
-              std::cerr << "Invalid recovery file count option: " << recoveryfilecount << std::endl;
-              std::cerr << "  the maximum allowed recovery file count is 31" << std::endl;
+              serr << "Invalid recovery file count option: " << recoveryfilecount << std::endl;
+              serr << "  the maximum allowed recovery file count is 31" << std::endl;
 
               return false;
             }
@@ -684,7 +693,7 @@ bool CommandLine::ReadArgs(int argc, const char * const *argv)
           {
             if (memorylimit > 0)
             {
-              std::cerr << "Cannot specify memory limit twice." << std::endl;
+              serr << "Cannot specify memory limit twice." << std::endl;
               return false;
             }
 
@@ -696,7 +705,7 @@ bool CommandLine::ReadArgs(int argc, const char * const *argv)
             }
             if (memorylimit == 0 || *p)
             {
-              std::cerr << "Invalid memory limit option: " << argv[0] << std::endl;
+              serr << "Invalid memory limit option: " << argv[0] << std::endl;
               return false;
             }
           }
@@ -719,7 +728,7 @@ bool CommandLine::ReadArgs(int argc, const char * const *argv)
               noiselevel = nlDebug;
               break;
             default:
-              std::cerr << "Cannot use both -v and -q." << std::endl;
+              serr << "Cannot use both -v and -q." << std::endl;
               return false;
               break;
             }
@@ -743,7 +752,7 @@ bool CommandLine::ReadArgs(int argc, const char * const *argv)
               noiselevel = nlSilent;
               break;
             default:
-              std::cerr << "Cannot use both -v and -q." << std::endl;
+              serr << "Cannot use both -v and -q." << std::endl;
               return false;
               break;
             }
@@ -754,7 +763,7 @@ bool CommandLine::ReadArgs(int argc, const char * const *argv)
           {
             if (operation != opRepair && operation != opVerify)
             {
-              std::cerr << "Cannot specify purge unless repairing or verifying." << std::endl;
+              serr << "Cannot specify purge unless repairing or verifying." << std::endl;
               return false;
             }
             purgefiles = true;
@@ -765,7 +774,7 @@ bool CommandLine::ReadArgs(int argc, const char * const *argv)
           {
             if (operation != opRepair && operation != opVerify)
             {
-              std::cerr << "Cannot specify rename-only unless repairing or verifying." << std::endl;
+              serr << "Cannot specify rename-only unless repairing or verifying." << std::endl;
               return false;
             }
             renameonly = true;
@@ -787,7 +796,7 @@ bool CommandLine::ReadArgs(int argc, const char * const *argv)
             }
             else
             {
-              std::cerr << "Cannot specific Recursive unless creating." << std::endl;
+              serr << "Cannot specific Recursive unless creating." << std::endl;
               return false;
             }
           }
@@ -801,7 +810,7 @@ bool CommandLine::ReadArgs(int argc, const char * const *argv)
             }
             else
             {
-              std::cerr << "Cannot specify -L (follow symlinks) unless creating." << std::endl;
+              serr << "Cannot specify -L (follow symlinks) unless creating." << std::endl;
               return false;
             }
           }
@@ -811,7 +820,7 @@ bool CommandLine::ReadArgs(int argc, const char * const *argv)
           {
             if (operation == opCreate)
             {
-              std::cerr << "Cannot specify Data Skipping unless reparing or verifying." << std::endl;
+              serr << "Cannot specify Data Skipping unless reparing or verifying." << std::endl;
               return false;
             }
             skipdata = true;
@@ -822,12 +831,12 @@ bool CommandLine::ReadArgs(int argc, const char * const *argv)
           {
             if (operation == opCreate)
             {
-              std::cerr << "Cannot specify skip leaway when creating." << std::endl;
+              serr << "Cannot specify skip leaway when creating." << std::endl;
               return false;
             }
             if (!skipdata)
             {
-              std::cerr << "Cannot specify skip leaway and no skipping." << std::endl;
+              serr << "Cannot specify skip leaway and no skipping." << std::endl;
               return false;
             }
 
@@ -839,7 +848,7 @@ bool CommandLine::ReadArgs(int argc, const char * const *argv)
             }
             if (*p || skipleaway == 0)
             {
-              std::cerr << "Invalid skipleaway option: " << argv[0] << std::endl;
+              serr << "Invalid skipleaway option: " << argv[0] << std::endl;
               return false;
             }
           }
@@ -866,7 +875,7 @@ bool CommandLine::ReadArgs(int argc, const char * const *argv)
             if (argv[0] == std::string("--full-hash")) {
               if (operation == opCreate)
               {
-                std::cerr << "Cannot specify a full hash check unless repairing or verifying." << std::endl;
+                serr << "Cannot specify a full hash check unless repairing or verifying." << std::endl;
                 return false;
               }
               fullhash = true;
@@ -874,9 +883,9 @@ bool CommandLine::ReadArgs(int argc, const char * const *argv)
             }
 
 	    if (argv[0] != std::string("--")) {
-              std::cerr << "Unknown option: " << argv[0] << std::endl;
-	      std::cerr << "  (Options must appear after create, repair or verify.)" << std::endl;
-	      std::cerr << "  (Run \"" << path << name << " --help\" for supported options.)" << std::endl;
+              serr << "Unknown option: " << argv[0] << std::endl;
+	      serr << "  (Options must appear after create, repair or verify.)" << std::endl;
+	      serr << "  (Run \"" << path << name << " --help\" for supported options.)" << std::endl;
               return false;
             }
 
@@ -888,7 +897,7 @@ bool CommandLine::ReadArgs(int argc, const char * const *argv)
           break;
         default:
           {
-            std::cerr << "Invalid option specified: " << argv[0] << std::endl;
+            serr << "Invalid option specified: " << argv[0] << std::endl;
             return false;
           }
         }
@@ -910,7 +919,7 @@ bool CommandLine::ReadArgs(int argc, const char * const *argv)
           listfile.open(&argv[0][1]);
           if (!listfile.is_open())
           {
-            std::cerr << "Could not open list file: " << &argv[0][1] << std::endl;
+            serr << "Could not open list file: " << &argv[0][1] << std::endl;
             return false;
           }
           input = &listfile;
@@ -950,7 +959,7 @@ bool CommandLine::ReadArgs(int argc, const char * const *argv)
         bool setparfile = SetParFilename(filename);
         if (! setparfile)
         {
-          std::cerr << "failed to set the main par file" << std::endl;
+          serr << "failed to set the main par file" << std::endl;
           return false;
         }
       }
@@ -985,7 +994,7 @@ bool CommandLine::ReadArgs(int argc, const char * const *argv)
 bool CommandLine::CheckValuesAndSetDefaults() {
   if (parfilename.length() == 0)
   {
-    std::cerr << "You must specify a Recovery file." << std::endl;
+    serr << "You must specify a Recovery file." << std::endl;
     return false;
   }
 
@@ -1004,9 +1013,9 @@ bool CommandLine::CheckValuesAndSetDefaults() {
       u64 TotalPhysicalMemory = GetTotalPhysicalMemory();
 
       if (TotalPhysicalMemory == 0)
-        std::cout << "[DEBUG] could not detect physical memory" << std::endl;
+        sout << "[DEBUG] could not detect physical memory" << std::endl;
       else
-        std::cout << "[DEBUG] detected physical memory: " << TotalPhysicalMemory << " bytes" << std::endl;
+        sout << "[DEBUG] detected physical memory: " << TotalPhysicalMemory << " bytes" << std::endl;
     }
 
     memorylimit = DefaultMemoryLimit() / 1048576;
@@ -1021,7 +1030,7 @@ bool CommandLine::CheckValuesAndSetDefaults() {
 
   if (noiselevel >= nlDebug)
   {
-    std::cout << "[DEBUG] memorylimit: " << memorylimit << " bytes" << std::endl;
+    sout << "[DEBUG] memorylimit: " << memorylimit << " bytes" << std::endl;
   }
 
 
@@ -1030,7 +1039,7 @@ bool CommandLine::CheckValuesAndSetDefaults() {
   {
     if (noiselevel >= nlDebug)
     {
-      std::cout << "[DEBUG] parfilename: " << parfilename << std::endl;
+      sout << "[DEBUG] parfilename: " << parfilename << std::endl;
     }
 
     basepath = BasePathFor(parfilename);
@@ -1040,7 +1049,7 @@ bool CommandLine::CheckValuesAndSetDefaults() {
 
   if (noiselevel >= nlDebug)
   {
-    std::cout << "[DEBUG] basepath: " << basepath << std::endl;
+    sout << "[DEBUG] basepath: " << basepath << std::endl;
   }
 
 
@@ -1059,12 +1068,12 @@ bool CommandLine::CheckValuesAndSetDefaults() {
     // So the new rule is: when a specified file doesn't exist, it is silently skipped.
     if (!DiskFile::FileExists(filename))
     {
-      std::cout << "Ignoring non-existent source file: " << filename << std::endl;
+      sout << "Ignoring non-existent source file: " << filename << std::endl;
     }
     // skip files outside basepath
     else if (filename.compare(0, basepath.size(), basepath) != 0)
     {
-      std::cout << "Ignoring out of basepath source file: " << filename << std::endl;
+      sout << "Ignoring out of basepath source file: " << filename << std::endl;
     }
     else
     {
@@ -1073,11 +1082,11 @@ bool CommandLine::CheckValuesAndSetDefaults() {
       // Ignore all 0 byte files
       if (filesize == 0)
       {
-        std::cout << "Skipping 0 byte file: " << filename << std::endl;
+        sout << "Skipping 0 byte file: " << filename << std::endl;
       }
       else if (extrafiles.end() != std::find(extrafiles.begin(), extrafiles.end(), filename))
       {
-        std::cout << "Skipping duplicate filename: " << filename << std::endl;
+        sout << "Skipping duplicate filename: " << filename << std::endl;
       }
       else
       {
@@ -1089,7 +1098,7 @@ bool CommandLine::CheckValuesAndSetDefaults() {
 
   // operation should always be set, but let's be thorough.
   if (operation == opNone) {
-    std::cerr << "ERROR: No operation was specified (create, repair, or verify)" << std::endl;
+    serr << "ERROR: No operation was specified (create, repair, or verify)" << std::endl;
     return false;
   }
 
@@ -1116,7 +1125,7 @@ bool CommandLine::CheckValuesAndSetDefaults() {
       if (parfilename.length() > 5 && 0 == stricmp(parfilename.substr(parfilename.length()-5, 5).c_str(), ".par2"))
       {
         // Yes it does.
-        std::cerr << "You must specify a list of files when creating." << std::endl;
+        serr << "You must specify a list of files when creating." << std::endl;
         return false;
       }
       else
@@ -1136,7 +1145,7 @@ bool CommandLine::CheckValuesAndSetDefaults() {
         {
           // The file does not exist or it is empty.
 
-          std::cerr << "You must specify a list of files when creating." << std::endl;
+          serr << "You must specify a list of files when creating." << std::endl;
           return false;
         }
       }
@@ -1147,7 +1156,7 @@ bool CommandLine::CheckValuesAndSetDefaults() {
 
     if (DiskFile::FileExists(parfilename + ".par2"))
     {
-      std::cerr << "Par2 file already exists: " << parfilename << std::endl;
+      serr << "Par2 file already exists: " << parfilename << std::endl;
       return false;
     }
 
@@ -1204,7 +1213,7 @@ bool CommandLine::ComputeBlockSize() {
       filesizes.push_back(filesize_cache.get(*i));
     }
 
-    return ComputeBlockSizeFromCount(std::cerr, &blocksize, blockcount, filesizes);
+    return ComputeBlockSizeFromCount(serr, &blocksize, blockcount, filesizes);
   }
 
   return true;
@@ -1213,7 +1222,9 @@ bool CommandLine::ComputeBlockSize() {
 
 // Determine how many recovery blocks to create based on the source block
 // count and the requested level of redundancy.
-bool CommandLine::ComputeRecoveryBlockCount(u32 *recoveryblockcount,
+bool CommandLine::ComputeRecoveryBlockCount(std::ostream &sout,
+					    std::ostream &serr,
+					    u32 *recoveryblockcount,
 					    u32 sourceblockcount,
 					    u64 blocksize,
 					    u32 firstblock,
@@ -1254,8 +1265,8 @@ bool CommandLine::ComputeRecoveryBlockCount(u32 *recoveryblockcount,
       }
 
       // recoveryfilecount assigned below.
-      bool success = ComputeRecoveryFileCount(std::cout,
-					      std::cerr,
+      bool success = ComputeRecoveryFileCount(sout,
+					      serr,
 					      &recoveryfilecount,
 					      recoveryfilescheme,
 					      estimatedrecoveryblockcount,
@@ -1278,20 +1289,20 @@ bool CommandLine::ComputeRecoveryBlockCount(u32 *recoveryblockcount,
   }
   else
   {
-    std::cerr << "Redundancy and Redundancysize not set." << std::endl;
+    serr << "Redundancy and Redundancysize not set." << std::endl;
     return false;
   }
 
   if (*recoveryblockcount > 65536)
   {
-    std::cerr << "Too many recovery blocks requested." << std::endl;
+    serr << "Too many recovery blocks requested." << std::endl;
     return false;
   }
 
   // Check that the last recovery block number would not be too large
   if (firstblock + *recoveryblockcount >= 65536)
   {
-    std::cerr << "First recovery block number is too high." << std::endl;
+    serr << "First recovery block number is too high." << std::endl;
     return false;
   }
 
@@ -1312,7 +1323,7 @@ bool CommandLine::SetParFilename(std::string filename)
   if ((where = filename.find_first_of('*')) != std::string::npos ||
       (where = filename.find_first_of('?')) != std::string::npos)
   {
-    std::cerr << "par2 file must not have a wildcard in it." << std::endl;
+    serr << "par2 file must not have a wildcard in it." << std::endl;
     return result;
   }
 #endif
