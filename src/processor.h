@@ -116,8 +116,10 @@ public:
   //   OfferErasures was given, in that order
   //
   // Called from one thread, and always after WaitForAdd. The returned future
-  // becomes ready once data may be overwritten, and one which is ready
-  // already says the implementation has finished with it.
+  // becomes ready once data and factors may both be overwritten, and one which
+  // is ready already says the implementation has finished with them. An
+  // implementation which returns before it has multiplied the block need copy
+  // neither of them.
   virtual std::future<void> AddInput(const void *data, size_t length, u32 inputindex, const u16 *factors) = 0;
 
   // Wait for every submitted input block to be processed.

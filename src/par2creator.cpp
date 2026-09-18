@@ -777,8 +777,10 @@ bool Par2Creator::ProcessData(u64 blockoffset, size_t blocklength, ProgressMeter
 
   const bool ownfactors = processor->OfferRecoveryExponents((u32)sourceblocks.size(), exponents.data(), recoveryblockcount);
 
-  // The matrix column for one input block, unused when the processor has its own
-  std::vector<u16> factors(ownfactors ? 0 : recoveryblockcount);
+  // The matrix column for one input block, unused when the processor has its
+  // own. There is one for each transfer buffer, so that a column lasts as long
+  // as the block it belongs to.
+  std::vector<u16> factors(ownfactors ? 0 : (size_t)recoveryblockcount * NUM_TRANSFER_BUFFERS);
 
   // Every buffer starts free
   std::future<void> bufferfree[NUM_TRANSFER_BUFFERS];
@@ -840,15 +842,16 @@ bool Par2Creator::ProcessData(u64 blockoffset, size_t blocklength, ProgressMeter
     }
 
     // Look up the matrix column and process the data against every output block
+    u16 *column = ownfactors ? NULL : &factors[(size_t)bufferindex * recoveryblockcount];
+
     if (!ownfactors)
     {
       for (u32 outputblock=0; outputblock<recoveryblockcount; outputblock++)
-        factors[outputblock] = rs.GetFactor(inputblock, outputblock);
+        column[outputblock] = rs.GetFactor(inputblock, outputblock);
     }
 
     processor->WaitForAdd();
-    bufferfree[bufferindex] = processor->AddInput(inputbuffer, blocklength, inputblock,
-                                                  ownfactors ? NULL : factors.data());
+    bufferfree[bufferindex] = processor->AddInput(inputbuffer, blocklength, inputblock, column);
     bufferindex = (bufferindex + 1) % NUM_TRANSFER_BUFFERS;
 
     if (noiselevel > nlQuiet)
