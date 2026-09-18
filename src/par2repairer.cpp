@@ -2909,8 +2909,10 @@ bool Par2Repairer::ProcessData(u64 blockoffset, size_t blocklength, ProgressMete
     processor->SetChunkLength(blocklength);
     processor->ResetOutput();
 
-    // The matrix column for one input block, unused when the processor has its own
-    std::vector<u16> factors(ownfactors ? 0 : missingblockcount);
+    // The matrix column for one input block, unused when the processor has its
+    // own. There is one for each transfer buffer, so that a column lasts as
+    // long as the block it belongs to.
+    std::vector<u16> factors(ownfactors ? 0 : (size_t)missingblockcount * NUM_TRANSFER_BUFFERS);
 
     // Every buffer starts free
     std::future<void> bufferfree[NUM_TRANSFER_BUFFERS];
@@ -2968,15 +2970,16 @@ bool Par2Repairer::ProcessData(u64 blockoffset, size_t blocklength, ProgressMete
       }
 
       // Look up the matrix column and process the data against every output block
+      u16 *column = ownfactors ? NULL : &factors[(size_t)bufferindex * missingblockcount];
+
       if (!ownfactors)
       {
         for (u32 outputindex=0; outputindex<missingblockcount; outputindex++)
-          factors[outputindex] = rs.GetFactor(inputindex, outputindex);
+          column[outputindex] = rs.GetFactor(inputindex, outputindex);
       }
 
       processor->WaitForAdd();
-      bufferfree[bufferindex] = processor->AddInput(inputbuffer, blocklength, inputindex,
-                                                    ownfactors ? NULL : factors.data());
+      bufferfree[bufferindex] = processor->AddInput(inputbuffer, blocklength, inputindex, column);
       bufferindex = (bufferindex + 1) % NUM_TRANSFER_BUFFERS;
 
       if (noiselevel > nlQuiet)
