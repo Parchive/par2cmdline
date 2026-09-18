@@ -18,24 +18,22 @@
 //  along with this program; if not, write to the Free Software
 //  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-#include <par2/libpar2.h>
-#include "commandline.h"
-// This is included here, so that cout and cerr are not used elsewhere.
-#include <iostream>
+#include <par2/cli.h>
+
+#include <ios>
 
 #ifdef _WIN32
-#include "wargs.h"
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <windows.h>
 #endif
 
 #ifdef _MSC_VER
 #ifdef _DEBUG
-#undef THIS_FILE
-static char THIS_FILE[]=__FILE__;
-#define new DEBUG_NEW
+#include <crtdbg.h>
 #endif
 #endif
-
-using namespace par2;
 
 #ifdef _WIN32
 
@@ -54,96 +52,14 @@ int main(int argc, char* argv[])
 
 #ifdef _WIN32
   SetConsoleOutputCP(CP_UTF8);
-
-  utf8::WideToUtf8ArgsAdapter wargsAdapter{ argc, wargv };
-  auto argv = wargsAdapter.GetUtf8Args();
-  argc = wargsAdapter.GetArgc();
 #endif
-
 
   // We only output using C++ iostreams
   std::ios::sync_with_stdio(false);
 
-  // Parse the command line
-  CommandLine *commandline = new CommandLine;
-
-  Result result = eInvalidCommandLineArguments;
-
-  if (commandline->Parse(argc, argv))
-  {
-    // Which operation was selected
-    switch (commandline->GetOperation())
-    {
-      case CommandLine::opCreate:
-	// Create recovery data
-	result = par2create(std::cout,
-			    std::cerr,
-			    commandline->GetNoiseLevel(),
-			    commandline->GetMemoryLimit(),
-			    commandline->GetBasePath(),
-			    commandline->GetNumThreads(),
-			    commandline->GetFileThreads(),
-			    commandline->GetParFilename(),
-			    commandline->GetExtraFiles(),
-
-			    commandline->GetBlockSize(),
-
-			    commandline->GetFirstRecoveryBlock(),
-			    commandline->GetRecoveryFileScheme(),
-			    commandline->GetRecoveryFileCount(),
-			    commandline->GetRecoveryBlockCount()
-			    );
-
-        break;
-      case CommandLine::opVerify:
-      case CommandLine::opRepair:
-        {
-          // Verify or Repair damaged files
-          switch (commandline->GetVersion())
-          {
-            case CommandLine::verPar1:
-	      result = par1repair(std::cout,
-				  std::cerr,
-				  commandline->GetNoiseLevel(),
-				  commandline->GetMemoryLimit(),
-				  commandline->GetNumThreads(),
-				  commandline->GetParFilename(),
-				  commandline->GetExtraFiles(),
-				  commandline->GetOperation() == CommandLine::opRepair,
-				  commandline->GetPurgeFiles());
-
-              break;
-            case CommandLine::verPar2:
-	      result = par2repair(std::cout,
-				  std::cerr,
-				  commandline->GetNoiseLevel(),
-				  commandline->GetMemoryLimit(),
-				  commandline->GetBasePath(),
-				  commandline->GetNumThreads(),
-				  commandline->GetFileThreads(),
-				  commandline->GetParFilename(),
-				  commandline->GetExtraFiles(),
-				  commandline->GetOperation() == CommandLine::opRepair,
-				  commandline->GetPurgeFiles(),
-				  commandline->GetRenameOnly(),
-				  commandline->GetSkipData(),
-				  commandline->GetSkipLeaway(),
-				  commandline->GetFullHash());
-              break;
-	    default:
-              break;
-          }
-        }
-        break;
-      case CommandLine::opNone:
-        result = eSuccess;
-        break;
-      default:
-        break;
-    }
-  }
-
-  delete commandline;
-
-  return result;
+#ifdef _WIN32
+  return par2::run(argc, wargv);
+#else
+  return par2::run(argc, argv);
+#endif
 }
