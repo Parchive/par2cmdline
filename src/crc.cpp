@@ -36,6 +36,53 @@ static char THIS_FILE[]=__FILE__;
 crc32table ccitttable(0xEDB88320L);
 
 
+static u32 CRCUpdateBlockScalar(u32 crc, size_t length, const void *buffer)
+{
+  const unsigned char *current = (const unsigned char *)buffer;
+
+  while (length-- > 0)
+    crc = CRCUpdateChar(crc, *current++);
+
+  return crc;
+}
+
+#include "crc_arm.h"
+#include "crc_clmul.h"
+
+static u32 (*crcupdateblock)(u32 crc, size_t length, const void *buffer) = &CRCUpdateBlockScalar;
+
+namespace
+{
+  struct CRCDispatch
+  {
+    CRCDispatch()
+    {
+#ifdef PAR2_CRC_ARM
+      if (ArmHasCRC())
+        crcupdateblock = &CRCUpdateBlockArm;
+#endif
+#ifdef PAR2_CRC_X86
+      if (X86HasPclMul())
+      {
+        crcupdateblock = &CRCUpdateBlockPclMul;
+# ifdef PAR2_CRC_X86_VPCLMUL
+        if (X86HasVPclMul())
+          crcupdateblock = &CRCUpdateBlockVPclMul;
+# endif
+      }
+#endif
+    }
+  };
+
+  CRCDispatch crcdispatch;
+}
+
+u32 CRCUpdateBlock(u32 crc, size_t length, const void *buffer)
+{
+  return crcupdateblock(crc, length, buffer);
+}
+
+
 // GF32 multiplication
 #define NEGATE32(n) (u32)(-((i32)(n)))
 static u32 GF32Multiply(u32 a, u32 b, u32 polynomial)
