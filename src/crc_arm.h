@@ -26,9 +26,27 @@
 # define PAR2_CRC_ARM64 1
 #endif
 
+// GCC ships an arm_acle.h whose CRC32 intrinsics do not compile, in 7.0 to 8.1
+// on 32-bit ARM and in 9.4 on aarch64.
+//   https://gcc.gnu.org/bugzilla/show_bug.cgi?id=81497
+//   https://gcc.gnu.org/bugzilla/show_bug.cgi?id=100985
+#if defined(__GNUC__) && !defined(__clang__)
+# if !defined(PAR2_CRC_ARM64) && __GNUC__ >= 7 \
+   && (__GNUC__ < 8 \
+    || (__GNUC__ == 8 && __GNUC_MINOR__ < 1) \
+    || (__GNUC__ == 8 && __GNUC_MINOR__ == 1 && __GNUC_PATCHLEVEL__ < 1))
+#  define PAR2_CRC_BROKEN_ACLE 1
+# endif
+# if defined(PAR2_CRC_ARM64) && __GNUC__ == 9 && __GNUC_MINOR__ == 4
+#  define PAR2_CRC_BROKEN_ACLE 1
+# endif
+#endif
+
 #if (defined(PAR2_CRC_ARM64) || defined(__arm__) || defined(_M_ARM)) \
+  && !defined(PAR2_CRC_BROKEN_ACLE) \
   && (!defined(__BYTE_ORDER__) || __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__)
-# if defined(_MSC_VER) && !defined(__clang__)
+// MSVC has no CRC32 intrinsics for 32-bit ARM
+# if defined(_MSC_VER) && !defined(__clang__) && defined(PAR2_CRC_ARM64)
 #  define PAR2_CRC_ARM 1
 #  define PAR2_CRC_ARM_TARGET
 #  include <intrin.h>
