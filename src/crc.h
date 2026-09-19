@@ -55,17 +55,7 @@ inline u32 CRCUpdateChar(u32 crc, u8 ch)
 }
 
 // Update the CRC using a block of characters in a buffer
-inline u32 CRCUpdateBlock(u32 crc, size_t length, const void *buffer)
-{
-  const unsigned char *current = (const unsigned char *)buffer;
-
-  while (length-- > 0)
-  {
-    crc =  ((crc >> 8) & 0x00ffffffL) ^ ccitttable.table[(u8)crc ^ (*current++)];
-  }
-
-  return crc;
-}
+u32 CRCUpdateBlock(u32 crc, size_t length, const void *buffer);
 
 // Update the CRC using a block of 0s.
 u32 CRCUpdateBlock(u32 crc, u64 length);
