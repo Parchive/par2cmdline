@@ -20,6 +20,9 @@
 
 #include "libpar2internal.h"
 
+#include "crc_arm.h"
+#include "crc_clmul.h"
+
 #ifdef _MSC_VER
 #ifdef _DEBUG
 #undef THIS_FILE
@@ -35,19 +38,6 @@ static char THIS_FILE[]=__FILE__;
 // https://en.wikipedia.org/wiki/Cyclic_redundancy_check
 crc32table ccitttable(0xEDB88320L);
 
-
-static u32 CRCUpdateBlockScalar(u32 crc, size_t length, const void *buffer)
-{
-  const unsigned char *current = (const unsigned char *)buffer;
-
-  while (length-- > 0)
-    crc = CRCUpdateChar(crc, *current++);
-
-  return crc;
-}
-
-#include "crc_arm.h"
-#include "crc_clmul.h"
 
 static u32 (*crcupdateblock)(u32 crc, size_t length, const void *buffer) = &CRCUpdateBlockScalar;
 
