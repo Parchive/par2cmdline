@@ -802,6 +802,7 @@ bool Par2Creator::ProcessData(u64 blockoffset, size_t blocklength, ProgressMeter
   u32 inputblock;
 
   DiskFile *lastopenfile = NULL;
+  bool failed = false;
 
   // For each input block
   for ((sourceblock=sourceblocks.begin()),(inputblock=0);
@@ -821,7 +822,8 @@ bool Par2Creator::ProcessData(u64 blockoffset, size_t blocklength, ProgressMeter
       lastopenfile = (*sourceblock).GetDiskFile();
       if (!lastopenfile->Open())
       {
-        return false;
+        failed = true;
+        break;
       }
     }
 
@@ -831,7 +833,10 @@ bool Par2Creator::ProcessData(u64 blockoffset, size_t blocklength, ProgressMeter
 
     // Read data from the current input block
     if (!sourceblock->ReadData(blockoffset, blocklength, inputbuffer))
-      return false;
+    {
+      failed = true;
+      break;
+    }
 
     if (deferhashcomputation)
     {
@@ -872,6 +877,9 @@ bool Par2Creator::ProcessData(u64 blockoffset, size_t blocklength, ProgressMeter
   {
     lastopenfile->Close();
   }
+
+  if (failed)
+    return false;
 
   if (noiselevel > nlQuiet)
     sout << "Writing recovery packets\r";
