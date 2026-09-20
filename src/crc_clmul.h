@@ -23,7 +23,8 @@
 // CRC32 using the x86 carry-less multiply, over 128-bit registers (PCLMULQDQ)
 // and 256-bit ones (VPCLMULQDQ). Included by crc.cpp.
 
-#if defined(__x86_64__) || defined(_M_X64) || defined(__i386__) || defined(_M_IX86)
+#if (defined(__x86_64__) || defined(_M_X64) || defined(__i386__) || defined(_M_IX86)) \
+  && (defined(_MSC_VER) || defined(__GNUC__) || defined(__clang__))
 # define PAR2_CRC_X86 1
 # include <immintrin.h>
 # ifdef _MSC_VER

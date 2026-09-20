@@ -54,8 +54,11 @@
 #  define PAR2_CRC_ARM 1
 #  define PAR2_CRC_ARM_TARGET
 #  include <arm_acle.h>
+// Without __ARM_FEATURE_CRC32, arm_acle.h only declares the intrinsics from
+// GCC 7 and Clang 16
 # elif defined(PAR2_CRC_ARM64) \
-   && ((defined(__clang__) && __clang_major__ >= 8) || (defined(__GNUC__) && __GNUC__ >= 8))
+   && ((defined(__clang__) && __clang_major__ >= 16) \
+    || (!defined(__clang__) && defined(__GNUC__) && __GNUC__ >= 7))
 #  define PAR2_CRC_ARM 1
 #  define PAR2_CRC_ARM_TARGET __attribute__((target("+crc")))
 #  include <arm_acle.h>
@@ -66,7 +69,7 @@
 
 # if defined(__APPLE__)
 #  include <sys/sysctl.h>
-# elif defined(__linux__)
+# elif defined(__linux__) || defined(__FreeBSD__)
 #  include <sys/auxv.h>
 #  ifndef HWCAP_CRC32
 #   define HWCAP_CRC32 (1 << 7)
@@ -135,6 +138,9 @@ static bool ArmHasCRC()
 # else
   return (getauxval(AT_HWCAP2) & HWCAP2_CRC32) != 0;
 # endif
+#elif defined(__FreeBSD__) && defined(PAR2_CRC_ARM64)
+  unsigned long hwcap = 0;
+  return elf_aux_info(AT_HWCAP, &hwcap, sizeof(hwcap)) == 0 && (hwcap & HWCAP_CRC32) != 0;
 #elif defined(_WIN32)
   return IsProcessorFeaturePresent(PF_ARM_V8_CRC32_INSTRUCTIONS_AVAILABLE) != 0;
 #else
