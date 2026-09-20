@@ -209,6 +209,37 @@ int test6() {
 }
 
 
+// compare the dispatched block implementation against char-at-a-time,
+// over every length and alignment the hardware paths switch on
+int test7() {
+  srand(987654321);
+  unsigned char buffer[1024];
+
+  for (unsigned int i = 0; i < sizeof(buffer); i++) {
+    buffer[i] = (unsigned char) (rand() % 256);
+  }
+
+  for (size_t offset = 0; offset < 16; offset++) {
+    for (size_t length = 0; offset + length <= sizeof(buffer); length++) {
+      u32 checksum1 = CRCUpdateBlock(~0, length, buffer + offset);
+
+      u32 checksum2 = ~0;
+      for (size_t i = 0; i < length; i++) {
+        checksum2 = CRCUpdateChar(checksum2, buffer[offset + i]);
+      }
+
+      if (checksum1 != checksum2) {
+        std::cerr << "offset " << offset << " length " << length << std::endl;
+        std::cerr << "  checksum1 = " << checksum1 << std::endl;
+        std::cerr << "  checksum2 = " << checksum2 << std::endl;
+        return 1;
+      }
+    }
+  }
+
+  return 0;
+}
+
 
 
 
@@ -235,6 +266,10 @@ int main() {
   }
   if (test6()) {
     std::cerr << "FAILED: test6" << std::endl;
+    return 1;
+  }
+  if (test7()) {
+    std::cerr << "FAILED: test7" << std::endl;
     return 1;
   }
 
