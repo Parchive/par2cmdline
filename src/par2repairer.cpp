@@ -2902,6 +2902,7 @@ bool Par2Repairer::ProcessData(u64 blockoffset, size_t blocklength, ProgressMete
   u32                          inputindex = 0;
 
   DiskFile *lastopenfile = NULL;
+  bool failed = false;
 
   // Are there any blocks which need to be reconstructed
   if (missingblockcount > 0)
@@ -2940,7 +2941,8 @@ bool Par2Repairer::ProcessData(u64 blockoffset, size_t blocklength, ProgressMete
         lastopenfile = (*inputblock)->GetDiskFile();
         if (!lastopenfile->Open())
         {
-          return false;
+          failed = true;
+          break;
         }
       }
 
@@ -2950,7 +2952,10 @@ bool Par2Repairer::ProcessData(u64 blockoffset, size_t blocklength, ProgressMete
 
       // Read data from the current input block
       if (!(*inputblock)->ReadData(blockoffset, blocklength, inputbuffer))
-        return false;
+      {
+        failed = true;
+        break;
+      }
 
       // Have we reached the last source data block
       if (copyblock != copyblocks.end())
@@ -2962,7 +2967,10 @@ bool Par2Repairer::ProcessData(u64 blockoffset, size_t blocklength, ProgressMete
 
           // Write the block back to disk in the new target file
           if (!(*copyblock)->WriteData(blockoffset, blocklength, inputbuffer, wrote))
-            return false;
+          {
+            failed = true;
+            break;
+          }
 
           totalwritten += wrote;
         }
@@ -3041,6 +3049,9 @@ bool Par2Repairer::ProcessData(u64 blockoffset, size_t blocklength, ProgressMete
   {
     lastopenfile->Close();
   }
+
+  if (failed)
+    return false;
 
   if (noiselevel > nlQuiet)
     sout << "Writing recovered data\r";
