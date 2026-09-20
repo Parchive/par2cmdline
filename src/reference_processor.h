@@ -20,10 +20,13 @@
 #ifndef __REFERENCE_PROCESSOR_H__
 #define __REFERENCE_PROCESSOR_H__
 
+#include <deque>
+
 // Multiplies each input block by the matrix on numthreads threads, which stay
 // alive from one submission to the next, and keeps the accumulated output
-// blocks in one buffer. Every submission is complete by the time AddInput
-// returns.
+// blocks in one buffer. AddInput queues a submission and returns, the block
+// being multiplied on the thread this holds while the caller reads the next
+// one.
 class ReferenceProcessor : public Processor
 {
 public:
@@ -35,11 +38,25 @@ public:
     , outputcount(0)
     , currentlength(0)
     , outputbuffer(0)
+    , queue()
+    , stopping(false)
+    , mutex()
+    , haswork()
+    , drained()
+    , worker()
   {
+    worker = std::thread(&ReferenceProcessor::Serve, this);
   }
 
   ~ReferenceProcessor(void)
   {
+    {
+      std::lock_guard<std::mutex> lock(mutex);
+      stopping = true;
+    }
+    haswork.notify_one();
+    worker.join();
+
     delete [] outputbuffer;
   }
 
@@ -75,18 +92,24 @@ public:
   {
     (void)inputindex;
 
-    runner->Run(0, outputcount, [&](size_t outputindex)
-    {
-      rs.MultiplyAdd(factors[outputindex], length, data, &outputbuffer[maxlength * outputindex]);
-    });
+    std::future<void> processed;
 
-    std::promise<void> processed;
-    processed.set_value();
-    return processed.get_future();
+    {
+      std::lock_guard<std::mutex> lock(mutex);
+
+      queue.emplace_back(data, length, factors);
+      processed = queue.back().processed.get_future();
+    }
+
+    haswork.notify_one();
+
+    return processed;
   }
 
   void EndInput(void)
   {
+    std::unique_lock<std::mutex> lock(mutex);
+    drained.wait(lock, [this]{ return queue.empty(); });
   }
 
   const void *PeekOutput(u32 index)
@@ -101,6 +124,77 @@ public:
   }
 
 private:
+  // One input block waiting to be multiplied, or being multiplied. data and
+  // factors belong to the caller, which keeps them until processed is ready.
+  struct Submission
+  {
+    Submission(const void *data, size_t length, const u16 *factors)
+      : data(data)
+      , length(length)
+      , factors(factors)
+      , processed()
+    {
+    }
+
+    const void         *data;
+    size_t              length;
+    const u16          *factors;
+    std::promise<void>  processed;
+  };
+
+  void Multiply(const void *data, size_t length, const u16 *factors)
+  {
+    runner->Run(0, outputcount, [&](size_t outputindex)
+    {
+      rs.MultiplyAdd(factors[outputindex], length, data, &outputbuffer[maxlength * outputindex]);
+    });
+  }
+
+  void Serve(void)
+  {
+    for (;;)
+    {
+      Submission *job;
+
+      {
+        std::unique_lock<std::mutex> lock(mutex);
+        haswork.wait(lock, [this]{ return stopping || !queue.empty(); });
+
+        if (stopping)
+          return;
+
+        // A submission is left at the front of the queue while it runs, and
+        // adding another behind it leaves this reference good
+        job = &queue.front();
+      }
+
+      std::exception_ptr failure;
+
+      try
+      {
+        Multiply(job->data, job->length, job->factors);
+      }
+      catch (...)
+      {
+        failure = std::current_exception();
+      }
+
+      std::promise<void> processed(std::move(job->processed));
+
+      {
+        std::lock_guard<std::mutex> lock(mutex);
+        queue.pop_front();
+      }
+
+      drained.notify_one();
+
+      if (failure)
+        processed.set_exception(failure);
+      else
+        processed.set_value();
+    }
+  }
+
   ReedSolomon<Galois16> &rs;
   u32 numthreads;
   std::unique_ptr<ParallelRunner> runner;
@@ -108,6 +202,13 @@ private:
   u32 outputcount;
   size_t currentlength;
   u8 *outputbuffer;
+
+  std::deque<Submission>   queue;    // submissions in flight, oldest first
+  bool                     stopping;
+  std::mutex               mutex;
+  std::condition_variable  haswork;  // a submission has been added
+  std::condition_variable  drained;  // the queue has emptied
+  std::thread              worker;   // multiplies the submitted blocks
 };
 
 #endif // __REFERENCE_PROCESSOR_H__
