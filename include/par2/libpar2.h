@@ -97,6 +97,9 @@ struct Par2SetInfo
   u32 recoverablefilecount{};   // Files that can be repaired
   u32 otherfilecount{};         // Files described but not recoverable
   u64 datasize{};               // Total size of the recoverable files
+  std::string creator;          // The client that created the set, as the
+                                // first creator packet read records it, and
+                                // empty where none was found
 };
 
 

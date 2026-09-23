@@ -408,6 +408,8 @@ Result Par2Repairer::PreparePackets(void)
     info.recoverablefilecount = mainpacket->RecoverableFileCount();
     info.otherfilecount = mainpacket->TotalFileCount() - mainpacket->RecoverableFileCount();
     info.datasize = totaldatasize;
+    if (creatorpacket)
+      info.creator = creatorpacket->Client();
 
     observer->OnSetInfo(info);
   }
