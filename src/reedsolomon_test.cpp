@@ -24,6 +24,8 @@
 #include "libpar2internal.h"
 #include "reedsolomon.h"
 
+using namespace par2;
+
 
 /* trace from test11.log
 

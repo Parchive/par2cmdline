@@ -38,6 +38,9 @@ static char THIS_FILE[]=__FILE__;
 #endif
 
 
+namespace par2
+{
+
 CommandLine::CommandLine(void)
 : filesize_cache()
 , version(verUnknown)
@@ -1552,3 +1555,5 @@ bool CommandLine::SetParFilename(std::string filename)
 
   return result;
 }
+
+} // namespace par2

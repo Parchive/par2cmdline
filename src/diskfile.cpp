@@ -39,11 +39,16 @@ static char THIS_FILE[]=__FILE__;
 
 
 #ifdef _WIN32
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 #include "utf8.h"
 #include <cwctype>
 #include <iostream>
+#endif
+
+namespace par2
+{
+
+#ifdef _WIN32
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #define OffsetType __int64
 #define MaxOffset 0x7fffffffffffffffI64
@@ -1231,3 +1236,5 @@ u64 FileSizeCache::get(const std::string &filename) {
   //  }
   return filesize;
 }
+
+} // namespace par2

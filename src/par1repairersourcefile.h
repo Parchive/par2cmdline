@@ -21,6 +21,9 @@
 #ifndef __PAR1REPAIRERSOURCEFILE_H__
 #define __PAR1REPAIRERSOURCEFILE_H__
 
+namespace par2
+{
+
 // The Par1RepairerSourceFile object is used during verification and repair
 // to record details about a particular source file and the data blocks
 // for that file.
@@ -75,5 +78,7 @@ protected:
 
 };
 
+
+} // namespace par2
 
 #endif // __PAR1REPAIRERSOURCEFILE_H__

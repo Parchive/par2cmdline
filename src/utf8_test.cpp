@@ -27,7 +27,7 @@
 #include "utf8.h"
 
 
-using namespace utf8;
+using namespace par2::utf8;
 
 int test1()
 {

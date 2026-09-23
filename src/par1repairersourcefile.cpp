@@ -20,6 +20,9 @@
 
 #include "libpar2internal.h"
 
+namespace par2
+{
+
 #ifdef _MSC_VER
 #ifdef _DEBUG
 #undef THIS_FILE
@@ -116,3 +119,5 @@ void Par1RepairerSourceFile::SetTargetBlock(DiskFile *diskfile)
   targetblock.SetLocation(diskfile, 0);
   targetblock.SetLength(diskfile->FileSize());
 }
+
+} // namespace par2

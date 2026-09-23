@@ -21,6 +21,9 @@
 #ifndef __PAR1FILEFORMAT_H__
 #define __PAR1FILEFORMAT_H__
 
+namespace par2
+{
+
 #ifdef _WIN32
 #pragma pack(push, 1)
 #define PACKED
@@ -87,5 +90,7 @@ inline bool operator != (const PAR1MAGIC &left, const PAR1MAGIC &right)
 }
 
 extern PAR1MAGIC par1_magic;
+
+} // namespace par2
 
 #endif //__PAR1FILEFORMAT_H__

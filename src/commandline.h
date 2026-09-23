@@ -44,6 +44,9 @@
 #include "libpar2.h"
 #include "diskfile.h"
 
+namespace par2
+{
+
 // The CommandLine object is responsible for understanding the format
 // of the command line parameters are parsing the command line to
 // extract details as to what the user wants to do.
@@ -207,5 +210,7 @@ protected:
   bool followlinks;            // follow symlinks to files when scanning for source files
 
 };
+
+} // namespace par2
 
 #endif // __COMMANDLINE_H__
