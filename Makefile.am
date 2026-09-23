@@ -46,10 +46,10 @@ libpar2_a_SOURCES = src/crc.cpp src/crc.h \
 	src/foreach_parallel.h \
 	src/bufferpool.h \
 	src/taskpool.h \
-	src/backends.h \
-	src/hasher.h \
-	src/processor.h \
-	src/types.h \
+	include/par2/backends.h \
+	include/par2/hasher.h \
+	include/par2/processor.h \
+	include/par2/types.h \
 	src/reference_hasher.h \
 	src/reference_processor.h \
 	src/progressmeter.h \
@@ -57,8 +57,11 @@ libpar2_a_SOURCES = src/crc.cpp src/crc.h \
 	src/reedsolomon.cpp src/reedsolomon.h \
 	src/verificationhashtable.cpp src/verificationhashtable.h \
 	src/verificationpacket.cpp src/verificationpacket.h \
-	src/libpar2.cpp src/libpar2.h src/libpar2internal.h \
-	src/utf8.cpp src/utf8.h
+	src/libpar2.cpp include/par2/libpar2.h src/libpar2internal.h
+
+if MINGW
+libpar2_a_SOURCES += src/utf8.cpp src/utf8.h
+endif
 
 
 bin_PROGRAMS = par2
@@ -66,9 +69,20 @@ man_MANS = man/par2.1
 
 par2_SOURCES = src/par2cmdline.cpp \
 	src/commandline.cpp src/commandline.h
+
+if MINGW
+par2_SOURCES += src/wargs.cpp src/wargs.h
+endif
 par2_LDADD = libpar2.a
 
 LDADD = -lstdc++
+AM_CPPFLAGS = -I$(top_srcdir)/include
+
+AM_TESTS_ENVIRONMENT = \
+	CXX='$(CXX)'; \
+	CXXFLAGS='$(CXXFLAGS)'; \
+	PTHREAD_FLAGS='$(PTHREAD_FLAGS)'; \
+	export CXX CXXFLAGS PTHREAD_FLAGS;
 AM_CXXFLAGS = -Wall -std=c++14 $(PTHREAD_FLAGS)
 AM_LDFLAGS = $(PTHREAD_FLAGS)
 
@@ -206,7 +220,10 @@ EXTRA_DIST = \
 	tests/test50.expected \
 	tests/test50.ps1 \
 	tests/unit_tests \
-	tests/unit_tests.ps1
+	tests/unit_tests.ps1 \
+	tests/consumer_build \
+	tests/consumer_build.ps1 \
+	tests/consumer.cpp
 
 
 # Programs that need to be compiled for the test suite.
@@ -225,7 +242,7 @@ tests_diskfile_test_LDADD = libpar2.a
 tests_filechecksummer_test_SOURCES = src/filechecksummer_test.cpp src/filechecksummer.cpp src/filechecksummer.h
 tests_filechecksummer_test_LDADD = libpar2.a
 
-tests_libpar2_test_SOURCES = src/libpar2_test.cpp src/libpar2.h
+tests_libpar2_test_SOURCES = src/libpar2_test.cpp include/par2/libpar2.h
 tests_libpar2_test_LDADD = libpar2.a
 
 tests_commandline_test_SOURCES = src/commandline_test.cpp src/commandline.cpp src/commandline.h
@@ -250,7 +267,7 @@ tests_taskpool_test_LDADD = libpar2.a
 tests_bufferpool_test_SOURCES = src/bufferpool_test.cpp src/bufferpool.h
 tests_bufferpool_test_LDADD = libpar2.a
 
-tests_utf8_test_SOURCES = src/utf8_test.cpp src/utf8.cpp src/utf8.h
+tests_utf8_test_SOURCES = src/utf8_test.cpp src/utf8.cpp src/utf8.h src/wargs.cpp src/wargs.h
 
 # List of all tests.
 # tests/test* are integration tests that use the binary.
@@ -308,6 +325,7 @@ TESTS = \
 	tests/test49 \
 	tests/test50 \
 	tests/utf8_test \
+	tests/consumer_build \
 	tests/unit_tests
 
 install-exec-hook :

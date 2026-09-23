@@ -24,7 +24,7 @@
 #include <future>
 #include <vector>
 
-#include "types.h"
+#include <par2/types.h>
 
 namespace par2
 {
