@@ -42,7 +42,17 @@ public:
 
   // Load a creator packet from a specified file
   bool Load(DiskFile *diskfile, u64 offset, PACKET_HEADER &header);
+
+  // The text identifying the client which created the packet
+  std::string Client(void) const;
 };
+
+inline std::string CreatorPacket::Client(void) const
+{
+  assert(packetdata != 0);
+
+  return (char*)((const CREATORPACKET*)packetdata)->client;
+}
 
 } // namespace par2
 
