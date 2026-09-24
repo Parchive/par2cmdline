@@ -25,6 +25,7 @@
 #include <par2/libpar2.h>
 
 #include <cstdio>
+#include <algorithm>
 #include <fstream>
 #include <memory>
 #include <mutex>
@@ -164,20 +165,49 @@ namespace
 
 // Counts what the observer is told, to show the callbacks arrive even when
 // nothing is written to the output stream.
+// Stops the work at the first sign of progress
+class Canceller : public par2::Par2Observer
+{
+public:
+  par2::Par2Verifier *verifier;
+  Canceller() : verifier(0) {}
+  void OnProgress(par2::Phase, par2::u32) override { if (verifier) verifier->Cancel(); }
+};
+
+// Stops a repair once it is reading back what it wrote
+class LateCanceller : public par2::Par2Observer
+{
+public:
+  par2::Par2Verifier *verifier;
+  LateCanceller() : verifier(0) {}
+  void OnProgress(par2::Phase phase, par2::u32) override
+  {
+    if (verifier && phase == par2::phVerifyingRepair)
+      verifier->Cancel();
+  }
+};
+
 class Counting : public par2::Par2Observer
 {
 public:
   Counting()
-    : setinfo(0), files(0), progress(0), done(0), errors(0),
-      lastinfo(), lasterror(), last(0), wentbackwards(false), reached(false) {}
+    : setinfo(0), files(0), progress(0), done(0), errors(0), warnings(0),
+      lastinfo(), lasterror(), lastwarning(), phases(), last(0), wentbackwards(false),
+      reached(false) {}
 
-  int setinfo, files, progress, done, errors;
+  int setinfo, files, progress, done, errors, warnings;
 
   // What the last OnSetInfo carried
   par2::Par2SetInfo lastinfo;
 
   // What the last OnError carried
   par2::Par2Error lasterror;
+
+  // What the last OnWarning carried
+  par2::Par2Warning lastwarning;
+
+  // The steps reported, in order, with a run of the same step collapsed
+  std::vector<par2::Phase> phases;
 
   // Enough to tell one run of progress from several
   par2::u32 last;
@@ -209,16 +239,35 @@ public:
     lasterror = error;
   }
 
-  void OnProgress(par2::u32 permille)
+  void OnWarning(const par2::Par2Warning &warning) override
+  {
+    std::lock_guard<std::mutex> lock(mutex);
+    ++warnings;
+    lastwarning = warning;
+  }
+
+  void OnProgress(par2::Phase phase, par2::u32 permille) override
   {
     std::lock_guard<std::mutex> lock(mutex);
 
     ++progress;
+
+    if (phases.empty() || phases.back() != phase)
+    {
+      phases.push_back(phase);
+      last = 0;
+    }
+
     if (permille < last)
       wentbackwards = true;
     if (permille == 1000)
       reached = true;
     last = permille;
+  }
+
+  bool Saw(par2::Phase phase) const
+  {
+    return std::find(phases.begin(), phases.end(), phase) != phases.end();
   }
 
 private:
@@ -593,20 +642,15 @@ int main()
 
   // Cancelling stops the work and says so
   {
-    class Canceller : public par2::Par2Observer
-    {
-    public:
-      par2::Par2Verifier *verifier;
-      Canceller() : verifier(0) {}
-      void OnProgress(par2::u32) { if (verifier) verifier->Cancel(); }
-    };
-
     Canceller canceller;
     par2::Par2Verifier verifier(quiet, quiet, par2::nlSilent);
+
+    Check(par2::eSuccess == verifier.AddPar2File(PARFILE), "AddPar2File before cancelling");
+
+    // Attached once the packets are in, so the cancel lands in the scan
     canceller.verifier = &verifier;
     verifier.SetObserver(&canceller);
 
-    Check(par2::eSuccess == verifier.AddPar2File(PARFILE), "AddPar2File before cancelling");
     Check(par2::eCancelled == verifier.Verify(noextras), "Verify is cancelled");
     CheckLastError(verifier, par2::eCancelled, "a cancelled verify");
 
@@ -621,6 +665,75 @@ int main()
     par2::Par2Error error;
     Check(!verifier.GetLastError(&error) || error.code != par2::ecDuplicateSourceFile,
           "without taking the files the stopped pass had opened for duplicates");
+  }
+
+  // Reading the packets reports progress, so it can be cancelled too
+  {
+    Canceller canceller;
+    par2::Par2Verifier verifier(quiet, quiet, par2::nlSilent);
+    canceller.verifier = &verifier;
+    verifier.SetObserver(&canceller);
+
+    Check(par2::eCancelled == verifier.AddPar2File(PARFILE),
+          "AddPar2File is cancelled while it reads");
+    CheckLastError(verifier, par2::eCancelled, "a cancelled AddPar2File");
+
+    // What it read is not a set it can describe, and the cancelled name was
+    // not remembered, so naming it again reads the rest
+    verifier.ClearCancel();
+    verifier.SetObserver(0);
+
+    Check(par2::eSuccess == verifier.AddPar2File(PARFILE),
+          "and naming it again after ClearCancel reads it properly");
+
+    par2::Par2SetInfo info;
+    Check(verifier.GetSetInfo(&info), "which leaves a set it can describe");
+    Check(info.recoverablefilecount == DATACOUNT,
+          "and every file of it, so the second read picked up where the cancel stopped");
+  }
+
+  // A cancel which lands in a volume found beside the named file leaves that
+  // volume to be read again, rather than half read for good
+  {
+    Check(MakeDirectory("cutdir"), "mkdir for the cancelled volume check");
+
+    const char *const data = "cutdir/cut.data";
+    const char *const parfile = "cutdir/cut.par2";
+    const char *const vol = "cutdir/cut.vol0+8.par2";
+
+    WriteData(data, 23, 40000);
+
+    std::vector<std::string> files;
+    files.emplace_back(data);
+    Check(par2::eSuccess == par2::par2create(quiet, quiet, par2::nlSilent,
+                                             64 * 1024 * 1024, "cutdir/", 0, 2,
+                                             "cutdir/cut", files, BLOCKSIZE, 0,
+                                             par2::scUniform, 1, 8),
+          "par2create for the cancelled volume check");
+
+    // Without the index file the volume is the first file read
+    std::remove(parfile);
+
+    Canceller canceller;
+    par2::Par2Verifier verifier(quiet, quiet, par2::nlSilent, "cutdir/");
+    canceller.verifier = &verifier;
+    verifier.SetObserver(&canceller);
+
+    Check(par2::eCancelled == verifier.AddPar2File(parfile),
+          "AddPar2File is cancelled while it reads the volume");
+
+    verifier.ClearCancel();
+    verifier.SetObserver(0);
+
+    Check(par2::eSuccess == verifier.AddPar2File(parfile),
+          "and naming the set again reads the rest of the volume");
+
+    par2::Par2SetInfo info;
+    Check(verifier.GetSetInfo(&info), "which leaves a set it can describe");
+    Check(info.recoveryblocks == 8, "with every recovery block the volume holds");
+
+    std::remove(data);
+    std::remove(vol);
   }
 
   // Recovery data arriving a file at a time: what the scan found is kept, so
@@ -763,6 +876,100 @@ int main()
     std::remove(vol);
   }
 
+  // A set which learns of more files after a cancelled verify is started
+  // afresh, so the next verify looks for the files it did not know about
+  {
+    Check(MakeDirectory("growdir"), "mkdir for the growing set check");
+
+    const char *const data[] = {"growdir/grow-0.data", "growdir/grow-1.data"};
+    const char *const parfile = "growdir/grow.par2";
+    const char *const vol = "growdir/grow.vol0+8.par2";
+    const char *const held = "growdir/held.bin";
+
+    std::vector<std::string> files;
+    for (size_t i = 0; i < 2; ++i)
+    {
+      WriteData(data[i], 31 + (unsigned)i, 40000);
+      files.emplace_back(data[i]);
+    }
+
+    Check(par2::eSuccess == par2::par2create(quiet, quiet, par2::nlSilent,
+                                             64 * 1024 * 1024, "growdir/", 0, 2,
+                                             "growdir/grow", files, BLOCKSIZE, 0,
+                                             par2::scUniform, 1, 8),
+          "par2create for the growing set check");
+
+    // An index holding the main packet and what describes only the first file.
+    // Each packet stands on its own, so a file of some of them is still valid.
+    std::ifstream whole(parfile, std::ios::binary);
+    std::string bytes((std::istreambuf_iterator<char>(whole)),
+                      std::istreambuf_iterator<char>());
+    whole.close();
+
+    std::string partial;
+    std::string firstfile;
+    for (size_t offset = 0; offset + 64 <= bytes.size();)
+    {
+      par2::u64 length = 0;
+      for (size_t b = 0; b < 8; ++b)
+        length |= (par2::u64)(unsigned char)bytes[offset + 8 + b] << (8 * b);
+
+      const std::string type = bytes.substr(offset + 48, 16);
+      const std::string packet = bytes.substr(offset, (size_t)length);
+      const std::string fileid = length >= 80 ? packet.substr(64, 16) : std::string();
+
+      if (type.compare(0, 12, std::string("PAR 2.0\0Main", 12)) == 0)
+        partial += packet;
+      else if (type.compare(0, 16, std::string("PAR 2.0\0FileDesc", 16)) == 0 && firstfile.empty())
+      {
+        firstfile = fileid;
+        partial += packet;
+      }
+      else if (type.compare(0, 12, std::string("PAR 2.0\0IFSC", 12)) == 0 && fileid == firstfile)
+        partial += packet;
+
+      offset += (size_t)length;
+    }
+
+    std::ofstream cut(parfile, std::ios::binary | std::ios::trunc);
+    cut.write(partial.data(), (std::streamsize)partial.size());
+    cut.close();
+
+    // Out of the way of the search for volumes beside the index
+    std::rename(vol, held);
+
+    Canceller canceller;
+    par2::Par2Verifier verifier(quiet, quiet, par2::nlSilent, "growdir/");
+    Check(par2::eSuccess == verifier.AddPar2File(parfile),
+          "AddPar2File for the index describing one file");
+
+    std::vector<par2::Par2FileInfo> known;
+    Check(verifier.GetFileInfo(&known) && known.size() == 1, "only the first file is known");
+
+    canceller.verifier = &verifier;
+    verifier.SetObserver(&canceller);
+
+    Check(par2::eCancelled == verifier.Verify(noextras), "the verify is cancelled");
+
+    verifier.ClearCancel();
+    verifier.SetObserver(0);
+
+    std::rename(held, vol);
+
+    Check(par2::eSuccess == verifier.AddPar2File(vol), "AddPar2File for the volume");
+    Check(verifier.GetFileInfo(&known) && known.size() == 2, "which describes both files");
+    Check(par2::eSuccess == verifier.Verify(noextras), "and both are found intact");
+
+    par2::Par2VerifyResult grown{};
+    Check(verifier.GetVerifyResult(&grown) && grown.completefilecount == 2,
+          "counting both of them");
+
+    for (const char *name : data)
+      std::remove(name);
+    std::remove(parfile);
+    std::remove(vol);
+  }
+
   // What the observer is told: one run of progress per operation, files that
   // pair with their results, and PAR2 files reported separately
   {
@@ -798,7 +1005,14 @@ int main()
     // PAR2 files are announced too, and each is closed off the same way
     Check(observer.files > 0, "OnFile called while reading PAR2 files");
     Check(observer.files == observer.done, "and each one is finished");
-    Check(observer.progress == 0, "AddPar2File reports no progress");
+    Check(observer.progress > 0, "AddPar2File reports progress as it reads");
+    Check(observer.reached, "and each file it read was finished");
+
+    // Each file read is a run of its own, so the count starts again at each
+    // one. Only the scan below is a single run.
+    observer.last = 0;
+    observer.reached = false;
+    observer.wentbackwards = false;
 
     const int par2files = observer.files;
 
@@ -810,6 +1024,12 @@ int main()
     Check(observer.files == observer.done, "every file reported is a file finished");
     Check(observer.files - par2files == (int)observedcount,
           "one report per file in the set, on top of the PAR2 files");
+
+    // Reading the packets and scanning the data are told apart by the phase,
+    // in the order they happened
+    Check(observer.phases.size() == 2, "two steps were reported");
+    Check(observer.phases.front() == par2::phLoading, "the packets were read first");
+    Check(observer.phases.back() == par2::phScanning, "and the data scanned after");
 
     // A file the set describes but which is not on disk is announced and
     // finished like any other
@@ -851,13 +1071,23 @@ int main()
 
     Corrupt(data, 500, 400);
 
+    Counting observer;
     par2::Par2Verifier verifier(quiet, quiet, par2::nlSilent, "skipdir/");
+    verifier.SetObserver(&observer);
+
     Check(par2::eSuccess == verifier.AddPar2File("skipdir/skip.par2"),
           "AddPar2File for the skipped-verification check");
     Check(par2::eRepairPossible == verifier.Verify(noextras),
           "the damage is repairable");
 
     Check(par2::eSuccess == verifier.Repair(false), "Repair without reading it back");
+
+    // Whether the read-back happened is a step of its own, so an application
+    // can see that it was skipped rather than infer it
+    Check(observer.Saw(par2::phScanning), "the data was scanned");
+    Check(observer.Saw(par2::phProcessing), "and the repair written");
+    Check(!observer.Saw(par2::phVerifyingRepair),
+          "but nothing was read back, which is what was asked for");
 
     // Nothing recounted the files, so the numbers still describe the damage
     par2::Par2VerifyResult stale{};
@@ -867,12 +1097,56 @@ int main()
 
     // The repair itself was real, which a fresh verifier can say
     par2::Par2Verifier after(quiet, quiet, par2::nlSilent, "skipdir/");
+
     Check(par2::eSuccess == after.AddPar2File("skipdir/skip.par2"),
           "AddPar2File to check the repair");
     Check(par2::eSuccess == after.Verify(noextras),
           "the file really was repaired");
 
     std::remove(data);
+  }
+
+  // A cancel once every block has been written only stops the checking, and
+  // the files the repair rebuilt are kept
+  {
+    Check(MakeDirectory("latedir"), "mkdir for the late cancel check");
+
+    const char *const data = "latedir/late.data";
+    const char *const backup = "latedir/late.data.1";
+    const char *const parfile = "latedir/late.par2";
+    const char *const vol = "latedir/late.vol0+8.par2";
+
+    WriteData(data, 25, 40000);
+
+    std::vector<std::string> files;
+    files.emplace_back(data);
+    Check(par2::eSuccess == par2::par2create(quiet, quiet, par2::nlSilent,
+                                             64 * 1024 * 1024, "latedir/", 0, 2,
+                                             "latedir/late", files, BLOCKSIZE, 0,
+                                             par2::scUniform, 1, 8),
+          "par2create for the late cancel check");
+
+    Corrupt(data, 1000, 5000);
+
+    LateCanceller canceller;
+    par2::Par2Verifier verifier(quiet, quiet, par2::nlSilent, "latedir/");
+    Check(par2::eSuccess == verifier.AddPar2File(parfile), "AddPar2File for the late cancel check");
+    Check(par2::eRepairPossible == verifier.Verify(noextras), "the damage is found");
+
+    canceller.verifier = &verifier;
+    verifier.SetObserver(&canceller);
+
+    Check(par2::eCancelled == verifier.Repair(),
+          "a cancel while the repair reads back is still a cancel");
+
+    par2::Par2Verifier after(quiet, quiet, par2::nlSilent, "latedir/");
+    Check(par2::eSuccess == after.AddPar2File(parfile), "AddPar2File after the late cancel");
+    Check(par2::eSuccess == after.Verify(noextras), "and the rebuilt file was kept, whole");
+
+    std::remove(data);
+    std::remove(backup);
+    std::remove(parfile);
+    std::remove(vol);
   }
 
   // A file found under another name is reported as a pair, and stays reported
@@ -1586,24 +1860,31 @@ int main()
 
     WriteData(stopped, 6, 400000);
 
-    // The set is only known once every source file has been read, so waiting
-    // for it puts the cancel in the pass which computes the recovery data
-    // rather than in the one which reads the files
+    // The phase says which pass a progress report belongs to, so the cancel can
+    // be aimed at the one which reads the source files or at the one which
+    // writes the recovery data
     class Stopper : public par2::Par2Observer
     {
     public:
       par2::Par2Creator *creator;
-      bool late, known;
-      Stopper(bool late) : creator(0), late(late), known(false) {}
-      void OnSetInfo(const par2::Par2SetInfo &) {known = true;}
-      void OnProgress(par2::u32) {if (creator && (known || !late)) creator->Cancel();}
+      par2::Phase wanted;
+      bool landed;
+      explicit Stopper(par2::Phase wanted) : creator(0), wanted(wanted), landed(false) {}
+      void OnProgress(par2::Phase phase, par2::u32) override
+      {
+        if (creator && phase == wanted)
+        {
+          landed = true;
+          creator->Cancel();
+        }
+      }
     };
 
     for (int late = 0; late < 2; ++late)
     {
       const std::string when = late ? "while writing" : "while reading";
 
-      Stopper stopper(late != 0);
+      Stopper stopper(late ? par2::phProcessing : par2::phHashing);
       par2::Par2Creator creator(quiet, quiet, par2::nlSilent, "stopdir/");
       stopper.creator = &creator;
       creator.SetObserver(&stopper);
@@ -1618,7 +1899,7 @@ int main()
 
       Check(par2::eCancelled == creator.Create(stoppedpar), "Create is cancelled " + when);
       CheckLastError(creator, par2::eCancelled, "a cancelled create " + when);
-      Check(stopper.known == (late != 0), "the cancel landed where it was meant to");
+      Check(stopper.landed, "the cancel landed in the phase it was meant to");
 
       par2::Par2Verifier gone(quiet, quiet, par2::nlSilent, "stopdir/");
       Check(par2::eFileIOError == gone.AddPar2File(stoppedpar),
@@ -1764,6 +2045,135 @@ int main()
 
     std::remove(bad);
   }
+
+  // A handle built without streams, which is how an application that shows the
+  // work itself uses the library
+  {
+    Check(MakeDirectory("streamlessdir"), "mkdir for the streamless check");
+
+    const char *const source = "streamlessdir/streamless.data";
+    const char *const set = "streamlessdir/streamless.par2";
+
+    WriteData(source, 37, 60000);
+
+    // Whatever the library would have written, nothing reaches the stream the
+    // rest of this test shares
+    const size_t written = quiet.str().size();
+
+    Counting creating;
+    {
+      par2::Par2Creator creator("streamlessdir/");
+      creator.SetObserver(&creating);
+      creator.AddSourceFile(source);
+      creator.SetBlockSize(BLOCKSIZE);
+      creator.SetRecoveryBlockCount(RECOVERYBLOCKS);
+      creator.SetMemoryLimit(BLOCKSIZE * 4);
+
+      Check(par2::eSuccess == creator.Create(set), "a create with no streams");
+    }
+
+    Check(creating.files == 1, "the observer saw the file being hashed");
+    Check(creating.done == 1, "and saw it finish");
+    Check(creating.progress > 0, "and was told how far along it was");
+    Check(creating.reached, "and saw the work reach the end");
+    Check(creating.setinfo == 1, "and was told what the set is");
+
+    // A create hashes, builds a matrix and computes, in that order. It never
+    // solves one, having no missing blocks to solve for.
+    Check(creating.phases.size() == 3, "a create reports three steps");
+    Check(creating.phases[0] == par2::phHashing, "the source files first");
+    Check(creating.phases[1] == par2::phConstructing, "then the matrix");
+    Check(creating.phases[2] == par2::phProcessing, "then the recovery data");
+    Check(!creating.Saw(par2::phSolving), "and nothing to solve");
+
+    Corrupt(source, 20000, 5000);
+
+    Counting repairing;
+    int scanned = 0;
+    {
+      par2::Par2Verifier verifier("streamlessdir/");
+      verifier.SetObserver(&repairing);
+
+      Check(par2::eSuccess == verifier.AddPar2File(set), "AddPar2File with no streams");
+
+      // The PAR2 files are announced too, so only what arrives after them
+      // belongs to the set's own file
+      const int par2files = repairing.files;
+
+      Check(par2::eRepairPossible == verifier.Verify(noextras),
+            "a verify with no streams still finds the damage");
+
+      scanned = repairing.files - par2files;
+
+      Check(par2::eSuccess == verifier.Repair(), "and the repair works");
+    }
+
+    Check(scanned == 1, "the observer saw the file being scanned");
+    Check(repairing.files == repairing.done, "and every file reported is a file finished");
+    Check(repairing.progress > 0, "and was told how far along it was");
+
+    // A repair which rebuilds from recovery data works a matrix out first, and
+    // reads back what it wrote unless it was told not to
+    Check(repairing.Saw(par2::phConstructing), "the matrix was built");
+    Check(repairing.Saw(par2::phSolving), "and solved, because blocks were missing");
+    Check(repairing.Saw(par2::phProcessing), "and the missing blocks rebuilt");
+    Check(repairing.Saw(par2::phVerifyingRepair), "and the result read back");
+
+    // This one is written to serr by a handle which has one, whatever its
+    // NoiseLevel. Without streams it is only recorded.
+    {
+      const char *const notaset = "streamlessdir/notaset.par2";
+      WriteData(notaset, 11, 5000);
+
+      par2::Par2Verifier verifier("streamlessdir/");
+      Check(par2::eInsufficientCriticalData == verifier.AddPar2File(notaset),
+            "AddPar2File on a file which is not a set");
+
+      par2::Par2Error error;
+      Check(verifier.GetLastError(&error), "and it says why without a stream to say it on");
+      Check(error.code == par2::ecMainPacketMissing, "the reason is ecMainPacketMissing");
+
+      std::remove(notaset);
+    }
+
+    Check(quiet.str().size() == written, "and nothing at all was written to a stream");
+
+    std::remove(source);
+    std::remove(set);
+  }
+
+  // A name the set has to record is reported when this system may not take it
+  // back, without the work stopping
+#ifndef _WIN32
+  {
+    Check(MakeDirectory("warndir"), "mkdir for the warning check");
+
+    const char *const odd = "warndir/what?now.data";
+    const char *const oddpar = "warndir/what.par2";
+
+    WriteData(odd, 13, 30000);
+
+    Counting observer;
+    par2::Par2Creator creator("warndir/");
+    creator.SetObserver(&observer);
+    creator.AddSourceFile(odd);
+    creator.SetBlockSize(BLOCKSIZE);
+    creator.SetRecoveryBlockCount(RECOVERYBLOCKS);
+
+    Check(par2::eSuccess == creator.Create(oddpar),
+          "an awkward name does not stop a create");
+    Check(observer.errors == 0, "and is not an error");
+    Check(observer.warnings > 0, "but it is reported");
+    Check(observer.lastwarning.code == par2::wcFilenameUnsafe,
+          "as a name some systems will not take");
+    Check(observer.lastwarning.filename == "what?now.data",
+          "naming the file it concerns, as the set records it");
+    Check(observer.lastwarning.message.find('?') != std::string::npos,
+          "and saying what about the name");
+
+    std::remove(odd);
+  }
+#endif
 
   for (const char *name : DATA)
     std::remove(name);

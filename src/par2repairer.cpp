@@ -352,7 +352,7 @@ Result Par2Repairer::ScanFile(const std::string &filename, const std::string &ba
     sourcefile->SetTargetFile(diskfile);
   }
 
-  ProgressMeter<u64> progress(sout, "Scanning: ", diskfile->FileSize(), noiselevel, observer);
+  ProgressMeter<u64> progress(sout, "Scanning: ", diskfile->FileSize(), noiselevel, phScanning, observer);
 
   ResetScanBuffers(1);
 
@@ -499,7 +499,7 @@ Result Par2Repairer::RepairFiles(const size_t memorylimit, const std::string &ba
       sout << '\n';
 
     // Set the total amount of data to be processed.
-    ProgressMeter<u64> progress(sout, missingblockcount > 0 ? "Repairing: " : "Processing: ", blocksize * sourceblockcount, noiselevel, observer);
+    ProgressMeter<u64> progress(sout, missingblockcount > 0 ? "Repairing: " : "Processing: ", blocksize * sourceblockcount, noiselevel, phProcessing, observer);
 
     // Start at an offset of 0 within a block.
     u64 blockoffset = 0;
@@ -1004,7 +1004,7 @@ bool Par2Repairer::LoadPacketsFromFile(const std::string &filename, bool reread)
     u8 *buffer = new u8[buffersize];
 
     // Progress indicator
-    ProgressMeter<u64> progress(sout, "Loading: ", filesize, noiselevel);
+    ProgressMeter<u64> progress(sout, "Loading: ", filesize, noiselevel, phLoading, observer);
 
     // Start at the beginning of the file
     u64 offset = 0;
@@ -1634,7 +1634,7 @@ bool Par2Repairer::CreateSourceFileList(void)
 
     if (sourcefile)
     {
-      sourcefile->ComputeTargetFileName(sout, serr, noiselevel, basepath);
+      sourcefile->ComputeTargetFileName(sout, serr, noiselevel, basepath, &errorlog);
 
       // Need actual filesize on disk for mt-progress line
       sourcefile->SetDiskFileSize();
@@ -1863,7 +1863,7 @@ bool Par2Repairer::VerifySourceFiles(const std::string &basepath, std::vector<st
   }
 
   std::sort(sortedfiles.begin(), sortedfiles.end(), SortSourceFilesByFileName);
-  ProgressMeter<u64> progress(sout, "Scanning: ", mttotalsize, noiselevel, observer);
+  ProgressMeter<u64> progress(sout, "Scanning: ", mttotalsize, noiselevel, phScanning, observer);
 
   // Start verifying the files
   foreach_parallel(sortedfiles, FileThreads(sortedfiles.size()), [&](Par2RepairerSourceFile *sourcefile)
@@ -1990,7 +1990,7 @@ bool Par2Repairer::VerifyExtraFiles(const std::vector<std::string> &extrafiles, 
     for (size_t i=0; i<extrafiles.size(); ++i)
       mttotalextrasize += DiskFile::GetFileSize(extrafiles[i]);
 
-    ProgressMeter<u64> progress(sout, "Scanning: ", mttotalextrasize, noiselevel, observer);
+    ProgressMeter<u64> progress(sout, "Scanning: ", mttotalextrasize, noiselevel, phScanning, observer);
 
     foreach_parallel(extrafiles, FileThreads(extrafiles.size()), [&](const std::string &extrafile)
     {
@@ -3503,7 +3503,7 @@ bool Par2Repairer::ComputeRSmatrix(void)
   if (ownfactors)
     return true;
 
-  bool success = rs.Compute(noiselevel, sout, serr);
+  bool success = rs.Compute(noiselevel, sout, serr, observer);
 
   return success;
 }
@@ -3830,7 +3830,7 @@ bool Par2Repairer::VerifyTargetFiles(const std::string &basepath)
     if (verifylist[i])
       mttotalsize += verifylist[i]->GetDescriptionPacket()->FileSize();
   }
-  ProgressMeter<u64> progress(sout, "Scanning: ", mttotalsize, noiselevel, observer);
+  ProgressMeter<u64> progress(sout, "Scanning: ", mttotalsize, noiselevel, phVerifyingRepair, observer);
 
   // Iterate through each file in the verification list
   foreach_parallel(verifylist, FileThreads(verifylist.size()), [&](Par2RepairerSourceFile *sourcefile)

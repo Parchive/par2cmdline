@@ -305,7 +305,7 @@ Result Par2SetCreator::ComputeRecoveryData(void)
   }
 
   // Set the total amount of data to be processed.
-  ProgressMeter<u64> progress(sout, "Processing: ", blocksize * sourceblockcount, noiselevel, observer);
+  ProgressMeter<u64> progress(sout, "Processing: ", blocksize * sourceblockcount, noiselevel, phProcessing, observer);
 
   // Start at an offset of 0 within a block.
   u64 blockoffset = 0;
@@ -512,7 +512,7 @@ bool Par2SetCreator::OpenSourceFiles(void)
   for (size_t i=0; i<extrafiles.size(); ++i)
     mttotalsize += DiskFile::GetFileSize(extrafiles[i]);
 
-  ProgressMeter<u64> progress(sout, "", mttotalsize, noiselevel, observer);
+  ProgressMeter<u64> progress(sout, "", mttotalsize, noiselevel, phHashing, observer);
 
   foreach_parallel(extrafiles, GetFileThreads(), [&](const std::string &extrafile)
   {
@@ -533,7 +533,7 @@ bool Par2SetCreator::OpenSourceFiles(void)
       observer->OnFile(name);
 
     // Open the source file and compute its Hashes and CRCs.
-    if (!sourcefile->Open(noiselevel, sout, serr, extrafile, blocksize, deferhashcomputation, basepath, progress, backends, &cancelled))
+    if (!sourcefile->Open(noiselevel, sout, serr, extrafile, blocksize, deferhashcomputation, basepath, progress, backends, &cancelled, &errorlog))
     {
       delete sourcefile;
       openfailed = true;
@@ -966,7 +966,7 @@ bool Par2SetCreator::ComputeRSMatrix(void)
     return false;
 
   // Compute the RS matrix
-  if (!rs.Compute(noiselevel, sout, serr))
+  if (!rs.Compute(noiselevel, sout, serr, observer))
     return false;
 
   return true;

@@ -41,6 +41,7 @@ class ProgressMeter
   std::atomic<TValue> current; // last known progress value
   std::atomic<steady_clock::duration::rep> printed; // last time progress was outputted
   const bool print;          // whether the percentage is written to sout
+  const Phase phase;         // which step of the work this counts
   Par2Observer *observer;    // notified of progress whatever the noise level
   std::mutex reporting;      // held while a fraction is claimed and reported
   u32 reported;              // highest fraction reported so far
@@ -79,7 +80,7 @@ class ProgressMeter
         LockedStream(sout) << message << newfraction/10 << '.' << newfraction%10 << "%\r" << std::flush;
 
       if (observer)
-        observer->OnProgress(newfraction);
+        observer->OnProgress(phase, newfraction);
 
       printed.store(now.time_since_epoch().count(), std::memory_order_relaxed);
       return true;
@@ -89,13 +90,13 @@ class ProgressMeter
 
 public:
   ProgressMeter(std::ostream &sout, std::string message, TValue total,
-                NoiseLevel noiselevel, Par2Observer *observer = 0) :
+                NoiseLevel noiselevel, Phase phase, Par2Observer *observer = 0) :
     sout(sout), message(std::move(message)), scale(total != 0 ? 1000.0f / total : 0.0f), current(0), printed(0),
-    print(noiselevel > nlQuiet), observer(observer), reporting(), reported(0) {}
+    print(noiselevel > nlQuiet), phase(phase), observer(observer), reporting(), reported(0) {}
   ProgressMeter(std::ostream &sout, const char *message, TValue total,
-                NoiseLevel noiselevel, Par2Observer *observer = 0) :
+                NoiseLevel noiselevel, Phase phase, Par2Observer *observer = 0) :
     sout(sout), message(message), scale(total != 0 ? 1000.0f / total : 0.0f), current(0), printed(0),
-    print(noiselevel > nlQuiet), observer(observer), reporting(), reported(0) {}
+    print(noiselevel > nlQuiet), phase(phase), observer(observer), reporting(), reported(0) {}
 
   // NOTE: Update() doesn't always update current value, so don't mix it with Add()
   void Update(TValue newval)

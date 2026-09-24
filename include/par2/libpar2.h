@@ -143,6 +143,54 @@ struct Par2Error
 };
 
 
+// Something worth knowing which did not stop the work. Unlike an error it is
+// only reported as it happens, through Par2Observer::OnWarning, because
+// nothing about the outcome depends on it.
+typedef enum WarningCode
+{
+  wcNone = 0,
+
+  // A name the set records which this system may not accept as it stands: it
+  // holds a character, a separator or a drive letter which some systems
+  // reserve, it climbs out of the directory with "..", or it is over 255
+  // characters long
+  wcFilenameUnsafe,
+
+  // The name a file will be written under is not the name the set records,
+  // because the recorded one could not be used as it stands
+  wcFilenameChanged,
+
+  // A read or a write moved fewer bytes than were asked for
+  wcIncompleteWrite,
+  wcIncompleteRead,
+
+} WarningCode;
+
+
+// Which step of the work a progress report belongs to. Each step runs its own
+// count from 0 to 1000, and a step with nothing to do is not reported at all.
+typedef enum Phase
+{
+  phLoading,        // Reading the packets of one PAR2 file, once for each file
+  phHashing,        // Reading the source files a create was given
+  phScanning,       // Checking what is on disk against what the set records
+  phConstructing,   // Building the Reed Solomon matrix
+  phSolving,        // Solving it, which only a repair with missing blocks needs
+  phProcessing,     // Computing recovery data, or rebuilding missing blocks
+  phVerifyingRepair,// Reading back what a repair has just written
+
+} Phase;
+
+
+// Something worth knowing which did not stop the work.
+struct Par2Warning
+{
+  WarningCode code{};
+  std::string message;    // One line, without a trailing newline
+  std::string filename;   // The file it concerns, empty when it concerns none
+};
+
+
 // What a PAR2 set describes, known once its packets have been loaded
 struct Par2SetInfo
 {
@@ -229,14 +277,19 @@ public:
   // order they arrive in is not the order the set ends up recording them in.
   virtual void OnFile(const std::string &filename) {}
 
-  // Progress through the current operation, in thousandths, running upwards
-  // once per Verify and once per phase of a Repair - the rebuild, and then the
-  // pass reading back what it wrote. AddPar2File reports no progress.
+  // Progress through one step of the work, in thousandths, running upwards and
+  // starting again at 0 for each step. phase says which step it is, so an
+  // application can name what it is waiting for and can tell a fresh run from
+  // a count going backwards.
   //
-  // A Create runs it twice, once while the source files are hashed and once
-  // while the recovery data is computed, and only once when it was asked for
-  // no recovery blocks at all.
-  virtual void OnProgress(u32 permille) {}
+  // AddPar2File runs phLoading once for each PAR2 file it reads. A Verify runs
+  // phScanning. A Repair runs phConstructing, then phSolving when blocks are
+  // missing, then phProcessing, and then phVerifyingRepair unless it was asked
+  // not to read back what it wrote.
+  //
+  // A Create runs phHashing, then phConstructing and phProcessing, and only
+  // phHashing when it was asked for no recovery blocks at all.
+  virtual void OnProgress(Phase phase, u32 permille) {}
 
   // This file has been checked. blocksfound of blocksneeded were usable, both
   // zero for a PAR2 file, which has no blocks of its own to account for.
@@ -249,6 +302,15 @@ public:
   // first collects them here. The operation may carry on and may still
   // succeed: an error reading one extra file does not fail a verify.
   virtual void OnError(const Par2Error &error) {}
+
+  // Something worth knowing which did not stop the work, most often a filename
+  // the set records that this system will not take as it stands. Called once
+  // per warning as it is found, from the thread that found it.
+  //
+  // Nothing else reports these: there is no GetLastWarning, because no outcome
+  // depends on them. The NoiseLevel does not affect them either, though it
+  // still decides whether the same thing is written to the error stream.
+  virtual void OnWarning(const Par2Warning &warning) {}
 };
 
 
@@ -261,6 +323,10 @@ public:
 //
 // Verify and Repair are also available as the par2repair function below, which
 // does the whole job in one call.
+// Discards everything written to it. A handle built without streams writes
+// into one of these.
+class NullStream;
+
 class Par2Verifier
 {
 public:
@@ -276,6 +342,16 @@ public:
   Par2Verifier(std::ostream &sout, std::ostream &serr, NoiseLevel noiselevel,
                const std::string &basepath = std::string(),
                Backends backends = Backends());
+
+  // Built without streams nothing is written anywhere, and the work is
+  // followed through an observer instead. There is no NoiseLevel because
+  // everything it governs is written output.
+  //
+  // The observer is told exactly what it is told otherwise: OnSetInfo, OnFile,
+  // OnFileDone, OnProgress and OnError all arrive unchanged.
+  explicit Par2Verifier(const std::string &basepath = std::string(),
+                        Backends backends = Backends());
+
   ~Par2Verifier();
 
   Par2Verifier(const Par2Verifier &) = delete;
@@ -297,6 +373,10 @@ public:
   // Adding a file after Verify has run is allowed: the next Verify starts a
   // fresh pass over the data, so it reflects both the added file and whatever
   // is on disk at that point.
+  //
+  // Reading reports progress, so a Cancel can stop it. eCancelled then means
+  // the file was only read as far as the cancel, and it is not remembered:
+  // name it again after ClearCancel to read the rest.
   Result AddPar2File(const std::string &parfilename);
 
   // What the packets added so far describe. False until a PAR2 file with the
@@ -470,6 +550,7 @@ private:
   void TakeLastError(void);
   void RecordLastError(const ErrorCode code, const std::string &message);
 
+  std::unique_ptr<NullStream> nullstream;
   std::ostream &sout;
   std::ostream &serr;
   NoiseLevel noiselevel;
@@ -510,6 +591,12 @@ public:
   Par2Creator(std::ostream &sout, std::ostream &serr, NoiseLevel noiselevel,
               const std::string &basepath = std::string(),
               Backends backends = Backends());
+
+  // Built without streams nothing is written anywhere, and the work is
+  // followed through an observer instead. There is no NoiseLevel because
+  // everything it governs is written output.
+  explicit Par2Creator(const std::string &basepath = std::string(),
+                       Backends backends = Backends());
   ~Par2Creator();
 
   Par2Creator(const Par2Creator &) = delete;
@@ -574,6 +661,7 @@ private:
   void Restart(void);
   void TakeLastError(void);
 
+  std::unique_ptr<NullStream> nullstream;
   std::ostream &sout;
   std::ostream &serr;
   NoiseLevel noiselevel;

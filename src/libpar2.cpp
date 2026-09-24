@@ -68,6 +68,11 @@ public:
       return eFileIOError;
     }
 
+    // Loading stops where the cancel reached it, so the packets read so far do
+    // not describe the whole of what was named and are not worth preparing
+    if (IsCancelled())
+      return eCancelled;
+
     const Result result = PreparePackets();
 
     if (setchanged)
@@ -265,11 +270,63 @@ void Par2Verifier::Restart(void)
     impl->Cancel();
 }
 
+// Discards everything written to it
+class NullStream : public std::ostream
+{
+public:
+  NullStream(void)
+  : std::ostream(&buffer)
+  , buffer()
+  {
+  }
+
+private:
+  class Buffer : public std::streambuf
+  {
+  protected:
+    int_type overflow(int_type c) override
+    {
+      return c;
+    }
+
+    std::streamsize xsputn(const char *, std::streamsize n) override
+    {
+      return n;
+    }
+  };
+
+  Buffer buffer;
+};
+
 Par2Verifier::Par2Verifier(std::ostream &sout, std::ostream &serr, NoiseLevel noiselevel,
                            const std::string &_basepath, Backends _backends)
-: sout(sout)
+: nullstream()
+, sout(sout)
 , serr(serr)
 , noiselevel(noiselevel)
+, backends(std::move(_backends))
+, observer(0)
+, memorylimit(DEFAULT_MEMORY_LIMIT)
+, nthreads(0)
+, filethreads(0)
+, skipdata(false)
+, skipleaway(0)
+, par2files()
+, scannedfiles()
+, knownblocks()
+, verified(false)
+, scanned(false)
+, basepath(NormaliseBasePath(_basepath))
+, lasterror()
+, impl(new Impl(sout, serr, noiselevel, basepath, backends))
+{
+}
+
+Par2Verifier::Par2Verifier(const std::string &_basepath, Backends _backends)
+: nullstream(new NullStream)
+, sout(*nullstream)
+, serr(*nullstream)
+, noiselevel(nlSilent)
 , backends(std::move(_backends))
 , observer(0)
 , memorylimit(DEFAULT_MEMORY_LIMIT)
@@ -368,8 +425,9 @@ Result Par2Verifier::AddPar2File(const std::string &parfilename)
   const Par2Error added = lasterror;
 
   // Remembered even without the critical packets, so that a later restart
-  // replays it alongside the file that completes the set
-  if (result != eFileIOError)
+  // replays it alongside the file that completes the set. A cancelled load is
+  // not remembered, so that naming it again after ClearCancel reads the rest.
+  if (result != eFileIOError && result != eCancelled)
     par2files.push_back(parfilename);
 
   // Extra recovery data leaves what the scan found still true, so it is kept
@@ -568,9 +626,33 @@ void Par2Creator::TakeLastError(void)
 
 Par2Creator::Par2Creator(std::ostream &sout, std::ostream &serr, NoiseLevel noiselevel,
                          const std::string &_basepath, Backends _backends)
-: sout(sout)
+: nullstream()
+, sout(sout)
 , serr(serr)
 , noiselevel(noiselevel)
+, backends(std::move(_backends))
+, observer(0)
+, sourcefiles()
+, blocksize(0)
+, recoveryblockcount(0)
+, recoveryfilescheme(scVariable)
+, recoveryfilecount(0)
+, firstrecoveryblock(0)
+, memorylimit(DEFAULT_MEMORY_LIMIT)
+, nthreads(0)
+, filethreads(0)
+, cancelled(false)
+, basepath(NormaliseBasePath(_basepath))
+, lasterror()
+, impl(new Impl(sout, serr, noiselevel, backends))
+{
+}
+
+Par2Creator::Par2Creator(const std::string &_basepath, Backends _backends)
+: nullstream(new NullStream)
+, sout(*nullstream)
+, serr(*nullstream)
+, noiselevel(nlSilent)
 , backends(std::move(_backends))
 , observer(0)
 , sourcefiles()
