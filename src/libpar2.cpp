@@ -28,8 +28,8 @@ class Par2Verifier::Impl : public Par2Repairer
 {
 public:
   Impl(std::ostream &sout, std::ostream &serr, NoiseLevel noiselevel,
-       const std::string &_basepath)
-    : Par2Repairer(sout, serr, noiselevel)
+       const std::string &_basepath, const Backends &backends)
+    : Par2Repairer(sout, serr, noiselevel, backends)
   {
     basepath = _basepath;
   }
@@ -203,7 +203,7 @@ void Par2Verifier::Restart(void)
 {
   const bool wascancelled = impl->IsCancelled();
 
-  impl.reset(new Impl(sout, serr, noiselevel, basepath));
+  impl = std::make_unique<Impl>(sout, serr, noiselevel, basepath, backends);
 
   // The replay repeats work the observer has already been told about, so it is
   // told none of it. The observer is attached once the handle is back where it
@@ -240,10 +240,11 @@ void Par2Verifier::Restart(void)
 }
 
 Par2Verifier::Par2Verifier(std::ostream &sout, std::ostream &serr, NoiseLevel noiselevel,
-                           const std::string &_basepath)
+                           const std::string &_basepath, Backends _backends)
 : sout(sout)
 , serr(serr)
 , noiselevel(noiselevel)
+, backends(std::move(_backends))
 , observer(0)
 , memorylimit(DEFAULT_MEMORY_LIMIT)
 , nthreads(0)
@@ -256,7 +257,7 @@ Par2Verifier::Par2Verifier(std::ostream &sout, std::ostream &serr, NoiseLevel no
 , verified(false)
 , scanned(false)
 , basepath(NormaliseBasePath(_basepath))
-, impl(new Impl(sout, serr, noiselevel, basepath))
+, impl(new Impl(sout, serr, noiselevel, basepath, backends))
 {
 }
 
@@ -334,6 +335,24 @@ bool Par2Verifier::GetSetInfo(Par2SetInfo *info) const
 bool Par2Verifier::GetFileInfo(std::vector<Par2FileInfo> *files) const
 {
   return impl->GetFileInfo(files);
+}
+
+bool Par2Verifier::GetBlockChecksums(const std::string &filename,
+                                    std::vector<u32> *crcs) const
+{
+  return impl->GetBlockChecksums(filename, crcs);
+}
+
+// Guarded by verified, unlike GetBlockChecksums: before anything has been
+// scanned every block would read as not found, which is not the same as
+// nothing having been looked at.
+bool Par2Verifier::GetFoundBlocks(const std::string &filename,
+                                  std::vector<bool> *blocks) const
+{
+  if (!verified)
+    return false;
+
+  return impl->GetFoundBlocks(filename, blocks);
 }
 
 bool Par2Verifier::GetBackupFiles(std::vector<std::string> *files) const

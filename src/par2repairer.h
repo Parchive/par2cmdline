@@ -62,6 +62,19 @@ public:
   // been loaded and prepared.
   bool GetFileInfo(std::vector<Par2FileInfo> *files) const;
 
+  // The CRC32 the set records for each block of the named file, one entry per
+  // block starting at block 0. False when the set does not describe that file,
+  // or describes it without a verification packet.
+  bool GetBlockChecksums(const std::string &filename,
+                         std::vector<u32> *crcs) const;
+
+  // Which blocks of the named file the last verification found in that file at
+  // their own offsets, one entry per block starting at block 0. False when the
+  // set does not describe that file, or describes it without a verification
+  // packet.
+  bool GetFoundBlocks(const std::string &filename,
+                      std::vector<bool> *blocks) const;
+
   // The numbers behind the last verification
   bool GetVerifyResult(Par2VerifyResult *result) const;
 

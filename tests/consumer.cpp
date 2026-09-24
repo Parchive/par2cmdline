@@ -26,6 +26,7 @@
 
 #include <cstdio>
 #include <fstream>
+#include <memory>
 #include <mutex>
 
 #ifdef _WIN32
@@ -111,18 +112,22 @@ class Counting : public par2::Par2Observer
 public:
   Counting()
     : setinfo(0), files(0), progress(0), done(0),
-      last(0), wentbackwards(false), reached(false) {}
+      lastinfo(), last(0), wentbackwards(false), reached(false) {}
 
   int setinfo, files, progress, done;
+
+  // What the last OnSetInfo carried
+  par2::Par2SetInfo lastinfo;
 
   // Enough to tell one run of progress from several
   par2::u32 last;
   bool wentbackwards, reached;
 
-  void OnSetInfo(const par2::Par2SetInfo &)
+  void OnSetInfo(const par2::Par2SetInfo &info) override
   {
     std::lock_guard<std::mutex> lock(mutex);
     ++setinfo;
+    lastinfo = info;
   }
 
   void OnFile(const std::string &) override
@@ -186,6 +191,13 @@ int main()
     // Counted from the packets, so it reads before anything has been verified
     Check(info.recoveryblocks == RECOVERYBLOCKS, "GetSetInfo recovery blocks");
 
+    Check(observer.setinfo == 1, "OnSetInfo once");
+    Check(observer.lastinfo.recoveryblocks == RECOVERYBLOCKS,
+          "OnSetInfo recovery blocks");
+    Check(observer.lastinfo.datablocks == info.datablocks, "OnSetInfo data blocks");
+    Check(observer.lastinfo.blocksize == info.blocksize, "OnSetInfo blocksize");
+    Check(observer.lastinfo.creator == info.creator, "OnSetInfo creator");
+
     std::vector<par2::Par2FileInfo> files;
     Check(verifier.GetFileInfo(&files), "GetFileInfo");
     Check(files.size() == DATACOUNT, "GetFileInfo count");
@@ -204,13 +216,53 @@ int main()
     }
     Check(totalblocks == info.datablocks, "GetFileInfo blocks add up");
 
+    for (const auto &file : files)
+    {
+      std::vector<par2::u32> crcs;
+      Check(verifier.GetBlockChecksums(file.filename, &crcs),
+            "GetBlockChecksums");
+      Check(crcs.size() == file.blockcount,
+            "GetBlockChecksums one entry per block");
+    }
+    {
+      std::vector<par2::u32> crcs;
+      Check(!verifier.GetBlockChecksums("not-in-the-set.bin", &crcs),
+            "GetBlockChecksums rejects an unknown name");
+      Check(crcs.empty(), "GetBlockChecksums clears on failure");
+    }
+
+    {
+      std::vector<bool> found;
+      Check(!verifier.GetFoundBlocks(files[0].filename, &found),
+            "GetFoundBlocks says nothing before a verify");
+    }
+
     Check(par2::eSuccess == verifier.Verify(noextras), "Verify healthy");
+
+    par2::u32 foundblocks = 0;
+    for (const auto &file : files)
+    {
+      std::vector<bool> found;
+      Check(verifier.GetFoundBlocks(file.filename, &found), "GetFoundBlocks");
+      Check(found.size() == file.blockcount,
+            "GetFoundBlocks one entry per block");
+      for (bool b : found)
+        foundblocks += b ? 1 : 0;
+    }
+    {
+      std::vector<bool> found;
+      Check(!verifier.GetFoundBlocks("not-in-the-set.bin", &found),
+            "GetFoundBlocks rejects an unknown name");
+      Check(found.empty(), "GetFoundBlocks clears on failure");
+    }
 
     par2::Par2VerifyResult status{};
     Check(verifier.GetVerifyResult(&status), "GetVerifyResult");
     Check(status.completefilecount == DATACOUNT, "all files complete");
     Check(status.missingblockcount == 0, "nothing missing");
     Check(status.availableblockcount == info.datablocks, "every block available");
+    Check(foundblocks == status.availableblockcount,
+          "an intact set holds every block that is available");
     Check(status.recoveryblockcount == info.recoveryblocks,
           "the verify counts the same recovery blocks");
     Check(quiet.str().empty(), "nlSilent writes nothing");
@@ -327,7 +379,56 @@ int main()
     Check(par2::eSuccess == verifier.AddPar2File(PARFILE), "AddPar2File for damaged set");
     Check(par2::eRepairPossible == verifier.Verify(noextras),
           "Verify reports repair is possible");
+
+    // The set records its files in fileid order, not the order they were given
+    std::vector<par2::Par2FileInfo> damagedfiles;
+    verifier.GetFileInfo(&damagedfiles);
+    size_t which = damagedfiles.size();
+    for (size_t i = 0; i < damagedfiles.size(); ++i)
+      if (damagedfiles[i].filename == DATA[1])
+        which = i;
+    Check(which < damagedfiles.size(), "the damaged file is in the set");
+
+    std::vector<bool> damaged;
+    Check(verifier.GetFoundBlocks(damagedfiles[which].filename, &damaged),
+          "GetFoundBlocks for a damaged file");
+    Check(damaged.size() == damagedfiles[which].blockcount,
+          "GetFoundBlocks one entry per block of a damaged file");
+    size_t missing = 0;
+    for (bool b : damaged)
+      missing += b ? 0 : 1;
+    Check(missing > 0, "the damaged block is not found in the file");
+    Check(missing < damaged.size(), "the undamaged ones still are");
+
+    // The set's files are shifts of one periodic sequence, so the damaged
+    // block turns up elsewhere and the repair does not have to rebuild it
+    par2::Par2VerifyResult damagedstatus{};
+    Check(verifier.GetVerifyResult(&damagedstatus), "GetVerifyResult for the damaged set");
+    Check(damagedstatus.damagedfilecount == 1, "one file is damaged");
+
+    // What one verifier found is what another may be told to take on trust
+    {
+      par2::Par2Verifier told(quiet, quiet, par2::nlSilent);
+      Check(par2::eSuccess == told.AddPar2File(PARFILE), "AddPar2File for the vouched set");
+      told.SetKnownBlocks(damagedfiles[which].filename, damaged);
+      Check(par2::eRepairPossible == told.Verify(noextras),
+            "the vouched blocks describe the same damage");
+
+      std::vector<bool> again;
+      Check(told.GetFoundBlocks(damagedfiles[which].filename, &again),
+            "GetFoundBlocks after vouching");
+      Check(again == damaged, "vouched blocks read back as found");
+    }
+
     Check(par2::eSuccess == verifier.Repair(), "Repair");
+
+    std::vector<bool> repaired;
+    Check(verifier.GetFoundBlocks(damagedfiles[which].filename, &repaired),
+          "GetFoundBlocks after a repair which read back what it wrote");
+    size_t stillmissing = 0;
+    for (bool b : repaired)
+      stillmissing += b ? 0 : 1;
+    Check(stillmissing == 0, "every block is found once the file is repaired");
   }
 
   // What the repair renamed out of the way can be tidied up
@@ -1148,6 +1249,54 @@ int main()
     Check(r.missingfilecount == 1, "and the one never scanned is missing");
 
     std::remove(early);
+  }
+
+  // The implementations an application supplies reach the work the handle does,
+  // rather than being dropped in favour of the ones built in
+  {
+    Check(MakeDirectory("backends"), "mkdir for the backend check");
+
+    const char *const own = "backends/own.data";
+    const char *const ownpar = "backends/own.par2";
+
+    WriteData(own, 9, 30000);
+    std::vector<std::string> files(1, std::string(own));
+
+    Check(par2::eSuccess == par2::par2create(quiet, quiet, par2::nlSilent,
+                                             64 * 1024 * 1024, "backends/", 0, 2,
+                                             ownpar, files, BLOCKSIZE, 0,
+                                             par2::scVariable, 0, 20),
+          "par2create for the backend check");
+
+    Corrupt(own, 5000, 2000);
+
+    int asked = 0;
+    par2::u32 budget = 0;
+    par2::Backends backends;
+    backends.processor = [&asked, &budget](const par2::ProcessorConfig &config)
+    {
+      ++asked;
+      budget = config.numthreads;
+      return std::unique_ptr<par2::Processor>();
+    };
+
+    par2::Par2Verifier verifier(quiet, quiet, par2::nlSilent, "backends/", backends);
+
+    // What the handle was told, rather than whatever the library would pick
+    verifier.SetThreadCounts(3, 1);
+
+    Check(par2::eSuccess == verifier.AddPar2File(ownpar), "AddPar2File for the backend check");
+    Check(par2::eRepairPossible == verifier.Verify(noextras),
+          "the damaged file needs repairing");
+
+    // Declining to supply one is reported rather than quietly falling back
+    Check(par2::eMemoryError == verifier.Repair(),
+          "a repair which cannot build a processor says so");
+    Check(asked == 1, "the application's processor was asked for");
+    Check(budget == 3, "and built with the thread count the handle was given");
+
+    std::remove(own);
+    std::remove(ownpar);
   }
 
   for (const char *name : DATA)

@@ -550,6 +550,62 @@ Par2RepairerSourceFile *Par2Repairer::FindSourceFile(const std::string &filename
 }
 
 // List the files the loaded packets describe
+bool Par2Repairer::GetBlockChecksums(const std::string &filename,
+                                    std::vector<u32> *crcs) const
+{
+  if (0 == crcs)
+    return false;
+
+  crcs->clear();
+
+  const Par2RepairerSourceFile *sourcefile = FindSourceFile(filename);
+  if (0 == sourcefile)
+    return false;
+
+  const VerificationPacket *verificationpacket = sourcefile->GetVerificationPacket();
+  if (0 == verificationpacket)
+    return false;
+
+  const u32 blockcount = verificationpacket->BlockCount();
+  crcs->reserve(blockcount);
+
+  for (u32 blocknumber=0; blocknumber<blockcount; ++blocknumber)
+    crcs->push_back(verificationpacket->VerificationEntry(blocknumber)->crc);
+
+  return true;
+}
+
+// Which blocks of a file the last verification found
+bool Par2Repairer::GetFoundBlocks(const std::string &filename,
+                                  std::vector<bool> *blocks) const
+{
+  if (0 == blocks)
+    return false;
+
+  blocks->clear();
+
+  const Par2RepairerSourceFile *sourcefile = FindSourceFile(filename);
+  if (0 == sourcefile)
+    return false;
+
+  const VerificationPacket *verificationpacket = sourcefile->GetVerificationPacket();
+  if (0 == verificationpacket)
+    return false;
+
+  const u32 blockcount = verificationpacket->BlockCount();
+  blocks->reserve(blockcount);
+
+  const DiskFile *targetfile = sourcefile->GetTargetFile();
+
+  auto sourceblock = sourcefile->SourceBlocks();
+  for (u32 blocknumber=0; blocknumber<blockcount; ++blocknumber, ++sourceblock)
+    blocks->push_back(sourceblock->IsSet()
+                      && sourceblock->GetDiskFile() == targetfile
+                      && sourceblock->GetOffset() == blocknumber * blocksize);
+
+  return true;
+}
+
 bool Par2Repairer::GetFileInfo(std::vector<Par2FileInfo> *files) const
 {
   if (0 == files)
@@ -798,6 +854,7 @@ Result Par2Repairer::PreparePackets(void)
     memcpy(info.setid.data(), setid.hash, sizeof(setid.hash));
     info.blocksize = blocksize;
     info.datablocks = sourceblockcount;
+    info.recoveryblocks = (u32)recoverypacketmap.size();
     info.recoverablefilecount = mainpacket->RecoverableFileCount();
     info.otherfilecount = mainpacket->TotalFileCount() - mainpacket->RecoverableFileCount();
     info.datasize = totaldatasize;
