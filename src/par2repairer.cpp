@@ -157,6 +157,8 @@ Result Par2Repairer::Process(
 			     const bool _fullhash
 			     )
 {
+  ClearLastError();
+
   // Should we skip data whilst scanning files
   skipdata = _skipdata;
 
@@ -174,7 +176,13 @@ Result Par2Repairer::Process(
   ApplyMemoryLimit(memorylimit);
 
   if (!LoadPackets(parfilename, extrafiles))
-    return IsCancelled() ? eCancelled : eLogicError;
+  {
+    if (IsCancelled())
+      return eCancelled;
+
+    errorlog.RecordIfNone(ecInternalError, "Could not load the PAR2 packets", parfilename);
+    return eLogicError;
+  }
 
   if (noiselevel > nlQuiet)
     sout << '\n';
@@ -282,11 +290,19 @@ void Par2Repairer::DiscardScannedFile(DiskFile *diskfile)
 
 Result Par2Repairer::ScanFile(const std::string &filename, const std::string &basepath)
 {
+  ClearLastError();
+
   if (0 == mainpacket)
+  {
+    errorlog.RecordIfNone(ecMainPacketMissing, "The PAR2 files do not describe a set");
     return eInsufficientCriticalData;
+  }
 
   if (!PrepareForScanning())
+  {
+    errorlog.RecordIfNone(ecInternalError, "Could not prepare to scan files");
     return eLogicError;
+  }
 
   const std::string pathname = DiskFile::GetCanonicalPathname(filename);
 
@@ -314,7 +330,7 @@ Result Par2Repairer::ScanFile(const std::string &filename, const std::string &ba
     }
   }
 
-  DiskFile *diskfile = new DiskFile(sout, serr);
+  auto *diskfile = new DiskFile(sout, serr, &errorlog);
   if (!diskfile->Open(pathname))
   {
     delete diskfile;
@@ -326,6 +342,7 @@ Result Par2Repairer::ScanFile(const std::string &filename, const std::string &ba
     diskfile->Close();
     delete diskfile;
 
+    errorlog.RecordIfNone(ecInternalError, "Could not track the file being scanned", pathname);
     return eLogicError;
   }
 
@@ -370,16 +387,27 @@ Result Par2Repairer::VerifyFiles(const std::string &basepath,
                                  std::vector<std::string> &extrafiles,
                                  const bool renameonly)
 {
+  ClearLastError();
+
   renamedlist.clear();
 
   if (!PrepareForScanning())
+  {
+    errorlog.RecordIfNone(ecInternalError, "Could not prepare to scan files");
     return eLogicError;
+  }
 
   ResetScanBuffers(std::max(sourcefiles.size(), extrafiles.size()));
 
   // Attempt to verify all of the source files
   if (!VerifySourceFiles(basepath, extrafiles))
-    return IsCancelled() ? eCancelled : eFileIOError;
+  {
+    if (IsCancelled())
+      return eCancelled;
+
+    errorlog.RecordIfNone(ecFileReadFailed, "Could not verify the source files");
+    return eFileIOError;
+  }
 
   if (IsCancelled())
     return eCancelled;
@@ -388,7 +416,13 @@ Result Par2Repairer::VerifyFiles(const std::string &basepath,
   {
     // Scan any extra files specified on the command line
     if (!VerifyExtraFiles(extrafiles, basepath, renameonly))
-      return IsCancelled() ? eCancelled : eLogicError;
+    {
+      if (IsCancelled())
+        return eCancelled;
+
+      errorlog.RecordIfNone(ecInternalError, "Could not scan the extra files");
+      return eLogicError;
+    }
   }
 
   // Find out how much data we have found
@@ -415,6 +449,8 @@ Result Par2Repairer::VerifyFiles(const std::string &basepath,
 Result Par2Repairer::RepairFiles(const size_t memorylimit, const std::string &basepath,
                                  bool verifyafter)
 {
+  ClearLastError();
+
   ApplyMemoryLimit(memorylimit);
 
   if (noiselevel > nlSilent)
@@ -422,7 +458,10 @@ Result Par2Repairer::RepairFiles(const size_t memorylimit, const std::string &ba
 
   // Rename any damaged or missnamed target files.
   if (!RenameTargetFiles())
+  {
+    errorlog.RecordIfNone(ecFileRenameFailed, "Could not rename the damaged or misnamed files");
     return eFileIOError;
+  }
 
   // Are we still missing any files
   if (completefilecount < mainpacket->RecoverableFileCount())
@@ -430,7 +469,10 @@ Result Par2Repairer::RepairFiles(const size_t memorylimit, const std::string &ba
     // Work out which files are being repaired, create them, and allocate
     // target DataBlocks to them, and remember them for later verification.
     if (!CreateTargetFiles())
+    {
+      errorlog.RecordIfNone(ecFileCreateFailed, "Could not create the files to repair into");
       return eFileIOError;
+    }
 
     // Allocate memory buffers for reading and writing data to disk, and
     // build the processor, which is offered the erasures below.
@@ -438,6 +480,7 @@ Result Par2Repairer::RepairFiles(const size_t memorylimit, const std::string &ba
     {
       // Delete all of the partly reconstructed files
       DeleteIncompleteTargetFiles();
+      errorlog.RecordIfNone(ecOutOfMemory, "Could not allocate buffer memory");
       return eMemoryError;
     }
 
@@ -448,6 +491,7 @@ Result Par2Repairer::RepairFiles(const size_t memorylimit, const std::string &ba
     {
       // Delete all of the partly reconstructed files
       DeleteIncompleteTargetFiles();
+      errorlog.RecordIfNone(ecProcessorFailed, "Could not compute the Reed Solomon matrix");
       return eFileIOError;
     }
 
@@ -469,7 +513,12 @@ Result Par2Repairer::RepairFiles(const size_t memorylimit, const std::string &ba
       {
         // Delete all of the partly reconstructed files
         DeleteIncompleteTargetFiles();
-        return IsCancelled() ? eCancelled : eFileIOError;
+
+        if (IsCancelled())
+          return eCancelled;
+
+        errorlog.RecordIfNone(ecProcessorFailed, "Could not rebuild the missing blocks");
+        return eFileIOError;
       }
 
       // Advance to the need offset within each block
@@ -503,7 +552,9 @@ Result Par2Repairer::RepairFiles(const size_t memorylimit, const std::string &ba
       {
         // Delete all of the partly reconstructed files
         DeleteIncompleteTargetFiles();
-        return IsCancelled() ? eCancelled : eFileIOError;
+
+        errorlog.RecordIfNone(ecFileReadFailed, "Could not verify the repaired files");
+        return eFileIOError;
       }
     }
 
@@ -822,21 +873,32 @@ bool Par2Repairer::LoadPackets(const std::string &parfilename,
 // time so that it can be called again after more packets have been loaded.
 Result Par2Repairer::PreparePackets(void)
 {
+  ClearLastError();
+
   sourcefiles.clear();
 
   // Check that the packets are consistent and discard any that are not
   if (!CheckPacketConsistency())
+  {
+    errorlog.RecordIfNone(ecMainPacketMissing, "The PAR2 files do not describe a set");
     return eInsufficientCriticalData;
+  }
 
   // Use the information in the main packet to get the source files
   // into the correct order and determine their filenames
   if (!CreateSourceFileList())
+  {
+    errorlog.RecordIfNone(ecInternalError, "Could not build the list of source files");
     return eLogicError;
+  }
 
   // Determine the total number of DataBlocks for the recoverable source files
   // The allocate the DataBlocks and assign them to each source file
   if (!AllocateSourceBlocks())
+  {
+    errorlog.RecordIfNone(ecInternalError, "Could not allocate the source blocks");
     return eLogicError;
+  }
 
   // The name each source file has on this system, for looking one up by it
   sourcefilesbyname.clear();
@@ -1604,6 +1666,7 @@ bool Par2Repairer::AllocateSourceBlocks(void)
       if (blockcount > ((u32)~0) - sourceblockcount)
       {
         serr << "Too many source blocks in recovery set." << std::endl;
+        errorlog.Record(ecTooManySourceBlocks, "Too many source blocks in the recovery set");
         return false;
       }
 
@@ -1747,7 +1810,7 @@ static bool SortSourceFilesByFileName(Par2RepairerSourceFile *low,
 }
 
 // Attempt to verify all of the source files
-bool Par2Repairer::VerifySourceFiles(const std::string& basepath, std::vector<std::string>& extrafiles)
+bool Par2Repairer::VerifySourceFiles(const std::string &basepath, std::vector<std::string>& extrafiles)
 {
   if (noiselevel > nlQuiet)
     sout << "\nVerifying source files:\n" << std::endl;
@@ -1779,6 +1842,12 @@ bool Par2Repairer::VerifySourceFiles(const std::string& basepath, std::vector<st
       if (filenumber < mainpacket->RecoverableFileCount())
       {
         serr << "No details available for recoverable file number " << filenumber+1 << ".\nRecovery will not be possible." << std::endl;
+
+        {
+          std::ostringstream message;
+          message << "No details available for recoverable file number " << filenumber+1;
+          errorlog.Record(ecFileDescriptionMissing, message.str());
+        }
 
         // Set error but let verification of other files continue
         finalresult = false;
@@ -1832,7 +1901,7 @@ bool Par2Repairer::VerifySourceFiles(const std::string& basepath, std::vector<st
       }
     }
 
-    DiskFile *diskfile = new DiskFile(sout, serr);
+    auto *diskfile = new DiskFile(sout, serr, &errorlog);
 
     // Does the target file exist
     if (!diskfile->Open(file))
@@ -1872,6 +1941,8 @@ bool Par2Repairer::VerifySourceFiles(const std::string& basepath, std::vector<st
       delete diskfile;
 
       LockedStream(serr) << "Source file " << name << " is a duplicate." << std::endl;
+
+      errorlog.Record(ecDuplicateSourceFile, "The set names this file more than once", name);
 
       if (observer)
       {
@@ -1941,7 +2012,7 @@ bool Par2Repairer::VerifyExtraFiles(const std::vector<std::string> &extrafiles, 
         }
         if (b)
         {
-          DiskFile *diskfile = new DiskFile(sout, serr);
+          auto *diskfile = new DiskFile(sout, serr, &errorlog);
 
           // Does the file exist
           if (!diskfile->Open(filename))
@@ -3272,7 +3343,7 @@ bool Par2Repairer::CreateTargetFiles(void)
       // If the file does not exist
       if (!sourcefile->GetTargetExists())
       {
-        DiskFile *targetfile = new DiskFile(sout, serr);
+        auto *targetfile = new DiskFile(sout, serr, &errorlog);
         std::string filename = sourcefile->TargetFileName();
         u64 filesize = sourcefile->GetDescriptionPacket()->FileSize();
 
@@ -3378,7 +3449,10 @@ bool Par2Repairer::ComputeRSmatrix(void)
 
   // Set the number of source blocks and which of them are present
   if (!rs.SetInput(present, sout, serr))
+  {
+    errorlog.Record(ecProcessorFailed, "Could not give the source blocks to the Reed Solomon matrix");
     return false;
+  }
 
   // Start iterating through the available recovery packets
   std::map<u32,RecoveryPacket*>::iterator rp = recoverypacketmap.begin();
@@ -3406,7 +3480,10 @@ bool Par2Repairer::ComputeRSmatrix(void)
     // Record that the corresponding exponent value is the next one
     // to use in the RS matrix
     if (!rs.SetOutput(true, (u16)exponent))
+    {
+      errorlog.Record(ecProcessorFailed, "Could not give a recovery block to the Reed Solomon matrix");
       return false;
+    }
 
     exponents.push_back((u16)exponent);
 
@@ -3498,9 +3575,17 @@ bool Par2Repairer::AllocateBuffers(size_t memorylimit)
     ? backends.processor(config)
     : std::unique_ptr<Processor>(new ReferenceProcessor(rs, totalthreads));
 
-  if (!processor || !processor->Init((size_t)chunksize, missingblockcount))
+  if (!processor)
   {
     serr << "Could not allocate buffer memory." << std::endl;
+    errorlog.Record(ecProcessorFailed, "The processor the application supplied built nothing");
+    return false;
+  }
+
+  if (!processor->Init((size_t)chunksize, missingblockcount))
+  {
+    serr << "Could not allocate buffer memory." << std::endl;
+    errorlog.Record(ecOutOfMemory, "The processor could not allocate its buffers");
     return false;
   }
 
@@ -3510,6 +3595,7 @@ bool Par2Repairer::AllocateBuffers(size_t memorylimit)
   if (transferbuffer == NULL || outputbuffer == NULL)
   {
     serr << "Could not allocate buffer memory." << std::endl;
+    errorlog.Record(ecOutOfMemory, "Could not allocate the transfer buffers");
     return false;
   }
 
@@ -3574,6 +3660,8 @@ bool Par2Repairer::ProcessData(u64 blockoffset, size_t blocklength, ProgressMete
         lastopenfile = (*inputblock)->GetDiskFile();
         if (!lastopenfile->Open())
         {
+          errorlog.Record(ecFileOpenFailed, "Could not reopen the file to read from",
+                          lastopenfile->FileName());
           failed = true;
           break;
         }
@@ -3660,6 +3748,8 @@ bool Par2Repairer::ProcessData(u64 blockoffset, size_t blocklength, ProgressMete
           lastopenfile = (*inputblock)->GetDiskFile();
           if (!lastopenfile->Open())
           {
+            errorlog.Record(ecFileOpenFailed, "Could not reopen the file to read from",
+                            lastopenfile->FileName());
             return false;
           }
         }
@@ -3704,6 +3794,7 @@ bool Par2Repairer::ProcessData(u64 blockoffset, size_t blocklength, ProgressMete
       if (!processor->GetOutput(outputindex, outputbuffer))
       {
         serr << "Could not read the repaired data back from the processor." << std::endl;
+        errorlog.Record(ecProcessorFailed, "The processor could not return the rebuilt data");
         return false;
       }
       outbuf = outputbuffer;

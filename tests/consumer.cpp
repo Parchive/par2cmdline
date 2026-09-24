@@ -62,12 +62,53 @@ namespace
     ++failures;
   }
 
+  // A Result which reports a failure always says why; one which reports an
+  // outcome never does, however unwelcome the outcome is.
+  void CheckLastError(const par2::Par2Verifier &verifier, const par2::Result result,
+                      const std::string &what)
+  {
+    const bool failed = (result == par2::eInvalidCommandLineArguments ||
+                         result == par2::eInsufficientCriticalData ||
+                         result == par2::eFileIOError ||
+                         result == par2::eLogicError ||
+                         result == par2::eMemoryError);
+
+    // A verify which reports damage may still have met a file it could not
+    // read, which is worth keeping rather than a contradiction
+    const bool damaged = (result == par2::eRepairPossible ||
+                          result == par2::eRepairNotPossible ||
+                          result == par2::eRepairFailed);
+
+    par2::Par2Error error;
+    error.code = par2::ecInternalError;
+
+    const bool said = verifier.GetLastError(&error);
+
+    Check(failed ? said : (damaged || !said), what + " reports an error only if it failed");
+    Check(!said || error.code != par2::ecNone, what + " gives a code");
+    Check(!said || !error.message.empty(), what + " gives a message");
+  }
+
   void WriteData(const char *name, unsigned seed, size_t bytes)
   {
     std::ofstream f(name, std::ios::binary | std::ios::trunc);
     for (size_t i = 0; i < bytes; ++i)
       f.put((char)((i * 31 + seed * 7) & 0xff));
   }
+
+#ifndef _WIN32
+  // Running as a user who may write to a read-only directory anyway would
+  // prove nothing, so the check that relies on it asks first.
+  bool CanWriteInto(const char *directory)
+  {
+    const std::string probe = std::string(directory) + "/probe";
+    std::ofstream f(probe.c_str(), std::ios::binary | std::ios::trunc);
+    const bool ok = f.good();
+    f.close();
+    std::remove(probe.c_str());
+    return ok;
+  }
+#endif
 
   bool MakeDirectory(const char *name)
   {
@@ -111,13 +152,16 @@ class Counting : public par2::Par2Observer
 {
 public:
   Counting()
-    : setinfo(0), files(0), progress(0), done(0),
-      lastinfo(), last(0), wentbackwards(false), reached(false) {}
+    : setinfo(0), files(0), progress(0), done(0), errors(0),
+      lastinfo(), lasterror(), last(0), wentbackwards(false), reached(false) {}
 
-  int setinfo, files, progress, done;
+  int setinfo, files, progress, done, errors;
 
   // What the last OnSetInfo carried
   par2::Par2SetInfo lastinfo;
+
+  // What the last OnError carried
+  par2::Par2Error lasterror;
 
   // Enough to tell one run of progress from several
   par2::u32 last;
@@ -140,6 +184,13 @@ public:
   {
     std::lock_guard<std::mutex> lock(mutex);
     ++done;
+  }
+
+  void OnError(const par2::Par2Error &error) override
+  {
+    std::lock_guard<std::mutex> lock(mutex);
+    ++errors;
+    lasterror = error;
   }
 
   void OnProgress(par2::u32 permille)
@@ -178,6 +229,7 @@ int main()
     verifier.SetObserver(&observer);
 
     Check(par2::eSuccess == verifier.AddPar2File(PARFILE), "AddPar2File");
+    CheckLastError(verifier, par2::eSuccess, "AddPar2File");
 
     par2::Par2SetInfo info;
     Check(verifier.GetSetInfo(&info), "GetSetInfo");
@@ -379,6 +431,7 @@ int main()
     Check(par2::eSuccess == verifier.AddPar2File(PARFILE), "AddPar2File for damaged set");
     Check(par2::eRepairPossible == verifier.Verify(noextras),
           "Verify reports repair is possible");
+    CheckLastError(verifier, par2::eRepairPossible, "a verify that found damage");
 
     // The set records its files in fileid order, not the order they were given
     std::vector<par2::Par2FileInfo> damagedfiles;
@@ -539,8 +592,19 @@ int main()
 
     Check(par2::eSuccess == verifier.AddPar2File(PARFILE), "AddPar2File before cancelling");
     Check(par2::eCancelled == verifier.Verify(noextras), "Verify is cancelled");
+    CheckLastError(verifier, par2::eCancelled, "a cancelled verify");
 
     verifier.ClearCancel();
+    verifier.SetObserver(0);
+
+    // and verifying again starts the stopped pass afresh rather than carrying
+    // on from where it was left
+    Check(par2::eRepairPossible == verifier.Verify(noextras),
+          "Verify again after ClearCancel finds the damage");
+
+    par2::Par2Error error;
+    Check(!verifier.GetLastError(&error) || error.code != par2::ecDuplicateSourceFile,
+          "without taking the files the stopped pass had opened for duplicates");
   }
 
   // Recovery data arriving a file at a time: what the scan found is kept, so
@@ -601,8 +665,24 @@ int main()
 
   // Reassess before anything has been verified says so
   {
+    Counting observer;
     par2::Par2Verifier verifier(quiet, quiet, par2::nlSilent);
+    verifier.SetObserver(&observer);
+
     Check(par2::eLogicError == verifier.Reassess(), "Reassess needs a verify first");
+    CheckLastError(verifier, par2::eLogicError, "Reassess without a verify");
+
+    par2::Par2Error error;
+    Check(verifier.GetLastError(&error), "Reassess without a verify says why");
+    Check(error.code == par2::ecNotVerified, "and the reason is ecNotVerified");
+    Check(observer.errors == 1, "the observer hears about it too");
+    Check(observer.lasterror.code == par2::ecNotVerified, "with the same code");
+
+    par2::Par2VerifyResult untouched;
+    Check(!verifier.GetVerifyResult(&untouched), "GetVerifyResult needs a verify first");
+    Check(untouched.completefilecount == 0 && untouched.missingblockcount == 0 &&
+          untouched.recoveryblockcount == 0,
+          "and a result it did not fill in reads as zero");
   }
 
   // A PAR2 file seen while it was still being written is read again when the
@@ -1005,6 +1085,12 @@ int main()
     par2::Par2Verifier nothing(quiet, quiet, par2::nlSilent);
     Check(par2::eFileIOError == nothing.AddPar2File("no-such-set-at-all.par2"),
           "a name that yields nothing is eFileIOError");
+    CheckLastError(nothing, par2::eFileIOError, "a name that yields nothing");
+
+    par2::Par2Error error;
+    Check(nothing.GetLastError(&error), "and it says why");
+    Check(error.code == par2::ecPar2FileMissing, "the reason is ecPar2FileMissing");
+    Check(error.filename == "no-such-set-at-all.par2", "naming the file it looked for");
   }
 
   // A set may describe files in subdirectories, so neither name is
@@ -1057,10 +1143,18 @@ int main()
   {
     par2::Par2Verifier verifier(quiet, quiet, par2::nlSilent);
     Check(par2::eLogicError == verifier.Repair(), "Repair needs a verify first");
+    CheckLastError(verifier, par2::eLogicError, "Repair without a verify");
+
+    par2::Par2Error error;
+    Check(verifier.GetLastError(&error), "Repair without a verify says why");
+    Check(error.code == par2::ecNotVerified, "and the reason is ecNotVerified");
 
     Check(par2::eSuccess == verifier.AddPar2File(PARFILE), "AddPar2File for the repair guard");
+    CheckLastError(verifier, par2::eSuccess, "AddPar2File for the repair guard");
     Check(par2::eLogicError == verifier.Repair(),
           "adding packets is still not a verify");
+    Check(verifier.GetLastError(&error), "adding packets does not make it verified");
+    Check(error.code == par2::ecNotVerified, "so the reason is still ecNotVerified");
 
     // Lose more blocks than the set can rebuild, so repair is genuinely
     // impossible, then ask for one anyway.
@@ -1075,8 +1169,10 @@ int main()
 
     Check(par2::eRepairNotPossible == verifier.Verify(noextras),
           "every file gone is beyond repair");
+    CheckLastError(verifier, par2::eRepairNotPossible, "a verify beyond repair");
     Check(par2::eRepairNotPossible == verifier.Repair(),
           "Repair says so too, rather than crashing");
+    CheckLastError(verifier, par2::eRepairNotPossible, "a repair that cannot be done");
 
     // Put them back byte for byte, so the set still matches for anything added
     // after this. WriteData is deterministic, so no new par2create is needed.
@@ -1238,6 +1334,11 @@ int main()
     // Nothing describes it yet, so it cannot be scanned
     Check(par2::eInsufficientCriticalData == verifier.VerifyFile(early),
           "a scan before the set is known says so");
+    CheckLastError(verifier, par2::eInsufficientCriticalData, "a scan before the set is known");
+
+    par2::Par2Error unknown;
+    Check(verifier.GetLastError(&unknown), "and it says why");
+    Check(unknown.code == par2::ecMainPacketMissing, "the reason is ecMainPacketMissing");
 
     // The PAR2 file arrives and the earlier scan is replayed against it
     Check(par2::eSuccess == verifier.AddPar2File("firstdir/first.par2"),
@@ -1250,6 +1351,105 @@ int main()
 
     std::remove(early);
   }
+
+  // A set which names one file on disk twice says so, rather than racing two
+  // threads to claim it
+  {
+    Check(MakeDirectory("twicedir"), "mkdir for the duplicate check");
+
+    const char *const once = "twicedir/once.data";
+    const char *const twicepar = "twicedir/twice.par2";
+
+    WriteData(once, 8, 30000);
+
+    // Named twice, so the set describes the same file on disk under two of
+    // its entries
+    std::vector<std::string> files;
+    files.emplace_back(once);
+    files.emplace_back(once);
+
+    Check(par2::eSuccess == par2::par2create(quiet, quiet, par2::nlSilent,
+                                             64 * 1024 * 1024, "twicedir/", 0, 2,
+                                             "twicedir/twice", files, BLOCKSIZE, 0,
+                                             par2::scVariable, 0, RECOVERYBLOCKS),
+          "par2create for the duplicate check");
+
+    Counting observer;
+    par2::Par2Verifier verifier(quiet, quiet, par2::nlSilent, "twicedir/");
+    verifier.SetObserver(&observer);
+
+    Check(par2::eSuccess == verifier.AddPar2File(twicepar), "AddPar2File for the duplicate check");
+
+    par2::Par2SetInfo info;
+    Check(verifier.GetSetInfo(&info), "GetSetInfo for the duplicate check");
+    Check(info.recoverablefilecount == 2, "the set describes the file twice");
+
+    const par2::Result result = verifier.Verify(noextras);
+    Check(par2::eFileIOError == result, "a set which names one file twice says so");
+    CheckLastError(verifier, result, "a set which names one file twice");
+
+    par2::Par2Error error;
+    Check(verifier.GetLastError(&error), "and it says why");
+    Check(error.code == par2::ecDuplicateSourceFile, "the reason is ecDuplicateSourceFile");
+    Check(error.filename == "once.data", "naming the file both entries point at");
+    Check(observer.errors == 1, "reported once rather than for both entries");
+
+    std::remove(once);
+    std::remove(twicepar);
+  }
+
+  // What went wrong with one file is reported as the operation on that file,
+  // rather than as an I/O error with nothing attached
+#ifndef _WIN32
+  {
+    Check(MakeDirectory("rodir"), "mkdir for the read-only check");
+
+    const char *const locked = "rodir/locked.data";
+    const char *const lockedpar = "rodir/locked.par2";
+
+    WriteData(locked, 3, 30000);
+    std::vector<std::string> files(1, std::string(locked));
+
+    Check(par2::eSuccess == par2::par2create(quiet, quiet, par2::nlSilent,
+                                             64 * 1024 * 1024, "rodir/", 0, 2,
+                                             lockedpar, files, BLOCKSIZE, 0,
+                                             par2::scVariable, 0, 20),
+          "par2create for the read-only check");
+
+    Corrupt(locked, 5000, 2000);
+
+    Counting observer;
+    par2::Par2Verifier verifier(quiet, quiet, par2::nlSilent, "rodir/");
+    verifier.SetObserver(&observer);
+
+    Check(par2::eSuccess == verifier.AddPar2File(lockedpar),
+          "AddPar2File for the read-only check");
+    Check(par2::eRepairPossible == verifier.Verify(noextras),
+          "the damaged file needs repairing");
+
+    const bool closed = (chmod("rodir", 0555) == 0) && !CanWriteInto("rodir");
+
+    if (closed)
+    {
+      const par2::Result result = verifier.Repair();
+
+      Check(par2::eFileIOError == result, "a repair which cannot write says so");
+      CheckLastError(verifier, result, "a repair which cannot write");
+
+      par2::Par2Error error;
+      Check(verifier.GetLastError(&error), "and it says why");
+      Check(error.code == par2::ecFileRenameFailed, "naming the operation on the file");
+      Check(error.filename.find("locked.data") != std::string::npos,
+            "and the file it was working on");
+      Check(observer.errors > 0, "the observer heard about it as it happened");
+    }
+
+    chmod("rodir", 0755);
+
+    std::remove(locked);
+    std::remove(lockedpar);
+  }
+#endif
 
   // The implementations an application supplies reach the work the handle does,
   // rather than being dropped in favour of the ones built in
@@ -1294,6 +1494,12 @@ int main()
           "a repair which cannot build a processor says so");
     Check(asked == 1, "the application's processor was asked for");
     Check(budget == 3, "and built with the thread count the handle was given");
+    CheckLastError(verifier, par2::eMemoryError, "a repair with no processor");
+
+    // The application's own code failing is not the disk failing
+    par2::Par2Error noprocessor;
+    Check(verifier.GetLastError(&noprocessor), "and it says why");
+    Check(noprocessor.code == par2::ecProcessorFailed, "the reason is ecProcessorFailed");
 
     std::remove(own);
     std::remove(ownpar);

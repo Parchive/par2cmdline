@@ -273,6 +273,7 @@ private:
 
 
 #include "letype.h"
+#include "errorlog.h"
 #include "foreach_parallel.h"
 #include "bufferpool.h"
 #include "taskpool.h"

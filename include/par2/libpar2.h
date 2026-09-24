@@ -93,6 +93,55 @@ typedef enum Result
 } Result;
 
 
+// Why an operation failed, refining the Result it returned.
+//
+// Every Result which reports a failure carries one, and eSuccess and
+// eCancelled never do. The Results which report damage - eRepairPossible,
+// eRepairNotPossible and eRepairFailed - are described by GetVerifyResult, and
+// carry one only when something went wrong with a particular file on the way
+// there, such as a data file which could not be read.
+typedef enum ErrorCode
+{
+  ecNone = 0,                 // Nothing failed
+
+  // The application asked for something in an order that cannot be honoured
+  ecNotVerified,              // Repair or Reassess before anything was verified
+
+  // The PAR2 files
+  ecPar2FileMissing,          // The named PAR2 file is not there, and the files
+                              // named after it carried nothing new either
+  ecMainPacketMissing,        // Nothing read so far says what the set contains
+
+  // What the set describes
+  ecFileDescriptionMissing,   // The set names a recoverable file it carries no
+                              // description of
+  ecDuplicateSourceFile,      // Two of the set's files are one file on disk
+  ecTooManySourceBlocks,      // The set needs more blocks than can be held
+
+  // Reading and writing
+  ecFileOpenFailed,
+  ecFileCreateFailed,
+  ecFileRenameFailed,
+  ecFileReadFailed,
+  ecFileWriteFailed,
+
+  ecOutOfMemory,              // A buffer could not be allocated
+  ecProcessorFailed,          // The compute implementation could not do the work
+
+  ecInternalError,            // An invariant the library relies on did not hold
+
+} ErrorCode;
+
+
+// Why an operation failed.
+struct Par2Error
+{
+  ErrorCode code{};       // ecNone when nothing failed
+  std::string message;    // One line, without a trailing newline. May be empty.
+  std::string filename;   // The file it concerns, empty when it concerns none
+};
+
+
 // What a PAR2 set describes, known once its packets have been loaded
 struct Par2SetInfo
 {
@@ -185,6 +234,12 @@ public:
   virtual void OnFileDone(const std::string &filename,
                           u32 blocksfound,
                           u32 blocksneeded) {}
+
+  // Something went wrong. Called once per error as it is found, from the
+  // thread that found it, so a caller wanting every error rather than only the
+  // first collects them here. The operation may carry on and may still
+  // succeed: an error reading one extra file does not fail a verify.
+  virtual void OnError(const Par2Error &error) {}
 };
 
 
@@ -367,15 +422,15 @@ public:
   //   Reassess()         -> eRepairPossible
   //   Repair(...)
   //
-  // Returns the same values as Verify, or eLogicError if nothing has been
-  // verified yet. Adding a file which changes the shape of the set discards
-  // the earlier results, and Verify has to be called again.
+  // Returns the same values as Verify, or eLogicError with ecNotVerified if
+  // nothing has been verified yet. Adding a file which changes the shape of
+  // the set discards the earlier results, and Verify has to be called again.
   Result Reassess(void);
 
   // Rebuild whatever Verify found to be missing or damaged.
   //
-  // Returns eLogicError if nothing has been verified yet, and
-  // eRepairNotPossible if the last Verify or Reassess found too little
+  // Returns eLogicError with ecNotVerified if nothing has been verified yet,
+  // and eRepairNotPossible if the last Verify or Reassess found too little
   // recovery data.
   //
   // verifyafter reads back and hashes everything that was rebuilt, and is
@@ -383,6 +438,14 @@ public:
   // result is eSuccess unless something went wrong along the way, and
   // GetVerifyResult still describes the state before the repair.
   Result Repair(const bool verifyafter = true);
+
+  // Why the last call failed, refining the Result it returned. See ErrorCode
+  // for which Results carry one.
+  //
+  // Describes only the call that returned last, and the first thing that went
+  // wrong during it. An observer's OnError sees every one of them as it
+  // happens, which is what a parallel scan needs.
+  bool GetLastError(Par2Error *error) const;
 
   // Ask the work in progress to stop, from any thread. Verify or Repair then
   // returns eCancelled, having removed any partly written files. A repair which
@@ -395,6 +458,8 @@ private:
   class Impl;
 
   void Restart(void);
+  void TakeLastError(void);
+  void RecordLastError(const ErrorCode code, const std::string &message);
 
   std::ostream &sout;
   std::ostream &serr;
@@ -412,6 +477,7 @@ private:
   bool verified;
   bool scanned;
   std::string basepath;
+  Par2Error lasterror;
   std::unique_ptr<Impl> impl;
 };
 
