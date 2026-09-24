@@ -21,6 +21,8 @@
 #ifndef __PAR2REPAIRER_H__
 #define __PAR2REPAIRER_H__
 
+#include <atomic>
+
 namespace par2
 {
 
@@ -44,6 +46,13 @@ public:
 		 const u64 skipleaway,
 		 const bool fullhash
 		 );
+
+  // Ask the operation in progress to stop as soon as it can, from any thread.
+  // Process then returns eCancelled, having removed any partly written files.
+  // The flag stays set, so it must be cleared before reusing this object.
+  void Cancel(void) {cancelled.store(true, std::memory_order_relaxed);}
+  void ClearCancel(void) {cancelled.store(false, std::memory_order_relaxed);}
+  bool IsCancelled(void) const {return cancelled.load(std::memory_order_relaxed);}
 
   // Set an observer to be notified of progress and per-file results.
   // Pass 0 to stop reporting. The observer must outlive this object.
@@ -211,6 +220,8 @@ protected:
   const Backends backends;                  // The implementations the application supplied
 
   Par2Observer *observer;                   // Notified of progress, or 0
+
+  std::atomic<bool> cancelled;              // Set by Cancel from any thread
 
   // Blocks the caller has vouched for, keyed by the name the set records
   std::map<std::string, std::vector<bool> > knownblocks;
