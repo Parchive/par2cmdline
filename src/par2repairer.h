@@ -62,14 +62,31 @@ public:
   // been loaded and prepared.
   bool GetFileInfo(std::vector<Par2FileInfo> *files) const;
 
+  // The numbers behind the last verification
+  bool GetVerifyResult(Par2VerifyResult *result) const;
+
+  // The source file of that name, or 0 when the set does not describe one
+  Par2RepairerSourceFile *FindSourceFile(const std::string &filename) const;
+
+  // The files a repair renamed out of the way
+  bool GetBackupFiles(std::vector<std::string> *files) const;
+  bool GetRenamedFiles(std::vector<std::pair<std::string, std::string> > *files) const;
+
   // Accept the caller's word that these blocks of the named file are intact,
   // so that they are not read and hashed again. The name is the one reported
   // by GetFileInfo and blocks must have one entry per block of that file, set
   // where the block is present at its expected offset.
   //
+  // An entry set for every block means the file is intact and it is never
+  // read. None set means it holds nothing usable, and it is not read either.
+  // An empty vector forgets what was said about the file.
+  //
   // The blocks are trusted without being verified. Supplying a block which is
   // not intact will silently produce incorrect output.
-  void SetKnownBlocks(const std::string &filename, const std::vector<bool> &blocks);
+  //
+  // False when the set is known and does not describe a file of that name, or
+  // describes it with a different number of blocks.
+  bool SetKnownBlocks(const std::string &filename, const std::vector<bool> &blocks);
 
 protected:
   // Steps in verifying and repairing files:
@@ -82,12 +99,27 @@ protected:
 
   // Load packets from a PAR2 file, the files named after it, and the extra files
   bool LoadPackets(const std::string &parfilename,
-                   const std::vector<std::string> &extrafiles);
+                   const std::vector<std::string> &extrafiles,
+                   bool reread = false);
   // Work out what the packets loaded so far describe
   Result PreparePackets(void);
 
+  // Apply the -t and -T thread counts, zero leaving either alone
+  void ApplyThreadCounts(const u32 _nthreads, const u32 _filethreads);
+
+  // Apply the -m memory limit, which bounds the buffers a scan reads into
+  void ApplyMemoryLimit(const size_t _memorylimit) {scanmemorylimit = _memorylimit;}
+
+  // Verify the source files and work out whether a repair is needed
+  Result VerifyFiles(const std::string &basepath,
+                     std::vector<std::string> &extrafiles,
+                     const bool renameonly);
+  // Rebuild whatever is missing or damaged
+  Result RepairFiles(const size_t memorylimit, const std::string &basepath,
+                     bool verifyafter = true);
+
   // Load packets from the specified file
-  bool LoadPacketsFromFile(std::string filename);
+  bool LoadPacketsFromFile(const std::string &filename, bool reread = false);
   // Finish loading a recovery packet
   bool LoadRecoveryPacket(DiskFile *diskfile, u64 offset, PACKET_HEADER &header);
   // Finish loading a file description packet
@@ -128,7 +160,7 @@ protected:
   bool ComputeWindowTable(void);
 
   // Attempt to verify all of the source files
-  bool VerifySourceFiles(const std::string& basepath, std::vector<std::string>& extrafiles);
+  bool VerifySourceFiles(const std::string &basepath, std::vector<std::string>& extrafiles);
 
   // Scan any extra files specified on the command line
   bool VerifyExtraFiles(const std::vector<std::string> &extrafiles, const std::string &basepath, const bool renameonly);
@@ -205,7 +237,7 @@ protected:
 
   // Make the buffers the files being scanned read into, or give them up when
   // no file will have its blocks checked where they are expected to be
-  void ResetScanBuffers(const size_t filecount, const size_t memorylimit);
+  void ResetScanBuffers(const size_t filecount);
 
   // The number of files to read at once, which is what limits how many are
   // open at a time rather than how much of the work they get
@@ -223,8 +255,13 @@ protected:
 
   std::atomic<bool> cancelled;              // Set by Cancel from any thread
 
+  u32                       packetsloaded;           // Useable packets read so far
+
   // Blocks the caller has vouched for, keyed by the name the set records
   std::map<std::string, std::vector<bool> > knownblocks;
+
+  // The source files by the name each has on this system
+  std::map<std::string, Par2RepairerSourceFile*> sourcefilesbyname;
 
   std::string               searchpath;              // Where to find files on disk
 
@@ -232,6 +269,7 @@ protected:
 
   u32 totalthreads;            // Number of threads the whole repair may use
   u32 filethreads;             // Number of files to read at once
+  size_t scanmemorylimit;      // Memory the buffers a scan reads into may use
 
   // The threads which check the blocks of every file being read, the buffers
   // those files read into, and how many files are being read at the moment
@@ -255,10 +293,15 @@ protected:
   std::mutex                diskFileMapMutex;        // Guards diskFileMap while files are verified in parallel.
   std::mutex                extraFilesMutex;         // Guards the caller's list of extra files.
 
+  // The PAR2 files packets were read from, and whether each was read to its end
+  std::map<const DiskFile*, bool> packetfiles;
+
   std::map<MD5Hash,Par2RepairerSourceFile*> sourcefilemap;// Map from FileId to SourceFile
   std::vector<Par2RepairerSourceFile*>      sourcefiles;  // The source files
   std::vector<Par2RepairerSourceFile*>      verifylist;   // Those source files that are being repaired
   std::vector<DiskFile*>                    backuplist;   // Those source files backups
+  // What each renamed file was found as, keyed by the name the set records
+  std::map<std::string, std::string>        renamedlist;
   std::list<std::string>                    par2list;     // list of par2 files
 
   u64                       blocksize;               // The block size.
