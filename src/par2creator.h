@@ -29,12 +29,31 @@ class CreatorPacket;
 class CriticalPacket;
 
 
-class Par2Creator
+class Par2SetCreator
 {
 public:
-  Par2Creator(std::ostream &sout, std::ostream &serr, const NoiseLevel noiselevel,
-              const Backends &backends = Backends());
-  ~Par2Creator(void);
+  Par2SetCreator(std::ostream &sout, std::ostream &serr, const NoiseLevel noiselevel,
+              Backends backends = Backends());
+  ~Par2SetCreator(void);
+
+  // Ask the operation in progress to stop as soon as it can, from any thread.
+  // Process then returns eCancelled, having removed any file it created.
+  // The flag stays set, so it must be cleared before reusing this object.
+  void Cancel(void) {cancelled.store(true, std::memory_order_relaxed);}
+  void ClearCancel(void) {cancelled.store(false, std::memory_order_relaxed);}
+  bool IsCancelled(void) const {return cancelled.load(std::memory_order_relaxed);}
+
+  // Set an observer to be notified of progress and per-file results.
+  // Pass 0 to stop reporting. The observer must outlive this object.
+  void SetObserver(Par2Observer *_observer)
+  {
+    observer = _observer;
+    errorlog.SetObserver(_observer);
+  }
+
+  // Why the last operation failed, and forgetting it before the next one
+  bool GetLastError(Par2Error *error) const {return errorlog.First(error);}
+  void ClearLastError(void) {errorlog.Clear();}
 
   // Create recovery files from the source files specified on the command line
   Result Process(const size_t memorylimit,
@@ -51,6 +70,27 @@ public:
 		 );
 
 protected:
+  // The phases a create goes through, in order. Each reads the settings
+  // Process was given, which it leaves on the object.
+
+  // Work out the shape of the set, and check that it can be written
+  Result PrepareCreation(void);
+
+  // Read every source file and record what it contains
+  Result HashSourceFiles(void);
+
+  // Create the recovery files, after which they all exist at full size
+  Result CreateOutputFiles(void);
+
+  // Compute the recovery blocks and write them
+  Result ComputeRecoveryData(void);
+
+  // Write what describes the set, and close everything
+  Result WriteCriticalData(void);
+
+  // Apply the thread counts, leaving either at its default when it is zero
+  void ApplyThreadCounts(const u32 nthreads, const u32 filethreads);
+
   // Steps in the creation process:
 
   // Check permissions in the basepath
@@ -58,14 +98,14 @@ protected:
 
   // Compute block size from block count or vice versa depending on which was
   // specified on the command line
-  bool ComputeBlockCount(const std::vector<std::string> &extrafiles);
+  bool ComputeBlockCount(void);
 
   // Determine how much recovery data can be computed on one pass
   bool CalculateProcessBlockSize(size_t memorylimit);
 
   // Open all of the source files, compute the Hashes and CRC values, and store
   // the results in the file verification and file description packets.
-  bool OpenSourceFiles(const std::vector<std::string> &extrafiles, std::string basepath);
+  bool OpenSourceFiles(void);
 
   // Create the main packet and determine the set_id_hash to use with all packets
   bool CreateMainPacket(void);
@@ -77,7 +117,7 @@ protected:
   bool CreateSourceBlocks(void);
 
   // Create all of the output files and allocate all packets to appropriate file offsets.
-  bool InitialiseOutputFiles(const std::string &par2filename);
+  bool InitialiseOutputFiles(void);
 
   // Allocate memory buffers for reading and writing data to disk.
   bool AllocateBuffers(size_t memorylimit);
@@ -103,14 +143,30 @@ protected:
   // Close all files.
   bool CloseFiles(void);
 
+  // Delete every recovery file created so far, so that a create which stops
+  // part way leaves nothing of the set behind.
+  void DeleteIncompleteRecoveryFiles(void);
+
   u32                                 GetFileThreads(void) const {return filethreads;}
 
 protected:
   std::ostream &sout; // stream for output (for commandline, this is cout)
   std::ostream &serr; // stream for errors (for commandline, this is cerr)
 
+  // What Process was given, kept for the phases to read
+  std::string parfilename;                // The name of the set being created
+  std::string basepath;                   // What the source file names are relative to
+  std::vector<std::string> extrafiles;    // The source files
+  size_t memorylimit{};                   // How much memory the work may use
+
+  ErrorLog errorlog;           // Why the last operation failed
+
   const NoiseLevel noiselevel; // How noisy we should be
   const Backends backends;     // The implementations the application supplied
+
+  Par2Observer *observer;      // Notified of progress, or 0
+
+  std::atomic<bool> cancelled; // Set by Cancel from any thread
 
   u32 totalthreads;            // Number of threads the whole create may use
   u32 filethreads;             // Number of threads for file processing
@@ -128,6 +184,7 @@ protected:
                          // virtually sliced into.
 
   u64 largestfilesize;   // The size of the largest source file
+  u64 totaldatasize;     // The size of all of the source files together
 
   Scheme recoveryfilescheme;  // What scheme will be used to select the
                                            // sizes for the recovery files.
