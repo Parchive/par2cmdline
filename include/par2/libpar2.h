@@ -260,6 +260,11 @@ public:
   // the command line takes in megabytes. Zero selects the default.
   void SetMemoryLimit(const size_t memorylimit);
 
+  // Look for blocks which are not where the set says they should be, the -N
+  // option, with leaway the distance either side to search, the -S option.
+  // Zero leaway selects the default. Applies to Verify and to VerifyFile.
+  void SetDataSkipping(const bool enabled, const u64 leaway = 0);
+
   // Threads for the main processing and for hashing files in parallel, the -t
   // and -T options. Either left zero stays at the default. They are read by
   // the next Verify, VerifyFile or Repair.
@@ -271,9 +276,27 @@ public:
   //
   // May be called more than once; each call is a fresh pass. Repair works on
   // the results of the Verify that preceded it, so call them in that order.
-  Result Verify(const std::vector<std::string> &extrafiles,
-                const bool skipdata,
-                const u64 skipleaway);
+  Result Verify(const std::vector<std::string> &extrafiles);
+
+  // Scan one file that has become available, matching it against the set the
+  // way a Verify would, without reading anything else. Use it to feed files in
+  // as they arrive rather than waiting for all of them.
+  //
+  // Safe to call again for the same file: whatever an earlier scan found for it
+  // is discarded first, so a file which was incomplete when it was first
+  // scanned can be scanned again once it is finished. Blocks another file
+  // supplied are left alone.
+  //
+  // The name may be one the set describes or one it does not; an unrecognised
+  // file is matched by content, as an extra file is.
+  //
+  // Returns what Verify would return for the set as it stands, so a file which
+  // has not been scanned yet still counts as missing. A later Verify replaces
+  // everything the individual scans found.
+  //
+  // May be called before any PAR2 file has been added: the result is then
+  // eInsufficientCriticalData, and the file is scanned once one arrives.
+  Result VerifyFile(const std::string &filename);
 
   // The numbers behind the last Verify or Reassess. A repair is possible when
   // recoveryblockcount is at least missingblockcount, and needs
@@ -343,7 +366,10 @@ private:
   size_t memorylimit;
   u32 nthreads;
   u32 filethreads;
+  bool skipdata;
+  u64 skipleaway;
   std::vector<std::string> par2files;
+  std::vector<std::string> scannedfiles;
   std::map<std::string, std::vector<bool> > knownblocks;
   bool verified;
   bool scanned;
