@@ -535,6 +535,7 @@ bool Par1Repairer::LoadRecoveryFile(std::string filename)
   // Remember that the file was processed
   bool success = diskfilemap.Insert(diskfile);
   assert(success);
+  (void)success;
 
   return true;
 }
@@ -635,6 +636,7 @@ bool Par1Repairer::VerifySourceFiles(void)
         // Remember that we have processed this file
         bool success = diskfilemap.Insert(diskfile);
         assert(success);
+        (void)success;
 
         // Do the actual verification
         if (!VerifyDataFile(diskfile, sourcefile))
@@ -705,6 +707,7 @@ bool Par1Repairer::VerifyExtraFiles(const std::vector<std::string> &extrafiles)
         // Remember that we have processed this file
         bool success = diskfilemap.Insert(diskfile);
         assert(success);
+        (void)success;
 
         // Do the actual verification
         VerifyDataFile(diskfile, 0);
@@ -1051,6 +1054,7 @@ bool Par1Repairer::RenameTargetFiles(void)
 
       bool success = diskfilemap.Insert(targetfile);
       assert(success);
+      (void)success;
 
       // We no longer have a target file
       sourcefile->SetTargetExists(false);
@@ -1079,6 +1083,7 @@ bool Par1Repairer::RenameTargetFiles(void)
         return false;
       bool success = diskfilemap.Insert(targetfile);
       assert(success);
+      (void)success;
 
       // This file is now the target file
       sourcefile->SetTargetExists(true);
@@ -1126,6 +1131,7 @@ bool Par1Repairer::CreateTargetFiles(void)
       // Remember this file
       bool success = diskfilemap.Insert(targetfile);
       assert(success);
+      (void)success;
 
       sourcefile->SetTargetBlock(targetfile);
 
