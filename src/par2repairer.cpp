@@ -1246,6 +1246,7 @@ bool Par2Repairer::LoadPacketsFromFile(const std::string &filename, bool reread,
     {
       bool success = diskFileMap.Insert(diskfile);
       assert(success);
+      (void)success;
     }
 
     packetfiles[diskfile] = !cutshort;
@@ -3353,6 +3354,7 @@ bool Par2Repairer::RenameTargetFiles(void)
 
         bool success = diskFileMap.Insert(targetfile);
         assert(success);
+        (void)success;
 
         if (!renamed)
           return false;
@@ -3392,6 +3394,7 @@ bool Par2Repairer::RenameTargetFiles(void)
 
         bool success = diskFileMap.Insert(targetfile);
         assert(success);
+        (void)success;
 
         if (!renamed)
           return false;
@@ -3465,6 +3468,7 @@ bool Par2Repairer::CreateTargetFiles(void)
         // Remember this file
         bool success = diskFileMap.Insert(targetfile);
         assert(success);
+        (void)success;
 
         u64 offset = 0;
         std::vector<DataBlock>::iterator tb = sourcefile->TargetBlocks();
