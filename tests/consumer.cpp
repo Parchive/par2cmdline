@@ -34,6 +34,7 @@
 #include <direct.h>
 #else
 #include <sys/stat.h>
+#include <unistd.h>
 #endif
 #include <iostream>
 #include <sstream>
@@ -181,6 +182,25 @@ public:
   void OnProgress(par2::Phase phase, par2::u32) override
   {
     if (verifier && phase == par2::phVerifyingRepair)
+      verifier->Cancel();
+  }
+};
+
+// Stops a verify once it is scanning the extra file
+class ExtraCanceller : public par2::Par2Observer
+{
+public:
+  par2::Par2Verifier *verifier;
+  bool scanning;
+  ExtraCanceller() : verifier(0), scanning(false) {}
+  void OnFile(const std::string &filename) override
+  {
+    if (filename.find("elsewhere") != std::string::npos)
+      scanning = true;
+  }
+  void OnProgress(par2::Phase phase, par2::u32) override
+  {
+    if (verifier && scanning && phase == par2::phScanning)
       verifier->Cancel();
   }
 };
@@ -2307,6 +2327,136 @@ int main()
           "and saying what about the name");
 
     std::remove(odd);
+  }
+#endif
+
+  // A repair needs a verify of its own, and what it renamed is scanned by a
+  // new engine rather than the one which renamed it
+  {
+    Check(MakeDirectory("againdir"), "mkdir for the repeated repair check");
+
+    const char *const again[] = {"againdir/again-0.data", "againdir/again-1.data"};
+    const char *const againpar = "againdir/again.par2";
+
+    std::vector<std::string> files;
+    for (size_t i = 0; i < 2; ++i)
+    {
+      WriteData(again[i], (unsigned)(81 + i), 30000);
+      files.emplace_back(again[i]);
+    }
+    Check(par2::eSuccess == par2::par2create(quiet, quiet, par2::nlSilent,
+                                             64 * 1024 * 1024, "againdir/", 0, 2,
+                                             "againdir/again", files, BLOCKSIZE, 0,
+                                             par2::scVariable, 0, RECOVERYBLOCKS),
+          "par2create for the repeated repair check");
+
+    Corrupt(again[0], 1000, 3000);
+
+    {
+      par2::Par2Verifier verifier(quiet, quiet, par2::nlSilent, "againdir/");
+      Check(par2::eSuccess == verifier.AddPar2File(againpar), "AddPar2File for the repeated repair");
+      Check(par2::eRepairPossible == verifier.Verify(), "Verify finds the damage to repair twice");
+      Check(par2::eSuccess == verifier.Repair(), "the first repair works");
+      Check(par2::eLogicError == verifier.Repair(), "a second repair needs a verify of its own");
+
+      par2::Par2Error error;
+      Check(verifier.GetLastError(&error) && error.code == par2::ecNotVerified,
+            "and says so with ecNotVerified");
+
+      std::vector<std::string> backups;
+      Check(verifier.GetBackupFiles(&backups) && backups.size() == 1, "the damaged original was renamed");
+
+      if (backups.size() == 1)
+      {
+        Check(par2::eRepairPossible == verifier.VerifyFile(backups[0]),
+              "the renamed original is scanned by a new engine");
+        Check(verifier.GetBackupFiles(&backups) && backups.empty(),
+              "which has renamed nothing");
+
+        std::remove((std::string(again[0]) + ".1").c_str());
+      }
+    }
+
+    // A repair which cannot create a file it rebuilds puts back what it renamed
+    Corrupt(again[0], 1000, 3000);
+
+    {
+      par2::Par2Verifier verifier(quiet, quiet, par2::nlSilent, "againdir/");
+      Check(par2::eSuccess == verifier.AddPar2File(againpar), "AddPar2File for the failed repair");
+
+      // The other file is there but has not been scanned, so it is rebuilt
+      // too, and it cannot be created where it already is
+      Check(par2::eRepairPossible == verifier.VerifyFile(again[0]), "VerifyFile finds the damage");
+      Check(par2::eFileIOError == verifier.Repair(), "a repair which cannot create its files fails");
+
+      Check(std::ifstream(again[0]).good(), "the damaged file is put back");
+      Check(!std::ifstream(std::string(again[0]) + ".1").good(), "rather than left renamed");
+    }
+
+    for (const char *name : again)
+      std::remove(name);
+    std::remove(againpar);
+  }
+
+  // A cancel during the scan of the extra files is reported as one
+  {
+    Check(MakeDirectory("extradir"), "mkdir for the extra file cancel check");
+
+    const char *const moved = "extradir/moved.data";
+    const char *const extra = "extradir/elsewhere.data";
+    const char *const movedpar = "extradir/moved.par2";
+
+    WriteData(moved, 91, 200000);
+    Check(par2::eSuccess == par2::par2create(quiet, quiet, par2::nlSilent,
+                                             64 * 1024 * 1024, "extradir/", 0, 2,
+                                             "extradir/moved", std::vector<std::string>(1, moved),
+                                             BLOCKSIZE, 0, par2::scVariable, 0, RECOVERYBLOCKS),
+          "par2create for the extra file cancel check");
+    Check(0 == std::rename(moved, extra), "the file of the set is moved away");
+
+    par2::Par2Verifier verifier(quiet, quiet, par2::nlSilent, "extradir/");
+    Check(par2::eSuccess == verifier.AddPar2File(movedpar), "AddPar2File for the extra file cancel");
+
+    ExtraCanceller canceller;
+    canceller.verifier = &verifier;
+    verifier.SetObserver(&canceller);
+
+    Check(par2::eCancelled == verifier.Verify(std::vector<std::string>(1, extra)),
+          "a cancel while scanning the extra files is reported");
+    Check(canceller.scanning, "the cancel came while scanning the extra file");
+
+    std::remove(extra);
+    std::remove(movedpar);
+  }
+
+#ifndef _WIN32
+  // A PAR2 file which is there but cannot be read is no use either. Root reads
+  // it whatever its permissions say.
+  if (geteuid() != 0)
+  {
+    Check(MakeDirectory("lockdir"), "mkdir for the unreadable PAR2 file check");
+
+    const char *const lockeddata = "lockdir/locked.data";
+    const char *const lockedpar = "lockdir/locked.par2";
+
+    WriteData(lockeddata, 93, 20000);
+    Check(par2::eSuccess == par2::par2create(quiet, quiet, par2::nlSilent,
+                                             64 * 1024 * 1024, "lockdir/", 0, 2,
+                                             "lockdir/locked", std::vector<std::string>(1, lockeddata),
+                                             BLOCKSIZE, 0, par2::scVariable, 0, 0),
+          "par2create for the unreadable PAR2 file check");
+    Check(0 == chmod(lockedpar, 0), "the PAR2 file is made unreadable");
+
+    par2::Par2Verifier verifier(quiet, quiet, par2::nlSilent, "lockdir/");
+    Check(par2::eFileIOError == verifier.AddPar2File(lockedpar), "AddPar2File of an unreadable file fails");
+
+    par2::Par2Error error;
+    Check(verifier.GetLastError(&error) && error.code == par2::ecFileOpenFailed,
+          "and says it could not be opened");
+
+    chmod(lockedpar, 0644);
+    std::remove(lockeddata);
+    std::remove(lockedpar);
   }
 #endif
 
