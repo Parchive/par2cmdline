@@ -3442,6 +3442,15 @@ bool Par2Repairer::CreateTargetFiles(void)
         std::string filename = sourcefile->TargetFileName();
         u64 filesize = sourcefile->GetDescriptionPacket()->FileSize();
 
+        // A file which already exists but was never scanned is not written over
+        if (DiskFile::FileExists(filename))
+        {
+          serr << "\"" << filename << "\" already exists but was not scanned." << std::endl;
+          errorlog.Record(ecNotVerified, "The file already exists but was not scanned", filename);
+          delete targetfile;
+          return false;
+        }
+
         // Create the target file
         if (!targetfile->Create(filename, filesize))
         {

@@ -108,7 +108,8 @@ typedef enum ErrorCode
   ecNone = 0,                   // Nothing failed
 
   // The application asked for something that cannot be honoured
-  ecNotVerified = 1,            // A repair before anything was verified
+  ecNotVerified = 1,            // A repair before anything was verified,
+                                // or a repair over a file never scanned
   ecInvalidSetting = 2,         // A setting a create was given cannot be used
 
   // The PAR2 files
@@ -558,6 +559,10 @@ public:
   // Returns eLogicError with ecNotVerified if nothing has been verified yet or
   // since the last Repair, and eRepairNotPossible if the recovery blocks added
   // so far are too few to rebuild what is missing.
+  //
+  // A file which already exists but which VerifyFile never scanned is not
+  // written over: the repair fails with eFileIOError and ecNotVerified, naming
+  // it.
   //
   // verifyafter reads back and hashes everything that was rebuilt, and is
   // what turns a repair that did not work into eRepairFailed. With it off the
