@@ -2848,6 +2848,9 @@ void Par2Repairer::ResetScanBuffers(const size_t filecount, const size_t memoryl
 // Allocate memory buffers for reading and writing data to disk.
 bool Par2Repairer::AllocateBuffers(size_t memorylimit)
 {
+  // At least 1MB, the smallest limit the command line takes
+  memorylimit = std::max<size_t>(memorylimit, 1048576);
+
   // Would single pass processing use too much memory
   if (blocksize * missingblockcount > memorylimit)
   {

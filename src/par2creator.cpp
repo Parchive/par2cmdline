@@ -297,6 +297,9 @@ bool Par2Creator::ComputeBlockCount(const std::vector<std::string> &extrafiles)
 // Determine how much recovery data can be computed on one pass
 bool Par2Creator::CalculateProcessBlockSize(size_t memorylimit)
 {
+  // At least 1MB, the smallest limit the command line takes
+  memorylimit = std::max<size_t>(memorylimit, 1048576);
+
   // Are we computing any recovery blocks
   if (recoveryblockcount == 0)
   {
@@ -717,6 +720,9 @@ bool Par2Creator::InitialiseOutputFiles(const std::string &parfilename)
 // Allocate memory buffers for reading and writing data to disk.
 bool Par2Creator::AllocateBuffers(size_t memorylimit)
 {
+  // At least 1MB, the smallest limit the command line takes
+  memorylimit = std::max<size_t>(memorylimit, 1048576);
+
   transferbuffer = new u8[chunksize * NUM_TRANSFER_BUFFERS];
   outputbuffer = new u8[chunksize];
 

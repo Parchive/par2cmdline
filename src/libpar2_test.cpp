@@ -20,6 +20,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include <stdlib.h>
 
 
@@ -446,6 +447,47 @@ int test4() {
 }
 
 
+// A memory limit below 1MB still creates and repairs
+int test5() {
+  const char *const datafile = "libpar2_test5.data";
+
+  {
+    std::ofstream data(datafile, std::ofstream::out | std::ofstream::binary);
+    for (int i = 0; i < 20000; ++i)
+      data.put((char)(i * 31 + i / 256));
+  }
+
+  std::ostringstream quiet;
+  const std::vector<std::string> files(1, datafile);
+  const std::vector<std::string> none;
+
+  Result result = par2create(quiet, quiet, nlSilent, 1, "", 0, 0,
+			     "libpar2_test5", files, 4096, 0, scVariable, 0, 4);
+  if (result != eSuccess) {
+    std::cerr << "par2create with a one byte memory limit returned " << result << std::endl;
+    remove(datafile);
+    return 1;
+  }
+
+  {
+    std::fstream data(datafile, std::ios::binary | std::ios::in | std::ios::out);
+    data.seekp(5000);
+    for (int i = 0; i < 3000; ++i)
+      data.put((char)0x5a);
+  }
+
+  result = par2repair(quiet, quiet, nlSilent, 1, "", 0, 0,
+		      "libpar2_test5.par2", none, true, true, false, false, 0);
+  remove(datafile);
+  if (result != eSuccess) {
+    std::cerr << "par2repair with a one byte memory limit returned " << result << std::endl;
+    return 1;
+  }
+
+  return 0;
+}
+
+
 int main() {
   if (test1()) {
     std::cerr << "FAILED: test1" << std::endl;
@@ -461,6 +503,10 @@ int main() {
   }
   if (test4()) {
     std::cerr << "FAILED: test4" << std::endl;
+    return 1;
+  }
+  if (test5()) {
+    std::cerr << "FAILED: test5" << std::endl;
     return 1;
   }
 
