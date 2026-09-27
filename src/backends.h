@@ -28,6 +28,9 @@
 #include "hasher.h"
 #include "types.h"
 
+namespace par2
+{
+
 // The budgets a backend is built with. What it accumulates is given separately,
 // by Processor::Init, once the number of recovery blocks is known.
 struct ProcessorConfig
@@ -51,5 +54,7 @@ struct Backends
   std::function<std::unique_ptr<Processor>(const ProcessorConfig &)> processor;
   std::function<std::unique_ptr<Hasher>(const HasherConfig &)>       hasher;
 };
+
+} // namespace par2
 
 #endif // __BACKENDS_H__

@@ -19,6 +19,9 @@
 
 #include "libpar2internal.h"
 
+namespace par2
+{
+
 Result par2create(std::ostream &sout,
 		  std::ostream &serr,
 		  const NoiseLevel noiselevel,
@@ -191,3 +194,5 @@ bool ComputeRecoveryFileCount(std::ostream &sout,
 
   return true;
 }
+
+} // namespace par2

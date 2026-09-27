@@ -19,4 +19,9 @@
 
 #include "libpar2internal.h"
 
+namespace par2
+{
+
 PAR1MAGIC    par1_magic                = {{'P', 'A', 'R', '\0', '\0', '\0', '\0', '\0'}};
+
+} // namespace par2

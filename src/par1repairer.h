@@ -21,6 +21,9 @@
 #ifndef __PAR1REPAIRER_H__
 #define __PAR1REPAIRER_H__
 
+namespace par2
+{
+
 class Par1Repairer
 {
 public:
@@ -135,5 +138,7 @@ protected:
   u8                       *outputbuffer;            // Buffer for writing DataBlocks (chunksize * missingblockcount)
   bool                      ignore16kfilehash;       // The 16k file hash values may be invalid
 };
+
+} // namespace par2
 
 #endif // __PAR1REPAIRER_H__

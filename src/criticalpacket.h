@@ -20,6 +20,9 @@
 #ifndef __CRITICALPACKET_H__
 #define __CRITICALPACKET_H__
 
+namespace par2
+{
+
 // Base class for main packet, file verification packet, file description packet
 // and creator packet.
 
@@ -147,5 +150,7 @@ inline u64 CriticalPacketEntry::PacketLength(void) const
   // Ask the packet how big it is.
   return packet->PacketLength();
 }
+
+} // namespace par2
 
 #endif // __CRITICALPACKET_H__

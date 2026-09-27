@@ -21,6 +21,9 @@
 #ifndef __PAR2REPAIRER_H__
 #define __PAR2REPAIRER_H__
 
+namespace par2
+{
+
 class Par2Repairer
 {
 public:
@@ -238,5 +241,7 @@ protected:
   std::unique_ptr<Processor> processor;              // Multiplies the input blocks by the RS matrix
   bool                      ownfactors;              // Whether the processor solved the erasure itself
 };
+
+} // namespace par2
 
 #endif // __PAR2REPAIRER_H__

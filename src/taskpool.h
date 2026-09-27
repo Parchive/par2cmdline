@@ -30,6 +30,9 @@
 #include <thread>
 #include <vector>
 
+namespace par2
+{
+
 // A fixed set of threads which run work submitted to them from anywhere, so
 // that work submitted from several places at once is shared out between all of
 // them rather than each place being given a share of the threads.
@@ -243,5 +246,7 @@ private:
   std::condition_variable  haswork;    // a batch has been queued
   std::condition_variable  batchdone;  // a batch has finished
 };
+
+} // namespace par2
 
 #endif // __TASKPOOL_H__

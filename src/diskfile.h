@@ -39,6 +39,9 @@
 #include <vector>
 #include <memory>
 
+namespace par2
+{
+
 // A disk file can be any type of file that par2cmdline needs
 // to read or write data from or to.
 
@@ -168,5 +171,7 @@ public:
 protected:
   std::map<std::string, u64> cache;
 };
+
+} // namespace par2
 
 #endif // __DISKFILE_H__

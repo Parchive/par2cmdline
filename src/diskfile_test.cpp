@@ -26,6 +26,8 @@
 
 #include "libpar2internal.h"
 
+using namespace par2;
+
 
 // The file separator
 std::string fs(PATHSEP);

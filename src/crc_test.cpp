@@ -32,6 +32,8 @@
 
 #include "crc.h"
 
+using namespace par2;
+
 
 // Example usage:
 //   u32 checksum = ~0 ^ CRCUpdateBlock(~0, (size_t)blocksize, buffer);

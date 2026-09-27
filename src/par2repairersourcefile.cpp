@@ -20,6 +20,9 @@
 
 #include "libpar2internal.h"
 
+namespace par2
+{
+
 #ifdef _MSC_VER
 #ifdef _DEBUG
 #undef THIS_FILE
@@ -169,3 +172,5 @@ void Par2RepairerSourceFile::SetDiskFileSize()
 {
   diskfilesize = DiskFile::GetFileSize(targetfilename);
 }
+
+} // namespace par2

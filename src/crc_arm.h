@@ -79,6 +79,9 @@
 #  endif
 # endif
 
+namespace par2
+{
+
 template<typename T> static inline T CRCRead(const unsigned char *current)
 {
   T value;
@@ -147,6 +150,8 @@ static bool ArmHasCRC()
   return false;
 #endif
 }
+
+} // namespace par2
 
 #endif // PAR2_CRC_ARM
 
