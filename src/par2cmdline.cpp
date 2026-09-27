@@ -18,13 +18,13 @@
 //  along with this program; if not, write to the Free Software
 //  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-#include "libpar2.h"
+#include <par2/libpar2.h>
 #include "commandline.h"
 // This is included here, so that cout and cerr are not used elsewhere.
 #include <iostream>
 
 #ifdef _WIN32
-#include "utf8.h"
+#include "wargs.h"
 #endif
 
 #ifdef _MSC_VER

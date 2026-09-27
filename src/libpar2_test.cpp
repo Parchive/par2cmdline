@@ -24,7 +24,7 @@
 
 
 
-#include "libpar2.h"
+#include <par2/libpar2.h>
 
 using namespace par2;
 
