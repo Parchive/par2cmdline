@@ -20,6 +20,7 @@
 #ifndef __LIBPAR2_H__
 #define __LIBPAR2_H__
 
+#include <array>
 #include <ostream>
 #include <string>
 #include <vector>
@@ -84,6 +85,59 @@ typedef enum Result
   eMemoryError                 = 8,  // Out of memory
 
 } Result;
+
+
+// What a PAR2 set describes, known once its packets have been loaded
+struct Par2SetInfo
+{
+  std::array<u8, 16> setid{};   // The recovery set id, an MD5 in the order its
+                                // bytes are stored
+  u64 blocksize;                // Size of each block
+  u32 datablocks;               // Number of blocks in the recovery set
+  u32 recoverablefilecount{};   // Files that can be repaired
+  u32 otherfilecount{};         // Files described but not recoverable
+  u64 datasize{};               // Total size of the recoverable files
+  std::string creator;          // The client that created the set, as the
+                                // first creator packet read records it, and
+                                // empty where none was found
+};
+
+
+// Receives progress and per-file results from a par2 operation.
+//
+// Every method has an empty default, so an implementation only overrides what
+// it needs. The methods are called from whichever thread is doing the work,
+// which may be one of several worker threads, so they must be thread safe.
+// They are not affected by the NoiseLevel, which only controls what is written
+// to the output stream.
+class Par2Observer
+{
+public:
+  virtual ~Par2Observer() = default;
+
+  // The recovery set has been identified
+  virtual void OnSetInfo(const Par2SetInfo &info) {}
+
+  // Work has started on a file: one the set describes, or a PAR2 file being
+  // read. Each is followed by an OnFileDone.
+  //
+  // filename is the name the set records, which is the same on every system.
+  // A file the set does not name - a PAR2 file, or an extra file offered to a
+  // verify - is named as it is on this one, and keeps that name for both
+  // reports.
+  virtual void OnFile(const std::string &filename) {}
+
+  // Progress through the current operation, in thousandths, running upwards
+  // once per Verify and once per phase of a Repair - the rebuild, and then the
+  // pass reading back what it wrote. AddPar2File reports no progress.
+  virtual void OnProgress(u32 permille) {}
+
+  // This file has been checked. blocksfound of blocksneeded were usable, both
+  // zero for a PAR2 file, which has no blocks of its own to account for.
+  virtual void OnFileDone(const std::string &filename,
+                          u32 blocksfound,
+                          u32 blocksneeded) {}
+};
 
 
 Result par2create(std::ostream &sout,
