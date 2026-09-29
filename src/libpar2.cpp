@@ -439,9 +439,38 @@ void Par2Verifier::Restart(void)
   impl->SetObserver(observer);
 }
 
+// Discards everything written to it
+class NullStream : public std::ostream
+{
+public:
+  NullStream(void)
+  : std::ostream(&buffer)
+  , buffer()
+  {
+  }
+
+private:
+  class Buffer : public std::streambuf
+  {
+  protected:
+    int_type overflow(int_type c) override
+    {
+      return c;
+    }
+
+    std::streamsize xsputn(const char *, std::streamsize n) override
+    {
+      return n;
+    }
+  };
+
+  Buffer buffer;
+};
+
 Par2Verifier::Par2Verifier(std::ostream &sout, std::ostream &serr, NoiseLevel noiselevel,
                            const std::string &_basepath, Backends _backends)
-: sout(sout)
+: nullstream()
+, sout(sout)
 , serr(serr)
 , noiselevel(noiselevel)
 , backends(std::move(_backends))
@@ -465,6 +494,17 @@ Par2Verifier::Par2Verifier(std::ostream &sout, std::ostream &serr, NoiseLevel no
 , lasterror()
 , impl(new Impl(sout, serr, noiselevel, basepath, backends))
 {
+}
+
+Par2Verifier::Par2Verifier(const std::string &_basepath, Backends _backends)
+: Par2Verifier(std::unique_ptr<NullStream>(new NullStream), _basepath, std::move(_backends))
+{
+}
+
+Par2Verifier::Par2Verifier(std::unique_ptr<NullStream> _nullstream, const std::string &_basepath, Backends _backends)
+: Par2Verifier(*_nullstream, *_nullstream, nlSilent, _basepath, std::move(_backends))
+{
+  nullstream = std::move(_nullstream);
 }
 
 Par2Verifier::~Par2Verifier() = default;
@@ -565,8 +605,8 @@ Result Par2Verifier::AddPar2File(const std::string &_parfilename)
   const Par2Error added = lasterror;
 
   // Remembered even without the critical packets, so that a later restart
-  // replays it alongside the file that completes the set. A cancelled read is
-  // not.
+  // replays it alongside the file that completes the set. A cancelled load is
+  // not remembered, so that naming it again after ClearCancel reads the rest.
   if (result != eFileIOError && result != eCancelled)
   {
     par2files.push_back(parfilename);
@@ -809,7 +849,8 @@ void Par2Creator::TakeLastError(void)
 
 Par2Creator::Par2Creator(std::ostream &sout, std::ostream &serr, NoiseLevel noiselevel,
                          const std::string &_basepath, Backends _backends)
-: sout(sout)
+: nullstream()
+, sout(sout)
 , serr(serr)
 , noiselevel(noiselevel)
 , backends(std::move(_backends))
@@ -828,6 +869,17 @@ Par2Creator::Par2Creator(std::ostream &sout, std::ostream &serr, NoiseLevel nois
 , lasterror()
 , impl(new Impl(sout, serr, noiselevel, backends))
 {
+}
+
+Par2Creator::Par2Creator(const std::string &_basepath, Backends _backends)
+: Par2Creator(std::unique_ptr<NullStream>(new NullStream), _basepath, std::move(_backends))
+{
+}
+
+Par2Creator::Par2Creator(std::unique_ptr<NullStream> _nullstream, const std::string &_basepath, Backends _backends)
+: Par2Creator(*_nullstream, *_nullstream, nlSilent, _basepath, std::move(_backends))
+{
+  nullstream = std::move(_nullstream);
 }
 
 Par2Creator::~Par2Creator() = default;
