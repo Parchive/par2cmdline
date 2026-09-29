@@ -122,10 +122,6 @@ protected:
   // Read the text of arguments into the class's variables
   bool ReadArgs(int argc, const char * const *argv);
 
-  // Returns the memory on the system in BYTES
-  // (or 0 if it cannot be determined)
-  u64 GetTotalPhysicalMemory();
-
   // Check values that were set during ReadArgs.
   // If values went unset, set them with default values
   bool CheckValuesAndSetDefaults();
