@@ -405,6 +405,7 @@ Par2Verifier::Par2Verifier(std::ostream &sout, std::ostream &serr, NoiseLevel no
 , verified(false)
 , scanned(false)
 , repaired(false)
+, readback(false)
 , cancelled(false)
 , restarting(false)
 , basepath(NormaliseBasePath(_basepath))
@@ -507,6 +508,24 @@ bool Par2Verifier::GetFileInfo(std::vector<Par2FileInfo> *files) const
   return impl->GetFileInfo(files);
 }
 
+bool Par2Verifier::GetBlockChecksums(const std::string &filename,
+                                    std::vector<u32> *crcs) const
+{
+  return impl->GetBlockChecksums(filename, crcs);
+}
+
+// Guarded by verified, unlike GetBlockChecksums: before anything has been
+// scanned every block would read as not found, which is not the same as
+// nothing having been looked at.
+bool Par2Verifier::GetFoundBlocks(const std::string &filename,
+                                  std::vector<bool> *blocks) const
+{
+  if (!verified || (repaired && !readback))
+    return false;
+
+  return impl->GetFoundBlocks(filename, blocks);
+}
+
 bool Par2Verifier::GetBackupFiles(std::vector<std::string> *files) const
 {
   return impl->GetBackupFiles(files);
@@ -606,7 +625,10 @@ Result Par2Verifier::Repair(const bool verifyafter)
 
   repaired = true;
 
-  return impl->Rebuild(memorylimit, nthreads, filethreads, verifyafter);
+  const Result result = impl->Rebuild(memorylimit, nthreads, filethreads, verifyafter);
+  readback = verifyafter && result == eSuccess;
+
+  return result;
 }
 
 void Par2Verifier::Cancel(void)

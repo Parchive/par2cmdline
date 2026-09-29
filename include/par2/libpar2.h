@@ -250,6 +250,43 @@ public:
   bool GetSetInfo(Par2SetInfo *info) const;
   bool GetFileInfo(std::vector<Par2FileInfo> *files) const;
 
+  // The CRC32 the set records for each block of the named file, one entry per
+  // block starting at block 0. The name is the filename field of Par2FileInfo.
+  //
+  // False when the set does not describe that file, or describes it without a
+  // verification packet, as it does a file it cannot recover.
+  bool GetBlockChecksums(const std::string &filename,
+                         std::vector<u32> *crcs) const;
+
+  // Which blocks of the named file the last verify found in that file at their
+  // own offsets, one entry per block starting at block 0. The name is the
+  // filename field of Par2FileInfo, and the entries line up one for one with the
+  // checksums GetBlockChecksums returns and with what SetKnownBlocks takes.
+  // Handed to another verifier through SetKnownBlocks it vouches for the blocks
+  // found, but one with no entry set tells that verifier the file holds nothing
+  // usable, so it is not read, even where its blocks were found at shifted
+  // offsets.
+  //
+  // This is what the file itself holds, not what a repair has available. A
+  // block which is not here may still have been found somewhere else - in
+  // another file of the set, or at a shifted offset in this one - and
+  // GetVerifyResult counts those as available. Summing these will therefore
+  // not always reach availableblockcount.
+  //
+  // A block the caller vouched for through SetKnownBlocks reads back as found,
+  // since the verify made no distinction.
+  //
+  // After a repair which succeeded and read back what it wrote it describes the
+  // repaired files.
+  //
+  // False until something has been verified, after a repair which failed or did
+  // not read back what it wrote, when that file was not there to be scanned, as
+  // a missing file or one not yet given to VerifyFile is not, when the set does
+  // not describe that file, or when it describes it without a verification
+  // packet, as it does a file it cannot recover.
+  bool GetFoundBlocks(const std::string &filename,
+                      std::vector<bool> *blocks) const;
+
   // Accept the caller's word that these blocks of the named file are intact,
   // so that they are not read and hashed again. The name is the one the set
   // records, which is the filename field of Par2FileInfo and is the same on
@@ -402,6 +439,7 @@ private:
   bool verified;
   bool scanned;
   bool repaired;
+  bool readback;
   std::mutex cancelmutex;
   bool cancelled;
   bool restarting;
