@@ -132,6 +132,8 @@ public:
   // different shape, which is what makes an earlier scan of the data useless
   Result Add(const std::string &parfilename, bool *setchanged)
   {
+    ClearLastError();
+
     const std::vector<std::string> none;
 
     const u32 blocksbefore = sourceblockcount;
@@ -147,9 +149,24 @@ public:
 
     // Read it again even if it has been seen before
     if (!LoadPackets(parfilename, none, true) || IsCancelled())
-      return IsCancelled() ? eCancelled : eLogicError;
+    {
+      if (IsCancelled())
+        return eCancelled;
+
+      errorlog.Record(ecInternalError, "Could not load the PAR2 packets", parfilename);
+      return eLogicError;
+    }
 
     if (packetsloaded == before && !DiskFile::FileExists(parfilename))
+    {
+      errorlog.Record(ecPar2FileMissing, "There is no such PAR2 file", parfilename);
+      return eFileIOError;
+    }
+
+    // Nor is one which is there but could not be opened
+    Par2Error failure;
+    if (packetsloaded == before && errorlog.First(&failure) && ecFileOpenFailed == failure.code
+        && DiskFile::GetCanonicalPathname(failure.filename) == DiskFile::GetCanonicalPathname(parfilename))
       return eFileIOError;
 
     prepared = PreparePackets();
@@ -221,8 +238,19 @@ public:
   // with the recovery blocks available now
   Result Reassess(void)
   {
+    ClearLastError();
+
+    if (0 == mainpacket)
+    {
+      errorlog.Record(ecMainPacketMissing, "The PAR2 files do not describe a set");
+      return eInsufficientCriticalData;
+    }
+
     if (prepared != eSuccess)
+    {
+      errorlog.Record(ecTooManySourceBlocks, "The set needs more blocks than can be held");
       return prepared;
+    }
 
     return ScanOutcome();
   }
@@ -230,8 +258,11 @@ public:
   Result Scan(const std::string &filename, const size_t memorylimit,
               const u32 _nthreads, const u32 _filethreads)
   {
-    if (prepared != eSuccess)
+    if (0 != mainpacket && prepared != eSuccess)
+    {
+      errorlog.Record(ecTooManySourceBlocks, "The set needs more blocks than can be held");
       return prepared;
+    }
 
     ApplyThreadCounts(_nthreads, _filethreads);
     ApplyMemoryLimit(memorylimit);
@@ -250,8 +281,19 @@ public:
                const u32 _nthreads,
                const u32 _filethreads)
   {
+    ClearLastError();
+
+    if (0 == mainpacket)
+    {
+      errorlog.Record(ecMainPacketMissing, "The PAR2 files do not describe a set");
+      return eInsufficientCriticalData;
+    }
+
     if (prepared != eSuccess)
+    {
+      errorlog.Record(ecTooManySourceBlocks, "The set needs more blocks than can be held");
       return prepared;
+    }
 
     ApplyThreadCounts(_nthreads, _filethreads);
     ApplyMemoryLimit(memorylimit);
@@ -266,8 +308,19 @@ public:
                  const u32 _filethreads,
                  const bool verifyafter)
   {
+    ClearLastError();
+
+    if (0 == mainpacket)
+    {
+      errorlog.Record(ecMainPacketMissing, "The PAR2 files do not describe a set");
+      return eInsufficientCriticalData;
+    }
+
     if (prepared != eSuccess)
+    {
+      errorlog.Record(ecTooManySourceBlocks, "The set needs more blocks than can be held");
       return prepared;
+    }
 
     ApplyThreadCounts(_nthreads, _filethreads);
 
@@ -409,11 +462,48 @@ Par2Verifier::Par2Verifier(std::ostream &sout, std::ostream &serr, NoiseLevel no
 , cancelled(false)
 , restarting(false)
 , basepath(NormaliseBasePath(_basepath))
+, lasterror()
 , impl(new Impl(sout, serr, noiselevel, basepath, backends))
 {
 }
 
 Par2Verifier::~Par2Verifier() = default;
+
+// The engine records the error, but Restart throws the engine away, so the
+// handle keeps its own copy of what the call it is returning from recorded.
+void Par2Verifier::TakeLastError(void)
+{
+  lasterror = Par2Error();
+  impl->GetLastError(&lasterror);
+}
+
+// Make an error the one the call reports, and tell the observer
+static void ReportError(Par2Error &lasterror, Par2Observer *observer, const ErrorCode code,
+                        const std::string &message, const std::string &filename = std::string())
+{
+  lasterror = Par2Error();
+  lasterror.code = code;
+  lasterror.message = message;
+  lasterror.filename = filename;
+
+  if (observer)
+    observer->OnError(lasterror);
+}
+
+// What the handle itself has to report, rather than the work it delegates
+void Par2Verifier::RecordLastError(const ErrorCode code, const std::string &message)
+{
+  ReportError(lasterror, observer, code, message);
+}
+
+bool Par2Verifier::GetLastError(Par2Error *error) const
+{
+  if (0 == error || ecNone == lasterror.code)
+    return false;
+
+  *error = lasterror;
+  return true;
+}
 
 void Par2Verifier::SetObserver(Par2Observer *_observer)
 {
@@ -453,7 +543,10 @@ Result Par2Verifier::AddPar2File(const std::string &_parfilename)
 
   // Naming the same file again is not an error, there is simply nothing to do
   if (std::find(par2files.begin(), par2files.end(), parfilename) != par2files.end())
+  {
+    lasterror = Par2Error();
     return eSuccess;
+  }
 
   // Take it from the first PAR2 file named, before any packets are read
   const bool derived = basepath.empty();
@@ -465,6 +558,11 @@ Result Par2Verifier::AddPar2File(const std::string &_parfilename)
 
   bool setchanged = false;
   const Result result = impl->Add(parfilename, &setchanged);
+
+  // Restart replays the scans through VerifyFile, which would otherwise leave
+  // the handle holding what the replay found rather than what Add recorded
+  TakeLastError();
+  const Par2Error added = lasterror;
 
   // Remembered even without the critical packets, so that a later restart
   // replays it alongside the file that completes the set. A cancelled read is
@@ -487,15 +585,29 @@ Result Par2Verifier::AddPar2File(const std::string &_parfilename)
   if (setchanged && (scanned || !scannedfiles.empty()))
     Restart();
 
+  lasterror = added;
+
   return result;
 }
 
 Result Par2Verifier::Reassess(void)
 {
-  if (!verified || repaired)
+  if (!verified)
+  {
+    RecordLastError(ecNotVerified, "Nothing has been verified yet");
     return eLogicError;
+  }
 
-  return impl->Reassess();
+  if (repaired)
+  {
+    RecordLastError(ecNotVerified, "Nothing has been verified since the last repair");
+    return eLogicError;
+  }
+
+  const Result result = impl->Reassess();
+  TakeLastError();
+
+  return result;
 }
 
 bool Par2Verifier::GetSetInfo(Par2SetInfo *info) const
@@ -573,6 +685,7 @@ Result Par2Verifier::Verify(const std::vector<std::string> &extrafiles)
   verified = false;
 
   const Result result = impl->Check(extrafiles, memorylimit, nthreads, filethreads);
+  TakeLastError();
 
   if (result != eInsufficientCriticalData)
     scanned = true;
@@ -594,6 +707,7 @@ Result Par2Verifier::VerifyFile(const std::string &filename)
   }
 
   const Result result = impl->Scan(filename, memorylimit, nthreads, filethreads);
+  TakeLastError();
 
   if (result != eInsufficientCriticalData)
     scanned = true;
@@ -615,18 +729,28 @@ Result Par2Verifier::VerifyFile(const std::string &filename)
 Result Par2Verifier::Repair(const bool verifyafter)
 {
   if (!verified)
+  {
+    RecordLastError(ecNotVerified, "Nothing has been verified yet");
     return eLogicError;
+  }
 
   if (repaired)
+  {
+    RecordLastError(ecNotVerified, "Nothing has been verified since the last repair");
     return eLogicError;
+  }
 
   if (!impl->CanRepair())
+  {
+    lasterror = Par2Error();
     return eRepairNotPossible;
+  }
 
   repaired = true;
 
   const Result result = impl->Rebuild(memorylimit, nthreads, filethreads, verifyafter);
   readback = verifyafter && result == eSuccess;
+  TakeLastError();
 
   return result;
 }

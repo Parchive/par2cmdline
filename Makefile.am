@@ -30,6 +30,7 @@ libpar2_a_SOURCES = src/crc.cpp src/crc.h \
 	src/datablock.cpp src/datablock.h \
 	src/descriptionpacket.cpp src/descriptionpacket.h \
 	src/diskfile.cpp src/diskfile.h \
+	src/errorlog.h \
 	src/filechecksummer.cpp src/filechecksummer.h \
 	src/galois.cpp src/galois.h \
 	src/letype.h \
