@@ -1216,6 +1216,16 @@ DiskFile* DiskFileMap::Find(std::string filename) const
   return (f != diskfilemap.end()) ?  f->second : 0;
 }
 
+std::vector<DiskFile*> DiskFileMap::Files(void) const
+{
+  std::vector<DiskFile*> files;
+
+  for (const auto &f : diskfilemap)
+    files.push_back(f.second);
+
+  return files;
+}
+
 
 FileSizeCache::FileSizeCache()
 {
