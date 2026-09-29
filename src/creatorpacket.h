@@ -51,7 +51,9 @@ inline std::string CreatorPacket::Client(void) const
 {
   assert(packetdata != 0);
 
-  return (char*)((const CREATORPACKET*)packetdata)->client;
+  // The text runs to a NUL, or to the end of a packet it fills
+  const char *client = (const char*)((const CREATORPACKET*)packetdata)->client;
+  return std::string(client, std::find(client, client + (packetlength - sizeof(CREATORPACKET)), '\0'));
 }
 
 } // namespace par2

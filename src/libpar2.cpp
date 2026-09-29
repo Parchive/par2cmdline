@@ -774,6 +774,206 @@ void Par2Verifier::ClearCancel(void)
 }
 
 
+
+// Par2SetCreator carries out the work
+class Par2Creator::Impl : public Par2SetCreator
+{
+public:
+  Impl(std::ostream &sout, std::ostream &serr, NoiseLevel noiselevel, const Backends &backends)
+    : Par2SetCreator(sout, serr, noiselevel, backends)
+  {
+  }
+};
+
+// A create leaves the engine holding the packets of the set it wrote, so a
+// second one has to start from a new engine. Nothing is replayed into it:
+// every setting lives on the handle and is passed into the run.
+void Par2Creator::Restart(void)
+{
+  std::lock_guard<std::mutex> lock(cancelmutex);
+
+  impl = std::make_unique<Impl>(sout, serr, noiselevel, backends);
+  impl->SetObserver(observer);
+
+  if (cancelled)
+    impl->Cancel();
+}
+
+// The engine records the error, but Restart throws the engine away, so the
+// handle keeps its own copy of what the call it is returning from recorded.
+void Par2Creator::TakeLastError(void)
+{
+  lasterror = Par2Error();
+  impl->GetLastError(&lasterror);
+}
+
+Par2Creator::Par2Creator(std::ostream &sout, std::ostream &serr, NoiseLevel noiselevel,
+                         const std::string &_basepath, Backends _backends)
+: sout(sout)
+, serr(serr)
+, noiselevel(noiselevel)
+, backends(std::move(_backends))
+, observer(0)
+, sourcefiles()
+, blocksize(0)
+, recoveryblockcount(0)
+, recoveryfilescheme(scVariable)
+, recoveryfilecount(0)
+, firstrecoveryblock(0)
+, memorylimit(MemoryLimit(0))
+, nthreads(0)
+, filethreads(0)
+, cancelled(false)
+, basepath(NormaliseBasePath(_basepath))
+, lasterror()
+, impl(new Impl(sout, serr, noiselevel, backends))
+{
+}
+
+Par2Creator::~Par2Creator() = default;
+
+void Par2Creator::SetObserver(Par2Observer *_observer)
+{
+  observer = _observer;
+  impl->SetObserver(_observer);
+}
+
+void Par2Creator::AddSourceFile(const std::string &filename)
+{
+  sourcefiles.push_back(filename);
+}
+
+void Par2Creator::AddSourceFiles(const std::vector<std::string> &filenames)
+{
+  sourcefiles.insert(sourcefiles.end(), filenames.begin(), filenames.end());
+}
+
+void Par2Creator::SetBlockSize(const u64 _blocksize)
+{
+  blocksize = _blocksize;
+}
+
+void Par2Creator::SetRecoveryBlockCount(const u32 _recoveryblockcount)
+{
+  recoveryblockcount = _recoveryblockcount;
+}
+
+void Par2Creator::SetRecoveryFileScheme(const Scheme scheme, const u32 _recoveryfilecount)
+{
+  recoveryfilescheme = scheme;
+  recoveryfilecount = _recoveryfilecount;
+}
+
+void Par2Creator::SetFirstRecoveryBlock(const u32 firstblock)
+{
+  firstrecoveryblock = firstblock;
+}
+
+void Par2Creator::SetMemoryLimit(const size_t _memorylimit)
+{
+  memorylimit = MemoryLimit(_memorylimit);
+}
+
+void Par2Creator::SetThreadCounts(const u32 _nthreads, const u32 _filethreads)
+{
+  nthreads = _nthreads;
+  filethreads = _filethreads;
+}
+
+Result Par2Creator::Create(const std::string &parfilename)
+{
+  // Taken from the name of each set when none was given, before any file is
+  // read
+  const std::string setbasepath = basepath.empty()
+    ? NormaliseBasePath(BasePathFor(parfilename))
+    : basepath;
+
+  // The volume files are named after the set rather than after its index file,
+  // so the name is taken either way round
+  std::string setname = parfilename;
+  if (setname.length() > 5 &&
+      0 == stricmp(setname.substr(setname.length()-5, 5).c_str(), ".par2"))
+  {
+    setname = setname.substr(0, setname.length()-5);
+  }
+
+  // Resolved against the working directory, so that the names the set records
+  // come out relative to the basepath whatever the caller wrote them as. Empty
+  // files and a file named twice are left out.
+  std::vector<std::string> files;
+  files.reserve(sourcefiles.size());
+  for (const auto &sourcefile : sourcefiles)
+  {
+    const std::string file = DiskFile::GetCanonicalPathname(sourcefile);
+
+    if (DiskFile::FileExists(file) && 0 == DiskFile::GetFileSize(file))
+      continue;
+
+    if (std::find(files.begin(), files.end(), file) == files.end())
+      files.push_back(file);
+  }
+
+  if (files.empty())
+  {
+    ReportError(lasterror, observer, ecInvalidSetting, "There are no files with any data to create a set for");
+
+    return eInvalidCommandLineArguments;
+  }
+
+  // A set records each name relative to the basepath, so a file outside it
+  // cannot be described
+  for (const auto &file : files)
+  {
+    if (file.compare(0, setbasepath.length(), setbasepath) != 0)
+    {
+      ReportError(lasterror, observer, ecInvalidSetting, "The file is not inside the basepath", file);
+
+      return eInvalidCommandLineArguments;
+    }
+  }
+
+  Restart();
+
+  const Result result = impl->Process(memorylimit,
+                                      setbasepath,
+                                      nthreads,
+                                      filethreads,
+                                      setname,
+                                      files,
+                                      blocksize,
+                                      firstrecoveryblock,
+                                      recoveryfilescheme,
+                                      recoveryfilecount,
+                                      recoveryblockcount);
+  TakeLastError();
+
+  return result;
+}
+
+void Par2Creator::Cancel(void)
+{
+  std::lock_guard<std::mutex> lock(cancelmutex);
+  cancelled = true;
+  impl->Cancel();
+}
+
+void Par2Creator::ClearCancel(void)
+{
+  std::lock_guard<std::mutex> lock(cancelmutex);
+  cancelled = false;
+  impl->ClearCancel();
+}
+
+bool Par2Creator::GetLastError(Par2Error *error) const
+{
+  if (0 == error || ecNone == lasterror.code)
+    return false;
+
+  *error = lasterror;
+  return true;
+}
+
+
 Result par2create(std::ostream &sout,
 		  std::ostream &serr,
 		  const NoiseLevel noiselevel,
@@ -791,7 +991,7 @@ Result par2create(std::ostream &sout,
 		  const Backends &backends
 		  )
 {
-  Par2Creator creator(sout, serr, noiselevel, backends);
+  Par2SetCreator creator(sout, serr, noiselevel, backends);
   Result result = creator.Process(
 				  MemoryLimit(memorylimit),
 				  basepath,
@@ -929,6 +1129,12 @@ bool ComputeRecoveryFileCount(std::ostream &sout,
       // be required to reconstruct the largest source file if it
       // were missing. Other recovery files will have recovery blocks
       // distributed in an exponential scheme.
+
+      if (0 == blocksize || 0 == largestfilesize)
+      {
+        serr << "The source files are empty." << std::endl;
+        return false;
+      }
 
       u32 largest = (u32)((largestfilesize + blocksize-1) / blocksize);
       u32 whole = recoveryblockcount / largest;
