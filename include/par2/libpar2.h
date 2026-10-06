@@ -23,9 +23,7 @@
 #include <array>
 #include <map>
 #include <memory>
-#include <mutex>
 #include <ostream>
-#include <set>
 #include <string>
 #include <utility>
 #include <vector>
@@ -588,6 +586,7 @@ public:
 
 private:
   class Impl;
+  struct State;
 
   Par2Verifier(std::unique_ptr<std::ostream> nullstream, const std::string &basepath, Backends backends);
 
@@ -595,30 +594,7 @@ private:
   void TakeLastError(const Result result);
   void RecordLastError(const ErrorCode code, const std::string &message);
 
-  std::unique_ptr<std::ostream> nullstream;
-  std::ostream &sout;
-  std::ostream &serr;
-  NoiseLevel noiselevel;
-  Backends backends;
-  Par2Observer *observer;
-  size_t memorylimit;
-  u32 nthreads;
-  u32 filethreads;
-  bool skipdata;
-  u64 skipleaway;
-  bool fullhash;
-  std::vector<std::string> par2files;
-  std::set<std::string> scannedfiles;
-  std::map<std::string, std::vector<bool> > knownblocks;
-  bool verified;
-  bool scanned;
-  bool repaired;
-  bool readback;
-  std::mutex cancelmutex;
-  bool cancelled;
-  bool restarting;
-  std::string basepath;
-  Par2Error lasterror;
+  std::unique_ptr<State> state;
   std::unique_ptr<Impl> impl;
 };
 
@@ -725,33 +701,14 @@ public:
 
 private:
   class Impl;
+  struct State;
 
   Par2Creator(std::unique_ptr<std::ostream> nullstream, const std::string &basepath, Backends backends);
 
   void Restart(void);
   void TakeLastError(const Result result);
 
-  std::unique_ptr<std::ostream> nullstream;
-  std::ostream &sout;
-  std::ostream &serr;
-  NoiseLevel noiselevel;
-  Backends backends;
-  Par2Observer *observer;
-  std::vector<std::string> sourcefiles;
-  u64 blocksize;
-  u32 sourceblockcount;
-  u32 recoveryblockcount;
-  u32 redundancy;
-  Scheme recoveryfilescheme;
-  u32 recoveryfilecount;
-  u32 firstrecoveryblock;
-  size_t memorylimit;
-  u32 nthreads;
-  u32 filethreads;
-  std::mutex cancelmutex;
-  bool cancelled;
-  std::string basepath;
-  Par2Error lasterror;
+  std::unique_ptr<State> state;
   std::unique_ptr<Impl> impl;
 };
 
