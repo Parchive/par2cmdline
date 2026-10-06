@@ -24,7 +24,9 @@
 #ifdef _WIN32
 // Windows includes
 #define WIN32_LEAN_AND_MEAN
+#ifndef NOMINMAX
 #define NOMINMAX
+#endif
 #include <windows.h>
 
 // System includes
