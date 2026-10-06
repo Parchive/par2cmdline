@@ -69,7 +69,9 @@ function(par2_add_unit_test name)
   set(workdir "${CMAKE_CURRENT_BINARY_DIR}/${name}.run")
   file(MAKE_DIRECTORY "${workdir}")
 
-  if(CMAKE_HOST_WIN32)
+  # A target named as the command runs under CMAKE_CROSSCOMPILING_EMULATOR in a
+  # cross build
+  if(CMAKE_HOST_WIN32 OR CMAKE_CROSSCOMPILING)
     add_test(NAME ${name} COMMAND ${name}
       WORKING_DIRECTORY "${workdir}")
   else()
@@ -165,6 +167,14 @@ if(NOT MSVC)
   else()
     set(PAR2_CONSUMER_LIBS "")
   endif()
+  string(PREPEND PAR2_CONSUMER_LIBS "${CMAKE_EXE_LINKER_FLAGS} ")
+
+  # The consumer of a cross build runs under the same emulator as the tests
+  if(CMAKE_CROSSCOMPILING)
+    list(JOIN CMAKE_CROSSCOMPILING_EMULATOR " " PAR2_CONSUMER_EMULATOR)
+  else()
+    set(PAR2_CONSUMER_EMULATOR "")
+  endif()
 
   string(TOUPPER "${CMAKE_BUILD_TYPE}" PAR2_BUILD_TYPE)
   set(PAR2_CONSUMER_CXXFLAGS "${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_${PAR2_BUILD_TYPE}}")
@@ -204,7 +214,7 @@ if(NOT MSVC)
     set_tests_properties(consumer_build PROPERTIES
       SKIP_RETURN_CODE ${PAR2_SKIP_RETURN_CODE}
       ENVIRONMENT
-        "srcdir=${PAR2_SRCDIR};CXX=${CMAKE_CXX_COMPILER};CXXFLAGS=${PAR2_CONSUMER_CXXFLAGS};PTHREAD_FLAGS=${CMAKE_THREAD_LIBS_INIT};LIBS=${PAR2_CONSUMER_LIBS}")
+        "srcdir=${PAR2_SRCDIR};CXX=${CMAKE_CXX_COMPILER};CXXFLAGS=${PAR2_CONSUMER_CXXFLAGS};PTHREAD_FLAGS=${CMAKE_THREAD_LIBS_INIT};LIBS=${PAR2_CONSUMER_LIBS};EMULATOR=${PAR2_CONSUMER_EMULATOR};EXEEXT=${CMAKE_EXECUTABLE_SUFFIX}")
   endif()
 else()
   if(CMAKE_GENERATOR_PLATFORM)

@@ -13,6 +13,9 @@ jobs:
   build-check-mingw:
     uses: ./.github/workflows/build-check-mingw.yml
 
+  build-check-linux-cross:
+    uses: ./.github/workflows/build-check-linux-cross.yml
+
   build-check-windows:
     uses: ./.github/workflows/build-check-windows.yml
 
@@ -29,6 +32,7 @@ jobs:
   build-linux:
     needs:
     - build-check-linux
+    - build-check-linux-cross
 
     name: build-linux (${{ matrix.arch }})
 

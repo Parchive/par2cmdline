@@ -31,3 +31,12 @@ set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
 set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
 set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
 set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)
+
+# The tests run under qemu-user, for the architecture PAR2_QEMU_ARCH names,
+# when it is installed
+if(PAR2_QEMU_ARCH)
+  find_program(PAR2_QEMU NAMES qemu-${PAR2_QEMU_ARCH} qemu-${PAR2_QEMU_ARCH}-static)
+  if(PAR2_QEMU)
+    set(CMAKE_CROSSCOMPILING_EMULATOR ${PAR2_QEMU} -L /usr/${PAR2_TOOLCHAIN_PREFIX})
+  endif()
+endif()

@@ -28,3 +28,9 @@ set(PAR2_TOOLCHAIN_PREFIX x86_64-w64-mingw32)
 include(${CMAKE_CURRENT_LIST_DIR}/gnu-cross.cmake)
 
 set(CMAKE_EXE_LINKER_FLAGS_INIT "-static -static-libgcc -static-libstdc++")
+
+# The tests run under Wine when it is installed
+find_program(PAR2_WINE NAMES wine wine64)
+if(PAR2_WINE)
+  set(CMAKE_CROSSCOMPILING_EMULATOR ${PAR2_WINE})
+endif()

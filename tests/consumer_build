@@ -46,11 +46,11 @@ done
 
 # Deliberately no -I for the source tree and no -DHAVE_CONFIG_H.
 $CXX $CXXFLAGS -std=c++17 -I"$srcdir/include" \
-     "$srcdir/tests/consumer.cpp" -o consumer \
+     "$srcdir/tests/consumer.cpp" -o consumer$EXEEXT \
      "$execdir/libpar2.a" $PTHREAD_FLAGS $LIBS \
   || { echo "ERROR: could not build against <par2/libpar2.h>" ; exit 1; } >&2
 
-./consumer \
+$EMULATOR ./consumer$EXEEXT \
   || { echo "ERROR: the program built against <par2/libpar2.h> failed" ; exit 1; } >&2
 
 cd "$execdir"

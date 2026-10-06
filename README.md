@@ -94,6 +94,11 @@ for 64-bit and 32-bit Arm Linux (*aarch64-linux-gnu.cmake* and
 *arm-linux-gnueabihf.cmake*), and one for FreeBSD, which also needs a sysroot
 (*freebsd.cmake* says how to give it one).
 
+With the emulator a toolchain file looks for installed - Wine for Windows,
+qemu-user for Arm - ctest runs the tests of the cross build under it. The test
+scripts run the *par2* executable directly, which for Arm needs qemu registered
+with binfmt_misc, as the qemu-user-static package does.
+
 An application embeds the library with either `add_subdirectory` or, once it is
 installed, `find_package(par2)`, and links `par2::par2`.
 

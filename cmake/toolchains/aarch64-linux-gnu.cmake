@@ -24,4 +24,5 @@ set(CMAKE_SYSTEM_NAME Linux)
 set(CMAKE_SYSTEM_PROCESSOR aarch64)
 
 set(PAR2_TOOLCHAIN_PREFIX aarch64-linux-gnu)
+set(PAR2_QEMU_ARCH aarch64)
 include(${CMAKE_CURRENT_LIST_DIR}/gnu-cross.cmake)

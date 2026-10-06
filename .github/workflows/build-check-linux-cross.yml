@@ -1,0 +1,38 @@
+name: par2cmdline CI Linux cross
+
+on:
+  workflow_call:
+  workflow_dispatch:
+
+jobs:
+  build-check-linux-cross:
+    name: build-check-linux-cross (${{ matrix.arch }})
+
+    strategy:
+      matrix:
+        include:
+        - arch: armhf
+          prefix: arm-linux-gnueabihf
+          libc: libc6-dev-armhf-cross
+
+    runs-on: ubuntu-latest
+
+    env:
+      QEMU_LD_PREFIX: /usr/${{ matrix.prefix }}
+
+    steps:
+    - uses: actions/checkout@v7
+
+    - name: Install the cross toolchain and qemu
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y g++-${{ matrix.prefix }} ${{ matrix.libc }} qemu-user-static
+
+    - name: Build
+      run: |
+        cmake -B build-cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DPAR2_KEEP_ASSERTS=ON \
+          -DCMAKE_TOOLCHAIN_FILE=cmake/toolchains/${{ matrix.prefix }}.cmake
+        cmake --build build-cmake
+
+    - name: Run Tests
+      run: ctest --test-dir build-cmake --output-on-failure

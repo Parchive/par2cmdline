@@ -24,4 +24,5 @@ set(CMAKE_SYSTEM_NAME Linux)
 set(CMAKE_SYSTEM_PROCESSOR armv7l)
 
 set(PAR2_TOOLCHAIN_PREFIX arm-linux-gnueabihf)
+set(PAR2_QEMU_ARCH arm)
 include(${CMAKE_CURRENT_LIST_DIR}/gnu-cross.cmake)

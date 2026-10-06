@@ -83,7 +83,9 @@ int test1() {
   }
   files = DiskFile::FindFiles(".", "input1?.txt", false);
 #ifdef _WIN32
-  if (files->size() != 1 || *(files->begin()) != "." + fs + "input1.txt") {
+  // Under Wine ? matches exactly one character
+  if (GetProcAddress(GetModuleHandleA("ntdll.dll"), "wine_get_version") == nullptr
+      && (files->size() != 1 || *(files->begin()) != "." + fs + "input1.txt")) {
     std::cout << "FindFiles failed on empty ?" << std::endl;
     return 1;
   }
