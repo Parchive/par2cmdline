@@ -84,6 +84,16 @@ The build takes the following options:
     -DPAR2_INSTALL=OFF        skip the install rules
     -DPAR2_KEEP_ASSERTS=ON    keep assert checks in an optimised build
 
+To cross-compile, name one of the toolchain files in *cmake/toolchains*:
+
+    cmake -B build-windows -DCMAKE_TOOLCHAIN_FILE=cmake/toolchains/x86_64-w64-mingw32.cmake
+    cmake --build build-windows
+
+There is one for Windows with MinGW-w64 (*x86_64-w64-mingw32.cmake*), one each
+for 64-bit and 32-bit Arm Linux (*aarch64-linux-gnu.cmake* and
+*arm-linux-gnueabihf.cmake*), and one for FreeBSD, which also needs a sysroot
+(*freebsd.cmake* says how to give it one).
+
 An application embeds the library with either `add_subdirectory` or, once it is
 installed, `find_package(par2)`, and links `par2::par2`.
 

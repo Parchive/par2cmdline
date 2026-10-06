@@ -38,17 +38,9 @@ jobs:
         - arch: amd64
           cmake_args:
         - arch: arm64
-          cmake_args: >-
-            -DCMAKE_SYSTEM_NAME=Linux
-            -DCMAKE_SYSTEM_PROCESSOR=aarch64
-            -DCMAKE_C_COMPILER=aarch64-linux-gnu-gcc
-            -DCMAKE_CXX_COMPILER=aarch64-linux-gnu-g++
+          cmake_args: -DCMAKE_TOOLCHAIN_FILE=cmake/toolchains/aarch64-linux-gnu.cmake
         - arch: armhf
-          cmake_args: >-
-            -DCMAKE_SYSTEM_NAME=Linux
-            -DCMAKE_SYSTEM_PROCESSOR=armv7l
-            -DCMAKE_C_COMPILER=arm-linux-gnueabihf-gcc
-            -DCMAKE_CXX_COMPILER=arm-linux-gnueabihf-g++
+          cmake_args: -DCMAKE_TOOLCHAIN_FILE=cmake/toolchains/arm-linux-gnueabihf.cmake
 
     runs-on: ubuntu-latest
 
@@ -230,14 +222,10 @@ jobs:
       run: |
         SYSROOT="$PWD/sysroot"
         cmake -B build-cmake -G Ninja -DCMAKE_BUILD_TYPE=Release \
-          -DCMAKE_SYSTEM_NAME=FreeBSD \
-          -DCMAKE_SYSROOT="$SYSROOT" \
-          -DCMAKE_C_COMPILER=clang \
-          -DCMAKE_C_COMPILER_TARGET=${{ matrix.triple }} \
-          -DCMAKE_CXX_COMPILER=clang++ \
-          -DCMAKE_CXX_COMPILER_TARGET=${{ matrix.triple }} \
-          -DCMAKE_CXX_FLAGS="-stdlib=libc++" \
-          -DCMAKE_EXE_LINKER_FLAGS="-fuse-ld=lld -static -s" \
+          -DCMAKE_TOOLCHAIN_FILE=cmake/toolchains/freebsd.cmake \
+          -DPAR2_FREEBSD_SYSROOT="$SYSROOT" \
+          -DPAR2_FREEBSD_TARGET=${{ matrix.triple }} \
+          -DCMAKE_EXE_LINKER_FLAGS="-static -s" \
           -DPAR2_BUILD_TESTS=OFF
         cmake --build build-cmake
 
