@@ -40,29 +40,29 @@ jobs:
       matrix:
         include:
         - arch: amd64
+          runner: ubuntu-latest
           cmake_args:
         - arch: arm64
-          cmake_args: -DCMAKE_TOOLCHAIN_FILE=cmake/toolchains/aarch64-linux-gnu.cmake
+          runner: ubuntu-24.04-arm
+          cmake_args:
         - arch: armhf
+          runner: ubuntu-latest
           cmake_args: -DCMAKE_TOOLCHAIN_FILE=cmake/toolchains/arm-linux-gnueabihf.cmake
 
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.runner }}
 
     steps:
     - uses: actions/checkout@v7
 
-    - name: Install cross toolchains
-      if: matrix.arch != 'amd64'
+    - name: Install Ninja
+      if: runner.arch == 'ARM64'
+      run: sudo apt-get update && sudo apt-get install -y ninja-build
+
+    - name: Install the cross toolchain
+      if: matrix.arch == 'armhf'
       run: |
         sudo apt-get update
-        case "${{ matrix.arch }}" in
-          arm64)
-            sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu libc6-dev-arm64-cross
-            ;;
-          armhf)
-            sudo apt-get install -y gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf libc6-dev-armhf-cross
-            ;;
-        esac
+        sudo apt-get install -y g++-arm-linux-gnueabihf libc6-dev-armhf-cross
 
     - name: Build
       run: |

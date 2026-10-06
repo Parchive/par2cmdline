@@ -6,10 +6,24 @@ on:
 
 jobs:
   build-check-linux:
-    runs-on: ubuntu-latest
+    name: build-check-linux (${{ matrix.arch }})
+
+    strategy:
+      matrix:
+        include:
+        - arch: amd64
+          runner: ubuntu-latest
+        - arch: arm64
+          runner: ubuntu-24.04-arm
+
+    runs-on: ${{ matrix.runner }}
 
     steps:
     - uses: actions/checkout@v7
+
+    - name: Install Ninja
+      if: runner.arch == 'ARM64'
+      run: sudo apt-get update && sudo apt-get install -y ninja-build
 
     - name: Build and test
       run: |
