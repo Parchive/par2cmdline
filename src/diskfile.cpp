@@ -381,10 +381,7 @@ std::string DiskFile::GetCanonicalPathname(std::string filename)
 {
   std::wstring wfilename;
   if (!utf8::Utf8ToWide(filename, wfilename))
-  {
-    LockedStream(std::cerr) << "Could not convert \"" << filename << "\" to a wide string." << std::endl;
     return filename;
-  }
 
   // First call to get required buffer size
   DWORD length = GetFullPathNameW(wfilename.c_str(), 0, nullptr, nullptr);
@@ -425,10 +422,7 @@ std::unique_ptr< std::list<std::string> > DiskFile::FindFiles(std::string path, 
 
   std::wstring wwildcard;
   if (!utf8::Utf8ToWide(path + wildcard, wwildcard))
-  {
-    LockedStream(std::cerr) << "Could not convert \"" << path + wildcard << "\" to a wide string." << std::endl;
     return std::unique_ptr< std::list<std::string> >(matches);
-  }
 
   WIN32_FIND_DATAW fd;
   HANDLE h = ::FindFirstFileW(wwildcard.c_str(), &fd);
@@ -472,10 +466,7 @@ u64 DiskFile::GetFileSize(std::string filename)
 {
   std::wstring wfilename;
   if (!utf8::Utf8ToWide(filename, wfilename))
-  {
-    LockedStream(std::cerr) << "Could not convert \"" << filename << "\" to a wide string." << std::endl;
     return 0;
-  }
 
   struct _stati64 st;
   if ((0 == _wstati64(wfilename.c_str(), &st)) && (0 != (st.st_mode & S_IFREG)))
@@ -492,10 +483,7 @@ bool DiskFile::FileExists(std::string filename)
 {
   std::wstring wfilename;
   if (!utf8::Utf8ToWide(filename, wfilename))
-  {
-    LockedStream(std::cerr) << "Could not convert \"" << filename << "\" to a wide string." << std::endl;
     return false;
-  }
 
   struct _stati64 st;
   return ((0 == _wstati64(wfilename.c_str(), &st)) && (0 != (st.st_mode & _S_IFREG)));

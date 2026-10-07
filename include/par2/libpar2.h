@@ -370,8 +370,7 @@ public:
   // falls back to the one built in when it is left empty.
   //
   // Nothing is written anywhere, and the work is followed through an observer
-  // instead. The one exception is on Windows, where a filename which is not
-  // valid UTF-8 is reported on stderr as it is converted.
+  // instead.
   explicit Par2Verifier(const std::string &basepath,
                         Backends backends = Backends());
 
@@ -617,8 +616,7 @@ public:
   // falls back to the one built in when it is left empty.
   //
   // Nothing is written anywhere, and the work is followed through an observer
-  // instead. The one exception is on Windows, where a filename which is not
-  // valid UTF-8 is reported on stderr as it is converted.
+  // instead.
   explicit Par2Creator(const std::string &basepath,
                        Backends backends = Backends());
   ~Par2Creator();
