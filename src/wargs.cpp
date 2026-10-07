@@ -32,8 +32,6 @@ namespace par2
 {
 namespace utf8
 {
-  const int MAX_ARGS = 128;
-
   WideToUtf8ArgsAdapter::WideToUtf8ArgsAdapter(int argc, wchar_t* wargv[]) noexcept(false)
     : m_argv(nullptr)
     , m_argc(argc)
@@ -41,15 +39,6 @@ namespace utf8
     if (wargv == nullptr)
     {
       throw std::invalid_argument("Invalid argument: wargv cannot be nullptr.");
-    }
-
-    if (m_argc > MAX_ARGS)
-    {
-      std::cerr
-        << "Too many arguments (" << argc << "/" << MAX_ARGS << ").\n"
-           "Only " << MAX_ARGS << " will be processed." << std::endl;
-
-      m_argc = MAX_ARGS;
     }
 
     m_argv = new char* [m_argc + 1];

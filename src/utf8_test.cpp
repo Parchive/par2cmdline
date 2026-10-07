@@ -24,6 +24,7 @@
 #ifdef _WIN32
 
 #include <string>
+#include <vector>
 #include "utf8.h"
 #include "wargs.h"
 
@@ -244,6 +245,32 @@ int test11()
   return converted != wide;
 }
 
+// Every argument is converted, however many there are
+int test12()
+{
+  std::vector<std::wstring> args;
+  for (int i = 0; i < 200; ++i)
+    args.push_back(L"arg" + std::to_wstring(i));
+
+  std::vector<wchar_t*> wargv;
+  for (std::wstring &arg : args)
+    wargv.push_back(&arg[0]);
+
+  WideToUtf8ArgsAdapter adapter((int)wargv.size(), wargv.data());
+  const char* const* utf8Args = adapter.GetUtf8Args();
+
+  if (adapter.GetArgc() != 200)
+    return 1;
+
+  for (int i = 0; i < 200; ++i)
+  {
+    if (std::string(utf8Args[i]) != "arg" + std::to_string(i))
+      return 1;
+  }
+
+  return utf8Args[200] != nullptr;
+}
+
 int main()
 {
   if (test1())
@@ -309,6 +336,12 @@ int main()
   if (test11())
   {
     std::cerr << "FAILED: test11" << std::endl;
+    return 1;
+  }
+
+  if (test12())
+  {
+    std::cerr << "FAILED: test12" << std::endl;
     return 1;
   }
 

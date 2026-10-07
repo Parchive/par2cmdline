@@ -26,8 +26,6 @@ namespace par2
 {
 namespace utf8
 {
-  extern const int MAX_ARGS;
-
   class WideToUtf8ArgsAdapter final
   {
   public:
