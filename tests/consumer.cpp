@@ -28,6 +28,7 @@
 #include <cstdio>
 #include <algorithm>
 #include <fstream>
+#include <map>
 #include <memory>
 #include <mutex>
 #include <new>
@@ -225,6 +226,25 @@ public:
   }
 };
 
+// Keeps what OnFileDone said of each file a scan checked, by the name OnFile
+// gave it
+class Results : public par2::Par2Observer
+{
+public:
+  void OnFileDone(par2::Phase phase, const par2::Par2FileResult &result) override
+  {
+    std::lock_guard<std::mutex> lock(mutex);
+    if (phase != par2::phLoading)
+      results[result.filename] = result;
+  }
+
+  std::map<std::string, par2::Par2FileResult> results;
+
+private:
+  // The callbacks arrive from the threads doing the work, several at a time
+  std::mutex mutex;
+};
+
 // Counts what the observer is told, to show the callbacks arrive even when
 // nothing is written to the output stream.
 class Counting : public par2::Par2Observer
@@ -270,7 +290,7 @@ public:
     filephases.push_back(phase);
   }
 
-  void OnFileDone(par2::Phase, const std::string &, par2::u32, par2::u32) override
+  void OnFileDone(par2::Phase, const par2::Par2FileResult &) override
   {
     std::lock_guard<std::mutex> lock(mutex);
     ++done;
@@ -1358,10 +1378,23 @@ int main()
     std::vector<std::pair<std::string, std::string> > renamed = verifier.GetRenamedFiles();
     Check(renamed.empty(), "nothing is renamed until something has been verified");
 
+    Results seen;
+    verifier.SetObserver(&seen);
+
     std::vector<std::string> extras;
     extras.emplace_back(obfuscated);
     Check(par2::eRepairPossible == verifier.Verify(extras),
           "the file is found under its other name");
+
+    // The set's file is not where it belongs, and the extra file is it whole
+    const par2::Par2FileResult missing = seen.results["proper.data"];
+    Check(!missing.exists && missing.target, "OnFileDone says the set's file is missing");
+    const par2::Par2FileResult extra = seen.results["9f3ac1b7e2.dat"];
+    Check(extra.exists && !extra.target && extra.scanned && extra.complete,
+          "and that the extra file is it, whole");
+    Check(extra.matchedfilename == "proper.data", "naming the file it is");
+    Check(extra.blocksfound > 0 && extra.blocksfound == extra.blocksneeded,
+          "with every block of it found");
 
     renamed = verifier.GetRenamedFiles();
     Check(renamed.size() == 1, "one file was found renamed");
@@ -2202,6 +2235,42 @@ int main()
       par2::Par2Verifier gone("baddir/");
       Check(par2::eFileIOError == gone.AddPar2File(badpar),
             "and a create which failed leaves no set behind");
+    }
+
+    // A source file read to the end is scanned and complete, and one which was
+    // opened but not read to the end is there, with its size, but neither
+    {
+      Results read;
+      par2::Par2Creator whole("baddir/");
+      whole.SetObserver(&read);
+      whole.SetSourceFiles({bad});
+      whole.SetBlockSize(BLOCKSIZE);
+      whole.SetRecoveryBlockCount(RECOVERYBLOCKS);
+
+      Check(par2::eSuccess == whole.Create("baddir/whole.par2"), "a create for OnFileDone");
+      const par2::Par2FileResult done = read.results["bad.data"];
+      Check(done.exists && done.scanned && done.complete,
+            "OnFileDone says a file the create read is scanned and complete");
+      RemoveSet("baddir/whole");
+
+      par2::Backends backends;
+      backends.hasher = [](const par2::HasherConfig &)
+      {
+        return std::unique_ptr<par2::Hasher>();
+      };
+
+      Results cut;
+      par2::Par2Creator unhashed("baddir/", backends);
+      unhashed.SetObserver(&cut);
+      unhashed.SetSourceFiles({bad});
+      unhashed.SetBlockSize(BLOCKSIZE);
+      unhashed.SetRecoveryBlockCount(RECOVERYBLOCKS);
+
+      Check(par2::eSuccess != unhashed.Create(badpar), "a create whose hasher declines fails");
+      const par2::Par2FileResult failed = cut.results["bad.data"];
+      Check(failed.exists && failed.filesize == 30000,
+            "OnFileDone says the file it could not hash is there, and its size");
+      Check(!failed.scanned && !failed.complete, "but that it was not read to the end");
     }
 
     // A source file outside the basepath cannot be named relative to it

@@ -40,6 +40,7 @@ Par2CreatorSourceFile::Par2CreatorSourceFile(void)
   //diskfilename;
   //parfilename;
   blockcount = 0;
+  opened = false;
 }
 
 Par2CreatorSourceFile::~Par2CreatorSourceFile(void)
@@ -80,6 +81,8 @@ bool Par2CreatorSourceFile::Open(NoiseLevel noiselevel, std::ostream &sout, std:
   // Open the source file
   if (!diskfile->Open(diskfilename, filesize))
     return false;
+
+  opened = true;
 
   // Do we want to defer the computation of the full file hash, and
   // the block crc and hashes. This is only permitted if there

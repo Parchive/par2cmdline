@@ -1271,7 +1271,15 @@ bool Par2Repairer::LoadPacketsFromFile(const std::string &filename, bool reread,
   }
 
   if (observer)
-    observer->OnFileDone(phLoading, filename, 0, 0);
+  {
+    Par2FileResult result;
+    result.filename = filename;
+    result.localfilename = filename;
+    result.exists = true;
+    result.filesize = filesize;
+
+    observer->OnFileDone(phLoading, result);
+  }
 
   return true;
 }
@@ -1982,10 +1990,14 @@ bool Par2Repairer::VerifySourceFiles(const std::string &basepath, std::vector<st
 
       if (observer)
       {
-        const std::string reported = ReportedName(sourcefile, name);
+        Par2FileResult result;
+        result.filename = ReportedName(sourcefile, name);
+        result.localfilename = file;
+        result.target = true;
+        result.blocksneeded = BlocksNeeded(sourcefile);
 
-        observer->OnFile(progress.GetPhase(), reported);
-        observer->OnFileDone(progress.GetPhase(), reported, 0, BlocksNeeded(sourcefile));
+        observer->OnFile(progress.GetPhase(), result.filename);
+        observer->OnFileDone(progress.GetPhase(), result);
       }
 
       return;
@@ -2012,10 +2024,15 @@ bool Par2Repairer::VerifySourceFiles(const std::string &basepath, std::vector<st
 
       if (observer)
       {
-        const std::string reported = ReportedName(sourcefile, name);
+        Par2FileResult result;
+        result.filename = ReportedName(sourcefile, name);
+        result.localfilename = file;
+        result.exists = true;
+        result.target = true;
+        result.blocksneeded = BlocksNeeded(sourcefile);
 
-        observer->OnFile(progress.GetPhase(), reported);
-        observer->OnFileDone(progress.GetPhase(), reported, 0, BlocksNeeded(sourcefile));
+        observer->OnFile(progress.GetPhase(), result.filename);
+        observer->OnFileDone(progress.GetPhase(), result);
       }
 
       finalresult = false;
@@ -2132,16 +2149,31 @@ bool Par2Repairer::VerifyDataFile(DiskFile *diskfile, Par2RepairerSourceFile *so
   if (observer)
     observer->OnFile(progress.GetPhase(), name);
 
-  u32 blocksfound = 0;
-  const bool matched = MatchDataFile(diskfile, sourcefile, basepath, progress, renameonly, blocksfound);
+  Par2FileResult result;
+  result.filename = name;
+  result.localfilename = diskfile->FileName();
+  result.exists = true;
+  result.filesize = diskfile->FileSize();
+  result.target = sourcefile != 0;
+
+  const bool matched = MatchDataFile(diskfile, sourcefile, basepath, progress, renameonly, result);
+
+  result.blocksneeded = BlocksNeeded(sourcefile);
+
+  // The file the blocks were found to belong to, when there is just one
+  if (sourcefile != 0 && (result.blocksfound > 0 || result.complete) && !result.severalfiles)
+  {
+    result.matchedfilename = sourcefile->GetDescriptionPacket()->FileName();
+    result.matchedlocalfilename = sourcefile->TargetFileName();
+  }
 
   if (observer)
-    observer->OnFileDone(progress.GetPhase(), name, blocksfound, BlocksNeeded(sourcefile));
+    observer->OnFileDone(progress.GetPhase(), result);
 
   return matched;
 }
 
-bool Par2Repairer::MatchDataFile(DiskFile *diskfile, Par2RepairerSourceFile *&sourcefile, const std::string &basepath, ProgressMeter<u64> &progress, const bool renameonly, u32 &blocksfound)
+bool Par2Repairer::MatchDataFile(DiskFile *diskfile, Par2RepairerSourceFile *&sourcefile, const std::string &basepath, ProgressMeter<u64> &progress, const bool renameonly, Par2FileResult &result)
 {
   MatchType matchtype; // What type of match was made
   MD5Hash hashfull{};  // The MD5 Hash of the whole file
@@ -2160,7 +2192,7 @@ bool Par2Repairer::MatchDataFile(DiskFile *diskfile, Par2RepairerSourceFile *&so
                       matchtype,  // [out]
                       hashfull,   // [out]
                       hash16k,    // [out]
-                      blocksfound)) // [out]
+                      result))    // [out]
       return false;
 
     switch (matchtype)
@@ -2277,6 +2309,8 @@ bool Par2Repairer::MatchDataFile(DiskFile *diskfile, Par2RepairerSourceFile *&so
         {
           LockedStream(sout) << diskfile->FileName() << " is a perfect match for " << sourcefile->GetDescriptionPacket()->FileName() << std::endl;
         }
+        result.complete = true;
+
         // Record that we have a perfect match for this source file
         sourcefile->SetCompleteFile(diskfile);
 
@@ -2624,8 +2658,11 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
                                 MatchType               &matchtype,   // [out]
                                 MD5Hash                 &hashfull,    // [out] only set if there are unverifiable source files
                                 MD5Hash                 &hash16k,     // [out] only set if there are unverifiable source files
-                                u32                     &count)       // [out]
+                                Par2FileResult          &result)      // [out]
 {
+  // How many blocks have been found
+  u32 &count = result.blocksfound;
+
   // Remember which file we wanted to match
   Par2RepairerSourceFile *originalsourcefile = sourcefile;
 
@@ -2658,6 +2695,8 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
         LockedStream(sout) << "File: \"" << name << "\" - empty." << std::endl;
       }
     }
+
+    result.scanned = true;
 
     return true;
   }
@@ -3179,6 +3218,13 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
       }
     }
   }
+
+
+  result.scanned = true;
+  result.complete = matchtype == eFullMatch;
+  result.severalfiles = multipletargets;
+  result.duplicateblocks = duplicatecount;
+  result.skippedbytes = skippeddata;
 
   return true;
 }

@@ -71,6 +71,12 @@ public:
   // How many blocks does this source file use
   u32 BlockCount(void) const {return blockcount;}
 
+  // How big the file is
+  u64 FileSize(void) const {return filesize;}
+
+  // Whether Open got the file open, though reading it may then have failed
+  bool Opened(void) const {return opened;}
+
 protected:
   DescriptionPacket  *descriptionpacket;  // The file description packet.
   VerificationPacket *verificationpacket; // The file verification packet.
@@ -81,6 +87,7 @@ protected:
   std::string parfilename;   // The filename that will be recorded in the file description packet.
 
   u32    blockcount;    // How many blocks the file will be divided into.
+  bool   opened;        // Whether Open got the file open.
 
   std::unique_ptr<Hasher> hasher; // Hashes the blocks of the file, and the file itself
 };

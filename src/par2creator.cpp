@@ -564,7 +564,14 @@ bool Par2SetCreator::OpenSourceFiles(void)
     // Open the source file and compute its Hashes and CRCs.
     if (!sourcefile->Open(noiselevel, sout, serr, extrafile, blocksize, deferhashcomputation, basepath, progress, backends, &cancelled, &errorlog))
     {
-      const u32 needed = sourcefile->BlockCount();
+      Par2FileResult result;
+      result.filename = reported;
+      result.localfilename = extrafile;
+      result.exists = sourcefile->Opened();
+      if (result.exists)
+        result.filesize = sourcefile->FileSize();
+      result.blocksneeded = sourcefile->BlockCount();
+
       delete sourcefile;
       openfailed = true;
 
@@ -572,14 +579,26 @@ bool Par2SetCreator::OpenSourceFiles(void)
         errorlog.RecordIfNone(ecFileReadFailed, "Could not read the source file", extrafile);
 
       if (observer)
-        observer->OnFileDone(progress.GetPhase(), reported, 0, needed);
+        observer->OnFileDone(progress.GetPhase(), result);
 
       return;
     }
 
     // Every block of a file just read is there by definition
     if (observer)
-      observer->OnFileDone(progress.GetPhase(), reported, sourcefile->BlockCount(), sourcefile->BlockCount());
+    {
+      Par2FileResult result;
+      result.filename = reported;
+      result.localfilename = extrafile;
+      result.exists = true;
+      result.filesize = sourcefile->FileSize();
+      result.scanned = true;
+      result.blocksfound = sourcefile->BlockCount();
+      result.blocksneeded = sourcefile->BlockCount();
+      result.complete = true;
+
+      observer->OnFileDone(progress.GetPhase(), result);
+    }
 
     // Record the file verification and file description packets
     // in the critical packet list.

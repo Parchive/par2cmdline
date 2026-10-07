@@ -215,7 +215,7 @@ protected:
 
   // The match itself. sourcefile is changed when the data belongs to another
   // file of the set, and blocksfound is how many of its blocks were found.
-  bool MatchDataFile(DiskFile *diskfile, Par2RepairerSourceFile *&sourcefile, const std::string &basepath, ProgressMeter<u64> &progress, const bool renameonly, u32 &blocksfound);
+  bool MatchDataFile(DiskFile *diskfile, Par2RepairerSourceFile *&sourcefile, const std::string &basepath, ProgressMeter<u64> &progress, const bool renameonly, Par2FileResult &result);
 
   // Check the blocks of a source file at the offsets where they are expected
   // to be found. One thread reads the file in order while the others check the
@@ -243,7 +243,7 @@ protected:
                     MatchType               &matchtype,  // [out]    The type of match
                     MD5Hash                 &hashfull,   // [out]    The full hash of the file
                     MD5Hash                 &hash16k,    // [out]    The hash of the first 16k
-                    u32                     &count);     // [out]    The number of blocks found
+                    Par2FileResult          &result);    // [out]    What the scan found
 
   // Find out how much data we have found
   void UpdateVerificationResults(void);

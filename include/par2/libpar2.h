@@ -248,6 +248,39 @@ struct Par2VerifyResult
 };
 
 
+// What checking one file found, as OnFileDone reports it
+struct Par2FileResult
+{
+  std::string filename;         // The name OnFile gave it
+  std::string localfilename;    // The file on this system, absolute
+  bool exists{};                // False when there was no file to read
+  u64 filesize{};               // Its size, when it exists
+  bool target{};                // Read as the file the set names at this
+                                // path, rather than as an extra file
+  bool scanned{};               // A verdict on its blocks was reached
+  u32 blocksfound{};            // Blocks of the set found in it
+  u32 blocksneeded{};           // Blocks of the file they belong to
+  bool complete{};              // It is that file, whole and unchanged
+  std::string matchedfilename;  // The name the set records for the file
+                                // its blocks belong to, or the file it
+                                // matched whole, and empty when there is
+                                // no one such file
+  std::string matchedlocalfilename; // Where that file belongs, absolute
+  bool severalfiles{};          // Its blocks belong to several of the
+                                // set's files
+  u32 duplicateblocks{};        // Blocks found which other files had
+                                // already supplied
+  u64 skippedbytes{};           // Bytes passed over by data skipping
+};
+
+// scanned is false for a PAR2 file, for a file which is not there, could not
+// be read to the end or was written off through SetKnownBlocks, and when the
+// set records no block checksums, so that files can only be compared whole. A
+// file found complete with no blocks counted was matched that way. A create
+// reads every block of each source file, so a file it read is scanned and
+// complete.
+
+
 // Receives progress and per-file results from a par2 operation.
 //
 // Every method has an empty default, so an implementation only overrides what
@@ -304,12 +337,9 @@ public:
   // phHashing reports nothing.
   virtual void OnProgress(Phase phase, u32 permille) {}
 
-  // This file has been checked. blocksfound of blocksneeded were usable, both
-  // zero for a PAR2 file, which has no blocks of its own to account for.
-  virtual void OnFileDone(Phase phase,
-                          const std::string &filename,
-                          u32 blocksfound,
-                          u32 blocksneeded) {}
+  // This file has been checked, and result says what it held. A PAR2 file has
+  // no blocks of its own to account for, so its counts are zero.
+  virtual void OnFileDone(Phase phase, const Par2FileResult &result) {}
 
   // Something went wrong. Called once per error as it is found, from the
   // thread that found it, so a caller wanting every error rather than only the
