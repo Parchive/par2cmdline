@@ -41,8 +41,7 @@
 
 #endif
 
-#include <par2/libpar2.h>
-#include "diskfile.h"
+#include "libpar2internal.h"
 
 namespace par2
 {

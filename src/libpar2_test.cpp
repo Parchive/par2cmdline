@@ -495,6 +495,74 @@ int test5() {
 }
 
 
+// A set which names one file on disk twice says so, rather than racing two
+// threads to claim it
+int test6() {
+  const char *const datafile = "libpar2_test6.data";
+  const char *const leftovers[] = {datafile, "libpar2_test6.par2",
+				   "libpar2_test6.vol0+1.par2", "libpar2_test6.vol1+2.par2",
+				   "libpar2_test6.vol3+1.par2"};
+
+  // A create never overwrites, so whatever an earlier run left goes first
+  for (const char *leftover : leftovers)
+    remove(leftover);
+
+  {
+    std::ofstream data(datafile, std::ofstream::out | std::ofstream::binary);
+    for (int i = 0; i < 20000; ++i)
+      data.put((char)(i * 17 + i / 256));
+  }
+
+  // Counts the errors, which arrive from the threads doing the work
+  class Errors : public Par2Observer
+  {
+  public:
+    Errors(void) : count(0) {}
+    void OnError(const Par2Error &) override { ++count; }
+    std::atomic<int> count;
+  };
+
+  // The command line drops a name given twice, and this does not
+  std::ostringstream quiet;
+  const std::vector<std::string> files(2, datafile);
+
+  int failed = 1;
+  Result result = par2create(quiet, quiet, nlSilent, 0, "", 0, 0,
+			     "libpar2_test6", files, 4096, 0, scVariable, 0, 4);
+  if (result != eSuccess) {
+    std::cerr << "par2create naming one file twice returned " << result << std::endl;
+  } else {
+    Errors errors;
+    Par2Verifier verifier("");
+    verifier.SetObserver(&errors);
+
+    Par2SetInfo info;
+    std::vector<Par2FileInfo> infos;
+    Par2Error error;
+    if (eSuccess != verifier.AddPar2File("libpar2_test6.par2")
+	|| !verifier.GetSetInfo(&info) || info.recoverablefilecount != 2) {
+      std::cerr << "the set does not describe the file twice" << std::endl;
+    } else if ((result = verifier.Verify()) != eFileIOError) {
+      std::cerr << "a set which names one file twice returned " << result << std::endl;
+    } else if (!verifier.GetLastError(&error) || error.code != ecDuplicateSourceFile) {
+      std::cerr << "the reason is not ecDuplicateSourceFile" << std::endl;
+    } else if (!verifier.GetFileInfo(&infos) || infos.empty()
+	       || error.filename != infos[0].localfilename) {
+      std::cerr << "the error does not name the file both entries point at" << std::endl;
+    } else if (errors.count != 1) {
+      std::cerr << "the duplicate was reported " << errors.count << " times" << std::endl;
+    } else {
+      failed = 0;
+    }
+  }
+
+  for (const char *leftover : leftovers)
+    remove(leftover);
+
+  return failed;
+}
+
+
 int main() {
   if (test1()) {
     std::cerr << "FAILED: test1" << std::endl;
@@ -514,6 +582,10 @@ int main() {
   }
   if (test5()) {
     std::cerr << "FAILED: test5" << std::endl;
+    return 1;
+  }
+  if (test6()) {
+    std::cerr << "FAILED: test6" << std::endl;
     return 1;
   }
 

@@ -295,6 +295,70 @@ std::string WithSeparator(const std::string &path);
 // The name of a set, without the ".par2" its index file ends in
 std::string SetNameFor(const std::string &parfilename);
 
+// How much logging/status information to write
+// to output or error stream
+typedef enum
+{
+  nlUnknown = 0,
+  nlSilent,       // Absolutely no output (other than errors)
+  nlQuiet,        // Bare minimum of output
+  nlNormal,       // Normal level of output
+  nlNoisy,        // Lots of output
+  nlDebug         // Extra debugging information
+} NoiseLevel;
+
+// The tool's create, verify and repair, each in one call, writing what the tool
+// reports to sout and serr
+Result par2create(std::ostream &sout,
+                  std::ostream &serr,
+                  const NoiseLevel noiselevel,
+                  const size_t memorylimit,
+                  const std::string &basepath,
+                  const u32 nthreads,
+                  const u32 filethreads,
+                  const std::string &parfilename,
+                  const std::vector<std::string> &extrafiles,
+                  const u64 blocksize,
+                  const u32 firstblock,
+                  const Scheme recoveryfilescheme,
+                  const u32 recoveryfilecount,
+                  const u32 recoveryblockcount,
+                  const Backends &backends = Backends()
+                  );
+
+Result par2repair(std::ostream &sout,
+                  std::ostream &serr,
+                  const NoiseLevel noiselevel,
+                  const size_t memorylimit,
+                  const std::string &basepath,
+                  const u32 nthreads,
+                  const u32 filethreads,
+                  const std::string &parfilename,
+                  const std::vector<std::string> &extrafiles,
+                  const bool dorepair,   // derived from operation
+                  const bool purgefiles,
+                  const bool renameonly,
+                  const bool skipdata,
+                  const u64 skipleaway,
+                  const bool fullhash = false,
+                  const Backends &backends = Backends()
+                  );
+
+Result par1repair(std::ostream &sout,
+                  std::ostream &serr,
+                  const NoiseLevel noiselevel,
+                  const size_t memorylimit,
+                  // basepath is not used by Par1
+                  const u32 nthreads,
+                  // filethreads is not used by Par1
+                  const std::string &parfilename,
+                  const std::vector<std::string> &extrafiles,
+                  const bool dorepair,   // derived from operation
+                  const bool purgefiles
+                  // skipdata is not used by Par1
+                  // skipleaway is not used by Par1
+                  );
+
 } // namespace par2
 
 

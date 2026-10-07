@@ -23,7 +23,6 @@
 #include <array>
 #include <map>
 #include <memory>
-#include <ostream>
 #include <string>
 #include <utility>
 #include <vector>
@@ -44,19 +43,6 @@ typedef enum
   scLimited,       // Limit PAR2 file size
   scUniform        // All PAR2 files the same size
 } Scheme;
-
-
-// How much logging/status information to write
-// to output or error stream
-typedef enum
-{
-  nlUnknown = 0,
-  nlSilent,       // Absolutely no output (other than errors)
-  nlQuiet,        // Bare minimum of output
-  nlNormal,       // Normal level of output
-  nlNoisy,        // Lots of output
-  nlDebug         // Extra debugging information
-} NoiseLevel;
 
 
 // What a par2 operation returns, which is also the tool's exit code
@@ -348,9 +334,6 @@ public:
 // of these may be used at once, as long as each is only used from one thread at
 // a time.
 //
-// Verify and Repair are also available as the par2repair function below, which
-// does the whole job in one call.
-//
 // The calls which return a Result report a failure through it rather than
 // throwing, whatever the work or the implementations the application supplies
 // throw: running out of memory is eMemoryError with ecOutOfMemory, and
@@ -596,8 +579,7 @@ private:
 
 
 // Creates a PAR2 set from an application, with progress, cancellation and the
-// implementations the application supplies. The one-shot par2create below does
-// the same job in a single call.
+// implementations the application supplies.
 //
 // A create never writes over an existing file: if any file of the set it
 // would write is already there, it fails with eFileIOError. A cancel, or a
@@ -702,59 +684,6 @@ private:
   std::unique_ptr<State> state;
   std::unique_ptr<Impl> impl;
 };
-
-
-Result par2create(std::ostream &sout,
-			  std::ostream &serr,
-			  const NoiseLevel noiselevel,
-			  const size_t memorylimit,
-			  const std::string &basepath,
-			  const u32 nthreads,
-			  const u32 filethreads,
-			  const std::string &parfilename,
-			  const std::vector<std::string> &extrafiles,
-			  const u64 blocksize,
-			  const u32 firstblock,
-			  const Scheme recoveryfilescheme,
-			  const u32 recoveryfilecount,
-			  const u32 recoveryblockcount,
-			  const Backends &backends = Backends()
-			  );
-
-
-Result par2repair(std::ostream &sout,
-		  std::ostream &serr,
-		  const NoiseLevel noiselevel,
-		  const size_t memorylimit,
-		  const std::string &basepath,
-		  const u32 nthreads,
-		  const u32 filethreads,
-		  const std::string &parfilename,
-		  const std::vector<std::string> &extrafiles,
-		  const bool dorepair,   // derived from operation
-		  const bool purgefiles,
-		  const bool renameonly,
-		  const bool skipdata,
-		  const u64 skipleaway,
-		  const bool fullhash = false,
-		  const Backends &backends = Backends()
-		  );
-
-
-Result par1repair(std::ostream &sout,
-		  std::ostream &serr,
-		  const NoiseLevel noiselevel,
-		  const size_t memorylimit,
-		  // basepath is not used by Par1
-		  const u32 nthreads,
-		  // filethreads is not used by Par1
-		  const std::string &parfilename,
-		  const std::vector<std::string> &extrafiles,
-		  const bool dorepair,   // derived from operation
-		  const bool purgefiles
-		  // skipdata is not used by Par1
-		  // skipleaway is not used by Par1
-		  );
 
 } // namespace par2
 

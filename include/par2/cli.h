@@ -20,6 +20,8 @@
 #ifndef PAR2_CLI_H
 #define PAR2_CLI_H
 
+#include <ostream>
+
 #include <par2/backends.h>
 #include <par2/libpar2.h>
 
