@@ -26,9 +26,6 @@ function(par2_add_unit_test name)
   add_executable(${name} ${PROJECT_SOURCE_DIR}/src/${name}.cpp ${arg_SOURCES})
 
   set_target_properties(${name} PROPERTIES
-    CXX_STANDARD 14
-    CXX_STANDARD_REQUIRED ON
-    CXX_EXTENSIONS OFF
     RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/tests"
   )
   foreach(config ${CMAKE_CONFIGURATION_TYPES})
@@ -37,27 +34,8 @@ function(par2_add_unit_test name)
       RUNTIME_OUTPUT_DIRECTORY_${config} "${PROJECT_BINARY_DIR}/tests")
   endforeach()
 
-  target_include_directories(${name} PRIVATE
-    "${PROJECT_SOURCE_DIR}/src"
-    "${PROJECT_SOURCE_DIR}/include"
-    "${PROJECT_BINARY_DIR}"
-  )
-
-  target_compile_definitions(${name} PRIVATE HAVE_CONFIG_H)
-
-  if(NOT WIN32)
-    target_compile_definitions(${name} PRIVATE
-      _FILE_OFFSET_BITS=64
-      _LARGEFILE_SOURCE
-      _LARGE_FILES
-    )
-  endif()
-
-  if(MSVC)
-    target_compile_options(${name} PRIVATE /utf-8)
-  else()
-    target_compile_options(${name} PRIVATE -Wall)
-  endif()
+  par2_add_internal_options(${name})
+  target_include_directories(${name} PRIVATE "${PROJECT_SOURCE_DIR}/include")
 
   if(arg_LINK_LIBPAR2)
     target_link_libraries(${name} PRIVATE libpar2)

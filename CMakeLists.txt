@@ -67,6 +67,42 @@ find_package(Threads REQUIRED)
 
 set(PAR2_OPTIMISED "$<OR:$<CONFIG:Release>,$<CONFIG:RelWithDebInfo>,$<CONFIG:MinSizeRel>>")
 
+# The language and warnings every target is built with
+function(par2_add_common_options target)
+  set_target_properties(${target} PROPERTIES
+    CXX_STANDARD 14
+    CXX_STANDARD_REQUIRED ON
+    CXX_EXTENSIONS OFF
+  )
+
+  if(MSVC)
+    target_compile_options(${target} PRIVATE /utf-8)
+  else()
+    target_compile_options(${target} PRIVATE -Wall)
+  endif()
+endfunction()
+
+# What a target built from the sources in src needs as well: their headers,
+# config.h and large file offsets
+function(par2_add_internal_options target)
+  par2_add_common_options(${target})
+
+  target_include_directories(${target} PRIVATE
+    "${PROJECT_SOURCE_DIR}/src"
+    "${PROJECT_BINARY_DIR}"
+  )
+
+  target_compile_definitions(${target} PRIVATE HAVE_CONFIG_H)
+
+  if(NOT WIN32)
+    target_compile_definitions(${target} PRIVATE
+      _FILE_OFFSET_BITS=64
+      _LARGEFILE_SOURCE
+      _LARGE_FILES
+    )
+  endif()
+endfunction()
+
 function(par2_add_size_options target)
   if(MSVC)
     target_compile_options(${target} PRIVATE
@@ -141,38 +177,16 @@ endif()
 set_target_properties(libpar2 PROPERTIES
   OUTPUT_NAME par2
   EXPORT_NAME par2
-  CXX_STANDARD 14
-  CXX_STANDARD_REQUIRED ON
-  CXX_EXTENSIONS OFF
   POSITION_INDEPENDENT_CODE ON
 )
 
-target_include_directories(libpar2
-  PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include>
-    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
-  PRIVATE
-    "${CMAKE_CURRENT_SOURCE_DIR}/src"
-    "${PROJECT_BINARY_DIR}"
+target_include_directories(libpar2 PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include>
+  $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 
-target_compile_definitions(libpar2 PRIVATE HAVE_CONFIG_H)
-
-if(NOT WIN32)
-  target_compile_definitions(libpar2 PRIVATE
-    _FILE_OFFSET_BITS=64
-    _LARGEFILE_SOURCE
-    _LARGE_FILES
-  )
-endif()
-
-if(MSVC)
-  target_compile_options(libpar2 PRIVATE /utf-8)
-else()
-  target_compile_options(libpar2 PRIVATE -Wall)
-endif()
-
+par2_add_internal_options(libpar2)
 par2_add_size_options(libpar2)
 
 target_link_libraries(libpar2 PUBLIC Threads::Threads ${PAR2_ATOMIC_LIBRARY})
@@ -187,32 +201,7 @@ if(PAR2_BUILD_TOOL)
     target_sources(par2 PRIVATE src/wargs.cpp src/wargs.h)
   endif()
 
-  set_target_properties(par2 PROPERTIES
-    CXX_STANDARD 14
-    CXX_STANDARD_REQUIRED ON
-    CXX_EXTENSIONS OFF
-  )
-
-  target_include_directories(par2 PRIVATE
-    "${CMAKE_CURRENT_SOURCE_DIR}/src"
-    "${PROJECT_BINARY_DIR}"
-  )
-
-  target_compile_definitions(par2 PRIVATE HAVE_CONFIG_H)
-
-  if(NOT WIN32)
-    target_compile_definitions(par2 PRIVATE
-      _FILE_OFFSET_BITS=64
-      _LARGEFILE_SOURCE
-      _LARGE_FILES
-    )
-  endif()
-
-  if(MSVC)
-    target_compile_options(par2 PRIVATE /utf-8)
-  else()
-    target_compile_options(par2 PRIVATE -Wall)
-  endif()
+  par2_add_internal_options(par2)
 
   if(MINGW)
     target_link_options(par2 PRIVATE -municode)
