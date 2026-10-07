@@ -321,10 +321,10 @@ int main()
 
   std::ostringstream quiet;
 
-  // A healthy set verifies, and the observer hears about it even at nlSilent
+  // A healthy set verifies, and the observer hears about it
   {
     Counting observer;
-    par2::Par2Verifier verifier(quiet, quiet, par2::nlSilent);
+    par2::Par2Verifier verifier("");
     verifier.SetObserver(&observer);
 
     Check(par2::eSuccess == verifier.AddPar2File(PARFILE), "AddPar2File");
@@ -416,9 +416,8 @@ int main()
           "an intact set holds every block that is available");
     Check(status.recoveryblockcount == info.recoveryblockcount,
           "the verify counts the same recovery blocks");
-    Check(quiet.str().empty(), "nlSilent writes nothing");
     Check(observer.setinfo == 1, "OnSetInfo called");
-    Check(observer.progress > 0, "OnProgress called at nlSilent");
+    Check(observer.progress > 0, "OnProgress called");
     // The PAR2 files read by AddPar2File are announced and finished too
     Check(observer.done == observer.files, "OnFileDone once per OnFile");
     Check(observer.done > (int)DATACOUNT, "the PAR2 files are counted as well");
@@ -426,8 +425,8 @@ int main()
 
   // Two verifiers used one after the other do not disturb each other
   {
-    par2::Par2Verifier a(quiet, quiet, par2::nlSilent);
-    par2::Par2Verifier b(quiet, quiet, par2::nlSilent);
+    par2::Par2Verifier a("");
+    par2::Par2Verifier b("");
 
     Check(par2::eSuccess == a.AddPar2File(PARFILE), "first instance adds");
     par2::Par2SetInfo ainfo;
@@ -464,7 +463,7 @@ int main()
                                              par2::scVariable, 0, 20),
           "par2create with a basepath");
 
-    par2::Par2Verifier verifier(quiet, quiet, par2::nlSilent, "elsewhere/");
+    par2::Par2Verifier verifier("elsewhere/");
     Check(par2::eSuccess == verifier.AddPar2File("elsewhere/away.par2"), "AddPar2File");
     Check(par2::eSuccess == verifier.Verify(),
           "Verify honours the verifier's basepath");
@@ -493,7 +492,7 @@ int main()
 
   // Verifying more than once, and adding a PAR2 file after a verify, both work
   {
-    par2::Par2Verifier verifier(quiet, quiet, par2::nlSilent);
+    par2::Par2Verifier verifier("");
 
     Check(par2::eFileIOError == verifier.AddPar2File("no-such-file.par2"),
           "AddPar2File reports a name that is no use");
@@ -503,7 +502,7 @@ int main()
       const char *const notaset = "notaset.par2";
       WriteData(notaset, 11, 5000);
 
-      par2::Par2Verifier twice(quiet, quiet, par2::nlSilent);
+      par2::Par2Verifier twice("");
       Check(par2::eInsufficientCriticalData == twice.AddPar2File(notaset),
             "AddPar2File on a file which is not a set");
       Check(par2::eInsufficientCriticalData == twice.AddPar2File(notaset),
@@ -534,7 +533,7 @@ int main()
     Corrupt(DATA[1], 5000, 2000);
 
     Counting observer;
-    par2::Par2Verifier verifier(quiet, quiet, par2::nlSilent);
+    par2::Par2Verifier verifier("");
     verifier.SetObserver(&observer);
 
     // the -m, -t and -T equivalents
@@ -578,7 +577,7 @@ int main()
 
     // What one verifier found is what another may be told to take on trust
     {
-      par2::Par2Verifier told(quiet, quiet, par2::nlSilent);
+      par2::Par2Verifier told("");
       Check(par2::eSuccess == told.AddPar2File(PARFILE), "AddPar2File for the vouched set");
       Check(told.SetKnownBlocks(damagedfiles[which].filename, damaged),
             "SetKnownBlocks takes what GetFoundBlocks reported");
@@ -596,7 +595,7 @@ int main()
       const char *const copy = "consumer-copy.data";
       WriteData(copy, 0, 20000);
 
-      par2::Par2Verifier fed(quiet, quiet, par2::nlSilent);
+      par2::Par2Verifier fed("");
       Check(par2::eSuccess == fed.AddPar2File(PARFILE), "AddPar2File for the fed set");
       Check(par2::eRepairPossible == fed.VerifyFile(copy), "VerifyFile for a copy under another name");
       par2::Par2VerifyResult copystatus{};
@@ -633,7 +632,7 @@ int main()
   {
     std::vector<std::string> leftovers;
 
-    par2::Par2Verifier verifier(quiet, quiet, par2::nlSilent);
+    par2::Par2Verifier verifier("");
     Check(par2::eSuccess == verifier.AddPar2File(PARFILE), "AddPar2File");
 
     Corrupt(DATA[2], 2000, 3000);
@@ -662,7 +661,7 @@ int main()
 
   // and the repaired set verifies again
   {
-    par2::Par2Verifier verifier(quiet, quiet, par2::nlSilent);
+    par2::Par2Verifier verifier("");
     Check(par2::eSuccess == verifier.AddPar2File(PARFILE), "AddPar2File after repair");
     Check(par2::eSuccess == verifier.Verify(), "Verify after repair");
   }
@@ -674,7 +673,7 @@ int main()
     WriteData(misnamed, 2, 20000 + 2 * 9000);
     Corrupt(DATA[2], 2000, 3000);
 
-    par2::Par2Verifier verifier(quiet, quiet, par2::nlSilent);
+    par2::Par2Verifier verifier("");
     Check(par2::eSuccess == verifier.AddPar2File(PARFILE), "AddPar2File for the misnamed copy");
     verifier.VerifyFile(misnamed);
     verifier.VerifyFile(DATA[0]);
@@ -703,7 +702,7 @@ int main()
         f.put((char)((i * 31) & 0xff));
     }
 
-    par2::Par2Verifier verifier(quiet, quiet, par2::nlSilent);
+    par2::Par2Verifier verifier("");
     Check(par2::eSuccess == verifier.AddPar2File(PARFILE), "AddPar2File for the shifted file");
     Check(par2::eRepairPossible == verifier.Verify(), "Verify finds the shifted file");
 
@@ -744,14 +743,14 @@ int main()
     }
 
     {
-      par2::Par2Verifier scanning(quiet, quiet, par2::nlSilent);
+      par2::Par2Verifier scanning("");
       Check(par2::eSuccess == scanning.AddPar2File(PARFILE), "AddPar2File before scanning");
       Check(par2::eRepairPossible == scanning.Verify(), "the shifted file needs repair");
 
       par2::Par2VerifyResult scanned{};
       Check(scanning.GetVerifyResult(&scanned), "GetVerifyResult after scanning");
 
-      par2::Par2Verifier skipping(quiet, quiet, par2::nlSilent);
+      par2::Par2Verifier skipping("");
       skipping.SetDataSkipping(true);
       Check(par2::eSuccess == skipping.AddPar2File(PARFILE), "AddPar2File before skipping");
       Check(par2::eRepairPossible == skipping.Verify(), "the shifted file needs repair when skipping");
@@ -770,7 +769,7 @@ int main()
   {
     Corrupt(DATA[2], 3000, 2000);
 
-    par2::Par2Verifier verifier(quiet, quiet, par2::nlSilent);
+    par2::Par2Verifier verifier("");
     verifier.SetMemoryLimit(0);
     verifier.SetThreadCounts(0, 0);
 
@@ -785,12 +784,12 @@ int main()
   {
     Corrupt(DATA[0], 1000, 8000);
 
-    par2::Par2Verifier scanning(quiet, quiet, par2::nlSilent);
+    par2::Par2Verifier scanning("");
     Check(par2::eSuccess == scanning.AddPar2File(PARFILE), "AddPar2File before vouching");
     Check(par2::eRepairPossible == scanning.Verify(),
           "damage is found when the file is scanned");
 
-    par2::Par2Verifier trusting(quiet, quiet, par2::nlSilent);
+    par2::Par2Verifier trusting("");
     Check(par2::eSuccess == trusting.AddPar2File(PARFILE), "AddPar2File before vouching");
 
     std::vector<par2::Par2FileInfo> files;
@@ -807,7 +806,7 @@ int main()
     Check(trusted.reached, "and the scan still counts to a thousand");
 
     // and being told a file holds nothing usable is also taken on trust
-    par2::Par2Verifier writtenoff(quiet, quiet, par2::nlSilent);
+    par2::Par2Verifier writtenoff("");
     Check(par2::eSuccess == writtenoff.AddPar2File(PARFILE), "AddPar2File");
 
     std::vector<par2::Par2FileInfo> all;
@@ -850,7 +849,7 @@ int main()
   // Cancelling stops the work and says so
   {
     Canceller canceller;
-    par2::Par2Verifier verifier(quiet, quiet, par2::nlSilent);
+    par2::Par2Verifier verifier("");
 
     Check(par2::eSuccess == verifier.AddPar2File(PARFILE), "AddPar2File before cancelling");
 
@@ -877,7 +876,7 @@ int main()
   // Reading the packets reports progress, so it can be cancelled too
   {
     Canceller canceller;
-    par2::Par2Verifier verifier(quiet, quiet, par2::nlSilent);
+    par2::Par2Verifier verifier("");
     canceller.verifier = &verifier;
     verifier.SetObserver(&canceller);
 
@@ -922,7 +921,7 @@ int main()
     std::remove(parfile);
 
     Canceller canceller;
-    par2::Par2Verifier verifier(quiet, quiet, par2::nlSilent, "cutdir/");
+    par2::Par2Verifier verifier("cutdir/");
     canceller.verifier = &verifier;
     verifier.SetObserver(&canceller);
 
@@ -972,7 +971,7 @@ int main()
 
     std::remove(data[1]);
 
-    par2::Par2Verifier verifier(quiet, quiet, par2::nlSilent);
+    par2::Par2Verifier verifier("");
     Check(par2::eSuccess == verifier.AddPar2File("stream.par2"), "AddPar2File");
     Check(par2::eRepairNotPossible == verifier.Verify(),
           "without recovery data a repair is not possible");
@@ -1001,7 +1000,7 @@ int main()
   // Repair before anything has been verified says so
   {
     Counting observer;
-    par2::Par2Verifier verifier(quiet, quiet, par2::nlSilent);
+    par2::Par2Verifier verifier("");
     verifier.SetObserver(&observer);
 
     Check(par2::eLogicError == verifier.Repair(), "Repair needs a verify first");
@@ -1051,7 +1050,7 @@ int main()
     half.write(bytes.data(), (std::streamsize)(bytes.size() / 2));
     half.close();
 
-    par2::Par2Verifier verifier(quiet, quiet, par2::nlSilent, "partialdir/");
+    par2::Par2Verifier verifier("partialdir/");
     Check(par2::eSuccess == verifier.AddPar2File(parfile),
           "AddPar2File finds the half-written volume");
     Check(par2::eSuccess == verifier.Verify(),
@@ -1140,7 +1139,7 @@ int main()
     std::rename(vol, held);
 
     Canceller canceller;
-    par2::Par2Verifier verifier(quiet, quiet, par2::nlSilent, "growdir/");
+    par2::Par2Verifier verifier("growdir/");
     Check(par2::eSuccess == verifier.AddPar2File(parfile),
           "AddPar2File for the index describing one file");
 
@@ -1197,7 +1196,7 @@ int main()
           "par2create for the observer check");
 
     Counting observer;
-    par2::Par2Verifier verifier(quiet, quiet, par2::nlSilent, "observedir/");
+    par2::Par2Verifier verifier("observedir/");
     verifier.SetObserver(&observer);
 
     Check(par2::eSuccess == verifier.AddPar2File("observedir/observed.par2"),
@@ -1237,7 +1236,7 @@ int main()
     std::remove(observed[0]);
 
     Counting gone;
-    par2::Par2Verifier missing(quiet, quiet, par2::nlSilent, "observedir/");
+    par2::Par2Verifier missing("observedir/");
     missing.SetObserver(&gone);
 
     Check(par2::eSuccess == missing.AddPar2File("observedir/observed.par2"),
@@ -1273,7 +1272,7 @@ int main()
     Corrupt(data, 500, 400);
 
     Counting observer;
-    par2::Par2Verifier verifier(quiet, quiet, par2::nlSilent, "skipdir/");
+    par2::Par2Verifier verifier("skipdir/");
     verifier.SetObserver(&observer);
 
     Check(par2::eSuccess == verifier.AddPar2File("skipdir/skip.par2"),
@@ -1297,7 +1296,7 @@ int main()
           "the counts still describe the state before the repair");
 
     // The repair itself was real, which a fresh verifier can say
-    par2::Par2Verifier after(quiet, quiet, par2::nlSilent, "skipdir/");
+    par2::Par2Verifier after("skipdir/");
 
     Check(par2::eSuccess == after.AddPar2File("skipdir/skip.par2"),
           "AddPar2File to check the repair");
@@ -1330,7 +1329,7 @@ int main()
     Corrupt(data, 1000, 5000);
 
     LateCanceller canceller;
-    par2::Par2Verifier verifier(quiet, quiet, par2::nlSilent, "latedir/");
+    par2::Par2Verifier verifier("latedir/");
     Check(par2::eSuccess == verifier.AddPar2File(parfile), "AddPar2File for the late cancel check");
     Check(par2::eRepairPossible == verifier.Verify(), "the damage is found");
 
@@ -1340,7 +1339,7 @@ int main()
     Check(par2::eCancelled == verifier.Repair(),
           "a cancel while the repair reads back is still a cancel");
 
-    par2::Par2Verifier after(quiet, quiet, par2::nlSilent, "latedir/");
+    par2::Par2Verifier after("latedir/");
     Check(par2::eSuccess == after.AddPar2File(parfile), "AddPar2File after the late cancel");
     Check(par2::eSuccess == after.Verify(), "and the rebuilt file was kept, whole");
 
@@ -1370,7 +1369,7 @@ int main()
 
     std::rename(data, obfuscated);
 
-    par2::Par2Verifier verifier(quiet, quiet, par2::nlSilent, "renamedir/");
+    par2::Par2Verifier verifier("renamedir/");
     Check(par2::eSuccess == verifier.AddPar2File("renamedir/rename.par2"),
           "AddPar2File for the rename check");
 
@@ -1441,7 +1440,7 @@ int main()
 
     std::rename(data, obfuscated);
 
-    par2::Par2Verifier verifier(quiet, quiet, par2::nlSilent, "restaledir/");
+    par2::Par2Verifier verifier("restaledir/");
     Check(par2::eSuccess == verifier.AddPar2File("restaledir/stale.par2"),
           "AddPar2File for the rescanned rename check");
     Check(par2::eRepairPossible == verifier.VerifyFile(obfuscated),
@@ -1481,7 +1480,7 @@ int main()
 
     // No basepath, and the PAR2 file named by a path that is not the working
     // directory: without deriving one, every file would look missing.
-    par2::Par2Verifier derived(quiet, quiet, par2::nlSilent);
+    par2::Par2Verifier derived("");
     Check(par2::eSuccess == derived.AddPar2File("besidedir/beside.par2"),
           "AddPar2File with no basepath");
 
@@ -1516,7 +1515,7 @@ int main()
       moved.push_back(to);
     }
 
-    par2::Par2Verifier bare(quiet, quiet, par2::nlSilent, "basepathdir");
+    par2::Par2Verifier bare("basepathdir");
     Check(par2::eSuccess == bare.AddPar2File(PARFILE), "AddPar2File for the basepath check");
     Check(par2::eSuccess == bare.Verify(),
           "a basepath with no trailing separator still finds the files");
@@ -1525,7 +1524,7 @@ int main()
     // before anything has been verified because the basepath was known at
     // construction
     std::vector<par2::Par2FileInfo> early;
-    par2::Par2Verifier beforeverify(quiet, quiet, par2::nlSilent, "basepathdir");
+    par2::Par2Verifier beforeverify("basepathdir");
     Check(par2::eSuccess == beforeverify.AddPar2File(PARFILE), "AddPar2File before verifying");
     Check(beforeverify.GetFileInfo(&early), "GetFileInfo before verifying");
     for (const auto &file : early)
@@ -1553,7 +1552,7 @@ int main()
       Check(opened.good(), "and it opens the file it names");
     }
 
-    par2::Par2Verifier slash(quiet, quiet, par2::nlSilent, "basepathdir/");
+    par2::Par2Verifier slash("basepathdir/");
     Check(par2::eSuccess == slash.AddPar2File(PARFILE), "AddPar2File for the basepath check");
     Check(par2::eSuccess == slash.Verify(),
           "and so does one with it");
@@ -1564,14 +1563,14 @@ int main()
 
   // Naming a set rather than a file, and what eFileIOError actually means
   {
-    par2::Par2Verifier byset(quiet, quiet, par2::nlSilent);
+    par2::Par2Verifier byset("");
     // "consumer" rather than "consumer.par2": the volume files are found
     // beside it and carry the critical packets.
     Check(par2::eSuccess == byset.AddPar2File("consumer"), "a set name is enough");
     par2::Par2SetInfo setinfo;
     Check(byset.GetSetInfo(&setinfo), "naming the set describes it");
 
-    par2::Par2Verifier nothing(quiet, quiet, par2::nlSilent);
+    par2::Par2Verifier nothing("");
     Check(par2::eFileIOError == nothing.AddPar2File("no-such-set-at-all.par2"),
           "a name that yields nothing is eFileIOError");
     CheckLastError(nothing, par2::eFileIOError, "a name that yields nothing");
@@ -1607,7 +1606,7 @@ int main()
                                              par2::scUniform, 1, 4),
           "par2create for the subdirectory check");
 
-    par2::Par2Verifier verifier(quiet, quiet, par2::nlSilent, "nestdir/");
+    par2::Par2Verifier verifier("nestdir/");
     Check(par2::eSuccess == verifier.AddPar2File("nestdir/nest.par2"),
           "AddPar2File for the subdirectory check");
     Check(par2::eSuccess == verifier.Verify(),
@@ -1633,7 +1632,7 @@ int main()
 
   // Repair answers rather than crashing when it cannot do the job
   {
-    par2::Par2Verifier verifier(quiet, quiet, par2::nlSilent);
+    par2::Par2Verifier verifier("");
     Check(par2::eLogicError == verifier.Repair(), "Repair needs a verify first");
     CheckLastError(verifier, par2::eLogicError, "Repair without a verify");
 
@@ -1700,7 +1699,7 @@ int main()
     std::remove(arriving[0]);
     std::remove(arriving[1]);
 
-    par2::Par2Verifier verifier(quiet, quiet, par2::nlSilent, "arrivedir/");
+    par2::Par2Verifier verifier("arrivedir/");
     Check(par2::eSuccess == verifier.AddPar2File("arrivedir/arrive.par2"),
           "AddPar2File for the incremental check");
 
@@ -1757,7 +1756,7 @@ int main()
                                              par2::scUniform, 1, 20),
           "par2create for the verify after scans check");
 
-    par2::Par2Verifier verifier(quiet, quiet, par2::nlSilent, "rescandir/");
+    par2::Par2Verifier verifier("rescandir/");
     Check(par2::eSuccess == verifier.AddPar2File("rescandir/rescan.par2"),
           "AddPar2File for the verify after scans check");
     verifier.VerifyFile(names[0]);
@@ -1798,7 +1797,7 @@ int main()
     // which is also how the volumes found beside the set are recorded
     std::string dir;
     {
-      par2::Par2Verifier probe(quiet, quiet, par2::nlSilent, "feeddir/");
+      par2::Par2Verifier probe("feeddir/");
       std::vector<par2::Par2FileInfo> info;
       Check(par2::eSuccess == probe.AddPar2File("feeddir/feed.par2") &&
             probe.GetFileInfo(&info) && info.size() == 1,
@@ -1810,7 +1809,7 @@ int main()
 
     Corrupt(data, 1000, 5000);
 
-    par2::Par2Verifier verifier(quiet, quiet, par2::nlSilent, dir);
+    par2::Par2Verifier verifier(dir);
     Check(par2::eSuccess == verifier.AddPar2File(dir + "feed.par2"),
           "AddPar2File for the fed PAR2 file check");
     Check(par2::eRepairPossible == verifier.VerifyFile(dir + "feed.data"),
@@ -1830,7 +1829,7 @@ int main()
     Check(par2::eSuccess == verifier.VerifyFile(dir + "absent.data"),
           "and so does a file which is not there");
 
-    par2::Par2Verifier after(quiet, quiet, par2::nlSilent, "feeddir/");
+    par2::Par2Verifier after("feeddir/");
     Check(par2::eSuccess == after.AddPar2File("feeddir/feed.par2"),
           "AddPar2File after the fed repair");
     Check(par2::eSuccess == after.Verify(), "the data is whole again");
@@ -1862,7 +1861,7 @@ int main()
 
     std::remove(late);
 
-    par2::Par2Verifier verifier(quiet, quiet, par2::nlSilent, "firstdir/");
+    par2::Par2Verifier verifier("firstdir/");
 
     // Nothing describes it yet, so it cannot be scanned
     Check(par2::eInsufficientCriticalData == verifier.VerifyFile(early),
@@ -1908,7 +1907,7 @@ int main()
           "par2create for the duplicate check");
 
     Counting observer;
-    par2::Par2Verifier verifier(quiet, quiet, par2::nlSilent, "twicedir/");
+    par2::Par2Verifier verifier("twicedir/");
     verifier.SetObserver(&observer);
 
     Check(par2::eSuccess == verifier.AddPar2File(twicepar), "AddPar2File for the duplicate check");
@@ -1955,7 +1954,7 @@ int main()
     Corrupt(locked, 5000, 2000);
 
     Counting observer;
-    par2::Par2Verifier verifier(quiet, quiet, par2::nlSilent, "rodir/");
+    par2::Par2Verifier verifier("rodir/");
     verifier.SetObserver(&observer);
 
     Check(par2::eSuccess == verifier.AddPar2File(lockedpar),
@@ -1997,7 +1996,7 @@ int main()
 
     if (!std::ifstream(unreadable).good())
     {
-      par2::Par2Verifier verifier(quiet, quiet, par2::nlSilent);
+      par2::Par2Verifier verifier("");
       Check(par2::eSuccess == verifier.AddPar2File(PARFILE), "AddPar2File for the unreadable file check");
       Check(par2::eSuccess == verifier.Verify(), "Verify before the unreadable file");
 
@@ -2040,7 +2039,7 @@ int main()
       return std::unique_ptr<par2::Processor>();
     };
 
-    par2::Par2Verifier verifier(quiet, quiet, par2::nlSilent, "backends/", backends);
+    par2::Par2Verifier verifier("backends/", backends);
 
     // What the handle was told, rather than whatever the library would pick
     verifier.SetThreadCounts(3, 1);
@@ -2069,7 +2068,7 @@ int main()
     };
 
     Counting thrown;
-    par2::Par2Verifier rethrown(quiet, quiet, par2::nlSilent, "backends/", throwing);
+    par2::Par2Verifier rethrown("backends/", throwing);
     rethrown.SetObserver(&thrown);
 
     Check(par2::eSuccess == rethrown.AddPar2File(ownpar), "AddPar2File for the throwing backend");
@@ -2086,7 +2085,7 @@ int main()
   }
 
   // A set built through the handle is the same set, and the observer hears
-  // about the work even at nlSilent
+  // about the work
   {
     Check(MakeDirectory("madedir"), "mkdir for the create handle check");
 
@@ -2096,7 +2095,7 @@ int main()
     WriteData(made, 5, 40000);
 
     Counting observer;
-    par2::Par2Creator creator(quiet, quiet, par2::nlSilent, "madedir/");
+    par2::Par2Creator creator("madedir/");
     creator.SetObserver(&observer);
     creator.SetSourceFiles({made});
     creator.SetBlockSize(BLOCKSIZE);
@@ -2122,7 +2121,7 @@ int main()
     Check(observer.lastinfo.datasize == 40000, "OnSetInfo data size");
 
     // The guards which used to stop this reaching the meter are gone
-    Check(observer.progress > 0, "OnProgress even at nlSilent");
+    Check(observer.progress > 0, "OnProgress during the create");
     Check(observer.reached, "and it reaches a thousand");
 
     // The name it was given is the name of the set, not of a set called after it
@@ -2132,7 +2131,7 @@ int main()
     }
 
     // The set it wrote is a set
-    par2::Par2Verifier verifier(quiet, quiet, par2::nlSilent, "madedir/");
+    par2::Par2Verifier verifier("madedir/");
     Check(par2::eSuccess == verifier.AddPar2File(madepar), "AddPar2File for the made set");
     Check(par2::eSuccess == verifier.Verify(), "the made set verifies clean");
 
@@ -2140,13 +2139,13 @@ int main()
     {
       const char *const sized = "madedir/sized.par2";
 
-      par2::Par2Creator counted(quiet, quiet, par2::nlSilent, "madedir/");
+      par2::Par2Creator counted("madedir/");
       counted.SetSourceFiles({made});
       counted.SetSourceBlockCount(40);
       counted.SetRedundancy(10);
       Check(par2::eSuccess == counted.Create(sized), "Create from a block count and a redundancy");
 
-      par2::Par2Verifier sizedverifier(quiet, quiet, par2::nlSilent, "madedir/");
+      par2::Par2Verifier sizedverifier("madedir/");
       Check(par2::eSuccess == sizedverifier.AddPar2File(sized), "AddPar2File for the sized set");
 
       par2::Par2SetInfo sizedinfo;
@@ -2197,7 +2196,7 @@ int main()
       const std::string when = late ? "while writing" : "while reading";
 
       Stopper stopper(late ? par2::phProcessing : par2::phHashing);
-      par2::Par2Creator creator(quiet, quiet, par2::nlSilent, "stopdir/");
+      par2::Par2Creator creator("stopdir/");
       stopper.creator = &creator;
       creator.SetObserver(&stopper);
       creator.SetSourceFiles({stopped});
@@ -2213,13 +2212,13 @@ int main()
       CheckLastError(creator, par2::eCancelled, "a cancelled create " + when);
       Check(stopper.landed, "the cancel landed in the phase it was meant to");
 
-      par2::Par2Verifier gone(quiet, quiet, par2::nlSilent, "stopdir/");
+      par2::Par2Verifier gone("stopdir/");
       Check(par2::eFileIOError == gone.AddPar2File(stoppedpar),
             "and no PAR2 file was left behind " + when);
     }
 
     // The same handle creates a whole set once the request is withdrawn
-    par2::Par2Creator creator(quiet, quiet, par2::nlSilent, "stopdir/");
+    par2::Par2Creator creator("stopdir/");
     creator.SetSourceFiles({stopped});
     creator.SetBlockSize(BLOCKSIZE);
     creator.SetRecoveryBlockCount(RECOVERYBLOCKS);
@@ -2229,7 +2228,7 @@ int main()
 
     Check(par2::eSuccess == creator.Create(stoppedpar), "Create again after clearing");
 
-    par2::Par2Verifier verifier(quiet, quiet, par2::nlSilent, "stopdir/");
+    par2::Par2Verifier verifier("stopdir/");
     Check(par2::eSuccess == verifier.AddPar2File(stoppedpar), "AddPar2File for the second set");
     Check(par2::eSuccess == verifier.Verify(), "the second set verifies clean");
 
@@ -2249,7 +2248,7 @@ int main()
     // A block size which is not a multiple of four
     {
       Counting observer;
-      par2::Par2Creator creator(quiet, quiet, par2::nlSilent, "baddir/");
+      par2::Par2Creator creator("baddir/");
       creator.SetObserver(&observer);
       creator.SetSourceFiles({bad});
       creator.SetBlockSize(BLOCKSIZE + 1);
@@ -2277,7 +2276,7 @@ int main()
         return std::unique_ptr<par2::Processor>();
       };
 
-      par2::Par2Creator creator(quiet, quiet, par2::nlSilent, "baddir/", backends);
+      par2::Par2Creator creator("baddir/", backends);
       creator.SetSourceFiles({bad});
       creator.SetBlockSize(BLOCKSIZE);
       creator.SetRecoveryBlockCount(RECOVERYBLOCKS);
@@ -2294,7 +2293,7 @@ int main()
       Check(error.code == par2::ecProcessorFailed, "the reason is ecProcessorFailed");
 
       // What it had already written is taken away again
-      par2::Par2Verifier gone(quiet, quiet, par2::nlSilent, "baddir/");
+      par2::Par2Verifier gone("baddir/");
       Check(par2::eFileIOError == gone.AddPar2File(badpar),
             "and a create which failed leaves no set behind");
     }
@@ -2302,7 +2301,7 @@ int main()
     // A source file outside the basepath cannot be named relative to it
     {
       Counting observer;
-      par2::Par2Creator creator(quiet, quiet, par2::nlSilent, "baddir/");
+      par2::Par2Creator creator("baddir/");
       creator.SetObserver(&observer);
       creator.SetSourceFiles({DATA[1]});
       creator.SetBlockSize(BLOCKSIZE);
@@ -2318,7 +2317,7 @@ int main()
       Check(error.filename.find(DATA[1]) != std::string::npos, "naming the file");
       Check(observer.errors == 1, "the observer heard about it too");
 
-      par2::Par2Verifier none(quiet, quiet, par2::nlSilent, "baddir/");
+      par2::Par2Verifier none("baddir/");
       Check(par2::eFileIOError == none.AddPar2File(badpar), "and nothing was written");
     }
 
@@ -2334,7 +2333,7 @@ int main()
         keep << "keep";
       }
 
-      par2::Par2Creator creator(quiet, quiet, par2::nlSilent, "baddir/");
+      par2::Par2Creator creator("baddir/");
       creator.SetSourceFiles({bad});
       creator.SetBlockSize(BLOCKSIZE);
       creator.SetRecoveryBlockCount(4);
@@ -2363,7 +2362,7 @@ int main()
 
     // A source file which is not there is named
     {
-      par2::Par2Creator creator(quiet, quiet, par2::nlSilent, "baddir/");
+      par2::Par2Creator creator("baddir/");
       creator.SetSourceFiles({bad, "baddir/missing.data"});
       creator.SetBlockSize(BLOCKSIZE);
       creator.SetRecoveryBlockCount(4);
@@ -2384,7 +2383,7 @@ int main()
       const char *const inner = "baddir/sub/inner.data";
       WriteData(inner, 9, 20000);
 
-      par2::Par2Creator creator(quiet, quiet, par2::nlSilent);
+      par2::Par2Creator creator("");
       creator.SetSourceFiles({inner});
       creator.SetBlockSize(BLOCKSIZE);
       creator.SetRecoveryBlockCount(4);
@@ -2395,7 +2394,7 @@ int main()
       Check(par2::eSuccess == creator.Create("baddir/sub/inner.par2"),
             "and the second, beside it");
 
-      par2::Par2Verifier verifier(quiet, quiet, par2::nlSilent);
+      par2::Par2Verifier verifier("");
       std::vector<par2::Par2FileInfo> info;
       Check(par2::eSuccess == verifier.AddPar2File("baddir/sub/inner.par2") &&
             verifier.GetFileInfo(&info),
@@ -2413,8 +2412,7 @@ int main()
     std::remove(bad);
   }
 
-  // A handle built without streams, which is how an application that shows the
-  // work itself uses the library
+  // An application which shows the work itself follows it through the observer
   {
     Check(MakeDirectory("streamlessdir"), "mkdir for the streamless check");
 
@@ -2422,10 +2420,6 @@ int main()
     const char *const set = "streamlessdir/streamless.par2";
 
     WriteData(source, 37, 60000);
-
-    // Whatever the library would have written, nothing reaches the stream the
-    // rest of this test shares
-    const size_t written = quiet.str().size();
 
     Counting creating;
     {
@@ -2488,8 +2482,7 @@ int main()
     Check(repairing.SawFile(par2::phVerifyingRepair),
           "with the files read back reported as part of that step");
 
-    // This one is written to serr by a handle which has one, whatever its
-    // NoiseLevel. Without streams it is only recorded.
+    // A failure is recorded rather than written anywhere
     {
       const char *const notaset = "streamlessdir/notaset.par2";
       WriteData(notaset, 11, 5000);
@@ -2504,8 +2497,6 @@ int main()
 
       std::remove(notaset);
     }
-
-    Check(quiet.str().size() == written, "and nothing at all was written to a stream");
 
     std::remove(source);
     std::remove((std::string(source) + ".1").c_str());
@@ -2556,7 +2547,7 @@ int main()
             "par2create for the repeated warning check");
 
       Counting watching;
-      par2::Par2Verifier verifier(quiet, quiet, par2::nlSilent, "warndir/");
+      par2::Par2Verifier verifier("warndir/");
       verifier.SetObserver(&watching);
 
       Check(par2::eSuccess == verifier.AddPar2File("warndir/slashed.par2"),
@@ -2661,7 +2652,7 @@ int main()
     Corrupt(again[0], 1000, 3000);
 
     {
-      par2::Par2Verifier verifier(quiet, quiet, par2::nlSilent, "againdir/");
+      par2::Par2Verifier verifier("againdir/");
       Check(par2::eSuccess == verifier.AddPar2File(againpar), "AddPar2File for the repeated repair");
       Check(par2::eRepairPossible == verifier.Verify(), "Verify finds the damage to repair twice");
       Check(par2::eSuccess == verifier.Repair(), "the first repair works");
@@ -2689,7 +2680,7 @@ int main()
     Corrupt(again[0], 1000, 3000);
 
     {
-      par2::Par2Verifier verifier(quiet, quiet, par2::nlSilent, "againdir/");
+      par2::Par2Verifier verifier("againdir/");
       Check(par2::eSuccess == verifier.AddPar2File(againpar), "AddPar2File for the failed repair");
 
       // The other file is there but has not been scanned, so it is rebuilt
@@ -2727,7 +2718,7 @@ int main()
           "par2create for the extra file cancel check");
     Check(0 == std::rename(moved, extra), "the file of the set is moved away");
 
-    par2::Par2Verifier verifier(quiet, quiet, par2::nlSilent, "extradir/");
+    par2::Par2Verifier verifier("extradir/");
     Check(par2::eSuccess == verifier.AddPar2File(movedpar), "AddPar2File for the extra file cancel");
 
     ExtraCanceller canceller;
@@ -2760,7 +2751,7 @@ int main()
           "par2create for the unreadable PAR2 file check");
     Check(0 == chmod(lockedpar, 0), "the PAR2 file is made unreadable");
 
-    par2::Par2Verifier verifier(quiet, quiet, par2::nlSilent, "lockdir/");
+    par2::Par2Verifier verifier("lockdir/");
     Check(par2::eFileIOError == verifier.AddPar2File(lockedpar), "AddPar2File of an unreadable file fails");
 
     par2::Par2Error error;

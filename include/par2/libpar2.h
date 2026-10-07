@@ -268,8 +268,6 @@ struct Par2VerifyResult
 // it needs. The methods are called from whichever thread is doing the work,
 // which may be one of several worker threads, so they must be thread safe, and
 // they must not throw.
-// They are not affected by the NoiseLevel, which only controls what is written
-// to the output stream.
 //
 // OnProgress is called with a lock held which the other threads reporting
 // progress may wait on, so it should return quickly. A callback may call
@@ -338,8 +336,7 @@ public:
   // per warning as it is found, from the thread that found it.
   //
   // Nothing else reports these: there is no GetLastWarning, because no outcome
-  // depends on them. The NoiseLevel does not affect them either, though it
-  // still decides whether the same thing is written to the error stream.
+  // depends on them.
   virtual void OnWarning(const Par2Warning &warning) {}
 };
 
@@ -371,18 +368,10 @@ public:
   //
   // backends holds the implementations the application supplies, each of which
   // falls back to the one built in when it is left empty.
-  Par2Verifier(std::ostream &sout, std::ostream &serr, NoiseLevel noiselevel,
-               const std::string &basepath = std::string(),
-               Backends backends = Backends());
-
-  // Built without streams nothing is written anywhere, and the work is
-  // followed through an observer instead. There is no NoiseLevel because
-  // everything it governs is written output. The one exception is on Windows,
-  // where a filename which is not valid UTF-8 is reported on stderr as it is
-  // converted.
   //
-  // The observer is told exactly what it is told otherwise: OnSetInfo, OnFile,
-  // OnFileDone, OnProgress, OnError and OnWarning all arrive unchanged.
+  // Nothing is written anywhere, and the work is followed through an observer
+  // instead. The one exception is on Windows, where a filename which is not
+  // valid UTF-8 is reported on stderr as it is converted.
   explicit Par2Verifier(const std::string &basepath,
                         Backends backends = Backends());
 
@@ -598,8 +587,6 @@ private:
   class Impl;
   struct State;
 
-  Par2Verifier(std::unique_ptr<std::ostream> nullstream, const std::string &basepath, Backends backends);
-
   void Restart(void);
   void TakeLastError(const Result result);
   void RecordLastError(const ErrorCode code, const std::string &message);
@@ -628,15 +615,10 @@ public:
   //
   // backends holds the implementations the application supplies, each of which
   // falls back to the one built in when it is left empty.
-  Par2Creator(std::ostream &sout, std::ostream &serr, NoiseLevel noiselevel,
-              const std::string &basepath = std::string(),
-              Backends backends = Backends());
-
-  // Built without streams nothing is written anywhere, and the work is
-  // followed through an observer instead. There is no NoiseLevel because
-  // everything it governs is written output. The one exception is on Windows,
-  // where a filename which is not valid UTF-8 is reported on stderr as it is
-  // converted.
+  //
+  // Nothing is written anywhere, and the work is followed through an observer
+  // instead. The one exception is on Windows, where a filename which is not
+  // valid UTF-8 is reported on stderr as it is converted.
   explicit Par2Creator(const std::string &basepath,
                        Backends backends = Backends());
   ~Par2Creator();
@@ -715,8 +697,6 @@ public:
 private:
   class Impl;
   struct State;
-
-  Par2Creator(std::unique_ptr<std::ostream> nullstream, const std::string &basepath, Backends backends);
 
   void Restart(void);
   void TakeLastError(const Result result);

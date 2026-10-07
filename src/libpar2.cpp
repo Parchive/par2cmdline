@@ -106,9 +106,8 @@ static size_t MemoryLimit(const size_t requested)
 class Par2Verifier::Impl : public Par2Repairer
 {
 public:
-  Impl(std::ostream &sout, std::ostream &serr, NoiseLevel noiselevel,
-       const std::string &_basepath, const Backends &backends)
-    : Par2Repairer(sout, serr, noiselevel, backends)
+  Impl(std::ostream &nullstream, const std::string &_basepath, const Backends &backends)
+    : Par2Repairer(nullstream, nullstream, nlSilent, backends)
     , prepared(eInsufficientCriticalData)
     , preparefailure()
   {
@@ -190,11 +189,6 @@ public:
       errorlog.Record(preparefailure.code, preparefailure.message, preparefailure.filename);
 
     return prepared;
-  }
-
-  void SetNoiseLevel(const NoiseLevel _noiselevel)
-  {
-    noiselevel = _noiselevel;
   }
 
   // Forget every scan, keeping what the PAR2 files hold
@@ -376,15 +370,39 @@ std::string BasePathFor(const std::string &parfilename)
   return basepath;
 }
 
+// Discards everything written to it
+class NullStream : public std::ostream
+{
+public:
+  NullStream(void)
+  : std::ostream(&buffer)
+  , buffer()
+  {
+  }
+
+private:
+  class Buffer : public std::streambuf
+  {
+  protected:
+    int_type overflow(int_type c) override
+    {
+      return c;
+    }
+
+    std::streamsize xsputn(const char *, std::streamsize n) override
+    {
+      return n;
+    }
+  };
+
+  Buffer buffer;
+};
+
 // What a Par2Verifier keeps of its own, apart from the engine
 struct Par2Verifier::State
 {
-  State(std::ostream &_sout, std::ostream &_serr, NoiseLevel _noiselevel,
-        const std::string &_basepath, Backends _backends)
+  State(const std::string &_basepath, Backends _backends)
   : nullstream()
-  , sout(_sout)
-  , serr(_serr)
-  , noiselevel(_noiselevel)
   , backends(std::move(_backends))
   , observer(0)
   , memorylimit(MemoryLimit(0))
@@ -407,10 +425,7 @@ struct Par2Verifier::State
   {
   }
 
-  std::unique_ptr<std::ostream> nullstream;
-  std::ostream &sout;
-  std::ostream &serr;
-  NoiseLevel noiselevel;
+  NullStream nullstream;
   Backends backends;
   Par2Observer *observer;
   size_t memorylimit;
@@ -443,12 +458,12 @@ void Par2Verifier::Restart(void)
   {
     std::lock_guard<std::mutex> lock(state->cancelmutex);
     state->restarting = true;
-    impl = std::make_unique<Impl>(state->sout, state->serr, nlSilent, state->basepath, state->backends);
+    impl = std::make_unique<Impl>(state->nullstream, state->basepath, state->backends);
   }
 
   // The replay repeats work the observer has already been told about, so it is
-  // told none of it, and nothing is written to the streams again. The observer
-  // is attached once the handle is back where it was.
+  // told none of it. The observer is attached once the handle is back where it
+  // was.
   impl->SetDataSkipping(state->skipdata, state->skipleaway);
   impl->SetFullHash(state->fullhash);
 
@@ -498,54 +513,13 @@ void Par2Verifier::Restart(void)
     state->verified = false;
   }
 
-  impl->SetNoiseLevel(state->noiselevel);
   impl->SetObserver(state->observer);
 }
 
-// Discards everything written to it
-class NullStream : public std::ostream
-{
-public:
-  NullStream(void)
-  : std::ostream(&buffer)
-  , buffer()
-  {
-  }
-
-private:
-  class Buffer : public std::streambuf
-  {
-  protected:
-    int_type overflow(int_type c) override
-    {
-      return c;
-    }
-
-    std::streamsize xsputn(const char *, std::streamsize n) override
-    {
-      return n;
-    }
-  };
-
-  Buffer buffer;
-};
-
-Par2Verifier::Par2Verifier(std::ostream &sout, std::ostream &serr, NoiseLevel noiselevel,
-                           const std::string &_basepath, Backends _backends)
-: state(new State(sout, serr, noiselevel, _basepath, std::move(_backends)))
-, impl(new Impl(sout, serr, noiselevel, state->basepath, state->backends))
-{
-}
-
 Par2Verifier::Par2Verifier(const std::string &_basepath, Backends _backends)
-: Par2Verifier(std::unique_ptr<std::ostream>(new NullStream), _basepath, std::move(_backends))
+: state(new State(_basepath, std::move(_backends)))
+, impl(new Impl(state->nullstream, state->basepath, state->backends))
 {
-}
-
-Par2Verifier::Par2Verifier(std::unique_ptr<std::ostream> _nullstream, const std::string &_basepath, Backends _backends)
-: Par2Verifier(*_nullstream, *_nullstream, nlSilent, _basepath, std::move(_backends))
-{
-  state->nullstream = std::move(_nullstream);
 }
 
 Par2Verifier::~Par2Verifier() = default;
@@ -904,8 +878,8 @@ void Par2Verifier::ClearCancel(void)
 class Par2Creator::Impl : public Par2SetCreator
 {
 public:
-  Impl(std::ostream &sout, std::ostream &serr, NoiseLevel noiselevel, const Backends &backends)
-    : Par2SetCreator(sout, serr, noiselevel, backends)
+  Impl(std::ostream &nullstream, const Backends &backends)
+    : Par2SetCreator(nullstream, nullstream, nlSilent, backends)
   {
   }
 };
@@ -913,12 +887,8 @@ public:
 // What a Par2Creator keeps of its own, apart from the engine
 struct Par2Creator::State
 {
-  State(std::ostream &_sout, std::ostream &_serr, NoiseLevel _noiselevel,
-        const std::string &_basepath, Backends _backends)
+  State(const std::string &_basepath, Backends _backends)
   : nullstream()
-  , sout(_sout)
-  , serr(_serr)
-  , noiselevel(_noiselevel)
   , backends(std::move(_backends))
   , observer(0)
   , sourcefiles()
@@ -938,10 +908,7 @@ struct Par2Creator::State
   {
   }
 
-  std::unique_ptr<std::ostream> nullstream;
-  std::ostream &sout;
-  std::ostream &serr;
-  NoiseLevel noiselevel;
+  NullStream nullstream;
   Backends backends;
   Par2Observer *observer;
   std::vector<std::string> sourcefiles;
@@ -968,7 +935,7 @@ void Par2Creator::Restart(void)
 {
   std::lock_guard<std::mutex> lock(state->cancelmutex);
 
-  impl = std::make_unique<Impl>(state->sout, state->serr, state->noiselevel, state->backends);
+  impl = std::make_unique<Impl>(state->nullstream, state->backends);
   impl->SetObserver(state->observer);
 
   if (state->cancelled)
@@ -985,22 +952,10 @@ void Par2Creator::TakeLastError(const Result result)
     impl->GetLastError(&state->lasterror);
 }
 
-Par2Creator::Par2Creator(std::ostream &sout, std::ostream &serr, NoiseLevel noiselevel,
-                         const std::string &_basepath, Backends _backends)
-: state(new State(sout, serr, noiselevel, _basepath, std::move(_backends)))
-, impl(new Impl(sout, serr, noiselevel, state->backends))
-{
-}
-
 Par2Creator::Par2Creator(const std::string &_basepath, Backends _backends)
-: Par2Creator(std::unique_ptr<std::ostream>(new NullStream), _basepath, std::move(_backends))
+: state(new State(_basepath, std::move(_backends)))
+, impl(new Impl(state->nullstream, state->backends))
 {
-}
-
-Par2Creator::Par2Creator(std::unique_ptr<std::ostream> _nullstream, const std::string &_basepath, Backends _backends)
-: Par2Creator(*_nullstream, *_nullstream, nlSilent, _basepath, std::move(_backends))
-{
-  state->nullstream = std::move(_nullstream);
 }
 
 Par2Creator::~Par2Creator() = default;
@@ -1110,7 +1065,7 @@ try
       filesizes.push_back(DiskFile::GetFileSize(file));
 
     if (0 != state->sourceblockcount
-        && !ComputeBlockSizeFromCount(state->serr, &setblocksize, state->sourceblockcount, filesizes))
+        && !ComputeBlockSizeFromCount(state->nullstream, &setblocksize, state->sourceblockcount, filesizes))
     {
       ReportError(state->lasterror, state->observer, ecInvalidSetting,
                   "The source block count cannot divide these files");
