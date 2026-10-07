@@ -102,17 +102,23 @@ The command line parameters for par2cmdline are as follow:
     -n<n>    : Number of recovery files (max 31) (don't use both -n and -l)
     -m<n>    : Memory (in MB) to use
     -t<n>    : Number of threads to use (Auto-detected)
+    -T<n>    : Number of files hashed in parallel
     -v [-v]  : Be more verbose
     -q [-q]  : Be more quiet (-qq gives silence)
     -p       : Purge backup files and par files on successful recovery or
                when no recovery is needed
+    -O       : Rename-only mode (skip files that are not perfect matches,
+               useful for quickly fixing renamed files)
     -R       : Recurse into subdirectories (only useful on create)
     -L       : Follow symlinks to files when scanning for source files
                (create only, POSIX only, use at your own risk)
     -N       : data skipping (find badly mispositioned data blocks)
     -S<n>    : Skip leaway (distance +/- from expected block position)
+    --full-hash : Also check the hash of the whole of each file
     -B<path> : Set the basepath to use as reference for the datafiles
     --       : Treat all following arguments as filenames
+    @<file>  : Process a listing of files in a text file (or bare @ to read
+               it from stdin)
 
 If you wish to create PAR2 files for a single source file, you may leave out the name of the PAR2 file from the command line. par2cmdline will then assume that you wish to base the filenames for the PAR2 files on the name of the source file.
 
