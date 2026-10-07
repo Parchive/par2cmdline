@@ -146,9 +146,6 @@ add_library(libpar2 STATIC
   src/letype.h
   src/mainpacket.cpp src/mainpacket.h
   src/md5.cpp src/md5.h
-  src/par1fileformat.cpp src/par1fileformat.h
-  src/par1repairer.cpp src/par1repairer.h
-  src/par1repairersourcefile.cpp src/par1repairersourcefile.h
   src/par2creator.cpp src/par2creator.h
   src/par2creatorsourcefile.cpp src/par2creatorsourcefile.h
   src/par2fileformat.cpp src/par2fileformat.h
@@ -194,6 +191,9 @@ target_link_libraries(libpar2 PUBLIC Threads::Threads ${PAR2_ATOMIC_LIBRARY})
 add_library(par2cli STATIC
   src/cli.cpp
   src/commandline.cpp src/commandline.h
+  src/par1fileformat.cpp src/par1fileformat.h
+  src/par1repairer.cpp src/par1repairer.h
+  src/par1repairersourcefile.cpp src/par1repairersourcefile.h
   include/par2/cli.h
 )
 

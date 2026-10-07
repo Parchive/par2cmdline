@@ -285,6 +285,10 @@ u64 GetTotalPhysicalMemory(void);
 // when the memory cannot be found
 size_t DefaultMemoryLimit(void);
 
+// What the work may use: the caller's limit, or the default when it set none,
+// and never less than the 1MB the command line allows
+size_t MemoryLimit(const size_t requested);
+
 // The directory a PAR2 file is in, which is where the tool looks with no -B
 std::string BasePathFor(const std::string &parfilename);
 

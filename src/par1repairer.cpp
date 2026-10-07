@@ -1481,4 +1481,30 @@ bool Par1Repairer::RemoveParFiles(void)
   return true;
 }
 
+
+Result par1repair(std::ostream &sout,
+		  std::ostream &serr,
+		  const NoiseLevel noiselevel,
+		  const size_t memorylimit,
+		  // basepath is not used by Par1
+		  const u32 nthreads,
+		  // filethreads is not used by Par1
+		  const std::string &parfilename,
+		  const std::vector<std::string> &extrafiles,
+		  const bool dorepair,   // derived from operation
+		  const bool purgefiles
+		  // skipdata is not used by Par1
+		  // skipleaway is not used by Par1
+		  )
+{
+  Par1Repairer repairer(sout, serr, noiselevel);
+  Result result = repairer.Process(MemoryLimit(memorylimit),
+				   nthreads,
+				   parfilename,
+				   extrafiles,
+				   dorepair,
+				   purgefiles);
+  return result;
+}
+
 } // namespace par2

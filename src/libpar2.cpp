@@ -94,9 +94,7 @@ size_t DefaultMemoryLimit(void)
   return (size_t)limit * 1048576;
 }
 
-// What the work may use: the caller's limit, or the default when it set none,
-// and never less than the 1MB the command line allows
-static size_t MemoryLimit(const size_t requested)
+size_t MemoryLimit(const size_t requested)
 {
   return std::max<size_t>((requested != 0) ? requested : DefaultMemoryLimit(), 1048576);
 }
@@ -1197,32 +1195,6 @@ Result par2repair(std::ostream &sout,
 				   skipleaway,
 				   fullhash);
 
-  return result;
-}
-
-
-Result par1repair(std::ostream &sout,
-		  std::ostream &serr,
-		  const NoiseLevel noiselevel,
-		  const size_t memorylimit,
-		  // basepath is not used by Par1
-		  const u32 nthreads,
-		  // filethreads is not used by Par1
-		  const std::string &parfilename,
-		  const std::vector<std::string> &extrafiles,
-		  const bool dorepair,   // derived from operation
-		  const bool purgefiles
-		  // skipdata is not used by Par1
-		  // skipleaway is not used by Par1
-		  )
-{
-  Par1Repairer repairer(sout, serr, noiselevel);
-  Result result = repairer.Process(MemoryLimit(memorylimit),
-				   nthreads,
-				   parfilename,
-				   extrafiles,
-				   dorepair,
-				   purgefiles);
   return result;
 }
 
