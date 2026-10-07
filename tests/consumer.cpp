@@ -29,6 +29,7 @@
 #include <fstream>
 #include <memory>
 #include <mutex>
+#include <new>
 
 #ifdef _WIN32
 #include <direct.h>
@@ -2057,6 +2058,26 @@ int main()
     par2::Par2Error noprocessor;
     Check(verifier.GetLastError(&noprocessor), "and it says why");
     Check(noprocessor.code == par2::ecProcessorFailed, "the reason is ecProcessorFailed");
+
+    // What the application's own code throws is reported through the Result
+    par2::Backends throwing;
+    throwing.processor = [](const par2::ProcessorConfig &) -> std::unique_ptr<par2::Processor>
+    {
+      throw std::bad_alloc();
+    };
+
+    Counting thrown;
+    par2::Par2Verifier rethrown(quiet, quiet, par2::nlSilent, "backends/", throwing);
+    rethrown.SetObserver(&thrown);
+
+    Check(par2::eSuccess == rethrown.AddPar2File(ownpar), "AddPar2File for the throwing backend");
+    Check(par2::eRepairPossible == rethrown.Verify(), "the file still needs repairing");
+    Check(par2::eMemoryError == rethrown.Repair(), "a backend which throws bad_alloc is eMemoryError");
+    CheckLastError(rethrown, par2::eMemoryError, "a repair whose backend threw");
+    Check(thrown.lasterror.code == par2::ecOutOfMemory, "and the observer is told it ran out");
+
+    for (const auto &backup : rethrown.GetBackupFiles())
+      std::remove(backup.c_str());
 
     std::remove(own);
     std::remove(ownpar);

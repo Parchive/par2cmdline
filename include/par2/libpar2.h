@@ -270,6 +270,10 @@ struct Par2VerifyResult
 // they must not throw.
 // They are not affected by the NoiseLevel, which only controls what is written
 // to the output stream.
+//
+// OnProgress is called with a lock held which the other threads reporting
+// progress may wait on, so it should return quickly. A callback may call
+// Cancel on the handle it is reporting for, and nothing else of that handle.
 class Par2Observer
 {
 public:
@@ -349,6 +353,12 @@ public:
 //
 // Verify and Repair are also available as the par2repair function below, which
 // does the whole job in one call.
+//
+// The calls which return a Result report a failure through it rather than
+// throwing, whatever the work or the implementations the application supplies
+// throw: running out of memory is eMemoryError with ecOutOfMemory, and
+// anything else is eLogicError with ecInternalError. Constructing one, and the
+// calls which copy out what it holds, can still throw std::bad_alloc.
 class Par2Verifier
 {
 public:
@@ -607,6 +617,9 @@ private:
 // would write is already there, it fails with eFileIOError. A cancel, or a
 // failure before the set is complete, deletes the recovery files that create
 // had made, and nothing else.
+//
+// Create reports a failure through the Result it returns rather than throwing,
+// as the calls of Par2Verifier do.
 class Par2Creator
 {
 public:

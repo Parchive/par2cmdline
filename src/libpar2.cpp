@@ -573,6 +573,25 @@ static void ReportError(Par2Error &lasterror, Par2Observer *observer, const Erro
     observer->OnError(lasterror);
 }
 
+// Report the exception being handled as the failure of the call it stopped
+static Result Thrown(Par2Error &lasterror, Par2Observer *observer)
+{
+  try
+  {
+    throw;
+  }
+  catch (const std::bad_alloc &)
+  {
+    ReportError(lasterror, observer, ecOutOfMemory, "Memory ran out");
+    return eMemoryError;
+  }
+  catch (...)
+  {
+    ReportError(lasterror, observer, ecInternalError, "The work stopped on an exception");
+    return eLogicError;
+  }
+}
+
 // What the handle itself has to report, rather than the work it delegates
 void Par2Verifier::RecordLastError(const ErrorCode code, const std::string &message)
 {
@@ -621,6 +640,7 @@ void Par2Verifier::SetThreadCounts(const u32 _nthreads, const u32 _filethreads)
 }
 
 Result Par2Verifier::AddPar2File(const std::string &_parfilename)
+try
 {
   const std::string parfilename = DiskFile::GetCanonicalPathname(_parfilename);
 
@@ -673,6 +693,10 @@ Result Par2Verifier::AddPar2File(const std::string &_parfilename)
   state->lasterror = added;
 
   return result;
+}
+catch (...)
+{
+  return Thrown(state->lasterror, state->observer);
 }
 
 bool Par2Verifier::GetSetInfo(Par2SetInfo *info) const
@@ -746,6 +770,7 @@ std::map<std::string, std::vector<bool> > Par2Verifier::GetKnownBlocks(void) con
 }
 
 Result Par2Verifier::Verify(const std::vector<std::string> &extrafiles)
+try
 {
   // A full pass covers everything the individual scans did, so they are dropped
   // rather than replayed into it. Whatever was scanned before, by a pass that
@@ -770,8 +795,13 @@ Result Par2Verifier::Verify(const std::vector<std::string> &extrafiles)
 
   return result;
 }
+catch (...)
+{
+  return Thrown(state->lasterror, state->observer);
+}
 
 Result Par2Verifier::VerifyFile(const std::string &filename)
+try
 {
   // After a repair a new engine starts from nothing, and each file is scanned
   // again as it is fed in
@@ -800,8 +830,13 @@ Result Par2Verifier::VerifyFile(const std::string &filename)
 
   return result;
 }
+catch (...)
+{
+  return Thrown(state->lasterror, state->observer);
+}
 
 Result Par2Verifier::Repair(const bool verifyafter)
+try
 {
   if (!state->verified)
   {
@@ -839,6 +874,10 @@ Result Par2Verifier::Repair(const bool verifyafter)
   TakeLastError(result);
 
   return result;
+}
+catch (...)
+{
+  return Thrown(state->lasterror, state->observer);
 }
 
 void Par2Verifier::Cancel(void)
@@ -1024,6 +1063,7 @@ void Par2Creator::SetThreadCounts(const u32 _nthreads, const u32 _filethreads)
 }
 
 Result Par2Creator::Create(const std::string &parfilename)
+try
 {
   // Taken from the name of each set when none was given, before any file is
   // read
@@ -1104,6 +1144,10 @@ Result Par2Creator::Create(const std::string &parfilename)
   TakeLastError(result);
 
   return result;
+}
+catch (...)
+{
+  return Thrown(state->lasterror, state->observer);
 }
 
 void Par2Creator::Cancel(void)
