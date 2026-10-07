@@ -36,8 +36,15 @@
 
 #include <list>
 #include <map>
+#include <sstream>
 #include <vector>
 #include <memory>
+#include <utility>
+
+#include "errorlog.h"
+
+namespace par2
+{
 
 // A disk file can be any type of file that par2cmdline needs
 // to read or write data from or to.
@@ -45,7 +52,9 @@
 class DiskFile
 {
 public:
-  DiskFile(std::ostream &sout, std::ostream &serr);
+  // errorlog records what goes wrong for the application to read back. Files
+  // whose failures the caller means to tolerate are given none.
+  DiskFile(std::ostream &sout, std::ostream &serr, ErrorLog *errorlog = 0);
   ~DiskFile(void);
 
   // Ensures the specified path's parent directory exists
@@ -76,8 +85,8 @@ public:
   bool Read(u64 offset, void *buffer, size_t length,
 	    LengthType maxlength = MAX_LENGTH);
 
-  // Close the file
-  void Close(void);
+  // Close the file, false when what was still buffered could not be written
+  bool Close(void);
 
   // Get the size of the file
   u64 FileSize(void) const {return filesize;}
@@ -115,11 +124,32 @@ public:
   static std::unique_ptr< std::list<std::string> > FindFiles(std::string path, std::string wildcard, bool recursive, bool followlinks = false);
 
 protected:
+  // One failure, written to the error stream and recorded for the application
+  // as the same line of text.
+  class Failure
+  {
+  public:
+    Failure(const DiskFile &file, const ErrorCode code, std::string name)
+      : file(file), code(code), name(std::move(name)), message() {}
+
+    ~Failure(void);
+
+    template<typename T>
+    Failure &operator<<(const T &value) {message << value; return *this;}
+
+  private:
+    const DiskFile &file;
+    const ErrorCode code;
+    const std::string name;
+    std::ostringstream message;
+  };
+
   // NOTE: These are pointers so that the operator= works correctly.
   // The references used elsewhere cannot be reassigned.
   // (Operator= is needed when vectors are resized.)
   std::ostream *sout; // stream for output (for commandline, this is cout)
   std::ostream *serr; // stream for errors (for commandline, this is cerr)
+  ErrorLog *errorlog; // where failures are recorded, or 0 for none
 
   std::string filename;
   u64    filesize;
@@ -156,6 +186,9 @@ public:
   void Remove(DiskFile *diskfile);
   DiskFile* Find(std::string filename) const;
 
+  // Every file in the map
+  std::vector<DiskFile*> Files(void) const;
+
 protected:
   std::map<std::string, DiskFile*>    diskfilemap;             // Map from filename to DiskFile
 };
@@ -168,5 +201,7 @@ public:
 protected:
   std::map<std::string, u64> cache;
 };
+
+} // namespace par2
 
 #endif // __DISKFILE_H__

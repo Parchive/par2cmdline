@@ -3,7 +3,7 @@
 # thx @spider-mario
 
 # compilation output
-par2
+/par2
 libpar2.a
 *.o
 .deps/
@@ -14,6 +14,7 @@ tests/*.exe
 *.trs
 *.log
 tests/runtest*
+/runconsumer_build/
 
 # unit test binaries
 tests/*_test

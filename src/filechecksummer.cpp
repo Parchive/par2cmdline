@@ -20,6 +20,9 @@
 
 #include "libpar2internal.h"
 
+namespace par2
+{
+
 #ifdef _MSC_VER
 #ifdef _DEBUG
 #undef THIS_FILE
@@ -295,3 +298,5 @@ MD5Hash FileCheckSummer::ShortHash(u64 blocklength)
 
   return hash;
 }
+
+} // namespace par2

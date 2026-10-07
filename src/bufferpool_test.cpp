@@ -26,6 +26,8 @@
 #include "libpar2internal.h"
 #include "bufferpool.h"
 
+using namespace par2;
+
 
 // A pool hands out every buffer it was made with, and no more than that
 int test1() {

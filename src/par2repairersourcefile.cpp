@@ -20,6 +20,9 @@
 
 #include "libpar2internal.h"
 
+namespace par2
+{
+
 #ifdef _MSC_VER
 #ifdef _DEBUG
 #undef THIS_FILE
@@ -68,10 +71,12 @@ void Par2RepairerSourceFile::SetVerificationPacket(VerificationPacket *_verifica
   verificationpacket = _verificationpacket;
 }
 
-void Par2RepairerSourceFile::ComputeTargetFileName(std::ostream &sout, std::ostream &serr, const NoiseLevel noiselevel, const std::string &path)
+void Par2RepairerSourceFile::ComputeTargetFileName(std::ostream &sout, std::ostream &serr, const NoiseLevel noiselevel, const std::string &path, const ErrorLog *errorlog)
 {
-  // Get a version of the filename compatible with the OS
-  std::string filename = DescriptionPacket::TranslateFilenameFromPar2ToLocal(sout, serr, noiselevel, descriptionpacket->FileName());
+  // Get a version of the filename compatible with the OS, saying what was
+  // changed only the first time it is worked out
+  const bool first = targetfilename.empty();
+  std::string filename = DescriptionPacket::TranslateFilenameFromPar2ToLocal(sout, serr, first ? noiselevel : nlSilent, descriptionpacket->FileName(), first ? errorlog : 0);
 
   targetfilename = path + filename;
 }
@@ -169,3 +174,5 @@ void Par2RepairerSourceFile::SetDiskFileSize()
 {
   diskfilesize = DiskFile::GetFileSize(targetfilename);
 }
+
+} // namespace par2

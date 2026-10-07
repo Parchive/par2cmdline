@@ -18,10 +18,14 @@
 //  along with this program; if not, write to the Free Software
 //  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-#include "libpar2.h"
+#include <par2/libpar2.h>
 #include "commandline.h"
 // This is included here, so that cout and cerr are not used elsewhere.
 #include <iostream>
+
+#ifdef _WIN32
+#include "wargs.h"
+#endif
 
 #ifdef _MSC_VER
 #ifdef _DEBUG
@@ -31,9 +35,9 @@ static char THIS_FILE[]=__FILE__;
 #endif
 #endif
 
-#ifdef _WIN32
+using namespace par2;
 
-#include "utf8.h"
+#ifdef _WIN32
 
 int wmain(int argc, wchar_t* wargv[])
 

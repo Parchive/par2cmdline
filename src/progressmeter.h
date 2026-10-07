@@ -21,6 +21,13 @@
 #define __PROGRESSMETER_H__
 
 #include <chrono>
+#include <mutex>
+#include <utility>
+
+#include <par2/libpar2.h>
+
+namespace par2
+{
 
 template<typename TValue>
 class ProgressMeter
@@ -33,6 +40,11 @@ class ProgressMeter
   const float scale;         // pre-computed multiplier to convert progress value into a percentage*10
   std::atomic<TValue> current; // last known progress value
   std::atomic<steady_clock::duration::rep> printed; // last time progress was outputted
+  const bool print;          // whether the percentage is written to sout
+  const Phase phase;         // which step of the work this counts
+  Par2Observer *observer;    // notified of progress whatever the noise level
+  std::mutex reporting;      // held while a fraction is claimed and reported
+  u32 reported;              // highest fraction reported so far
 
   inline u32 CalcThousandths(TValue val) const
   {
@@ -54,7 +66,28 @@ class ProgressMeter
     // if enough time has passed, print the current progress, and update the time record
     if (now - lastpoint >= PRINT_INTERVAL || newfraction == 1000)
     {
-      LockedStream(sout) << message << newfraction/10 << '.' << newfraction%10 << "%\r" << std::flush;
+      // Threads report as they finish, so a larger fraction can arrive first.
+      // Nothing is reported which would take the count backwards, and the lock
+      // is held across the report so the observer is told in the same order.
+      // Another thread which is reporting is left to it, except with the final
+      // fraction
+      std::unique_lock<std::mutex> lock(reporting, std::defer_lock);
+      if (newfraction == 1000)
+        lock.lock();
+      else if (!lock.try_lock())
+        return false;
+
+      if (newfraction <= reported)
+        return false;
+
+      reported = newfraction;
+
+      if (print)
+        LockedStream(sout) << message << newfraction/10 << '.' << newfraction%10 << "%\r" << std::flush;
+
+      if (observer)
+        observer->OnProgress(phase, newfraction);
+
       printed.store(now.time_since_epoch().count(), std::memory_order_relaxed);
       return true;
     }
@@ -62,10 +95,14 @@ class ProgressMeter
   }
 
 public:
-  ProgressMeter(std::ostream &sout, const std::string &message, TValue total) :
-    sout(sout), message(message), scale(total != 0 ? 1000.0f / total : 0.0f), current(0), printed(0) {}
-  ProgressMeter(std::ostream &sout, const char *message, TValue total) :
-    sout(sout), message(message), scale(total != 0 ? 1000.0f / total : 0.0f), current(0), printed(0) {}
+  ProgressMeter(std::ostream &sout, std::string message, TValue total,
+                NoiseLevel noiselevel, Phase phase, Par2Observer *observer = 0) :
+    sout(sout), message(std::move(message)), scale(total != 0 ? 1000.0f / total : 0.0f), current(0), printed(0),
+    print(noiselevel > nlQuiet), phase(phase), observer(observer), reporting(), reported(0) {}
+  ProgressMeter(std::ostream &sout, const char *message, TValue total,
+                NoiseLevel noiselevel, Phase phase, Par2Observer *observer = 0) :
+    sout(sout), message(message), scale(total != 0 ? 1000.0f / total : 0.0f), current(0), printed(0),
+    print(noiselevel > nlQuiet), phase(phase), observer(observer), reporting(), reported(0) {}
 
   // NOTE: Update() doesn't always update current value, so don't mix it with Add()
   void Update(TValue newval)
@@ -80,6 +117,12 @@ public:
     PrintFraction(newval - amount, newval);
   }
 
+  // which step of the work this counts
+  Phase GetPhase(void) const
+  {
+    return phase;
+  }
+
   // print a line whilst progress is still running
   void PrintLine(const std::string &line)
   {
@@ -91,5 +134,7 @@ public:
   }
 };
 
+
+} // namespace par2
 
 #endif // __PROGRESSMETER_H__

@@ -17,16 +17,19 @@
 //  along with this program; if not, write to the Free Software
 //  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-#ifndef __BACKENDS_H__
-#define __BACKENDS_H__
+#ifndef PAR2_BACKENDS_H
+#define PAR2_BACKENDS_H
 
 #include <cstddef>
 #include <functional>
 #include <memory>
 
-#include "processor.h"
-#include "hasher.h"
-#include "types.h"
+#include <par2/processor.h>
+#include <par2/hasher.h>
+#include <par2/types.h>
+
+namespace par2
+{
 
 // The budgets a backend is built with. What it accumulates is given separately,
 // by Processor::Init, once the number of recovery blocks is known.
@@ -52,4 +55,6 @@ struct Backends
   std::function<std::unique_ptr<Hasher>(const HasherConfig &)>       hasher;
 };
 
-#endif // __BACKENDS_H__
+} // namespace par2
+
+#endif // PAR2_BACKENDS_H

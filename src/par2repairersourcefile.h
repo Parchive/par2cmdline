@@ -21,6 +21,9 @@
 #ifndef __PAR2REPAIRERSOURCEFILE_H__
 #define __PAR2REPAIRERSOURCEFILE_H__
 
+namespace par2
+{
+
 enum MatchType
 {
   eNoMatch = 0,
@@ -72,7 +75,7 @@ public:
   DiskFile* GetCompleteFile(void) const;
 
   // Compute/Get the filename for the final repaired version of the file
-  void ComputeTargetFileName(std::ostream &sout, std::ostream &serr, const NoiseLevel noiselevel, const std::string &path);
+  void ComputeTargetFileName(std::ostream &sout, std::ostream &serr, const NoiseLevel noiselevel, const std::string &path, const ErrorLog *errorlog = 0);
   std::string TargetFileName(void) const;
 
   // Get the number of blocks that the file uses
@@ -108,5 +111,7 @@ protected:
   std::string                  targetfilename;      // The filename of the target file
   u64                          diskfilesize;        // The filesize of sourcefile on disk
 };
+
+} // namespace par2
 
 #endif // __PAR2REPAIRERSOURCEFILE_H__

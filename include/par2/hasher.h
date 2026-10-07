@@ -17,12 +17,15 @@
 //  along with this program; if not, write to the Free Software
 //  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-#ifndef __HASHER_H__
-#define __HASHER_H__
+#ifndef PAR2_HASHER_H
+#define PAR2_HASHER_H
 
 #include <cstddef>
 
-#include "types.h"
+#include <par2/types.h>
+
+namespace par2
+{
 
 // Hashes the blocks of one file, and the file itself. Several consecutive
 // blocks are submitted at once, so that an implementation may hash them
@@ -100,4 +103,6 @@ public:
   virtual void EndFile(void *hashfull, void *hash16k) = 0;
 };
 
-#endif // __HASHER_H__
+} // namespace par2
+
+#endif // PAR2_HASHER_H

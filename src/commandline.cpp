@@ -38,6 +38,9 @@ static char THIS_FILE[]=__FILE__;
 #endif
 
 
+namespace par2
+{
+
 CommandLine::CommandLine(void)
 : filesize_cache()
 , version(verUnknown)
@@ -979,60 +982,6 @@ bool CommandLine::ReadArgs(int argc, const char * const *argv)
 }
 
 
-// This webpage has code to get physical memory size on many OSes
-// http://nadeausoftware.com/articles/2012/09/c_c_tip_how_get_physical_memory_size_system
-
-#ifdef _WIN32
-u64 CommandLine::GetTotalPhysicalMemory()
-{
-  u64 TotalPhysicalMemory = 0;
-
-  HMODULE hLib = ::LoadLibraryA("kernel32.dll");
-  if (NULL != hLib)
-  {
-    BOOL (WINAPI *pfn)(LPMEMORYSTATUSEX) = (BOOL (WINAPI*)(LPMEMORYSTATUSEX))::GetProcAddress(hLib, "GlobalMemoryStatusEx");
-
-    if (NULL != pfn)
-    {
-      MEMORYSTATUSEX mse;
-      mse.dwLength = sizeof(mse);
-      if (pfn(&mse))
-      {
-	TotalPhysicalMemory = mse.ullTotalPhys;
-      }
-    }
-
-    ::FreeLibrary(hLib);
-  }
-
-  if (TotalPhysicalMemory == 0)
-  {
-    MEMORYSTATUS ms;
-    ::ZeroMemory(&ms, sizeof(ms));
-    ::GlobalMemoryStatus(&ms);
-
-    TotalPhysicalMemory = ms.dwTotalPhys;
-  }
-
-  return TotalPhysicalMemory;
-}
-#elif defined(_SC_PHYS_PAGES) && defined(_SC_PAGESIZE)
-// POSIX compliant OSes, including OSX/MacOS and Cygwin.  Also works for Linux.
-u64 CommandLine::GetTotalPhysicalMemory()
-{
-  long pages = sysconf(_SC_PHYS_PAGES);
-  long page_size = sysconf(_SC_PAGESIZE);
-  return pages*page_size;
-}
-#else
-// default version == unable to request memory size
-u64 CommandLine::GetTotalPhysicalMemory()
-{
-  return 0;
-}
-#endif
-
-
 bool CommandLine::CheckValuesAndSetDefaults() {
   if (parfilename.length() == 0)
   {
@@ -1050,26 +999,17 @@ bool CommandLine::CheckValuesAndSetDefaults() {
   // Default memorylimit of 256MB
   if (memorylimit == 0)
   {
-    u64 TotalPhysicalMemory = GetTotalPhysicalMemory();
-
-    if (TotalPhysicalMemory == 0)
+    if (noiselevel >= nlDebug)
     {
-      if (noiselevel >= nlDebug)
+      u64 TotalPhysicalMemory = GetTotalPhysicalMemory();
+
+      if (TotalPhysicalMemory == 0)
         std::cout << "[DEBUG] could not detect physical memory" << std::endl;
-
-      // Default/error case:
-      memorylimit = 256;
-    }
-    else
-    {
-      if (noiselevel >= nlDebug)
+      else
         std::cout << "[DEBUG] detected physical memory: " << TotalPhysicalMemory << " bytes" << std::endl;
-
-      // 1/8th of total physical memory or floor to 256MiB if lower:
-      memorylimit = (size_t)(TotalPhysicalMemory / 1048576 / 8);
-      if (memorylimit < 256)
-        memorylimit = 256;
     }
+
+    memorylimit = DefaultMemoryLimit() / 1048576;
   }
 
   // limit to 1GB on 32-bit platforms to avoid exhausing the addressable memory space
@@ -1093,23 +1033,10 @@ bool CommandLine::CheckValuesAndSetDefaults() {
       std::cout << "[DEBUG] parfilename: " << parfilename << std::endl;
     }
 
-    std::string dummy;
-    std::string path;
-    DiskFile::SplitFilename(parfilename, path, dummy);
-    basepath = DiskFile::GetCanonicalPathname(path);
-
-    // fallback
-    if ("" == basepath)
-    {
-      basepath = DiskFile::GetCanonicalPathname("./");
-    }
+    basepath = BasePathFor(parfilename);
   }
 
-  std::string lastchar = basepath.substr(basepath.length() -1);
-  if (PATHSEP != lastchar && ALTPATHSEP != lastchar)
-  {
-    basepath = basepath + PATHSEP;
-  }
+  basepath = WithSeparator(basepath);
 
   if (noiselevel >= nlDebug)
   {
@@ -1175,7 +1102,7 @@ bool CommandLine::CheckValuesAndSetDefaults() {
     {
       // Expect to find blocks within +/- 64 bytes of the expected
       // position relative to the last block that was found.
-      skipleaway = 64;
+      skipleaway = DEFAULT_SKIP_LEAWAY;
     }
   }
 
@@ -1216,10 +1143,7 @@ bool CommandLine::CheckValuesAndSetDefaults() {
     }
 
     // Strip the ".par2" from the end of the filename of the main PAR2 file.
-    if (parfilename.length() > 5 && 0 == stricmp(parfilename.substr(parfilename.length()-5, 5).c_str(), ".par2"))
-    {
-      parfilename = parfilename.substr(0, parfilename.length()-5);
-    }
+    parfilename = SetNameFor(parfilename);
 
     if (DiskFile::FileExists(parfilename + ".par2"))
     {
@@ -1274,96 +1198,13 @@ bool CommandLine::ComputeBlockSize() {
 
   if (blocksize == 0) {
     // compute value from blockcount
-
-    if (blockcount < extrafiles.size())
+    std::vector<u64> filesizes;
+    for (std::vector<std::string>::const_iterator i=extrafiles.begin(); i!=extrafiles.end(); i++)
     {
-      // The block count cannot be less than the number of files.
-
-      std::cerr << "Block count (" << blockcount <<
-              ") cannot be smaller than the number of files(" << extrafiles.size() << "). " << std::endl;
-      return false;
+      filesizes.push_back(filesize_cache.get(*i));
     }
-    else if (blockcount == extrafiles.size())
-    {
-      // If the block count is the same as the number of files, then the block
-      // size is the size of the largest file (rounded up to a multiple of 4).
 
-      u64 largestfilesize = 0;
-      for (std::vector<std::string>::const_iterator i=extrafiles.begin(); i!=extrafiles.end(); i++)
-      {
-	u64 filesize = filesize_cache.get(*i);
-	if (filesize > largestfilesize)
-	{
-	  largestfilesize = filesize;
-	}
-      }
-      blocksize = (largestfilesize + 3) & ~3;
-    }
-    else
-    {
-      u64 totalsize = 0;
-      for (std::vector<std::string>::const_iterator i=extrafiles.begin(); i!=extrafiles.end(); i++)
-      {
-        totalsize += (filesize_cache.get(*i) + 3) / 4;
-      }
-
-      if (blockcount > totalsize)
-      {
-        blocksize = 4;
-      }
-      else
-      {
-        // Absolute lower bound and upper bound on the source block size that will
-        // result in the requested source block count.
-        u64 lowerBound = totalsize / blockcount;
-        u64 upperBound = (totalsize + blockcount - extrafiles.size() - 1) / (blockcount - extrafiles.size());
-
-        u64 count = 0;
-        u64 size;
-
-        do
-        {
-          size = (lowerBound + upperBound)/2;
-
-          count = 0;
-          for (std::vector<std::string>::const_iterator i=extrafiles.begin(); i!=extrafiles.end(); i++)
-          {
-            count += ((filesize_cache.get(*i)+3)/4 + size-1) / size;
-          }
-          if (count > blockcount)
-          {
-            lowerBound = size+1;
-            if (lowerBound >= upperBound)
-            {
-              size = lowerBound;
-              count = 0;
-              for (std::vector<std::string>::const_iterator i=extrafiles.begin(); i!=extrafiles.end(); i++)
-              {
-                count += ((filesize_cache.get(*i)+3)/4 + size-1) / size;
-              }
-            }
-          }
-          else
-          {
-            upperBound = size;
-          }
-        }
-        while (lowerBound < upperBound);
-
-        if (count > 32768)
-        {
-          std::cerr << "Error calculating block size. cannot be higher than 32768." << std::endl;
-          return false;
-        }
-        else if (count == 0)
-        {
-          std::cerr << "Error calculating block size. cannot be 0." << std::endl;
-          return false;
-        }
-
-        blocksize = size*4;
-      }
-    }
+    return ComputeBlockSizeFromCount(std::cerr, &blocksize, blockcount, filesizes);
   }
 
   return true;
@@ -1392,7 +1233,7 @@ bool CommandLine::ComputeRecoveryBlockCount(u32 *recoveryblockcount,
     // count is the number of input blocks
 
     // Determine recoveryblockcount
-    *recoveryblockcount = (sourceblockcount * redundancy + 50) / 100;
+    *recoveryblockcount = ComputeRecoveryBlockCountFromRedundancy(sourceblockcount, redundancy);
   }
   else if (redundancysize > 0)
   {
@@ -1440,10 +1281,6 @@ bool CommandLine::ComputeRecoveryBlockCount(u32 *recoveryblockcount,
     std::cerr << "Redundancy and Redundancysize not set." << std::endl;
     return false;
   }
-
-  // Force valid values if necessary
-  if (*recoveryblockcount == 0 && redundancy > 0)
-    *recoveryblockcount = 1;
 
   if (*recoveryblockcount > 65536)
   {
@@ -1552,3 +1389,5 @@ bool CommandLine::SetParFilename(std::string filename)
 
   return result;
 }
+
+} // namespace par2

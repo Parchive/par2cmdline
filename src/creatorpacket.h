@@ -20,6 +20,9 @@
 #ifndef __CREATORPACKET_H__
 #define __CREATORPACKET_H__
 
+namespace par2
+{
+
 // The creator packet records details as to which PAR2 client
 // created a particular recovery file.
 
@@ -39,6 +42,20 @@ public:
 
   // Load a creator packet from a specified file
   bool Load(DiskFile *diskfile, u64 offset, PACKET_HEADER &header);
+
+  // The text identifying the client which created the packet
+  std::string Client(void) const;
 };
+
+inline std::string CreatorPacket::Client(void) const
+{
+  assert(packetdata != 0);
+
+  // The text runs to a NUL, or to the end of a packet it fills
+  const char *client = (const char*)((const CREATORPACKET*)packetdata)->client;
+  return std::string(client, std::find(client, client + (packetlength - sizeof(CREATORPACKET)), '\0'));
+}
+
+} // namespace par2
 
 #endif // __CREATORPACKET_H__

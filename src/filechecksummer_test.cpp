@@ -27,6 +27,8 @@
 
 #include "libpar2internal.h"
 
+using namespace par2;
+
 static const char *testfile = "filechecksummer_test.tmp";
 
 // The data the scan window holds at an offset: the file data, then zeros

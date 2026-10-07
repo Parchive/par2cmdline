@@ -29,6 +29,8 @@
 
 #include "commandline.h"
 
+using namespace par2;
+
 
 // ComputeRecoveryBlockCount
 // recoveryblockset = true

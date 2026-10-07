@@ -20,6 +20,9 @@
 #ifndef __REFERENCE_HASHER_H__
 #define __REFERENCE_HASHER_H__
 
+namespace par2
+{
+
 // Hashes each block of a batch on its own, and the file alongside them.
 class ReferenceHasher : public Hasher
 {
@@ -149,5 +152,7 @@ private:
   FileHasher        filehasher;
   std::vector<u8>   results;
 };
+
+} // namespace par2
 
 #endif // __REFERENCE_HASHER_H__

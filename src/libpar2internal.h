@@ -184,6 +184,10 @@ typedef unsigned int     size_t;
 #define MAX_CHUNK_SIZE 32*1048576 // too large chunks are likely detrimental to performance; set to 0 to disable
 #define SCAN_BATCH_PER_THREAD 2 // blocks in a batch for each thread checking it, so one which finishes early has more to take
 
+// How far either side of where a block should be that data skipping searches
+// when the caller sets no distance of its own
+#define DEFAULT_SKIP_LEAWAY 64
+
 #define LONGMULTIPLY
 
 // STL includes
@@ -246,7 +250,7 @@ private:
 #define offsetof(TYPE, MEMBER) ((size_t) ((char*)(&((TYPE *)1)->MEMBER) - (char*)1))
 
 // par2cmdline includes
-#include "libpar2.h"
+#include <par2/libpar2.h>
 
 // Case-insensitive string comparison
 #ifdef _WIN32
@@ -268,8 +272,32 @@ private:
 // Default number of file threads
 #define _FILE_THREADS 2
 
+namespace par2
+{
+
+// The physical memory of the machine in bytes, or 0 if it cannot be found
+u64 GetTotalPhysicalMemory(void);
+
+// What the work may use when the caller sets no limit of its own: an eighth of
+// the physical memory, and no less than 256MB on a machine with more, or 256MB
+// when the memory cannot be found
+size_t DefaultMemoryLimit(void);
+
+// The directory a PAR2 file is in, which is where the tool looks with no -B
+std::string BasePathFor(const std::string &parfilename);
+
+// A path with a separator appended unless it has one already. Empty is left
+// alone.
+std::string WithSeparator(const std::string &path);
+
+// The name of a set, without the ".par2" its index file ends in
+std::string SetNameFor(const std::string &parfilename);
+
+} // namespace par2
+
 
 #include "letype.h"
+#include "errorlog.h"
 #include "foreach_parallel.h"
 #include "bufferpool.h"
 #include "taskpool.h"

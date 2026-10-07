@@ -46,6 +46,9 @@
 
 #ifdef PAR2_CRC_X86
 
+namespace par2
+{
+
 // The folding algorithm is Intel's, from
 //
 //   "Fast CRC Computation for Generic Polynomials Using PCLMULQDQ Instruction"
@@ -287,6 +290,8 @@ static bool X86HasVPclMul()
   return (registers[1] & (1u << 5)) != 0 && (registers[2] & (1u << 10)) != 0;
 }
 #endif // PAR2_CRC_X86_VPCLMUL
+
+} // namespace par2
 
 #endif // PAR2_CRC_X86
 

@@ -20,6 +20,9 @@
 
 #include "libpar2internal.h"
 
+namespace par2
+{
+
 #ifdef _MSC_VER
 #ifdef _DEBUG
 #undef THIS_FILE
@@ -50,7 +53,7 @@ Par2CreatorSourceFile::~Par2CreatorSourceFile(void)
 // 16k of the file, and then compute the FileId and store the results
 // in a file description packet and a file verification packet.
 
-bool Par2CreatorSourceFile::Open(NoiseLevel noiselevel, std::ostream &sout, std::ostream &serr, const std::string &extrafile, u64 blocksize, bool deferhashcomputation, std::string basepath, ProgressMeter<u64> &progress, const Backends &backends)
+bool Par2CreatorSourceFile::Open(NoiseLevel noiselevel, std::ostream &sout, std::ostream &serr, const std::string &extrafile, u64 blocksize, bool deferhashcomputation, const std::string &basepath, ProgressMeter<u64> &progress, const Backends &backends, const std::atomic<bool> *cancelled, ErrorLog *errorlog)
 {
   // Get the filename and filesize
   diskfilename = extrafile;
@@ -62,7 +65,7 @@ bool Par2CreatorSourceFile::Open(NoiseLevel noiselevel, std::ostream &sout, std:
   // Determine what filename to record in the PAR2 files
   parfilename = diskfilename;
   parfilename.erase(0, basepath.length());
-  parfilename = DescriptionPacket::TranslateFilenameFromLocalToPar2(sout, serr, noiselevel, parfilename);
+  parfilename = DescriptionPacket::TranslateFilenameFromLocalToPar2(sout, serr, noiselevel, parfilename, errorlog);
 
   // Create the Description and Verification packets
   descriptionpacket = new DescriptionPacket;
@@ -72,7 +75,7 @@ bool Par2CreatorSourceFile::Open(NoiseLevel noiselevel, std::ostream &sout, std:
   verificationpacket->Create(blockcount);
 
   // Create the diskfile object
-  diskfile  = new DiskFile(sout, serr);
+  diskfile  = new DiskFile(sout, serr, errorlog);
 
   // Open the source file
   if (!diskfile->Open(diskfilename, filesize))
@@ -146,6 +149,13 @@ bool Par2CreatorSourceFile::Open(NoiseLevel noiselevel, std::ostream &sout, std:
     // Whilst we have not reached the end of the file
     while (offset < filesize)
     {
+      if (cancelled && cancelled->load(std::memory_order_relaxed))
+      {
+        diskfile->Close();
+        delete [] buffer;
+        return false;
+      }
+
       // Work out how much we can read
       size_t want = (size_t)std::min(filesize-offset, (u64)buffersize);
 
@@ -216,8 +226,7 @@ bool Par2CreatorSourceFile::Open(NoiseLevel noiselevel, std::ostream &sout, std:
         }
       }
 
-      if (noiselevel > nlQuiet)
-        progress.Add(want);
+      progress.Add(want);
 
       offset += want;
     }
@@ -339,3 +348,5 @@ void Par2CreatorSourceFile::FinishHashes(void)
   // Store it in the description packet
   descriptionpacket->HashFull(hash);
 }
+
+} // namespace par2

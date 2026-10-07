@@ -41,8 +41,11 @@
 
 #endif
 
-#include "libpar2.h"
+#include <par2/libpar2.h>
 #include "diskfile.h"
+
+namespace par2
+{
 
 // The CommandLine object is responsible for understanding the format
 // of the command line parameters are parsing the command line to
@@ -118,10 +121,6 @@ public:
 protected:
   // Read the text of arguments into the class's variables
   bool ReadArgs(int argc, const char * const *argv);
-
-  // Returns the memory on the system in BYTES
-  // (or 0 if it cannot be determined)
-  u64 GetTotalPhysicalMemory();
 
   // Check values that were set during ReadArgs.
   // If values went unset, set them with default values
@@ -207,5 +206,7 @@ protected:
   bool followlinks;            // follow symlinks to files when scanning for source files
 
 };
+
+} // namespace par2
 
 #endif // __COMMANDLINE_H__

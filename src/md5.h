@@ -21,6 +21,9 @@
 #ifndef __MD5_H__
 #define __MD5_H__
 
+namespace par2
+{
+
 #ifdef _WIN32
 #pragma pack(push, 1)
 #define PACKED
@@ -139,5 +142,7 @@ inline bool MD5Hash::operator<=(const MD5Hash &other) const
 #pragma pack(pop)
 #endif
 #undef PACKED
+
+} // namespace par2
 
 #endif // __MD5_H__

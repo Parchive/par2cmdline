@@ -17,28 +17,43 @@
 //  along with this program; if not, write to the Free Software
 //  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-#ifndef __UTF8_H__
-#define __UTF8_H__
+#ifndef __WARGS_H__
+#define __WARGS_H__
 
 #ifdef _WIN32
-
-#include <string>
 
 namespace par2
 {
 namespace utf8
 {
-  extern const size_t MAX_DIR_PATH;
+  extern const int MAX_ARGS;
 
-  // False if the string is not well formed, leaving out untouched. Otherwise out
-  // holds the conversion, and a path longer than MAX_DIR_PATH has gained a
-  // \\?\ or \\?\UNC prefix so that the Win32 calls accept it. A string that is
-  // not valid UTF-8 is decoded with the ANSI code page instead.
-  bool Utf8ToWide(const std::string& str, std::wstring& out);
-  bool WideToUtf8(const std::wstring& str, std::string& out);
+  class WideToUtf8ArgsAdapter final
+  {
+  public:
+    WideToUtf8ArgsAdapter(int argc, wchar_t* argv_[]) noexcept(false);
+
+    const char* const* GetUtf8Args() const noexcept;
+
+    // The number of arguments in GetUtf8Args(), which is less than the argc
+    // passed in when an argument could not be used.
+    int GetArgc() const noexcept;
+
+    WideToUtf8ArgsAdapter() = delete;
+    WideToUtf8ArgsAdapter(const WideToUtf8ArgsAdapter&) = delete;
+    WideToUtf8ArgsAdapter(WideToUtf8ArgsAdapter&&) = delete;
+    WideToUtf8ArgsAdapter& operator=(const WideToUtf8ArgsAdapter&) = delete;
+    WideToUtf8ArgsAdapter& operator=(WideToUtf8ArgsAdapter&&) = delete;
+
+    ~WideToUtf8ArgsAdapter();
+
+  private:
+    char** m_argv;
+    int m_argc;
+  };
 }
 }
 
 #endif // _WIN32
 
-#endif // __UTF8_H__
+#endif // __WARGS_H__
