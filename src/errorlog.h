@@ -68,7 +68,8 @@ public:
   // observer is the only place it goes.
   void Warn(const WarningCode code,
             const std::string &message,
-            const std::string &filename = std::string()) const
+            const std::string &filename = std::string(),
+            const std::string &detail = std::string()) const
   {
     Par2Observer *target = observer.load(std::memory_order_relaxed);
     if (0 == target)
@@ -78,6 +79,7 @@ public:
     warning.code = code;
     warning.message = message;
     warning.filename = filename;
+    warning.detail = detail;
 
     target->OnWarning(warning);
   }

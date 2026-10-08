@@ -189,6 +189,8 @@ struct Par2Warning
                           // the name the set records for wcFilenameUnsafe,
                           // wcFilenameChanged and wcPacketDiscarded, and its
                           // absolute path otherwise
+  std::string detail;     // Lines which say more of it, each ending in a
+                          // newline, and empty when there is nothing more
 };
 
 

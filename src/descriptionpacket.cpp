@@ -150,7 +150,7 @@ static void Warning(std::ostream &serr, const bool print, const char *prefix, co
     LockedStream(serr) << prefix << message << '\n' << detail << std::flush;
 
   if (errorlog)
-    errorlog->Warn(code, message, filename);
+    errorlog->Warn(code, message, filename, detail);
 }
 
 // Converts the filename from that on disk to the version

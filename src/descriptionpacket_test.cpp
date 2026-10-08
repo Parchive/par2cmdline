@@ -19,6 +19,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <sstream>
 
 #include "libpar2internal.h"
 
@@ -247,6 +248,40 @@ int test3() {
 }
 
 
+// A warning which a few lines explain further carries them, and one which
+// needs none carries none
+int test4() {
+  class Heard : public Par2Observer
+  {
+  public:
+    void OnWarning(const Par2Warning &warning) override
+    {
+      warnings.push_back(warning);
+    }
+    std::vector<Par2Warning> warnings;
+  };
+
+  Heard heard;
+  ErrorLog errorlog;
+  errorlog.SetObserver(&heard);
+  std::ostringstream quiet;
+
+  DescriptionPacket::TranslateFilenameFromLocalToPar2(quiet, quiet, nlNormal, ".." + fs + "input1.txt", &errorlog);
+  if (heard.warnings.size() != 1 || heard.warnings[0].detail.empty()
+      || heard.warnings[0].detail.back() != '\n') {
+    std::cout << "a parent directory is explained further" << std::endl;
+    return 1;
+  }
+
+  DescriptionPacket::TranslateFilenameFromLocalToPar2(quiet, quiet, nlNormal, "*input1.txt", &errorlog);
+  if (heard.warnings.size() != 2 || !heard.warnings[1].detail.empty()) {
+    std::cout << "an unsafe character needs no further explaining" << std::endl;
+    return 1;
+  }
+
+  return 0;
+}
+
 int main() {
   if (test1()) {
     std::cerr << "FAILED: test1" << std::endl;
@@ -258,6 +293,10 @@ int main() {
   }
   if (test3()) {
     std::cerr << "FAILED: test3" << std::endl;
+    return 1;
+  }
+  if (test4()) {
+    std::cerr << "FAILED: test4" << std::endl;
     return 1;
   }
 
