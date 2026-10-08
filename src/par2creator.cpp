@@ -150,6 +150,8 @@ Result Par2SetCreator::Process(
     return eFileIOError;
   }
 
+  ReportWritten();
+
   if (noiselevel > nlSilent)
     sout << "Done" << std::endl;
 
@@ -1271,6 +1273,31 @@ bool Par2SetCreator::CloseFiles(void)
   }
 
   return closed;
+}
+
+// Tell the observer of each recovery file, now that it is written in full
+void Par2SetCreator::ReportWritten(void)
+{
+  if (0 == observer)
+    return;
+
+  for (auto &recoveryfile : recoveryfiles)
+  {
+    Par2FileResult result;
+    result.filename = recoveryfile.FileName();
+    result.localfilename = recoveryfile.FileName();
+    result.exists = true;
+    result.filesize = recoveryfile.FileSize();
+
+    for (auto &packet : recoverypackets)
+    {
+      if (packet.GetDataBlock()->GetDiskFile() == &recoveryfile)
+        ++result.blocksfound;
+    }
+
+    observer->OnFile(phWriting, result.filename);
+    observer->OnFileDone(phWriting, result);
+  }
 }
 
 } // namespace par2

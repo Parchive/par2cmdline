@@ -251,6 +251,9 @@ protected:
   // Check the verification results and report the results
   bool CheckVerificationResults(void);
 
+  // Tell the observer of each file the repair has written in full
+  void ReportWritten(void);
+
   // Rename any damaged or missnamed target files.
   bool RenameTargetFiles(void);
 

@@ -539,6 +539,8 @@ Result Par2Repairer::RepairFiles(const size_t memorylimit, const std::string &ba
       }
     }
 
+    ReportWritten();
+
     // The repaired files are scanned into buffers of their own, so the ones
     // the repair read and wrote through are given up first
     delete [] (u8*)transferbuffer;
@@ -3388,6 +3390,31 @@ bool Par2Repairer::CheckVerificationResults(void)
   }
 
   return true;
+}
+
+// Tell the observer of each file the repair has written in full
+void Par2Repairer::ReportWritten(void)
+{
+  if (0 == observer)
+    return;
+
+  for (auto *sourcefile : verifylist)
+  {
+    if (0 == sourcefile)
+      continue;
+
+    Par2FileResult result;
+    result.filename = sourcefile->GetDescriptionPacket()->FileName();
+    result.localfilename = sourcefile->TargetFileName();
+    result.exists = true;
+    result.filesize = sourcefile->GetDescriptionPacket()->FileSize();
+    result.target = true;
+    result.blocksfound = BlocksNeeded(sourcefile);
+    result.blocksneeded = BlocksNeeded(sourcefile);
+
+    observer->OnFile(phWriting, result.filename);
+    observer->OnFileDone(phWriting, result);
+  }
 }
 
 // Rename any damaged or missnamed target files.

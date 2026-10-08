@@ -143,6 +143,9 @@ protected:
   // Close all files.
   bool CloseFiles(void);
 
+  // Tell the observer of each recovery file, now that it is written in full
+  void ReportWritten(void);
+
   // Delete every recovery file created so far, so that a create which stops
   // part way leaves nothing of the set behind.
   void DeleteIncompleteRecoveryFiles(void);

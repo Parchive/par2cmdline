@@ -174,6 +174,8 @@ typedef enum Phase
   phSolving = 4,         // Solving it, which only a repair with missing blocks needs
   phProcessing = 5,      // Computing recovery data, or rebuilding missing blocks
   phVerifyingRepair = 6, // Reading back what a repair has just written
+  phWriting = 7,         // A file the work wrote: a PAR2 file a create made, or
+                         // a file a repair rebuilt
 
 } Phase;
 
@@ -288,6 +290,10 @@ struct Par2FileResult
 // reads every block of each source file, so a file it read is scanned and
 // complete. An extra file a rename-only verify stopped scanning is not
 // scanned either, and blocksfound counts the blocks it found before stopping.
+//
+// A file reported in phWriting has blocksfound counting the blocks written to
+// it: every block of a file a repair rebuilt, which is written but not yet
+// read back, or the recovery blocks a PAR2 file holds.
 
 
 // Receives progress and per-file results from a par2 operation.
@@ -325,6 +331,10 @@ public:
   //
   // Several files are read at once, so a Create's pairs interleave, and the
   // order they arrive in is not the order the set ends up recording them in.
+  //
+  // phWriting reports each file the work wrote once it is written in full,
+  // so its OnFile and OnFileDone arrive together, and it has no progress of
+  // its own: the writing is done as part of phProcessing.
   virtual void OnFile(Phase phase, const std::string &filename) {}
 
   // Progress through one step of the work, in thousandths, running upwards and

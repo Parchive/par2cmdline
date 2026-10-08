@@ -234,16 +234,21 @@ public:
   void OnFileDone(par2::Phase phase, const par2::Par2FileResult &result) override
   {
     std::lock_guard<std::mutex> lock(mutex);
-    if (phase != par2::phLoading)
-      results[result.filename] = result;
-    else
+    if (phase == par2::phLoading)
       loaded[result.filename] = result;
+    else if (phase == par2::phWriting)
+      written.push_back(result);
+    else
+      results[result.filename] = result;
   }
 
   std::map<std::string, par2::Par2FileResult> results;
 
   // The same for the PAR2 files read
   std::map<std::string, par2::Par2FileResult> loaded;
+
+  // And for the files written, in the order they were reported
+  std::vector<par2::Par2FileResult> written;
 
 private:
   // The callbacks arrive from the threads doing the work, several at a time
@@ -1521,6 +1526,61 @@ int main()
     std::remove(damaged);
   }
 
+  // Each file the work wrote is reported once it is written in full: the PAR2
+  // files of a create, with the recovery blocks each holds, and the files a
+  // repair rebuilt
+  {
+    Check(MakeDirectory("writtendir"), "mkdir for the written check");
+
+    const char *const data = "writtendir/written.data";
+    WriteData(data, 61, 20000);
+
+    Results created;
+    par2::Par2Creator creator("writtendir/");
+    creator.SetObserver(&created);
+    creator.SetSourceFiles({data});
+    creator.SetBlockSize(BLOCKSIZE);
+    creator.SetRecoveryBlockCount(6);
+    creator.SetRecoveryFileScheme(par2::scUniform, 2);
+
+    Check(par2::eSuccess == creator.Create("writtendir/written.par2"), "create for the written check");
+    Check(created.written.size() == 3, "the index file and both volumes are reported written");
+
+    par2::u32 blocks = 0;
+    for (const auto &file : created.written)
+    {
+      std::ifstream there(file.localfilename.c_str(), std::ios::binary | std::ios::ate);
+      Check(file.exists && there.good() && (par2::u64)there.tellg() == file.filesize,
+            "each is on disk at the size reported");
+      blocks += file.blocksfound;
+    }
+    Check(blocks == 6, "and between them they hold every recovery block");
+
+    std::remove(data);
+
+    Results repaired;
+    par2::Par2Verifier verifier("writtendir/");
+    verifier.SetObserver(&repaired);
+
+    Check(par2::eSuccess == verifier.AddPar2File("writtendir/written.par2"), "AddPar2File for the written check");
+    Check(par2::eRepairPossible == verifier.Verify(), "the file is missing");
+    Check(par2::eSuccess == verifier.Repair(), "and is rebuilt");
+
+    Check(repaired.written.size() == 1, "the rebuilt file is reported written");
+    if (repaired.written.size() == 1)
+    {
+      const par2::Par2FileResult &rebuilt = repaired.written[0];
+      Check(rebuilt.filename == "written.data" && rebuilt.target && rebuilt.filesize == 20000,
+            "under the name the set records, at its full size");
+      Check(rebuilt.blocksfound > 0 && rebuilt.blocksfound == rebuilt.blocksneeded,
+            "with every block of it written");
+    }
+
+    std::remove(data);
+    for (const auto &file : created.written)
+      std::remove(file.localfilename.c_str());
+  }
+
   // A file scanned again once it no longer holds the set's data stops being
   // reported as that file under another name
   {
@@ -2137,8 +2197,9 @@ int main()
     par2::Par2Error error;
     Check(!creator.GetLastError(&error), "a create which worked reports no error");
 
-    Check(observer.files == 1, "OnFile for the source file");
-    Check(observer.done == 1, "and an OnFileDone to pair with it");
+    Check(1 == std::count(observer.filephases.begin(), observer.filephases.end(), par2::phHashing),
+          "OnFile for the source file");
+    Check(observer.done == observer.files, "and an OnFileDone to pair with each file");
     Check(observer.setinfo == 1, "OnSetInfo once the set is known");
     Check(observer.lastinfo.recoverablefilecount == 1, "OnSetInfo file count");
     Check(observer.lastinfo.blocksize == BLOCKSIZE, "OnSetInfo blocksize");
@@ -2494,8 +2555,10 @@ int main()
       Check(par2::eSuccess == creator.Create(set), "a create with no streams");
     }
 
-    Check(creating.files == 1, "the observer saw the file being hashed");
-    Check(creating.done == 1, "and saw it finish");
+    Check(1 == std::count(creating.filephases.begin(), creating.filephases.end(), par2::phHashing),
+          "the observer saw the file being hashed");
+    Check(creating.done == creating.files, "and saw it finish");
+    Check(creating.SawFile(par2::phWriting), "and saw the PAR2 files written");
     Check(creating.progress > 0, "and was told how far along it was");
     Check(creating.reached, "and saw the work reach the end");
     Check(creating.setinfo == 1, "and was told what the set is");
@@ -2542,6 +2605,7 @@ int main()
     Check(repairing.Saw(par2::phVerifyingRepair), "and the result read back");
     Check(repairing.SawFile(par2::phVerifyingRepair),
           "with the files read back reported as part of that step");
+    Check(repairing.SawFile(par2::phWriting), "and the file rebuilt reported as written");
 
     // A failure is recorded rather than written anywhere
     {
