@@ -197,8 +197,7 @@ bool CommandLine::Parse(int argc, const char * const *argv)
       return false;
     }
 
-    if (!ComputeRecoveryBlockCount(sout,
-				   serr,
+    if (!ComputeRecoveryBlockCount(serr,
 				   &recoveryblockcount,
 				   sourceblockcount,
 				   blocksize,
@@ -1215,7 +1214,12 @@ bool CommandLine::ComputeBlockSize() {
       filesizes.push_back(filesize_cache.get(*i));
     }
 
-    return ComputeBlockSizeFromCount(serr, &blocksize, blockcount, filesizes);
+    std::string error;
+    if (!ComputeBlockSizeFromCount(&error, &blocksize, blockcount, filesizes))
+    {
+      serr << error << std::endl;
+      return false;
+    }
   }
 
   return true;
@@ -1224,8 +1228,7 @@ bool CommandLine::ComputeBlockSize() {
 
 // Determine how many recovery blocks to create based on the source block
 // count and the requested level of redundancy.
-bool CommandLine::ComputeRecoveryBlockCount(std::ostream &sout,
-					    std::ostream &serr,
+bool CommandLine::ComputeRecoveryBlockCount(std::ostream &serr,
 					    u32 *recoveryblockcount,
 					    u32 sourceblockcount,
 					    u64 blocksize,
@@ -1267,14 +1270,15 @@ bool CommandLine::ComputeRecoveryBlockCount(std::ostream &sout,
       }
 
       // recoveryfilecount assigned below.
-      bool success = ComputeRecoveryFileCount(sout,
-					      serr,
+      std::string error;
+      bool success = ComputeRecoveryFileCount(&error,
 					      &recoveryfilecount,
 					      recoveryfilescheme,
 					      estimatedrecoveryblockcount,
 					      largestfilesize,
 					      blocksize);
       if (!success) {
+	serr << error << std::endl;
 	return false;
       }
     }

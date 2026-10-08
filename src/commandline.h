@@ -110,8 +110,7 @@ public:
   u32                                 GetFileThreads(void) {return filethreads;}
 
 
-  static bool ComputeRecoveryBlockCount(std::ostream &sout,
-					std::ostream &serr,
+  static bool ComputeRecoveryBlockCount(std::ostream &serr,
 					u32 *recoveryblockcount,
 					u32 sourceblockcount,
 					u64 blocksize,

@@ -104,8 +104,8 @@ size_t MemoryLimit(const size_t requested)
 class Par2Verifier::Impl : public Par2Repairer
 {
 public:
-  Impl(std::ostream &nullstream, const std::string &_basepath, const Backends &backends)
-    : Par2Repairer(nullstream, nullstream, nlSilent, backends)
+  Impl(const std::string &_basepath, const Backends &backends)
+    : Par2Repairer(backends)
     , prepared(eInsufficientCriticalData)
     , preparefailure()
   {
@@ -367,40 +367,11 @@ std::string BasePathFor(const std::string &parfilename)
   return basepath;
 }
 
-// Discards everything written to it
-class NullStream : public std::ostream
-{
-public:
-  NullStream(void)
-  : std::ostream(&buffer)
-  , buffer()
-  {
-  }
-
-private:
-  class Buffer : public std::streambuf
-  {
-  protected:
-    int_type overflow(int_type c) override
-    {
-      return c;
-    }
-
-    std::streamsize xsputn(const char *, std::streamsize n) override
-    {
-      return n;
-    }
-  };
-
-  Buffer buffer;
-};
-
 // What a Par2Verifier keeps of its own, apart from the engine
 struct Par2Verifier::State
 {
   State(const std::string &_basepath, Backends _backends)
-  : nullstream()
-  , backends(std::move(_backends))
+  : backends(std::move(_backends))
   , observer(0)
   , memorylimit(MemoryLimit(0))
   , nthreads(0)
@@ -424,7 +395,6 @@ struct Par2Verifier::State
   {
   }
 
-  NullStream nullstream;
   Backends backends;
   Par2Observer *observer;
   size_t memorylimit;
@@ -459,7 +429,7 @@ void Par2Verifier::Restart(void)
   {
     std::lock_guard<std::mutex> lock(state->cancelmutex);
     state->restarting = true;
-    impl = std::make_unique<Impl>(state->nullstream, state->basepath, state->backends);
+    impl = std::make_unique<Impl>(state->basepath, state->backends);
   }
 
   // The replay repeats work the observer has already been told about, so it is
@@ -520,7 +490,7 @@ void Par2Verifier::Restart(void)
 
 Par2Verifier::Par2Verifier(const std::string &_basepath, Backends _backends)
 : state(new State(_basepath, std::move(_backends)))
-, impl(new Impl(state->nullstream, state->basepath, state->backends))
+, impl(new Impl(state->basepath, state->backends))
 {
 }
 
@@ -892,8 +862,8 @@ void Par2Verifier::ClearCancel(void)
 class Par2Creator::Impl : public Par2SetCreator
 {
 public:
-  Impl(std::ostream &nullstream, const Backends &backends)
-    : Par2SetCreator(nullstream, nullstream, nlSilent, backends)
+  explicit Impl(const Backends &backends)
+    : Par2SetCreator(backends)
   {
   }
 };
@@ -902,8 +872,7 @@ public:
 struct Par2Creator::State
 {
   State(const std::string &_basepath, Backends _backends)
-  : nullstream()
-  , backends(std::move(_backends))
+  : backends(std::move(_backends))
   , observer(0)
   , sourcefiles()
   , blocksize(0)
@@ -923,7 +892,6 @@ struct Par2Creator::State
   {
   }
 
-  NullStream nullstream;
   Backends backends;
   Par2Observer *observer;
   std::vector<std::string> sourcefiles;
@@ -951,7 +919,7 @@ void Par2Creator::Restart(void)
 {
   std::lock_guard<std::mutex> lock(state->cancelmutex);
 
-  impl = std::make_unique<Impl>(state->nullstream, state->backends);
+  impl = std::make_unique<Impl>(state->backends);
   impl->SetObserver(state->observer);
   impl->SetVerbosity(state->verbosity);
 
@@ -971,7 +939,7 @@ void Par2Creator::TakeLastError(const Result result)
 
 Par2Creator::Par2Creator(const std::string &_basepath, Backends _backends)
 : state(new State(_basepath, std::move(_backends)))
-, impl(new Impl(state->nullstream, state->backends))
+, impl(new Impl(state->backends))
 {
 }
 
@@ -1087,11 +1055,11 @@ try
     for (const auto &file : files)
       filesizes.push_back(DiskFile::GetFileSize(file));
 
+    std::string error;
     if (0 != state->sourceblockcount
-        && !ComputeBlockSizeFromCount(state->nullstream, &setblocksize, state->sourceblockcount, filesizes))
+        && !ComputeBlockSizeFromCount(&error, &setblocksize, state->sourceblockcount, filesizes))
     {
-      ReportError(state->lasterror, state->observer, ecInvalidSetting,
-                  "The source block count cannot divide these files");
+      ReportError(state->lasterror, state->observer, ecInvalidSetting, error);
 
       return eInvalidCommandLineArguments;
     }
@@ -1153,8 +1121,7 @@ bool Par2Creator::GetLastError(Par2Error *error) const
 
 
 // Determine how many recovery files to create.
-bool ComputeRecoveryFileCount(std::ostream &sout,
-			      std::ostream &serr,
+bool ComputeRecoveryFileCount(std::string *error,
 			      u32 *recoveryfilecount,
 			      Scheme recoveryfilescheme,
 			      u32 recoveryblockcount,
@@ -1173,7 +1140,8 @@ bool ComputeRecoveryFileCount(std::ostream &sout,
   case scUnknown:
     {
       //assert(false);
-      serr << "Scheme unspecified (create, verify, or repair)." << std::endl;
+      if (error)
+        *error = "No recovery file scheme was given";
       return false;
     }
     break;
@@ -1197,7 +1165,8 @@ bool ComputeRecoveryFileCount(std::ostream &sout,
       {
         // You cannot have more recovery files than there are recovery blocks
         // to put in them.
-        serr << "Too many recovery files specified." << std::endl;
+        if (error)
+          *error = "There are more recovery files than recovery blocks to put in them";
         return false;
       }
     }
@@ -1212,7 +1181,8 @@ bool ComputeRecoveryFileCount(std::ostream &sout,
 
       if (0 == blocksize || 0 == largestfilesize)
       {
-        serr << "The source files are empty." << std::endl;
+        if (error)
+          *error = "The source files are empty";
         return false;
       }
 
@@ -1235,7 +1205,7 @@ bool ComputeRecoveryFileCount(std::ostream &sout,
 
 // Work out the block size which divides files of these sizes into blockcount
 // blocks, or as near to that as a multiple of 4 allows.
-bool ComputeBlockSizeFromCount(std::ostream &serr,
+bool ComputeBlockSizeFromCount(std::string *error,
 			       u64 *blocksize,
 			       u32 blockcount,
 			       const std::vector<u64> &filesizes)
@@ -1244,8 +1214,10 @@ bool ComputeBlockSizeFromCount(std::ostream &serr,
   {
     // The block count cannot be less than the number of files.
 
-    serr << "Block count (" << blockcount <<
-            ") cannot be smaller than the number of files(" << filesizes.size() << "). " << std::endl;
+    if (error)
+      *error = "The block count (" + std::to_string(blockcount)
+               + ") cannot be smaller than the number of files ("
+               + std::to_string(filesizes.size()) + ")";
     return false;
   }
   else if (blockcount == filesizes.size())
@@ -1317,12 +1289,14 @@ bool ComputeBlockSizeFromCount(std::ostream &serr,
 
       if (count > 32768)
       {
-        serr << "Error calculating block size. cannot be higher than 32768." << std::endl;
+        if (error)
+          *error = "The block size for this block count would need more than 32768 blocks";
         return false;
       }
       else if (count == 0)
       {
-        serr << "Error calculating block size. cannot be 0." << std::endl;
+        if (error)
+          *error = "The block size for this block count would give no blocks";
         return false;
       }
 

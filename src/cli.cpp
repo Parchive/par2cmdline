@@ -626,8 +626,7 @@ private:
 // Delete a file, saying so when it cannot be
 static void Remove(Printer &printer, const std::string &filename)
 {
-  std::ostringstream ignored;
-  DiskFile diskfile(ignored, ignored);
+  DiskFile diskfile;
 
   if (!diskfile.Open(filename))
     return;
@@ -654,9 +653,7 @@ static Result Create(CommandLine &commandline, const Backends &backends, Printer
   creator.SetVerbosity(VerbosityAt(commandline.GetNoiseLevel()));
 
   u32 recoveryfilecount = commandline.GetRecoveryFileCount();
-  std::ostringstream ignored;
-  ComputeRecoveryFileCount(ignored,
-                           ignored,
+  ComputeRecoveryFileCount(0,
                            &recoveryfilecount,
                            commandline.GetRecoveryFileScheme(),
                            commandline.GetRecoveryBlockCount(),
@@ -874,6 +871,7 @@ try
           switch (commandline.GetVersion())
           {
             case CommandLine::verPar1:
+              printer.SetRepairing(true);
               result = par1repair(sout,
                                   serr,
                                   commandline.GetNoiseLevel(),
@@ -882,7 +880,9 @@ try
                                   commandline.GetParFilename(),
                                   commandline.GetExtraFiles(),
                                   commandline.GetOperation() == CommandLine::opRepair,
-                                  commandline.GetPurgeFiles());
+                                  commandline.GetPurgeFiles(),
+                                  &printer);
+              printer.Finish();
               break;
             case CommandLine::verPar2:
               result = Repair(commandline, backends, printer);

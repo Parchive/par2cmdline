@@ -21,7 +21,6 @@
 #include <iostream>
 #include <fstream>
 #include <iterator>
-#include <sstream>
 #include <stdlib.h>
 
 
@@ -35,7 +34,7 @@ using namespace par2;
 // check when it returns false.
 int test1() {
   u32 recoveryfilecount = 0;
-  bool success = ComputeRecoveryFileCount(std::cout, std::cerr,
+  bool success = ComputeRecoveryFileCount(0,
 					  &recoveryfilecount,
 						       scUnknown,
 						       1,
@@ -47,7 +46,7 @@ int test1() {
   }
 
   recoveryfilecount = 10;
-  success = ComputeRecoveryFileCount(std::cout, std::cerr,
+  success = ComputeRecoveryFileCount(0,
 					  &recoveryfilecount,
 						       scVariable,
 						       4,
@@ -66,7 +65,7 @@ int test1() {
 // scVariable
 int test2() {
   u32 recoveryfilecount = 0;
-  bool success = ComputeRecoveryFileCount(std::cout, std::cerr,
+  bool success = ComputeRecoveryFileCount(0,
 					  &recoveryfilecount,
 						       scVariable,
 						       0,
@@ -83,7 +82,7 @@ int test2() {
   }
 
   recoveryfilecount = 0;
-  success = ComputeRecoveryFileCount(std::cout, std::cerr,
+  success = ComputeRecoveryFileCount(0,
 					  &recoveryfilecount,
 						       scVariable,
 						       8,
@@ -101,7 +100,7 @@ int test2() {
   }
 
   recoveryfilecount = 0;
-  success = ComputeRecoveryFileCount(std::cout, std::cerr,
+  success = ComputeRecoveryFileCount(0,
 					  &recoveryfilecount,
 						       scVariable,
 						       15,
@@ -120,7 +119,7 @@ int test2() {
 
 
   recoveryfilecount = 0;
-  success = ComputeRecoveryFileCount(std::cout, std::cerr,
+  success = ComputeRecoveryFileCount(0,
 					  &recoveryfilecount,
 						       scVariable,
 						       64,
@@ -138,7 +137,7 @@ int test2() {
   }
 
   recoveryfilecount = 0;
-  success = ComputeRecoveryFileCount(std::cout, std::cerr,
+  success = ComputeRecoveryFileCount(0,
 					  &recoveryfilecount,
 						       scVariable,
 						       127,
@@ -163,7 +162,7 @@ int test2() {
 // Doesn't matter the value - long as it's zero at zero and positive after.
 int test3() {
   u32 recoveryfilecount = 0;
-  bool success = ComputeRecoveryFileCount(std::cout, std::cerr,
+  bool success = ComputeRecoveryFileCount(0,
 					  &recoveryfilecount,
 						       scUniform,
 						       0,
@@ -180,7 +179,7 @@ int test3() {
   }
 
   recoveryfilecount = 0;
-  success = ComputeRecoveryFileCount(std::cout, std::cerr,
+  success = ComputeRecoveryFileCount(0,
 					  &recoveryfilecount,
 						       scUniform,
 						       1,
@@ -199,7 +198,7 @@ int test3() {
 
 
   recoveryfilecount = 0;
-  success = ComputeRecoveryFileCount(std::cout, std::cerr,
+  success = ComputeRecoveryFileCount(0,
 					  &recoveryfilecount,
 						       scUniform,
 						       8,
@@ -226,7 +225,7 @@ int test3() {
 // But differs for smaller ones.
 int test4() {
   u32 recoveryfilecount = 0;
-  bool success = ComputeRecoveryFileCount(std::cout, std::cerr,
+  bool success = ComputeRecoveryFileCount(0,
 					  &recoveryfilecount,
 						       scLimited,
 						       0,
@@ -243,7 +242,7 @@ int test4() {
   }
 
   recoveryfilecount = 0;
-  success = ComputeRecoveryFileCount(std::cout, std::cerr,
+  success = ComputeRecoveryFileCount(0,
 					  &recoveryfilecount,
 						       scLimited,
 						       8,
@@ -261,7 +260,7 @@ int test4() {
   }
 
   recoveryfilecount = 0;
-  success = ComputeRecoveryFileCount(std::cout, std::cerr,
+  success = ComputeRecoveryFileCount(0,
 					  &recoveryfilecount,
 						       scLimited,
 						       15,
@@ -280,7 +279,7 @@ int test4() {
 
 
   recoveryfilecount = 0;
-  success = ComputeRecoveryFileCount(std::cout, std::cerr,
+  success = ComputeRecoveryFileCount(0,
 					  &recoveryfilecount,
 						       scLimited,
 						       64,
@@ -298,7 +297,7 @@ int test4() {
   }
 
   recoveryfilecount = 0;
-  success = ComputeRecoveryFileCount(std::cout, std::cerr,
+  success = ComputeRecoveryFileCount(0,
 					  &recoveryfilecount,
 						       scLimited,
 						       127,
@@ -319,7 +318,7 @@ int test4() {
   // smaller largest files
   // 1 2 4 8 10 10 10...
   recoveryfilecount = 0;
-  success = ComputeRecoveryFileCount(std::cout, std::cerr,
+  success = ComputeRecoveryFileCount(0,
 					  &recoveryfilecount,
 						       scLimited,
 						       8,
@@ -337,7 +336,7 @@ int test4() {
   }
 
   recoveryfilecount = 0;
-  success = ComputeRecoveryFileCount(std::cout, std::cerr,
+  success = ComputeRecoveryFileCount(0,
 					  &recoveryfilecount,
 						       scLimited,
 						       15,
@@ -355,7 +354,7 @@ int test4() {
   }
 
   recoveryfilecount = 0;
-  success = ComputeRecoveryFileCount(std::cout, std::cerr,
+  success = ComputeRecoveryFileCount(0,
 					  &recoveryfilecount,
 						       scLimited,
 						       16,
@@ -373,7 +372,7 @@ int test4() {
   }
 
   recoveryfilecount = 0;
-  success = ComputeRecoveryFileCount(std::cout, std::cerr,
+  success = ComputeRecoveryFileCount(0,
 					  &recoveryfilecount,
 						       scLimited,
 						       25,
@@ -391,7 +390,7 @@ int test4() {
   }
 
   recoveryfilecount = 0;
-  success = ComputeRecoveryFileCount(std::cout, std::cerr,
+  success = ComputeRecoveryFileCount(0,
 					  &recoveryfilecount,
 						       scLimited,
 						       26,
@@ -409,7 +408,7 @@ int test4() {
   }
 
   recoveryfilecount = 0;
-  success = ComputeRecoveryFileCount(std::cout, std::cerr,
+  success = ComputeRecoveryFileCount(0,
 					  &recoveryfilecount,
 						       scLimited,
 						       35,
@@ -428,7 +427,7 @@ int test4() {
 
 
   recoveryfilecount = 0;
-  success = ComputeRecoveryFileCount(std::cout, std::cerr,
+  success = ComputeRecoveryFileCount(0,
 					  &recoveryfilecount,
 						       scLimited,
 						       35 + 100,
@@ -534,8 +533,7 @@ int test6() {
   const std::vector<std::string> files(2, datafile);
 
   int failed = 1;
-  std::ostringstream quiet;
-  Par2SetCreator creator(quiet, quiet, nlSilent);
+  Par2SetCreator creator;
   Result result = creator.Process(MemoryLimit(0), "", 0, 0,
 				  "libpar2_test6", files, 4096, 0, scVariable, 0, 4);
   if (result != eSuccess) {

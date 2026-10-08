@@ -34,10 +34,12 @@ static char THIS_FILE[]=__FILE__;
 static u32 smartpar11 = 0x03000101;
 
 
-Par1Repairer::Par1Repairer(std::ostream &sout, std::ostream &serr, const NoiseLevel noiselevel)
+Par1Repairer::Par1Repairer(std::ostream &sout, std::ostream &serr, const NoiseLevel noiselevel, Par2Observer *observer)
 : sout(sout)
 , serr(serr)
 , noiselevel(noiselevel)
+, observer(observer)
+, errorlog()
 , searchpath()
 , diskfilemap()
 , recoveryblocks()
@@ -64,6 +66,7 @@ Par1Repairer::Par1Repairer(std::ostream &sout, std::ostream &serr, const NoiseLe
 , outputbuffer(0)
 , ignore16kfilehash(false)
 {
+  errorlog.SetObserver(observer);
 }
 
 // Test whether filename has a .PAR / .par / .pNN extension.
@@ -214,7 +217,7 @@ Result Par1Repairer::Process(const size_t memorylimit,
           sout << '\n';
 
         // Set the total amount of data to be processed.
-        ProgressMeter<u64> progress(sout, "Repairing: ", blocksize * sourcefiles.size() * verifylist.size(), noiselevel, phProcessing);
+        ProgressMeter<u64> progress(blocksize * sourcefiles.size() * verifylist.size(), phProcessing, observer);
 
         // Start at an offset of 0 within a block.
         u64 blockoffset = 0;
@@ -282,7 +285,7 @@ bool Par1Repairer::LoadRecoveryFile(std::string filename)
     return true;
   }
 
-  DiskFile *diskfile = new DiskFile(sout, serr);
+  DiskFile *diskfile = new DiskFile(&errorlog);
 
   // Open the file
   if (!diskfile->Open(filename))
@@ -441,7 +444,7 @@ bool Par1Repairer::LoadRecoveryFile(std::string filename)
           memcpy((void*)fileentry, (void*)current, (size_t)(u64)fileentry->entrysize);
 
           // Create source file and add it to the appropriate list
-          Par1RepairerSourceFile *sourcefile = new Par1RepairerSourceFile(sout, serr, noiselevel, fileentry, searchpath);
+          Par1RepairerSourceFile *sourcefile = new Par1RepairerSourceFile(&errorlog, fileentry, searchpath);
           if (fileentry->status & INPARITYVOLUME)
           {
             sourcefiles.push_back(sourcefile);
@@ -622,7 +625,7 @@ bool Par1Repairer::VerifySourceFiles(void)
     }
     else
     {
-      DiskFile *diskfile = new DiskFile(sout, serr);
+      DiskFile *diskfile = new DiskFile(&errorlog);
 
       // Does the target file exist
       if (diskfile->Open(filename))
@@ -695,7 +698,7 @@ bool Par1Repairer::VerifyExtraFiles(const std::vector<std::string> &extrafiles)
       // Has this file already been dealt with
       if (diskfilemap.Find(filename) == 0)
       {
-        DiskFile *diskfile = new DiskFile(sout, serr);
+        DiskFile *diskfile = new DiskFile(&errorlog);
 
         // Does the file exist
         if (!diskfile->Open(filename))
@@ -794,9 +797,7 @@ bool Par1Repairer::VerifyDataFile(DiskFile *diskfile, Par1RepairerSourceFile *so
       if (filesize > 16384)
       {
         u64 offset = 16384;
-        std::string message = "Scanning: \"";
-        message.append(name).append("\": ");
-        ProgressMeter<u64> progress(sout, message, filesize, noiselevel, phScanning);
+        ProgressMeter<u64> progress(filesize, phScanning, observer);
         while (offset < filesize)
         {
           want = (size_t)std::min((u64)buffersize, filesize-offset);
@@ -1113,7 +1114,7 @@ bool Par1Repairer::CreateTargetFiles(void)
     // If the file does not exist
     if (!sourcefile->GetTargetExists())
     {
-      DiskFile *targetfile = new DiskFile(sout, serr);
+      DiskFile *targetfile = new DiskFile(&errorlog);
       std::string filename = sourcefile->FileName();
       u64 filesize = sourcefile->FileSize();
 
@@ -1202,7 +1203,7 @@ bool Par1Repairer::ComputeRSmatrix(void)
   }
 
   // Set the number of source blocks and which of them are present
-  if (!rs.SetInput(present, sout, serr))
+  if (!rs.SetInput(present))
   {
     return false;
   }
@@ -1242,7 +1243,7 @@ bool Par1Repairer::ComputeRSmatrix(void)
     return true;
   }
 
-  bool success = rs.Compute(noiselevel, sout, serr);
+  bool success = rs.Compute(observer, noiselevel >= nlDebug ? vbDebug : vbNone);
   return success;
 }
 
@@ -1458,7 +1459,7 @@ bool Par1Repairer::RemoveParFiles(void)
 
   for (std::list<std::string>::const_iterator s=parlist.begin(); s!=parlist.end(); ++s)
   {
-    DiskFile *diskfile = new DiskFile(sout, serr);
+    DiskFile *diskfile = new DiskFile(&errorlog);
 
     if (diskfile->Open(*s))
     {
@@ -1492,12 +1493,13 @@ Result par1repair(std::ostream &sout,
 		  const std::string &parfilename,
 		  const std::vector<std::string> &extrafiles,
 		  const bool dorepair,   // derived from operation
-		  const bool purgefiles
+		  const bool purgefiles,
 		  // skipdata is not used by Par1
 		  // skipleaway is not used by Par1
+		  Par2Observer *observer
 		  )
 {
-  Par1Repairer repairer(sout, serr, noiselevel);
+  Par1Repairer repairer(sout, serr, noiselevel, observer);
   Result result = repairer.Process(MemoryLimit(memorylimit),
 				   nthreads,
 				   parfilename,

@@ -207,7 +207,7 @@ int generate_data(unsigned int seed, u8 data[][BUF_SIZE], int in_count, int reco
   ReedSolomon<gtype> rs_creator;
 
   //std::cout << "creator.setinput" << in_count << std::endl;
-  if (!rs_creator.SetInput(in_count, std::cout, std::cerr)) {
+  if (!rs_creator.SetInput(in_count)) {
     std::cerr << "rs_creator.SetInput returned false";
     return 1;
   }
@@ -217,7 +217,7 @@ int generate_data(unsigned int seed, u8 data[][BUF_SIZE], int in_count, int reco
     return 1;
   }
   //std::cout << "creator.compute" << std::endl;
-  if (!rs_creator.Compute(nlSilent, std::cout, std::cerr)) {
+  if (!rs_creator.Compute(0)) {
     std::cerr << "rs_creator.Compute returned false";
     return 1;
   }
@@ -240,7 +240,7 @@ int init_repair_rs(ReedSolomon<gtype> &rs_repair, std::vector<bool> &in_present,
   //for (unsigned int z = 0; z < in_present.size(); z++)
   //  std::cout << (in_present[z] ? " true": " false");
   //std::cout << std::endl;
-  if (!rs_repair.SetInput(in_present, std::cout, std::cerr)) {
+  if (!rs_repair.SetInput(in_present)) {
     std::cerr << "rs_repair.SetInput returned false";
     return 1;
   }
@@ -256,7 +256,7 @@ int init_repair_rs(ReedSolomon<gtype> &rs_repair, std::vector<bool> &in_present,
   }
 
   //std::cout << "Repair.compute" << std::endl;
-  if (!rs_repair.Compute(nlSilent, std::cout, std::cerr)) {
+  if (!rs_repair.Compute(0)) {
     std::cerr << "rs_repair.Compute returned false";
     return 1;
   }
@@ -481,7 +481,7 @@ int test4(int *expected_bases) {
   ReedSolomon<gtype> rs_creator;
 
   //std::cout << "creator.setinput" << NUM_IN << std::endl;
-  if (!rs_creator.SetInput(NUM_IN, std::cout, std::cerr)) {
+  if (!rs_creator.SetInput(NUM_IN)) {
     std::cerr << "rs_creator.SetInput returned false";
     return 1;
   }
@@ -491,7 +491,7 @@ int test4(int *expected_bases) {
     return 1;
   }
   //std::cout << "creator.compute" << std::endl;
-  if (!rs_creator.Compute(nlSilent, std::cout, std::cerr)) {
+  if (!rs_creator.Compute(0)) {
     std::cerr << "rs_creator.Compute returned false";
     return 1;
   }

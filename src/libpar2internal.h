@@ -211,41 +211,6 @@ typedef unsigned int     size_t;
 
 #include <cassert>
 
-// Holds a lock for the duration of one output statement, so that lines written
-// from several threads do not interleave.
-class LockedStream
-{
-public:
-  explicit LockedStream(std::ostream &stream)
-    : stream(stream)
-    , lock(Mutex())
-  {
-  }
-
-  template<typename T>
-  LockedStream& operator<<(const T &value)
-  {
-    stream << value;
-    return *this;
-  }
-
-  LockedStream& operator<<(std::ostream& (*manipulator)(std::ostream&))
-  {
-    stream << manipulator;
-    return *this;
-  }
-
-private:
-  static std::mutex& Mutex(void)
-  {
-    static std::mutex mutex;
-    return mutex;
-  }
-
-  std::ostream &stream;
-  std::lock_guard<std::mutex> lock;
-};
-
 #ifdef offsetof
 #undef offsetof
 #endif
@@ -314,23 +279,6 @@ typedef enum
   nlNoisy,        // Lots of output
   nlDebug         // Extra debugging information
 } NoiseLevel;
-
-// The tool's verify and repair of a PAR1 set, in one call, writing what it
-// reports to sout and serr
-Result par1repair(std::ostream &sout,
-                  std::ostream &serr,
-                  const NoiseLevel noiselevel,
-                  const size_t memorylimit,
-                  // basepath is not used by Par1
-                  const u32 nthreads,
-                  // filethreads is not used by Par1
-                  const std::string &parfilename,
-                  const std::vector<std::string> &extrafiles,
-                  const bool dorepair,   // derived from operation
-                  const bool purgefiles
-                  // skipdata is not used by Par1
-                  // skipleaway is not used by Par1
-                  );
 
 } // namespace par2
 

@@ -22,7 +22,6 @@
 
 #include <chrono>
 #include <mutex>
-#include <utility>
 
 #include <par2/libpar2.h>
 
@@ -33,16 +32,13 @@ template<typename TValue>
 class ProgressMeter
 {
   using steady_clock = std::chrono::steady_clock;
-  const std::chrono::milliseconds PRINT_INTERVAL = std::chrono::milliseconds(50);
+  const std::chrono::milliseconds REPORT_INTERVAL = std::chrono::milliseconds(50);
 
-  std::ostream &sout;        // stream for output (for commandline, this is cout)
-  const std::string message; // message to display alongside percentage
   const float scale;         // pre-computed multiplier to convert progress value into a percentage*10
   std::atomic<TValue> current; // last known progress value
-  std::atomic<steady_clock::duration::rep> printed; // last time progress was outputted
-  const bool print;          // whether the percentage is written to sout
+  std::atomic<steady_clock::duration::rep> printed; // last time progress was reported
   const Phase phase;         // which step of the work this counts
-  Par2Observer *observer;    // notified of progress whatever the noise level
+  Par2Observer *observer;    // notified of progress, or 0
   std::mutex reporting;      // held while a fraction is claimed and reported
   u32 reported;              // highest fraction reported so far
 
@@ -50,9 +46,9 @@ class ProgressMeter
   {
     return (u32)(scale * val + 0.5f);
   }
-  inline bool PrintFraction(TValue oldval, TValue newval)
+  inline bool ReportFraction(TValue oldval, TValue newval)
   {
-    // if the displayed value won't change, don't print
+    // if the reported value won't change, don't report it
     u32 newfraction = CalcThousandths(newval);
     if (CalcThousandths(oldval) == newfraction)
       return false;
@@ -63,8 +59,8 @@ class ProgressMeter
     steady_clock::time_point now = steady_clock::now();
     steady_clock::time_point lastpoint = steady_clock::time_point(steady_clock::duration(lastprinted));
 
-    // if enough time has passed, print the current progress, and update the time record
-    if (now - lastpoint >= PRINT_INTERVAL || newfraction == 1000)
+    // if enough time has passed, report the current progress, and update the time record
+    if (now - lastpoint >= REPORT_INTERVAL || newfraction == 1000)
     {
       // Threads report as they finish, so a larger fraction can arrive first.
       // Nothing is reported which would take the count backwards, and the lock
@@ -82,9 +78,6 @@ class ProgressMeter
 
       reported = newfraction;
 
-      if (print)
-        LockedStream(sout) << message << newfraction/10 << '.' << newfraction%10 << "%\r" << std::flush;
-
       if (observer)
         observer->OnProgress(phase, newfraction);
 
@@ -95,42 +88,27 @@ class ProgressMeter
   }
 
 public:
-  ProgressMeter(std::ostream &sout, std::string message, TValue total,
-                NoiseLevel noiselevel, Phase phase, Par2Observer *observer = 0) :
-    sout(sout), message(std::move(message)), scale(total != 0 ? 1000.0f / total : 0.0f), current(0), printed(0),
-    print(noiselevel > nlQuiet), phase(phase), observer(observer), reporting(), reported(0) {}
-  ProgressMeter(std::ostream &sout, const char *message, TValue total,
-                NoiseLevel noiselevel, Phase phase, Par2Observer *observer = 0) :
-    sout(sout), message(message), scale(total != 0 ? 1000.0f / total : 0.0f), current(0), printed(0),
-    print(noiselevel > nlQuiet), phase(phase), observer(observer), reporting(), reported(0) {}
+  ProgressMeter(TValue total, Phase phase, Par2Observer *observer = 0) :
+    scale(total != 0 ? 1000.0f / total : 0.0f), current(0), printed(0),
+    phase(phase), observer(observer), reporting(), reported(0) {}
 
   // NOTE: Update() doesn't always update current value, so don't mix it with Add()
   void Update(TValue newval)
   {
     TValue oldval = current.load(std::memory_order_relaxed);
-    if (PrintFraction(oldval, newval))
+    if (ReportFraction(oldval, newval))
       current.store(newval, std::memory_order_relaxed);
   }
   void Add(TValue amount)
   {
     TValue newval = current.fetch_add(amount, std::memory_order_relaxed) + amount;
-    PrintFraction(newval - amount, newval);
+    ReportFraction(newval - amount, newval);
   }
 
   // which step of the work this counts
   Phase GetPhase(void) const
   {
     return phase;
-  }
-
-  // print a line whilst progress is still running
-  void PrintLine(const std::string &line)
-  {
-    TValue val = current.load(std::memory_order_relaxed);
-    u32 fraction = CalcThousandths(val);
-    LockedStream(sout) << std::setw(message.size()+7) << std::setfill(' ') << "\r"
-      << line << '\n'
-      << message << fraction/10 << '.' << fraction%10 << "%\r" << std::flush;
   }
 };
 

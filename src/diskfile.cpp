@@ -49,8 +49,6 @@ namespace par2
 
 DiskFile::Failure::~Failure(void)
 {
-  LockedStream(*file.serr) << message.str() << std::endl;
-
   if (file.errorlog)
     file.errorlog->Record(code, message.str(), name);
 }
@@ -62,10 +60,8 @@ DiskFile::Failure::~Failure(void)
 #define OffsetType __int64
 #define MaxOffset 0x7fffffffffffffffI64
 
-DiskFile::DiskFile(std::ostream &sout, std::ostream &serr, ErrorLog *errorlog)
-: sout(&sout)
-, serr(&serr)
-, errorlog(errorlog)
+DiskFile::DiskFile(ErrorLog *errorlog)
+: errorlog(errorlog)
 {
   filename = "";
   filesize = 0;
@@ -246,8 +242,6 @@ bool DiskFile::Write(u64 _offset, const void *buffer, size_t length, LengthType 
       std::ostringstream message;
       message << "Incomplete write to \"" << filename << "\" at offset " << _offset << ".  Expected to write " << write << " bytes and wrote " << wrote << " bytes.";
 
-      LockedStream(*serr) << "INFO: " << message.str() << std::endl;
-
       if (errorlog)
         errorlog->Warn(wcIncompleteWrite, message.str(), filename);
     }
@@ -349,8 +343,6 @@ bool DiskFile::Read(u64 _offset, void *buffer, size_t length, LengthType maxleng
     {
       std::ostringstream message;
       message << "Incomplete read from \"" << filename << "\" at offset " << _offset << ".  Tried to read " << want << " bytes and received " << got << " bytes.";
-
-      LockedStream(*serr) << message.str() << std::endl;
 
       if (errorlog)
         errorlog->Warn(wcIncompleteRead, message.str(), filename);
@@ -501,10 +493,8 @@ bool DiskFile::FileExists(std::string filename)
 #define MaxOffset ((std::numeric_limits<OffsetType>::max)())
 
 
-DiskFile::DiskFile(std::ostream &sout, std::ostream &serr, ErrorLog *errorlog)
-: sout(&sout)
-, serr(&serr)
-, errorlog(errorlog)
+DiskFile::DiskFile(ErrorLog *errorlog)
+: errorlog(errorlog)
 {
   //filename;
   filesize = 0;
@@ -1035,8 +1025,6 @@ bool DiskFile::Delete(void)
 #endif
   else
   {
-    LockedStream(*serr) << "Cannot delete " << filename << std::endl;
-
     return false;
   }
 }

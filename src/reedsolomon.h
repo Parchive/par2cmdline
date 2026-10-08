@@ -53,17 +53,16 @@ public:
 
   // Set which input blocks are present or missing
   // Some input blocks are present
-  bool SetInput(const std::vector<bool> &present, std::ostream &sout, std::ostream &serr);
+  bool SetInput(const std::vector<bool> &present);
   // All input blocks are present
-  bool SetInput(u32 count, std::ostream &sout, std::ostream &serr);
+  bool SetInput(u32 count);
 
   // Set which output block are available or need to be computed
   bool SetOutput(bool present, u16 exponent);
   bool SetOutput(bool present, u16 lowexponent, u16 highexponent);
 
   // Compute the RS Matrix
-  bool Compute(NoiseLevel noiselevel, std::ostream &sout, std::ostream &serr,
-               Par2Observer *observer = 0, const Verbosity verbosity = vbNone);
+  bool Compute(Par2Observer *observer, const Verbosity verbosity = vbNone);
 
   // Process a block of data
   bool Process(size_t size,             // The size of the block of data
@@ -85,10 +84,7 @@ private:
 
 protected:
   // Perform Gaussian Elimination
-  bool GaussElim(NoiseLevel noiselevel,
-		 std::ostream &sout,
-		 std::ostream &serr,
-		 Par2Observer *observer,
+  bool GaussElim(Par2Observer *observer,
 		 const Verbosity verbosity,
 		 unsigned int rows,
                  unsigned int leftcols,
@@ -243,27 +239,21 @@ inline bool ReedSolomon<g>::SetOutput(bool present, u16 lowexponent, u16 highexp
 
 // Construct the Vandermonde matrix and solve it if necessary
 template<class g>
-inline bool ReedSolomon<g>::Compute(NoiseLevel noiselevel, std::ostream &sout, std::ostream &serr,
-                                    Par2Observer *observer, const Verbosity verbosity)
+inline bool ReedSolomon<g>::Compute(Par2Observer *observer, const Verbosity verbosity)
 {
   u32 outcount = datamissing + parmissing;
   u32 incount = datapresent + datamissing;
 
   if (datamissing > parpresent)
   {
-    serr << "Not enough recovery blocks." << std::endl;
     return false;
   }
   else if (outcount == 0)
   {
-    serr << "No output blocks." << std::endl;
     return false;
   }
 
-  if (noiselevel > nlQuiet)
-    sout << "Computing Reed Solomon matrix." << std::endl;
-
-  ProgressMeter<u32> progress(sout, "Constructing: ", datamissing+parmissing, noiselevel, phConstructing, observer);
+  ProgressMeter<u32> progress(datamissing+parmissing, phConstructing, observer);
 
   /*  Layout of RS Matrix:
       NOTE: The second set of columns represents the parity vectors present,
@@ -381,15 +371,12 @@ inline bool ReedSolomon<g>::Compute(NoiseLevel noiselevel, std::ostream &sout, s
   }
   progress.Update(datamissing+parmissing);
 
-  if (noiselevel > nlQuiet)
-    sout << "Constructing: done." << std::endl;
-
   // Solve the matrices only if recovering data
   if (datamissing > 0)
   {
     // Perform Gaussian Elimination and then delete the right matrix (which
     // will no longer be required).
-    bool success = GaussElim(noiselevel, sout, serr, observer, verbosity, outcount, incount, leftmatrix, rightmatrix, datamissing);
+    bool success = GaussElim(observer, verbosity, outcount, incount, leftmatrix, rightmatrix, datamissing);
     delete [] rightmatrix;
     return success;
   }
@@ -432,10 +419,8 @@ inline std::string ReedSolomon<g>::Matrices(unsigned int rows, unsigned int left
 
 // Use Gaussian Elimination to solve the matrices
 template<class g>
-inline bool ReedSolomon<g>::GaussElim(NoiseLevel noiselevel, std::ostream &sout, std::ostream &serr, Par2Observer *observer, const Verbosity verbosity, unsigned int rows, unsigned int leftcols, G *leftmatrix, G *rightmatrix, unsigned int datamissing)
+inline bool ReedSolomon<g>::GaussElim(Par2Observer *observer, const Verbosity verbosity, unsigned int rows, unsigned int leftcols, G *leftmatrix, G *rightmatrix, unsigned int datamissing)
 {
-  if (noiselevel >= nlDebug)
-    sout << Matrices(rows, leftcols, leftmatrix, rightmatrix) << std::endl;
   if (observer && verbosity >= vbDebug)
     observer->OnDetail(vbDebug, Matrices(rows, leftcols, leftmatrix, rightmatrix));
 
@@ -448,7 +433,7 @@ inline bool ReedSolomon<g>::GaussElim(NoiseLevel noiselevel, std::ostream &sout,
 
   // Solve one row at a time
 
-  ProgressMeter<u32> progress(sout, "Solving: ", datamissing*rows, noiselevel, phSolving, observer);
+  ProgressMeter<u32> progress(datamissing*rows, phSolving, observer);
 
   // For each row in the matrix
   for (unsigned int row=0; row<datamissing; row++)
@@ -461,7 +446,6 @@ inline bool ReedSolomon<g>::GaussElim(NoiseLevel noiselevel, std::ostream &sout,
     assert(pivotvalue != 0);
     if (pivotvalue == 0)
     {
-      serr << "RS computation error." << std::endl;
       return false;
     }
 
@@ -538,10 +522,6 @@ inline bool ReedSolomon<g>::GaussElim(NoiseLevel noiselevel, std::ostream &sout,
   }
   progress.Update(datamissing*rows);
 
-  if (noiselevel > nlQuiet)
-    sout << "Solving: done." << std::endl;
-  if (noiselevel >= nlDebug)
-    sout << Matrices(rows, leftcols, leftmatrix, rightmatrix) << std::endl;
   if (observer && verbosity >= vbDebug)
     observer->OnDetail(vbDebug, Matrices(rows, leftcols, leftmatrix, rightmatrix));
 

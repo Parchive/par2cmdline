@@ -54,7 +54,7 @@ class DiskFile
 public:
   // errorlog records what goes wrong for the application to read back. Files
   // whose failures the caller means to tolerate are given none.
-  DiskFile(std::ostream &sout, std::ostream &serr, ErrorLog *errorlog = 0);
+  explicit DiskFile(ErrorLog *errorlog = 0);
   ~DiskFile(void);
 
   // Ensures the specified path's parent directory exists
@@ -124,8 +124,7 @@ public:
   static std::unique_ptr< std::list<std::string> > FindFiles(std::string path, std::string wildcard, bool recursive, bool followlinks = false);
 
 protected:
-  // One failure, written to the error stream and recorded for the application
-  // as the same line of text.
+  // One failure, recorded for the application as one line of text.
   class Failure
   {
   public:
@@ -147,8 +146,6 @@ protected:
   // NOTE: These are pointers so that the operator= works correctly.
   // The references used elsewhere cannot be reassigned.
   // (Operator= is needed when vectors are resized.)
-  std::ostream *sout; // stream for output (for commandline, this is cout)
-  std::ostream *serr; // stream for errors (for commandline, this is cerr)
   ErrorLog *errorlog; // where failures are recorded, or 0 for none
 
   std::string filename;

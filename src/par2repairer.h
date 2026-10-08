@@ -30,8 +30,7 @@ namespace par2
 class Par2Repairer
 {
 public:
-  Par2Repairer(std::ostream &sout, std::ostream &serr, const NoiseLevel noiselevel,
-               const Backends &backends = Backends());
+  explicit Par2Repairer(const Backends &backends = Backends());
   ~Par2Repairer(void);
 
   // Test whether a filename has a .par2 / .PAR2 / .Par2 extension
@@ -54,6 +53,7 @@ public:
 
   // How much detail of the work the observer is given
   void SetVerbosity(const Verbosity _verbosity) {verbosity = _verbosity;}
+
 
   // Why the last operation failed, and forgetting it before the next one
   bool GetLastError(Par2Error *error) const {return errorlog.First(error);}
@@ -194,9 +194,8 @@ protected:
   // place as a target or complete file
   void DiscardScannedFile(DiskFile *diskfile);
 
-  // What the files scanned so far add up to, as a verify of the set says it,
-  // with the summary written out when report is set
-  Result ScanOutcome(const bool report = true);
+  // What the files scanned so far add up to, as a verify of the set says it
+  Result ScanOutcome(void);
 
   // Attempt to match the data in the DiskFile with the source file, reporting
   // the file to the observer for as long as the match takes
@@ -237,9 +236,6 @@ protected:
   // Find out how much data we have found
   void UpdateVerificationResults(void);
 
-  // Check the verification results and report the results
-  bool CheckVerificationResults(void);
-
   // Tell the observer of each file the repair has written in full
   void ReportWritten(void);
 
@@ -277,12 +273,8 @@ protected:
     {return (u32)std::max<size_t>(1, std::min<size_t>(filethreads, filecount));}
 
 protected:
-  std::ostream &sout; // stream for output (for commandline, this is cout)
-  std::ostream &serr; // stream for errors (for commandline, this is cerr)
-
   ErrorLog errorlog;  // Why the last operation failed
 
-  NoiseLevel noiselevel;                    // OnScreen display
   const Backends backends;                  // The implementations the application supplied
 
   Par2Observer *observer;                   // Notified of progress, or 0

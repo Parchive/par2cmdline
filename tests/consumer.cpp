@@ -2434,6 +2434,39 @@ int main()
       Check(observer.errors == 1, "the observer heard about it too");
     }
 
+    // Settings which cannot be used together say which way they conflict
+    {
+      const char *const second = "baddir/second.data";
+      WriteData(second, 8, 30000);
+
+      par2::Par2Error error;
+
+      par2::Par2Creator counted("baddir/");
+      counted.SetSourceFiles({bad, second});
+      counted.SetSourceBlockCount(1);
+      counted.SetRecoveryBlockCount(RECOVERYBLOCKS);
+
+      Check(par2::eInvalidCommandLineArguments == counted.Create(badpar),
+            "fewer source blocks than files says so");
+      Check(counted.GetLastError(&error)
+            && error.message == "The block count (1) cannot be smaller than the number of files (2)",
+            "and that this is why");
+
+      par2::Par2Creator split("baddir/");
+      split.SetSourceFiles({bad});
+      split.SetBlockSize(BLOCKSIZE);
+      split.SetRecoveryBlockCount(2);
+      split.SetRecoveryFileScheme(par2::scUniform, 5);
+
+      Check(par2::eInvalidCommandLineArguments == split.Create(badpar),
+            "more recovery files than recovery blocks says so");
+      Check(split.GetLastError(&error)
+            && error.message.find("more recovery files than recovery blocks") != std::string::npos,
+            "and that this is why");
+
+      std::remove(second);
+    }
+
     // Declining to supply a processor is reported rather than quietly falling back
     {
       int asked = 0;
