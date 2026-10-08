@@ -34,22 +34,11 @@ public:
                const Backends &backends = Backends());
   ~Par2Repairer(void);
 
-  Result Process(const size_t memorylimit,
-		 const std::string &basepath,
-		 const u32 nthreads,
-		 const u32 filethreads,
-		 std::string parfilename,
-		 const std::vector<std::string> &extrafiles,
-		 const bool dorepair,   // derived from operation
-		 const bool purgefiles,
-		 const bool renameonly,
-		 const bool skipdata,
-		 const u64 skipleaway,
-		 const bool fullhash
-		 );
+  // Test whether a filename has a .par2 / .PAR2 / .Par2 extension
+  static bool IsPar2Filename(const std::string &filename);
 
   // Ask the operation in progress to stop as soon as it can, from any thread.
-  // Process then returns eCancelled, having removed any partly written files.
+  // The work then returns eCancelled, having removed any partly written files.
   // The flag stays set, so it must be cleared before reusing this object.
   void Cancel(void) {cancelled.store(true, std::memory_order_relaxed);}
   void ClearCancel(void) {cancelled.store(false, std::memory_order_relaxed);}
@@ -170,9 +159,6 @@ protected:
   // Load packets from other PAR2 files with names based on the original PAR2 file
   bool LoadPacketsFromOtherFiles(std::string filename);
 
-  // Test whether a filename has a .par2 / .PAR2 / .Par2 extension
-  static bool IsPar2Filename(const std::string &filename);
-
   // Load packets from any other PAR2 files whose names are given on the command line
   bool LoadPacketsFromExtraFiles(const std::vector<std::string> &extrafiles);
 
@@ -280,10 +266,6 @@ protected:
 
   // Delete all of the partly reconstructed files
   bool DeleteIncompleteTargetFiles(void);
-
-  // list the files needing verification
-  bool RemoveBackupFiles(void);
-  bool RemoveParFiles(void);
 
   // Make the buffers the files being scanned read into, or give them up when
   // no file will have its blocks checked where they are expected to be

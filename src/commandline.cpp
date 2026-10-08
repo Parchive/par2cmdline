@@ -71,6 +71,8 @@ CommandLine::CommandLine(std::ostream &_sout, std::ostream &_serr)
 , recoveryfilescheme(scUnknown)
 , recoveryfilecount(0)
 , recoveryblockcount(0)
+, sourceblockcount(0)
+, largestfilesize(0)
 , recoveryblockcountset(false)
 , redundancy(0)
 , redundancysize(0)
@@ -177,8 +179,8 @@ bool CommandLine::Parse(int argc, const char * const *argv)
     if (!ComputeBlockSize())
       return false;
 
-    u32 sourceblockcount = 0;
-    u64 largestfilesize = 0;
+    sourceblockcount = 0;
+    largestfilesize = 0;
     for (std::vector<std::string>::const_iterator i=extrafiles.begin(); i!=extrafiles.end(); i++)
     {
       u64 filesize = filesize_cache.get(*i);

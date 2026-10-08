@@ -90,6 +90,8 @@ public:
   u32                    GetFirstRecoveryBlock(void) const {return firstblock;}
   u32                    GetRecoveryFileCount(void) const  {return recoveryfilecount;}
   u32                    GetRecoveryBlockCount(void) const {return recoveryblockcount;}
+  u32                    GetSourceBlockCount(void) const   {return sourceblockcount;}
+  u64                    GetLargestFileSize(void) const    {return largestfilesize;}
   Scheme                 GetRecoveryFileScheme(void) const {return recoveryfilescheme;}
   size_t                 GetMemoryLimit(void) const        {return memorylimit;}
   NoiseLevel             GetNoiseLevel(void) const        {return noiselevel;}
@@ -200,6 +202,8 @@ protected:
   u32 recoveryfilecount;       // How many recovery files should be created.
 
   u32 recoveryblockcount;      // How many recovery blocks should be created.
+  u32 sourceblockcount;        // How many blocks the source files come to
+  u64 largestfilesize;         // The size of the largest source file
   bool recoveryblockcountset;  // Set if the recoveryblockcount as been specified
 
   u32 redundancy;              // What percentage of recovery data should

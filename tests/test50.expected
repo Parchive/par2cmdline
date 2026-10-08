@@ -20,8 +20,6 @@ $ par2 v -T1 test.par2
 exit 0
 Loading "test.par2".
 Loaded 8 new packets
-Loading "test.par2".
-No new packets found
 Loading "test.vol0+4.par2".
 Loaded 4 new packets including 4 recovery blocks
 
@@ -45,8 +43,6 @@ $ par2 v -T1 test.par2
 exit 1
 Loading "test.par2".
 Loaded 8 new packets
-Loading "test.par2".
-No new packets found
 Loading "test.vol0+4.par2".
 Loaded 4 new packets including 4 recovery blocks
 
@@ -80,8 +76,6 @@ $ par2 r -T1 test.par2
 exit 0
 Loading "test.par2".
 Loaded 8 new packets
-Loading "test.par2".
-No new packets found
 Loading "test.vol0+4.par2".
 Loaded 4 new packets including 4 recovery blocks
 
@@ -128,8 +122,6 @@ $ par2 v -T1 test.par2
 exit 2
 Loading "test.par2".
 Loaded 8 new packets
-Loading "test.par2".
-No new packets found
 Loading "test.vol0+4.par2".
 Loaded 4 new packets including 4 recovery blocks
 

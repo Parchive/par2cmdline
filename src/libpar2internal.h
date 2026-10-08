@@ -299,6 +299,10 @@ std::string WithSeparator(const std::string &path);
 // The name of a set, without the ".par2" its index file ends in
 std::string SetNameFor(const std::string &parfilename);
 
+// A basepath absolute and ending in a separator, which is the form every path
+// the API reports. Empty is left alone.
+std::string NormaliseBasePath(const std::string &path);
+
 // How much logging/status information to write
 // to output or error stream
 typedef enum
@@ -311,43 +315,8 @@ typedef enum
   nlDebug         // Extra debugging information
 } NoiseLevel;
 
-// The tool's create, verify and repair, each in one call, writing what the tool
+// The tool's verify and repair of a PAR1 set, in one call, writing what it
 // reports to sout and serr
-Result par2create(std::ostream &sout,
-                  std::ostream &serr,
-                  const NoiseLevel noiselevel,
-                  const size_t memorylimit,
-                  const std::string &basepath,
-                  const u32 nthreads,
-                  const u32 filethreads,
-                  const std::string &parfilename,
-                  const std::vector<std::string> &extrafiles,
-                  const u64 blocksize,
-                  const u32 firstblock,
-                  const Scheme recoveryfilescheme,
-                  const u32 recoveryfilecount,
-                  const u32 recoveryblockcount,
-                  const Backends &backends = Backends()
-                  );
-
-Result par2repair(std::ostream &sout,
-                  std::ostream &serr,
-                  const NoiseLevel noiselevel,
-                  const size_t memorylimit,
-                  const std::string &basepath,
-                  const u32 nthreads,
-                  const u32 filethreads,
-                  const std::string &parfilename,
-                  const std::vector<std::string> &extrafiles,
-                  const bool dorepair,   // derived from operation
-                  const bool purgefiles,
-                  const bool renameonly,
-                  const bool skipdata,
-                  const u64 skipleaway,
-                  const bool fullhash = false,
-                  const Backends &backends = Backends()
-                  );
-
 Result par1repair(std::ostream &sout,
                   std::ostream &serr,
                   const NoiseLevel noiselevel,

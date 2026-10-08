@@ -343,10 +343,8 @@ std::string SetNameFor(const std::string &parfilename)
   return parfilename;
 }
 
-// Absolute and ending in a separator, which is the form every path this API
-// reports. The separator goes on first, so "." names the directory itself.
-// Empty is left alone.
-static std::string NormaliseBasePath(const std::string &path)
+// The separator goes on first, so "." names the directory itself
+std::string NormaliseBasePath(const std::string &path)
 {
   if (path.empty())
     return path;
@@ -1151,78 +1149,6 @@ bool Par2Creator::GetLastError(Par2Error *error) const
 
   *error = state->lasterror;
   return true;
-}
-
-
-Result par2create(std::ostream &sout,
-		  std::ostream &serr,
-		  const NoiseLevel noiselevel,
-		  const size_t memorylimit,
-		  const std::string &basepath,
-		  const u32 nthreads,
-		  const u32 filethreads,
-		  const std::string &parfilename,
-		  const std::vector<std::string> &extrafiles,
-		  const u64 blocksize,
-		  const u32 firstblock,
-		  const Scheme recoveryfilescheme,
-		  const u32 recoveryfilecount,
-		  const u32 recoveryblockcount,
-		  const Backends &backends
-		  )
-{
-  Par2SetCreator creator(sout, serr, noiselevel, backends);
-  Result result = creator.Process(
-				  MemoryLimit(memorylimit),
-				  basepath,
-				  nthreads,
-				  filethreads,
-				  parfilename,
-				  extrafiles,
-				  blocksize,
-				  firstblock,
-				  recoveryfilescheme,
-				  recoveryfilecount,
-				  recoveryblockcount
-				  );
-  return result;
-}
-
-
-Result par2repair(std::ostream &sout,
-		  std::ostream &serr,
-		  const NoiseLevel noiselevel,
-		  const size_t memorylimit,
-		  const std::string &basepath,
-		  const u32 nthreads,
-		  const u32 filethreads,
-		  const std::string &parfilename,
-		  const std::vector<std::string> &extrafiles,
-		  const bool dorepair,   // derived from operation
-		  const bool purgefiles,
-		  const bool renameonly,
-		  const bool skipdata,
-		  const u64 skipleaway,
-		  const bool fullhash,
-		  const Backends &backends
-		  )
-{
-  Par2Repairer repairer(sout, serr, noiselevel, backends);
-  Result result = repairer.Process(
-				   MemoryLimit(memorylimit),
-				   basepath,
-				   nthreads,
-				   filethreads,
-				   parfilename,
-				   extrafiles,
-				   dorepair,
-				   purgefiles,
-				   renameonly,
-				   skipdata,
-				   skipleaway,
-				   fullhash);
-
-  return result;
 }
 
 

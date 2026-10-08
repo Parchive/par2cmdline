@@ -467,26 +467,33 @@ int test5() {
       data.put((char)(i * 31 + i / 256));
   }
 
-  std::ostringstream quiet;
-  const std::vector<std::string> files(1, datafile);
-  const std::vector<std::string> none;
+  Par2Creator creator("");
+  creator.SetSourceFiles(std::vector<std::string>(1, datafile));
+  creator.SetBlockSize(4096);
+  creator.SetRecoveryBlockCount(4);
+  creator.SetMemoryLimit(1);
 
-  Result result = par2create(quiet, quiet, nlSilent, 1, "", 0, 0,
-			     "libpar2_test5", files, 4096, 0, scVariable, 0, 4);
+  Result result = creator.Create("libpar2_test5");
   if (result != eSuccess) {
-    std::cerr << "par2create with a one byte memory limit returned " << result << std::endl;
+    std::cerr << "creating with a one byte memory limit returned " << result << std::endl;
   } else {
     {
       std::fstream data(datafile, std::ios::binary | std::ios::in | std::ios::out);
       data.seekp(5000);
       for (int i = 0; i < 3000; ++i)
-        data.put((char)0x5a);
+	data.put((char)0x5a);
     }
 
-    result = par2repair(quiet, quiet, nlSilent, 1, "", 0, 0,
-			"libpar2_test5.par2", none, true, true, false, false, 0);
+    Par2Verifier verifier("");
+    verifier.SetMemoryLimit(1);
+
+    result = verifier.AddPar2File("libpar2_test5.par2");
+    if (result == eSuccess)
+      result = verifier.Verify();
+    if (result == eRepairPossible)
+      result = verifier.Repair();
     if (result != eSuccess)
-      std::cerr << "par2repair with a one byte memory limit returned " << result << std::endl;
+      std::cerr << "repairing with a one byte memory limit returned " << result << std::endl;
   }
 
   for (const char *leftover : leftovers)
@@ -523,15 +530,16 @@ int test6() {
     std::atomic<int> count;
   };
 
-  // The command line drops a name given twice, and this does not
-  std::ostringstream quiet;
+  // A Par2Creator drops a name given twice, and the engine behind it does not
   const std::vector<std::string> files(2, datafile);
 
   int failed = 1;
-  Result result = par2create(quiet, quiet, nlSilent, 0, "", 0, 0,
-			     "libpar2_test6", files, 4096, 0, scVariable, 0, 4);
+  std::ostringstream quiet;
+  Par2SetCreator creator(quiet, quiet, nlSilent);
+  Result result = creator.Process(MemoryLimit(0), "", 0, 0,
+				  "libpar2_test6", files, 4096, 0, scVariable, 0, 4);
   if (result != eSuccess) {
-    std::cerr << "par2create naming one file twice returned " << result << std::endl;
+    std::cerr << "creating a set naming one file twice returned " << result << std::endl;
   } else {
     Errors errors;
     Par2Verifier verifier("");
