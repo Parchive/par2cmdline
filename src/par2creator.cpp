@@ -836,6 +836,7 @@ bool Par2SetCreator::InitialiseOutputFiles(void)
       if (filename.str().length() > _MAX_PATH)
       {
         serr << filename.str() << " pathlength is more than " << _MAX_PATH << "." << std::endl;
+        errorlog.Record(ecFileCreateFailed, "The name is longer than this system allows", filename.str());
         return false;
       }
       fileallocations[filenumber].filename = filename.str();
@@ -845,6 +846,7 @@ bool Par2SetCreator::InitialiseOutputFiles(void)
     if (mainpar.length() > _MAX_PATH)
     {
       serr << mainpar << " pathlength is more than " << _MAX_PATH << "." << std::endl;
+      errorlog.Record(ecFileCreateFailed, "The name is longer than this system allows", mainpar);
       return false;
     }
     fileallocations[recoveryfilecount].filename = mainpar;
@@ -1166,6 +1168,7 @@ bool Par2SetCreator::ProcessData(u64 blockoffset, size_t blocklength, ProgressMe
       if (!processor->GetOutput(outputblock, outputbuffer))
       {
         serr << "Could not read the recovery data back from the processor." << std::endl;
+        errorlog.Record(ecProcessorFailed, "The processor could not return the recovery data");
         return false;
       }
       outbuf = outputbuffer;
