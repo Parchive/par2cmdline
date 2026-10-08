@@ -1435,6 +1435,57 @@ int main()
     std::remove(data);
   }
 
+  // Looking only for renamed files stops scanning an extra file at the first
+  // block out of place, keeping what it found before, where a verify would
+  // search the whole of it
+  {
+    Check(MakeDirectory("renameonlydir"), "mkdir for the rename-only check");
+
+    const char *const data = "renameonlydir/proper.data";
+    const char *const damaged = "renameonlydir/damaged.dat";
+
+    WriteData(data, 57, 12000);
+
+    std::vector<std::string> files;
+    files.emplace_back(data);
+    Check(par2::eSuccess == Create("renameonlydir/", "renameonlydir/renameonly", files, BLOCKSIZE,
+                                   par2::scUniform, 1, 4),
+          "par2create for the rename-only check");
+
+    std::remove(data);
+    WriteData(damaged, 57, 12000);
+    Corrupt(damaged, BLOCKSIZE, 16);
+
+    std::vector<std::string> extras;
+    extras.emplace_back(damaged);
+
+    for (const bool renameonly : {false, true})
+    {
+      par2::Par2Verifier verifier("renameonlydir/");
+      Check(par2::eSuccess == verifier.AddPar2File("renameonlydir/renameonly.par2"),
+            "AddPar2File for the rename-only check");
+
+      Results seen;
+      verifier.SetObserver(&seen);
+      verifier.SetRenameOnly(renameonly);
+
+      Check(par2::eRepairPossible == verifier.Verify(extras),
+            "the file is missing either way");
+
+      const par2::Par2FileResult extra = seen.results["damaged.dat"];
+      par2::Par2VerifyResult verified;
+      verifier.GetVerifyResult(&verified);
+      if (renameonly)
+        Check(!extra.scanned && 1 == extra.blocksfound && 1 == verified.availableblockcount,
+              "rename-only stops at the damaged block, keeping the one before it");
+      else
+        Check(extra.scanned && extra.blocksfound == extra.blocksneeded - 1,
+              "a verify finds the intact blocks of the damaged copy");
+    }
+
+    std::remove(damaged);
+  }
+
   // A file scanned again once it no longer holds the set's data stops being
   // reported as that file under another name
   {

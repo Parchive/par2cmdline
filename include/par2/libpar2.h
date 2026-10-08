@@ -278,7 +278,8 @@ struct Par2FileResult
 // set records no block checksums, so that files can only be compared whole. A
 // file found complete with no blocks counted was matched that way. A create
 // reads every block of each source file, so a file it read is scanned and
-// complete.
+// complete. An extra file a rename-only verify stopped scanning is not
+// scanned either, and blocksfound counts the blocks it found before stopping.
 
 
 // Receives progress and per-file results from a par2 operation.
@@ -493,6 +494,13 @@ public:
   // Hash the whole of each file as well as its blocks, the --full-hash option.
   // Applies to Verify and to VerifyFile.
   void SetFullHash(const bool enabled);
+
+  // Look among the extra files only for the set's files whole under another
+  // name, the -O option: the scan of an extra file stops at the first data
+  // which is not the next block of one of them, keeping the blocks it found
+  // before that, and a repair uses those as it would any others. Applies to
+  // Verify.
+  void SetRenameOnly(const bool enabled);
 
   // Threads for the main processing and for hashing files in parallel, the -t
   // and -T options. Either left zero stays at the default. They are read by

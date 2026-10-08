@@ -266,7 +266,8 @@ public:
   Result Check(const std::vector<std::string> &_extrafiles,
                const size_t memorylimit,
                const u32 _nthreads,
-               const u32 _filethreads)
+               const u32 _filethreads,
+               const bool renameonly)
   {
     ClearLastError();
 
@@ -287,7 +288,7 @@ public:
 
     std::vector<std::string> extrafiles = _extrafiles;
 
-    return VerifyFiles(basepath, extrafiles, false);
+    return VerifyFiles(basepath, extrafiles, renameonly);
   }
 
   Result Rebuild(const size_t memorylimit,
@@ -409,6 +410,7 @@ struct Par2Verifier::State
   , skipdata(false)
   , skipleaway(DEFAULT_SKIP_LEAWAY)
   , fullhash(false)
+  , renameonly(false)
   , par2files()
   , scannedfiles()
   , knownblocks()
@@ -432,6 +434,7 @@ struct Par2Verifier::State
   bool skipdata;
   u64 skipleaway;
   bool fullhash;
+  bool renameonly;
   std::vector<std::string> par2files;
   std::set<std::string> scannedfiles;
   std::map<std::string, std::vector<bool> > knownblocks;
@@ -605,6 +608,11 @@ void Par2Verifier::SetFullHash(const bool enabled)
   impl->SetFullHash(state->fullhash);
 }
 
+void Par2Verifier::SetRenameOnly(const bool enabled)
+{
+  state->renameonly = enabled;
+}
+
 void Par2Verifier::SetThreadCounts(const u32 _nthreads, const u32 _filethreads)
 {
   state->nthreads = _nthreads;
@@ -756,7 +764,8 @@ try
 
   state->verified = false;
 
-  const Result result = impl->Check(extrafiles, state->memorylimit, state->nthreads, state->filethreads);
+  const Result result = impl->Check(extrafiles, state->memorylimit, state->nthreads, state->filethreads,
+                                    state->renameonly);
   TakeLastError(result);
 
   if (result != eInsufficientCriticalData)
