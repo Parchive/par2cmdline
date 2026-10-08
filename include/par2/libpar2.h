@@ -154,6 +154,11 @@ typedef enum WarningCode
   wcIncompleteWrite = 3,
   wcIncompleteRead = 4,
 
+  // A packet which disagrees with the rest of the set was left out of it: a
+  // recovery block of the wrong size, or a file whose packets disagree about
+  // how many blocks it has
+  wcPacketDiscarded = 5,
+
 } WarningCode;
 
 
@@ -179,8 +184,9 @@ struct Par2Warning
   WarningCode code{};
   std::string message;    // One line, without a trailing newline
   std::string filename;   // The file it concerns, empty when it concerns none:
-                          // the name the set records for wcFilenameUnsafe and
-                          // wcFilenameChanged, and its absolute path otherwise
+                          // the name the set records for wcFilenameUnsafe,
+                          // wcFilenameChanged and wcPacketDiscarded, and its
+                          // absolute path otherwise
 };
 
 

@@ -20,6 +20,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <iterator>
 #include <sstream>
 #include <stdlib.h>
 
@@ -563,6 +564,98 @@ int test6() {
 }
 
 
+// A recovery block of the wrong size is left out of the set, and the observer
+// is told so
+int test7() {
+  const char *const datafile = "libpar2_test7.data";
+  const char *const shortvolume = "libpar2_test7.vol7+1.par2";
+  const char *const leftovers[] = {datafile, "libpar2_test7.par2",
+				   "libpar2_test7.vol0+1.par2", shortvolume};
+
+  // A create never overwrites, so whatever an earlier run left goes first
+  for (const char *leftover : leftovers)
+    remove(leftover);
+
+  {
+    std::ofstream data(datafile, std::ofstream::out | std::ofstream::binary);
+    for (int i = 0; i < 20000; ++i)
+      data.put((char)(i * 13 + i / 256));
+  }
+
+  // Keeps the warnings, which arrive from the threads doing the work
+  class Warnings : public Par2Observer
+  {
+  public:
+    void OnWarning(const Par2Warning &warning) override
+    {
+      std::lock_guard<std::mutex> lock(mutex);
+      warnings.push_back(warning);
+    }
+    std::mutex mutex;
+    std::vector<Par2Warning> warnings;
+  };
+
+  int failed = 1;
+
+  Par2Creator creator("");
+  creator.SetSourceFiles(std::vector<std::string>(1, datafile));
+  creator.SetBlockSize(4096);
+  creator.SetRecoveryBlockCount(1);
+  creator.SetRecoveryFileScheme(scUniform, 1);
+
+  Result result = creator.Create("libpar2_test7");
+  if (result != eSuccess) {
+    std::cerr << "creating the set returned " << result << std::endl;
+  } else {
+    std::ifstream volume("libpar2_test7.vol0+1.par2", std::ios::binary);
+    const std::string bytes((std::istreambuf_iterator<char>(volume)), std::istreambuf_iterator<char>());
+
+    const std::string type((const char*)&recoveryblockpacket_type, sizeof(recoveryblockpacket_type));
+    const size_t at = bytes.find(type);
+
+    if (at == std::string::npos || at < offsetof(PACKET_HEADER, type)) {
+      std::cerr << "the volume holds no recovery block" << std::endl;
+    } else {
+      // The same block four bytes short, under an exponent of its own
+      const size_t start = at - offsetof(PACKET_HEADER, type);
+      const u64 length = ((const PACKET_HEADER*)&bytes[start])->length;
+
+      std::string packet = bytes.substr(start, (size_t)length - 4);
+      RECOVERYBLOCKPACKET *block = (RECOVERYBLOCKPACKET*)&packet[0];
+      block->header.length = length - 4;
+      block->exponent = 7;
+
+      MD5Context context;
+      context.Update(&packet[offsetof(PACKET_HEADER, setid)], packet.size() - offsetof(PACKET_HEADER, setid));
+      context.Final(block->header.hash);
+
+      std::ofstream(shortvolume, std::ofstream::out | std::ofstream::binary) << packet;
+
+      Warnings observer;
+      Par2Verifier verifier("");
+      verifier.SetObserver(&observer);
+
+      Par2SetInfo info;
+      if (eSuccess != verifier.AddPar2File("libpar2_test7.par2") || !verifier.GetSetInfo(&info)) {
+	std::cerr << "the set could not be read" << std::endl;
+      } else if (info.recoveryblockcount != 1) {
+	std::cerr << "the set has " << info.recoveryblockcount << " recovery blocks" << std::endl;
+      } else if (observer.warnings.size() != 1 || observer.warnings[0].code != wcPacketDiscarded
+		 || observer.warnings[0].message.find("exponent 7") == std::string::npos) {
+	std::cerr << "the short block was not reported as discarded" << std::endl;
+      } else {
+	failed = 0;
+      }
+    }
+  }
+
+  for (const char *leftover : leftovers)
+    remove(leftover);
+
+  return failed;
+}
+
+
 int main() {
   if (test1()) {
     std::cerr << "FAILED: test1" << std::endl;
@@ -586,6 +679,10 @@ int main() {
   }
   if (test6()) {
     std::cerr << "FAILED: test6" << std::endl;
+    return 1;
+  }
+  if (test7()) {
+    std::cerr << "FAILED: test7" << std::endl;
     return 1;
   }
 

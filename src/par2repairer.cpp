@@ -1608,6 +1608,12 @@ bool Par2Repairer::CheckPacketConsistency(void)
       {
         serr << "Incorrect sized recovery block for exponent " << rp->second->Exponent() << " discarded" << std::endl;
 
+        {
+          std::ostringstream message;
+          message << "Incorrect sized recovery block for exponent " << rp->second->Exponent() << " discarded";
+          errorlog.Warn(wcPacketDiscarded, message.str());
+        }
+
         delete rp->second;
         std::map<u32,RecoveryPacket*>::iterator x = rp++;
         recoverypacketmap.erase(x);
@@ -1637,6 +1643,10 @@ bool Par2Repairer::CheckPacketConsistency(void)
       {
         serr << "Too many blocks in source file \"" << descriptionpacket->FileName() << "\" discarded" << std::endl;
 
+        errorlog.Warn(wcPacketDiscarded,
+                      "Too many blocks in source file \"" + descriptionpacket->FileName() + "\" discarded",
+                      descriptionpacket->FileName());
+
         delete sf->second;
         std::map<MD5Hash, Par2RepairerSourceFile*>::iterator x = sf++;
         sourcefilemap.erase(x);
@@ -1664,6 +1674,10 @@ bool Par2Repairer::CheckPacketConsistency(void)
         // The block counts are different!
 
         serr << "Incorrectly sized verification packet for \"" << descriptionpacket->FileName() << "\" discarded" << std::endl;
+
+        errorlog.Warn(wcPacketDiscarded,
+                      "Incorrectly sized verification packet for \"" + descriptionpacket->FileName() + "\" discarded",
+                      descriptionpacket->FileName());
 
         // Discard the source file
 
