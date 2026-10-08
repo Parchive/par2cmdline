@@ -46,6 +46,7 @@ This disadvantage is considerably mitigated by the fact that you don't need to c
 
 - Be the reference implementation for par2 handling
 - If the readability of the reference can be maintained open for all sorts performance optimizations
+- Be usable as a library, of which the command line is one application
 
 ## Compiling par2cmdline
 
@@ -106,8 +107,8 @@ qemu-user for Arm - ctest runs the tests of the cross build under it. The test
 scripts run the *par2* executable directly, which for Arm needs qemu registered
 with binfmt_misc, as the qemu-user-static package does.
 
-An application embeds the library with either `add_subdirectory` or, once it is
-installed, `find_package(par2)`, and links `par2::par2`.
+To use par2cmdline from an application rather than from the command line, see
+*Using par2cmdline as a library* below.
 
 ## Using par2cmdline
 
@@ -286,6 +287,82 @@ The first file in this list does not contain any recovery data, it only contains
 Each of the other files contains a different number of recovery blocks. The number after the '+' sign is the number of recovery blocks and the number preceding the '+' sign is the block number of the first recovery block in that file.
 
 If par2cmdline told you that you needed 10 recovery blocks, then you would need *test.mpg.vol01+02.par2* and *test.mpg.vol07+08.par*. You might of course choose to fetch *test.mpg.vol15+16.par2* instead (in which case you would have an extra 6 recovery blocks which would not be used for the repair).
+
+## Using par2cmdline as a library
+
+par2cmdline is also a library, which an application links to create, verify
+and repair PAR2 sets itself. Its public headers are in *include/par2*, and
+*libpar2.h* documents every call.
+
+An application embeds it with either `add_subdirectory` or, once it is
+installed, `find_package(par2)`:
+
+    find_package(par2 REQUIRED)
+    target_link_libraries(app PRIVATE par2::par2)
+
+A `Par2Verifier` verifies and repairs one set:
+
+    #include <par2/libpar2.h>
+
+    par2::Par2Verifier verifier("downloads/");
+    verifier.AddPar2File("downloads/data.par2");
+
+    par2::Result result = verifier.Verify();
+    if (result == par2::eRepairPossible)
+      result = verifier.Repair();
+
+and a `Par2Creator` creates one:
+
+    par2::Par2Creator creator("data/");
+    creator.SetSourceFiles({"data/a.bin", "data/b.bin"});
+    creator.SetSourceBlockCount(2000);
+    creator.SetRedundancy(10);
+
+    par2::Result result = creator.Create("data/backup.par2");
+
+When a call fails, `GetLastError` says why.
+
+Neither handle writes anything to the console. The application follows the
+work through a `Par2Observer`, given to `SetObserver`, which is told:
+
+ * how far through each step of the work it is, and which step that is
+ * each file as it is started and finished, and what was found in it
+ * each file the work wrote, once it is written in full
+ * every error and warning as it is found
+ * the details the command line prints with `-v` and `-vv`, when the handle is
+   given a verbosity with `SetVerbosity`
+
+A verifier can also:
+
+ * read the PAR2 files one at a time as they arrive, and scan the data files
+   one at a time with `VerifyFile`
+ * be told which blocks of a file are already known to be intact, so that
+   they are not read again (`SetKnownBlocks`)
+ * look among the extra files only for the set's files under another name,
+   passing over the rest (`SetRenameOnly`)
+ * report the block checksums the set records, which blocks a scan found, the
+   files it found under another name and the damaged files a repair renamed
+   out of the way
+ * be stopped from another thread with `Cancel`
+
+An application can supply its own implementations of the Reed-Solomon
+computation and of the block hashing, through the `Processor` and `Hasher`
+interfaces in *processor.h* and *hasher.h*, by passing a `Backends` to the
+handle.
+
+To run the command line itself with those implementations in place of the ones
+built in, link `par2::cli` and call `par2::run`:
+
+    #include <iostream>
+    #include <par2/cli.h>
+
+    int main(int argc, char *argv[])
+    {
+      par2::Backends backends;
+      backends.processor = ...;
+
+      return par2::run(argc, argv, std::cout, std::cerr, backends);
+    }
 
 ## Reed-Solomon Coding
 
