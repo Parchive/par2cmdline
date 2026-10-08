@@ -56,6 +56,7 @@ Par2Repairer::Par2Repairer(std::ostream &sout, std::ostream &serr, const NoiseLe
 , noiselevel(noiselevel)
 , backends(backends)
 , observer(0)
+, verbosity(vbNone)
 , cancelled(false)
 , packetsloaded(0)
 , searchpath()
@@ -1843,6 +1844,8 @@ bool Par2Repairer::PrepareVerificationHashTable(void)
 {
   if (noiselevel >= nlDebug)
     sout << "[DEBUG] Prepare verification hashtable" << std::endl;
+  if (observer && verbosity >= vbDebug)
+    observer->OnDetail(vbDebug, "[DEBUG] Prepare verification hashtable");
 
   // Choose a size for the hash table
   verificationhashtable.SetLimit(sourceblockcount);
@@ -1885,6 +1888,8 @@ bool Par2Repairer::ComputeWindowTable(void)
 {
   if (noiselevel >= nlDebug)
     sout << "[DEBUG] compute window table" << std::endl;
+  if (observer && verbosity >= vbDebug)
+    observer->OnDetail(vbDebug, "[DEBUG] compute window table");
 
   if (blockverifiable)
   {
@@ -1974,6 +1979,13 @@ bool Par2Repairer::VerifySourceFiles(const std::string &basepath, std::vector<st
         "[DEBUG] file: " << file << "\n"
         "[DEBUG] name: " << name << "\n"
         "[DEBUG] targ: " << target_pathname << std::endl;
+    }
+    if (observer && verbosity >= vbDebug)
+    {
+      observer->OnDetail(vbDebug, "[DEBUG] VerifySourceFiles ----\n"
+                                  "[DEBUG] file: " + file + "\n"
+                                  "[DEBUG] name: " + name + "\n"
+                                  "[DEBUG] targ: " + target_pathname);
     }
 
     // if the target file is in the list of extra files, we remove it
@@ -2920,6 +2932,11 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
           << "No data found between offset " << lastmatchoffset
           << " and " << filechecksummer.Offset()).str());
       }
+      if (lastmatchoffset < filechecksummer.Offset() && observer && verbosity >= vbVerbose)
+      {
+        observer->OnDetail(vbVerbose, "No data found between offset " + std::to_string(lastmatchoffset)
+                                    + " and " + std::to_string(filechecksummer.Offset()));
+      }
 
       // Is this the first match
       if (count == 0)
@@ -3047,6 +3064,11 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
       << "No data found between offset " << lastmatchoffset
       << " and " << filechecksummer.Offset()).str());
   }
+  if (lastmatchoffset < filechecksummer.Offset() && observer && verbosity >= vbVerbose)
+  {
+    observer->OnDetail(vbVerbose, "No data found between offset " + std::to_string(lastmatchoffset)
+                                + " and " + std::to_string(filechecksummer.Offset()));
+  }
 
   }
 
@@ -3056,14 +3078,17 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
 
   }
 
-  if (noiselevel >= nlDebug)
+  if (noiselevel >= nlDebug || (observer && verbosity >= vbDebug))
   {
     std::ostringstream ss;
     if (duplicatecount > 0)
       ss << "[DEBUG] duplicates: " << duplicatecount << '\n';
     ss << "[DEBUG] matchcount: " << count << "\n"
       "[DEBUG] ----------------------";
-    progress.PrintLine(ss.str());
+    if (noiselevel >= nlDebug)
+      progress.PrintLine(ss.str());
+    if (observer && verbosity >= vbDebug)
+      observer->OnDetail(vbDebug, ss.str());
   }
 
   // Did we make any matches at all
@@ -3700,7 +3725,7 @@ bool Par2Repairer::ComputeRSmatrix(void)
   if (ownfactors)
     return true;
 
-  bool success = rs.Compute(noiselevel, sout, serr, observer);
+  bool success = rs.Compute(noiselevel, sout, serr, observer, verbosity);
 
   return success;
 }
@@ -3792,6 +3817,8 @@ bool Par2Repairer::AllocateBuffers(size_t memorylimit)
 
   if (noiselevel >= nlDebug)
     sout << "[DEBUG] Process chunk size: " << chunksize << std::endl;
+  if (observer && verbosity >= vbDebug)
+    observer->OnDetail(vbDebug, "[DEBUG] Process chunk size: " + std::to_string(chunksize));
 
   if (transferbuffer == NULL || outputbuffer == NULL)
   {

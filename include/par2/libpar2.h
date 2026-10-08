@@ -180,6 +180,17 @@ typedef enum Phase
 } Phase;
 
 
+// How much detail of the work the observer is given through OnDetail, each
+// level taking in those below it
+typedef enum Verbosity
+{
+  vbNone = 0,            // None, which is where a handle starts
+  vbVerbose = 1,         // Where a scan found no data, the -v option
+  vbDebug = 2,           // How the work is going about it, the -vv option
+
+} Verbosity;
+
+
 // Something worth knowing which did not stop the work.
 struct Par2Warning
 {
@@ -377,6 +388,12 @@ public:
   // Nothing else reports these: there is no GetLastWarning, because no outcome
   // depends on them.
   virtual void OnWarning(const Par2Warning &warning) {}
+
+  // A detail of the work, at a verbosity the handle was given through
+  // SetVerbosity, as one or more lines of text without a trailing newline,
+  // from the thread doing the work. It is meant for a person to read, and its
+  // wording may change.
+  virtual void OnDetail(Verbosity verbosity, const std::string &text) {}
 };
 
 
@@ -523,6 +540,11 @@ public:
   // before that, and a repair uses those as it would any others. Applies to
   // Verify.
   void SetRenameOnly(const bool enabled);
+
+  // How much detail of the work the observer is given through OnDetail. None
+  // is given unless this asks for it, and nothing is spent putting into words
+  // a detail which is not wanted.
+  void SetVerbosity(const Verbosity verbosity);
 
   // Threads for the main processing and for hashing files in parallel, the -t
   // and -T options. Either left zero stays at the default. They are read by
@@ -707,6 +729,11 @@ public:
 
   // The -t and -T equivalents. Either left zero stays at the default.
   void SetThreadCounts(const u32 nthreads, const u32 filethreads);
+
+  // How much detail of the work the observer is given through OnDetail. None
+  // is given unless this asks for it, and nothing is spent putting into words
+  // a detail which is not wanted.
+  void SetVerbosity(const Verbosity verbosity);
 
   // Create the set, writing parfilename and the volume files beside it. A
   // trailing ".par2" is optional: the volume files are named after the set

@@ -411,6 +411,7 @@ struct Par2Verifier::State
   , skipleaway(DEFAULT_SKIP_LEAWAY)
   , fullhash(false)
   , renameonly(false)
+  , verbosity(vbNone)
   , par2files()
   , scannedfiles()
   , knownblocks()
@@ -435,6 +436,7 @@ struct Par2Verifier::State
   u64 skipleaway;
   bool fullhash;
   bool renameonly;
+  Verbosity verbosity;
   std::vector<std::string> par2files;
   std::set<std::string> scannedfiles;
   std::map<std::string, std::vector<bool> > knownblocks;
@@ -467,6 +469,7 @@ void Par2Verifier::Restart(void)
   // was.
   impl->SetDataSkipping(state->skipdata, state->skipleaway);
   impl->SetFullHash(state->fullhash);
+  impl->SetVerbosity(state->verbosity);
 
   for (std::map<std::string, std::vector<bool> >::const_iterator kb = state->knownblocks.begin();
        kb != state->knownblocks.end();
@@ -611,6 +614,12 @@ void Par2Verifier::SetFullHash(const bool enabled)
 void Par2Verifier::SetRenameOnly(const bool enabled)
 {
   state->renameonly = enabled;
+}
+
+void Par2Verifier::SetVerbosity(const Verbosity verbosity)
+{
+  state->verbosity = verbosity;
+  impl->SetVerbosity(verbosity);
 }
 
 void Par2Verifier::SetThreadCounts(const u32 _nthreads, const u32 _filethreads)
@@ -909,6 +918,7 @@ struct Par2Creator::State
   , memorylimit(MemoryLimit(0))
   , nthreads(0)
   , filethreads(0)
+  , verbosity(vbNone)
   , cancelled(false)
   , basepath(NormaliseBasePath(_basepath))
   , lasterror()
@@ -929,6 +939,7 @@ struct Par2Creator::State
   size_t memorylimit;
   u32 nthreads;
   u32 filethreads;
+  Verbosity verbosity;
   std::mutex cancelmutex;
   bool cancelled;
   std::string basepath;
@@ -944,6 +955,7 @@ void Par2Creator::Restart(void)
 
   impl = std::make_unique<Impl>(state->nullstream, state->backends);
   impl->SetObserver(state->observer);
+  impl->SetVerbosity(state->verbosity);
 
   if (state->cancelled)
     impl->Cancel();
@@ -1022,6 +1034,12 @@ void Par2Creator::SetThreadCounts(const u32 _nthreads, const u32 _filethreads)
 {
   state->nthreads = _nthreads;
   state->filethreads = _filethreads;
+}
+
+void Par2Creator::SetVerbosity(const Verbosity verbosity)
+{
+  state->verbosity = verbosity;
+  impl->SetVerbosity(verbosity);
 }
 
 Result Par2Creator::Create(const std::string &parfilename)

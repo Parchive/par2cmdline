@@ -63,7 +63,7 @@ public:
 
   // Compute the RS Matrix
   bool Compute(NoiseLevel noiselevel, std::ostream &sout, std::ostream &serr,
-               Par2Observer *observer = 0);
+               Par2Observer *observer = 0, const Verbosity verbosity = vbNone);
 
   // Process a block of data
   bool Process(size_t size,             // The size of the block of data
@@ -89,11 +89,18 @@ protected:
 		 std::ostream &sout,
 		 std::ostream &serr,
 		 Par2Observer *observer,
+		 const Verbosity verbosity,
 		 unsigned int rows,
                  unsigned int leftcols,
                  G *leftmatrix,
                  G *rightmatrix,
                  unsigned int datamissing);
+
+  // The two matrices side by side, a line for each row
+  std::string Matrices(unsigned int rows,
+                       unsigned int leftcols,
+                       const G *leftmatrix,
+                       const G *rightmatrix) const;
 
 protected:
   u32 inputcount;        // Total number of input blocks
@@ -237,7 +244,7 @@ inline bool ReedSolomon<g>::SetOutput(bool present, u16 lowexponent, u16 highexp
 // Construct the Vandermonde matrix and solve it if necessary
 template<class g>
 inline bool ReedSolomon<g>::Compute(NoiseLevel noiselevel, std::ostream &sout, std::ostream &serr,
-                                    Par2Observer *observer)
+                                    Par2Observer *observer, const Verbosity verbosity)
 {
   u32 outcount = datamissing + parmissing;
   u32 incount = datapresent + datamissing;
@@ -382,7 +389,7 @@ inline bool ReedSolomon<g>::Compute(NoiseLevel noiselevel, std::ostream &sout, s
   {
     // Perform Gaussian Elimination and then delete the right matrix (which
     // will no longer be required).
-    bool success = GaussElim(noiselevel, sout, serr, observer, outcount, incount, leftmatrix, rightmatrix, datamissing);
+    bool success = GaussElim(noiselevel, sout, serr, observer, verbosity, outcount, incount, leftmatrix, rightmatrix, datamissing);
     delete [] rightmatrix;
     return success;
   }
@@ -390,35 +397,47 @@ inline bool ReedSolomon<g>::Compute(NoiseLevel noiselevel, std::ostream &sout, s
   return true;
 }
 
+// The two matrices side by side, a line for each row
+template<class g>
+inline std::string ReedSolomon<g>::Matrices(unsigned int rows, unsigned int leftcols, const G *leftmatrix, const G *rightmatrix) const
+{
+  std::ostringstream text;
+
+  for (unsigned int row=0; row<rows; row++)
+  {
+    if (row > 0)
+      text << '\n';
+
+    text << ((row==0) ? "/"    : (row==rows-1) ? "\\"    : "|");
+    for (unsigned int col=0; col<leftcols; col++)
+    {
+      text << " "
+           << std::hex << std::setw(G::Bits>8?4:2) << std::setfill('0')
+           << (unsigned int)leftmatrix[row*leftcols+col];
+    }
+    text << ((row==0) ? " \\ /" : (row==rows-1) ? " / \\" : " | |");
+    for (unsigned int col=0; col<rows; col++)
+    {
+      text << " "
+           << std::hex << std::setw(G::Bits>8?4:2) << std::setfill('0')
+           << (unsigned int)rightmatrix[row*rows+col];
+    }
+    text << ((row==0) ? " \\"   : (row==rows-1) ? " /"    : " | |");
+
+    text << std::dec << std::setw(0) << std::setfill(' ');
+  }
+
+  return text.str();
+}
+
 // Use Gaussian Elimination to solve the matrices
 template<class g>
-inline bool ReedSolomon<g>::GaussElim(NoiseLevel noiselevel, std::ostream &sout, std::ostream &serr, Par2Observer *observer, unsigned int rows, unsigned int leftcols, G *leftmatrix, G *rightmatrix, unsigned int datamissing)
+inline bool ReedSolomon<g>::GaussElim(NoiseLevel noiselevel, std::ostream &sout, std::ostream &serr, Par2Observer *observer, const Verbosity verbosity, unsigned int rows, unsigned int leftcols, G *leftmatrix, G *rightmatrix, unsigned int datamissing)
 {
   if (noiselevel >= nlDebug)
-  {
-    for (unsigned int row=0; row<rows; row++)
-    {
-      sout << ((row==0) ? "/"    : (row==rows-1) ? "\\"    : "|");
-      for (unsigned int col=0; col<leftcols; col++)
-      {
-        sout << " "
-             << std::hex << std::setw(G::Bits>8?4:2) << std::setfill('0')
-             << (unsigned int)leftmatrix[row*leftcols+col];
-      }
-      sout << ((row==0) ? " \\ /" : (row==rows-1) ? " / \\" : " | |");
-      for (unsigned int col=0; col<rows; col++)
-      {
-        sout << " "
-             << std::hex << std::setw(G::Bits>8?4:2) << std::setfill('0')
-             << (unsigned int)rightmatrix[row*rows+col];
-      }
-      sout << ((row==0) ? " \\"   : (row==rows-1) ? " /"    : " | |");
-      sout << '\n';
-
-      sout << std::dec << std::setw(0) << std::setfill(' ');
-    }
-    sout << std::flush;
-  }
+    sout << Matrices(rows, leftcols, leftmatrix, rightmatrix) << std::endl;
+  if (observer && verbosity >= vbDebug)
+    observer->OnDetail(vbDebug, Matrices(rows, leftcols, leftmatrix, rightmatrix));
 
   // Because the matrices being operated on are Vandermonde matrices
   // they are guaranteed not to be singular.
@@ -522,30 +541,9 @@ inline bool ReedSolomon<g>::GaussElim(NoiseLevel noiselevel, std::ostream &sout,
   if (noiselevel > nlQuiet)
     sout << "Solving: done." << std::endl;
   if (noiselevel >= nlDebug)
-  {
-    for (unsigned int row=0; row<rows; row++)
-    {
-      sout << ((row==0) ? "/"    : (row==rows-1) ? "\\"    : "|");
-      for (unsigned int col=0; col<leftcols; col++)
-      {
-        sout << " "
-             << std::hex << std::setw(G::Bits>8?4:2) << std::setfill('0')
-             << (unsigned int)leftmatrix[row*leftcols+col];
-      }
-      sout << ((row==0) ? " \\ /" : (row==rows-1) ? " / \\" : " | |");
-      for (unsigned int col=0; col<rows; col++)
-      {
-        sout << " "
-             << std::hex << std::setw(G::Bits>8?4:2) << std::setfill('0')
-             << (unsigned int)rightmatrix[row*rows+col];
-      }
-      sout << ((row==0) ? " \\"   : (row==rows-1) ? " /"    : " | |");
-      sout << '\n';
-
-      sout << std::dec << std::setw(0) << std::setfill(' ');
-    }
-    sout << std::flush;
-  }
+    sout << Matrices(rows, leftcols, leftmatrix, rightmatrix) << std::endl;
+  if (observer && verbosity >= vbDebug)
+    observer->OnDetail(vbDebug, Matrices(rows, leftcols, leftmatrix, rightmatrix));
 
   return true;
 }

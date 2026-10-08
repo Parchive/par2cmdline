@@ -63,6 +63,9 @@ public:
     errorlog.SetObserver(_observer);
   }
 
+  // How much detail of the work the observer is given
+  void SetVerbosity(const Verbosity _verbosity) {verbosity = _verbosity;}
+
   // Why the last operation failed, and forgetting it before the next one
   bool GetLastError(Par2Error *error) const {return errorlog.First(error);}
   void ClearLastError(void) {errorlog.Clear();}
@@ -301,6 +304,7 @@ protected:
   const Backends backends;                  // The implementations the application supplied
 
   Par2Observer *observer;                   // Notified of progress, or 0
+  Verbosity verbosity;                      // How much detail it is given
 
   std::atomic<bool> cancelled;              // Set by Cancel from any thread
 

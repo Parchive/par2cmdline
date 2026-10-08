@@ -28,6 +28,7 @@
 #include <cstdio>
 #include <algorithm>
 #include <fstream>
+#include <iterator>
 #include <map>
 #include <memory>
 #include <mutex>
@@ -255,17 +256,34 @@ private:
   std::mutex mutex;
 };
 
+// Keeps the details of the work it is given
+class Details : public par2::Par2Observer
+{
+public:
+  void OnDetail(par2::Verbosity verbosity, const std::string &text) override
+  {
+    std::lock_guard<std::mutex> lock(mutex);
+    details.push_back(std::make_pair(verbosity, text));
+  }
+
+  std::vector<std::pair<par2::Verbosity, std::string> > details;
+
+private:
+  // The callbacks arrive from the threads doing the work, several at a time
+  std::mutex mutex;
+};
+
 // Counts what the observer is told, to show the callbacks arrive even when
 // nothing is written to the output stream.
 class Counting : public par2::Par2Observer
 {
 public:
   Counting()
-    : setinfo(0), files(0), progress(0), done(0), errors(0), warnings(0),
+    : setinfo(0), files(0), progress(0), done(0), errors(0), warnings(0), details(0),
       lastinfo(), lasterror(), lastwarning(), phases(), filephases(), last(0), wentbackwards(false),
       reached(false) {}
 
-  int setinfo, files, progress, done, errors, warnings;
+  int setinfo, files, progress, done, errors, warnings, details;
 
   // What the last OnSetInfo carried
   par2::Par2SetInfo lastinfo;
@@ -318,6 +336,12 @@ public:
     std::lock_guard<std::mutex> lock(mutex);
     ++warnings;
     lastwarning = warning;
+  }
+
+  void OnDetail(par2::Verbosity, const std::string &) override
+  {
+    std::lock_guard<std::mutex> lock(mutex);
+    ++details;
   }
 
   void OnProgress(par2::Phase phase, par2::u32 permille) override
@@ -1524,6 +1548,66 @@ int main()
     }
 
     std::remove(damaged);
+  }
+
+  // The details of the work are given only up to the verbosity asked for, and
+  // not at all unless some are
+  {
+    Check(MakeDirectory("detaildir"), "mkdir for the detail check");
+
+    const char *const data = "detaildir/detail.data";
+    WriteData(data, 67, 20000);
+
+    Check(par2::eSuccess == Create("detaildir/", "detaildir/detail", {data}, BLOCKSIZE, par2::scUniform, 1, 6),
+          "create for the detail check");
+
+    // Data inserted part way through leaves a stretch the scan finds nothing in
+    {
+      std::ifstream in(data, std::ios::binary);
+      const std::string bytes((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+      in.close();
+      std::ofstream(data, std::ios::binary | std::ios::trunc) << bytes.substr(0, 10000) << "junk" << bytes.substr(10000);
+    }
+
+    Details verbose;
+    Details debug;
+    Counting none;
+
+    const std::vector<std::pair<par2::Par2Observer *, par2::Verbosity> > runs{
+      {&verbose, par2::vbVerbose}, {&debug, par2::vbDebug}, {&none, par2::vbNone}};
+
+    for (const auto &run : runs)
+    {
+      par2::Par2Verifier verifier("detaildir/");
+      verifier.SetObserver(run.first);
+      verifier.SetVerbosity(run.second);
+      Check(par2::eSuccess == verifier.AddPar2File("detaildir/detail.par2"), "AddPar2File for the detail check");
+      Check(par2::eRepairPossible == verifier.Verify(), "the shifted file needs repairing");
+    }
+
+    bool gap = false;
+    for (const auto &detail : verbose.details)
+    {
+      Check(detail.first == par2::vbVerbose, "only the details asked for are given");
+      gap = gap || detail.second.find("No data found") != std::string::npos;
+    }
+    Check(gap, "and the stretch with nothing in it is one of them");
+
+    bool workings = false;
+    for (const auto &detail : debug.details)
+    {
+      Check(!detail.second.empty() && detail.second.back() != '\n',
+            "each detail is text without a trailing newline");
+      workings = workings || detail.first == par2::vbDebug;
+    }
+    Check(workings, "the workings are given when asked for");
+    Check(debug.details.size() > verbose.details.size(), "along with what a lesser verbosity gives");
+
+    Check(0 == none.details, "and nothing is given unless asked for");
+
+    std::remove(data);
+    RemoveSet("detaildir/detail");
+    std::remove("detaildir/detail.vol0+6.par2");
   }
 
   // Each file the work wrote is reported once it is written in full: the PAR2

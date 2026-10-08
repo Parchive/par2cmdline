@@ -38,6 +38,7 @@ Par2SetCreator::Par2SetCreator(std::ostream &sout, std::ostream &serr, const Noi
 , noiselevel(noiselevel)
 , backends(std::move(backends))
 , observer(0)
+, verbosity(vbNone)
 , cancelled(false)
 , totalthreads(default_threads())
 , filethreads(_FILE_THREADS)
@@ -241,6 +242,8 @@ Result Par2SetCreator::PrepareCreation(void)
 
   if (recoveryblockcount > 0 && noiselevel >= nlDebug)
     sout << "[DEBUG] Process chunk size: " << chunksize << std::endl;
+  if (recoveryblockcount > 0 && observer && verbosity >= vbDebug)
+    observer->OnDetail(vbDebug, "[DEBUG] Process chunk size: " + std::to_string(chunksize));
 
   if (noiselevel > nlQuiet)
   {
@@ -1020,7 +1023,7 @@ bool Par2SetCreator::ComputeRSMatrix(void)
     return false;
 
   // Compute the RS matrix
-  if (!rs.Compute(noiselevel, sout, serr, observer))
+  if (!rs.Compute(noiselevel, sout, serr, observer, verbosity))
     return false;
 
   return true;
