@@ -1277,6 +1277,8 @@ bool Par2Repairer::LoadPacketsFromFile(const std::string &filename, bool reread,
     result.localfilename = filename;
     result.exists = true;
     result.filesize = filesize;
+    result.blocksfound = recoverypackets;
+    result.packetsfound = packets;
 
     observer->OnFileDone(phLoading, result);
   }

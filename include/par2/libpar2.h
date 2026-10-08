@@ -271,6 +271,8 @@ struct Par2FileResult
   u32 duplicateblocks{};        // Blocks found which other files had
                                 // already supplied
   u64 skippedbytes{};           // Bytes passed over by data skipping
+  u32 packetsfound{};           // Packets a PAR2 file held which had not
+                                // been read before
 };
 
 // scanned is false for a PAR2 file, for a file which is not there, could not
@@ -339,7 +341,9 @@ public:
   virtual void OnProgress(Phase phase, u32 permille) {}
 
   // This file has been checked, and result says what it held. A PAR2 file has
-  // no blocks of its own to account for, so its counts are zero.
+  // no blocks of its own to account for, so blocksneeded is zero, blocksfound
+  // counts the recovery blocks it added to the set and packetsfound every
+  // packet it added.
   virtual void OnFileDone(Phase phase, const Par2FileResult &result) {}
 
   // Something went wrong. Called once per error as it is found, from the

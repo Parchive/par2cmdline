@@ -236,9 +236,14 @@ public:
     std::lock_guard<std::mutex> lock(mutex);
     if (phase != par2::phLoading)
       results[result.filename] = result;
+    else
+      loaded[result.filename] = result;
   }
 
   std::map<std::string, par2::Par2FileResult> results;
+
+  // The same for the PAR2 files read
+  std::map<std::string, par2::Par2FileResult> loaded;
 
 private:
   // The callbacks arrive from the threads doing the work, several at a time
@@ -450,6 +455,36 @@ int main()
     // The PAR2 files read by AddPar2File are announced and finished too
     Check(observer.done == observer.files, "OnFileDone once per OnFile");
     Check(observer.done > (int)DATACOUNT, "the PAR2 files are counted as well");
+  }
+
+  // Each PAR2 file read says how many recovery blocks it added to the set
+  {
+    Results seen;
+    par2::Par2Verifier verifier("");
+    verifier.SetObserver(&seen);
+
+    Check(par2::eSuccess == verifier.AddPar2File(PARFILE), "AddPar2File for the loading check");
+
+    par2::u32 added = 0;
+    bool index = false;
+    for (const auto &file : seen.loaded)
+    {
+      Check(0 == file.second.blocksneeded, "a PAR2 file needs no blocks");
+      Check(file.second.packetsfound >= file.second.blocksfound, "a recovery block is a packet");
+      added += file.second.blocksfound;
+
+      const std::string &name = file.first;
+      if (name.size() >= std::string(PARFILE).size() &&
+          0 == name.compare(name.size() - std::string(PARFILE).size(), std::string::npos, PARFILE))
+      {
+        index = true;
+        Check(0 == file.second.blocksfound, "the index file adds no recovery blocks");
+        Check(file.second.packetsfound > 0, "but it adds packets");
+      }
+    }
+
+    Check(index, "the index file was read");
+    Check(added == RECOVERYBLOCKS, "the PAR2 files added every recovery block between them");
   }
 
   // Two verifiers used one after the other do not disturb each other
