@@ -101,8 +101,7 @@ jobs:
 
     - name: Build
       run: |
-        cmake -B build-cmake -A ${{ matrix.platform }} -DPAR2_BUILD_TESTS=OFF \
-          -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded
+        cmake -B build-cmake -A ${{ matrix.platform }} -DPAR2_BUILD_TESTS=OFF -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded
         cmake --build build-cmake --config Release -j
 
     - name: Upload binary artifact
