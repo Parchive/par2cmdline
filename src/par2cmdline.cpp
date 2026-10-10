@@ -27,12 +27,60 @@
 #define NOMINMAX
 #endif
 #include <windows.h>
+#include <atomic>
+#else
+#include <pthread.h>
+#include <signal.h>
+#include <thread>
 #endif
 
 #ifdef _MSC_VER
 #ifdef _DEBUG
 #include <crtdbg.h>
 #endif
+#endif
+
+#ifdef _WIN32
+
+// The first Ctrl+C or Ctrl+Break cancels the work, and the next ends the
+// process
+static BOOL WINAPI OnControl(DWORD type)
+{
+  static std::atomic<bool> cancelled(false);
+
+  if (type != CTRL_C_EVENT && type != CTRL_BREAK_EVENT)
+    return FALSE;
+
+  return !cancelled.exchange(true) && par2::cancel() ? TRUE : FALSE;
+}
+
+#else
+
+// The first SIGINT or SIGTERM cancels the work, and the next ends the process
+// as the signal does
+static void HandleSignals(void)
+{
+  sigset_t signals;
+  sigemptyset(&signals);
+  sigaddset(&signals, SIGINT);
+  sigaddset(&signals, SIGTERM);
+  pthread_sigmask(SIG_BLOCK, &signals, 0);
+
+  std::thread([signals] {
+    int sig = 0;
+    sigwait(&signals, &sig);
+    if (par2::cancel())
+      sigwait(&signals, &sig);
+
+    sigset_t unblock;
+    sigemptyset(&unblock);
+    sigaddset(&unblock, sig);
+    signal(sig, SIG_DFL);
+    pthread_sigmask(SIG_UNBLOCK, &unblock, 0);
+    raise(sig);
+  }).detach();
+}
+
 #endif
 
 #ifdef _WIN32
@@ -52,6 +100,9 @@ int main(int argc, char* argv[])
 
 #ifdef _WIN32
   SetConsoleOutputCP(CP_UTF8);
+  SetConsoleCtrlHandler(OnControl, TRUE);
+#else
+  HandleSignals();
 #endif
 
   // We only output using C++ iostreams
