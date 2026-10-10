@@ -51,6 +51,15 @@ public:
   VerificationPacket* GetVerificationPacket(void) const {return verificationpacket;}
   void SetVerificationPacket(VerificationPacket *verificationpacket);
 
+  // Get/Set the unicode filename packet
+  UnicodeFilenamePacket* GetUnicodeFilenamePacket(void) const {return unicodefilenamepacket;}
+  void SetUnicodeFilenamePacket(UnicodeFilenamePacket *unicodefilenamepacket);
+
+  // The name the set gives the file: the one in its unicode filename packet
+  // when it has one which holds UTF-16, otherwise the one in its description
+  // packet
+  std::string FileName(void) const;
+
   // Record the details as to which data blocks belong to this source
   // file and set the length of each allocated block correctly.
   void SetBlocks(u32 _blocknumber,
@@ -97,6 +106,7 @@ public:
 protected:
   DescriptionPacket           *descriptionpacket;   // The file description packet
   VerificationPacket          *verificationpacket;  // The file verification packet
+  UnicodeFilenamePacket       *unicodefilenamepacket; // The unicode filename packet
 
   u32                          blockcount;          // The number of DataBlocks in the file
   u32                          firstblocknumber;    // The block number of the first DataBlock

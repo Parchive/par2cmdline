@@ -41,6 +41,7 @@ namespace par2
 //  Input File Slice Checksum Packet   struct FILEVERIFICATIONPACKET
 //  Recovery Slice Packet              struct RECOVERYBLOCKPACKET
 //  Creator Packet                     struct CREATORPACKET
+//  Unicode Filename Packet            struct UNICODEFILENAMEPACKET
 
 
 #ifdef _WIN32
@@ -148,6 +149,17 @@ struct CREATORPACKET
   //u8* client(void) {return (u8*)&this[1];}
 } PACKED;
 
+// The unicode filename packet gives a file's name in UTF-16, which is used in
+// place of the name in its file description packet.
+struct UNICODEFILENAMEPACKET
+{
+  PACKET_HEADER    header;
+  // Body
+  MD5Hash          fileid;    // The file the name belongs to
+  u8               name[];    // UTF-16 code units, each little endian, padded
+                              // with a zero unit to reach a multiple of 4 bytes.
+} PACKED;
+
 // The recovery block packet contains a single block of recovery data along
 // with the exponent value used during the computation of that block.
 struct RECOVERYBLOCKPACKET
@@ -198,6 +210,7 @@ extern PACKETTYPE filedescriptionpacket_type;
 extern PACKETTYPE mainpacket_type;
 extern PACKETTYPE recoveryblockpacket_type;
 extern PACKETTYPE creatorpacket_type;
+extern PACKETTYPE unicodefilenamepacket_type;
 
 
 } // namespace par2

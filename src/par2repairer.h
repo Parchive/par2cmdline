@@ -155,6 +155,7 @@ protected:
   bool LoadMainPacket(DiskFile *diskfile, u64 offset, PACKET_HEADER &header);
   // Finish loading the creator packet
   bool LoadCreatorPacket(DiskFile *diskfile, u64 offset, PACKET_HEADER &header);
+  bool LoadUnicodeFilenamePacket(DiskFile *diskfile, u64 offset, PACKET_HEADER &header);
 
   // Load packets from other PAR2 files with names based on the original PAR2 file
   bool LoadPacketsFromOtherFiles(std::string filename);

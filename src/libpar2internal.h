@@ -307,6 +307,7 @@ typedef enum
 #include "mainpacket.h"
 #include "creatorpacket.h"
 #include "descriptionpacket.h"
+#include "unicodefilenamepacket.h"
 #include "verificationpacket.h"
 #include "recoverypacket.h"
 
