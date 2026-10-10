@@ -817,6 +817,47 @@ std::string DiskFile::GetCanonicalPathname(std::string filename)
   return result;
 }
 
+// Whether name matches a shell-style wildcard, where '*' matches any run of
+// characters, none included, and '?' matches exactly one, anywhere in it
+static bool MatchesWildcard(const std::string &name, const std::string &wildcard)
+{
+  std::string::size_type n = 0, w = 0;
+  std::string::size_type restart_n = std::string::npos, restart_w = std::string::npos;
+
+  while (n < name.size())
+  {
+    if (w < wildcard.size() && (wildcard[w] == '?' || wildcard[w] == name[n]))
+    {
+      // Literal character or '?' matched one character of the name
+      ++n;
+      ++w;
+    }
+    else if (w < wildcard.size() && wildcard[w] == '*')
+    {
+      // A '*' matches nothing at first, and is where matching starts again
+      // when what follows it does not match
+      restart_w = w++;
+      restart_n = n;
+    }
+    else if (restart_w != std::string::npos)
+    {
+      // The last '*' has to absorb one more character of the name
+      w = restart_w + 1;
+      n = ++restart_n;
+    }
+    else
+    {
+      return false;
+    }
+  }
+
+  // Only trailing '*'s can still be unmatched in the pattern
+  while (w < wildcard.size() && wildcard[w] == '*')
+    ++w;
+
+  return w == wildcard.size();
+}
+
 std::unique_ptr< std::list<std::string> > DiskFile::FindFiles(std::string path, std::string wildcard, bool recursive, bool followlinks)
 {
   // check path, if not ending with path separator, add one
@@ -827,15 +868,8 @@ std::unique_ptr< std::list<std::string> > DiskFile::FindFiles(std::string path, 
   }
   std::list<std::string> *matches = new std::list<std::string>;
 
-  std::string::size_type where;
-
-  if ((where = wildcard.find_first_of('*')) != std::string::npos ||
-      (where = wildcard.find_first_of('?')) != std::string::npos)
+  if (wildcard.find_first_of("*?") != std::string::npos)
   {
-    std::string front = wildcard.substr(0, where);
-    bool multiple = wildcard[where] == '*';
-    std::string back = wildcard.substr(where+1);
-
     DIR *dirp = opendir(path.c_str());
     if (dirp != 0)
     {
@@ -847,89 +881,35 @@ std::unique_ptr< std::list<std::string> > DiskFile::FindFiles(std::string path, 
         if (name == "." || name == "..")
           continue;
 
-        if (multiple)
+        if (MatchesWildcard(name, wildcard))
         {
-          if (name.size() >= wildcard.size() &&
-              name.substr(0, where) == front &&
-              name.substr(name.size()-back.size()) == back)
+          struct stat st;
+          std::string fn = path + name;
+          if (lstat(fn.c_str(), &st) == 0)
           {
-            struct stat st;
-            std::string fn = path + name;
-            if (lstat(fn.c_str(), &st) == 0)
+            if (S_ISDIR(st.st_mode) &&
+                recursive == true)
             {
-              if (S_ISDIR(st.st_mode) &&
-                  recursive == true)
-              {
-
-                std::string nwwildcard="*";
-                std::unique_ptr< std::list<std::string> > dirmatches(
-							 DiskFile::FindFiles(fn, nwwildcard, true, followlinks)
-							 );
-                matches->splice(matches->end(), *dirmatches);
-              }
-              else if (S_ISREG(st.st_mode))
+              std::string nwwildcard="*";
+              std::unique_ptr< std::list<std::string> > dirmatches(
+                               DiskFile::FindFiles(fn, nwwildcard, true, followlinks)
+                               );
+              matches->splice(matches->end(), *dirmatches);
+            }
+            else if (S_ISREG(st.st_mode))
+            {
+              matches->push_back(path + name);
+            }
+            else if (followlinks && S_ISLNK(st.st_mode))
+            {
+              struct stat stt;
+              if (stat(fn.c_str(), &stt) == 0 && S_ISREG(stt.st_mode))
               {
                 matches->push_back(path + name);
               }
-              else if (followlinks && S_ISLNK(st.st_mode))
-              {
-                struct stat stt;
-                if (stat(fn.c_str(), &stt) == 0 && S_ISREG(stt.st_mode))
-                {
-                  matches->push_back(path + name);
-                }
-              }
             }
           }
         }
-        else
-        {
-          if (name.size() == wildcard.size())
-          {
-            std::string::const_iterator pw = wildcard.begin();
-            std::string::const_iterator pn = name.begin();
-            while (pw != wildcard.end())
-            {
-              if (*pw != '?' && *pw != *pn)
-                break;
-              ++pw;
-              ++pn;
-            }
-
-            if (pw == wildcard.end())
-            {
-              struct stat st;
-              std::string fn = path + name;
-              if (lstat(fn.c_str(), &st) == 0)
-              {
-                if (S_ISDIR(st.st_mode) &&
-                    recursive == true)
-                {
-
-                  std::string nwwildcard="*";
-		  std::unique_ptr< std::list<std::string> > dirmatches(
-							   DiskFile::FindFiles(fn, nwwildcard, true, followlinks)
-							   );
-
-                  matches->splice(matches->end(), *dirmatches);
-                }
-                else if (S_ISREG(st.st_mode))
-                {
-                  matches->push_back(path + name);
-                }
-                else if (followlinks && S_ISLNK(st.st_mode))
-                {
-                  struct stat stt;
-                  if (stat(fn.c_str(), &stt) == 0 && S_ISREG(stt.st_mode))
-                  {
-                    matches->push_back(path + name);
-                  }
-                }
-              }
-            }
-          }
-        }
-
       }
       closedir(dirp);
     }
