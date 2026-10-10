@@ -80,6 +80,7 @@ par2_add_unit_test(criticalpacket_test LINK_LIBPAR2
   SOURCES ${PROJECT_SOURCE_DIR}/src/criticalpacket.cpp)
 par2_add_unit_test(commandline_test LINK_LIBPAR2
   SOURCES ${PROJECT_SOURCE_DIR}/src/commandline.cpp)
+target_link_libraries(commandline_test PRIVATE par2_cxxopts)
 par2_add_unit_test(libpar2_test LINK_LIBPAR2)
 par2_add_unit_test(foreach_parallel_test LINK_LIBPAR2)
 par2_add_unit_test(taskpool_test LINK_LIBPAR2)
