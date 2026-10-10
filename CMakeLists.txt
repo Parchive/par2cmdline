@@ -159,6 +159,7 @@ add_library(libpar2 STATIC
   src/progressmeter.h
   src/recoverypacket.cpp src/recoverypacket.h
   src/reedsolomon.cpp src/reedsolomon.h
+  src/unicodefilenamepacket.cpp src/unicodefilenamepacket.h
   src/verificationhashtable.cpp src/verificationhashtable.h
   src/verificationpacket.cpp src/verificationpacket.h
   src/libpar2.cpp src/libpar2internal.h

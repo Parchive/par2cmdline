@@ -28,5 +28,6 @@ PACKETTYPE filedescriptionpacket_type  = {{'P', 'A', 'R', ' ', '2', '.', '0', '\
 PACKETTYPE mainpacket_type             = {{'P', 'A', 'R', ' ', '2', '.', '0', '\0', 'M', 'a', 'i', 'n', '\0','\0','\0','\0'}};
 PACKETTYPE recoveryblockpacket_type    = {{'P', 'A', 'R', ' ', '2', '.', '0', '\0', 'R', 'e', 'c', 'v', 'S', 'l', 'i', 'c' }};
 PACKETTYPE creatorpacket_type          = {{'P', 'A', 'R', ' ', '2', '.', '0', '\0', 'C', 'r', 'e', 'a', 't', 'o', 'r', '\0'}};
+PACKETTYPE unicodefilenamepacket_type  = {{'P', 'A', 'R', ' ', '2', '.', '0', '\0', 'U', 'n', 'i', 'F', 'i', 'l', 'e', 'N' }};
 
 } // namespace par2
