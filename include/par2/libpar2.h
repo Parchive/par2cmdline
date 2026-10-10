@@ -442,13 +442,15 @@ public:
   void SetObserver(Par2Observer *observer);
 
   // Read the packets of a PAR2 file and of the other PAR2 files named after
-  // it. May be called more than once; a file which has already been read is
-  // skipped, and the result is what the packets read so far amount to.
+  // it, or of that file alone when volumes is false. May be called more than
+  // once; a file which has already been read is skipped, and the result is
+  // what the packets read so far amount to.
   //
   // The name may be that of a file or of a whole set: the volume files beside
   // it are read too, and they carry the critical packets, so naming a set
   // whose index file is absent still describes it. eFileIOError therefore
-  // means the named file does not exist *and* nothing new was read.
+  // means the named file does not exist *and* nothing new was read. Read
+  // alone, it means the file does not exist or could not be opened.
   //
   // eCancelled means a cancel stopped the reading part way through. The file
   // is not remembered, and naming it again after ClearCancel reads the rest.
@@ -456,7 +458,7 @@ public:
   // Adding a file after Verify has run is allowed: the next Verify starts a
   // fresh pass over the data, so it reflects both the added file and whatever
   // is on disk at that point.
-  Result AddPar2File(const std::string &parfilename);
+  Result AddPar2File(const std::string &parfilename, const bool volumes = true);
 
   // What the packets added so far describe. False until a PAR2 file with the
   // critical packets has been added.
@@ -656,7 +658,7 @@ private:
   class Impl;
   struct State;
 
-  Result DoAddPar2File(const std::string &parfilename);
+  Result DoAddPar2File(const std::string &parfilename, const bool volumes);
   Result DoVerify(const std::vector<std::string> &extrafiles);
   Result DoVerifyFile(const std::string &filename);
   Result DoRepair(const bool verifyafter);

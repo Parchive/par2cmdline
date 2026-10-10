@@ -737,7 +737,7 @@ static Result Repair(CommandLine &commandline, const Backends &backends, Printer
     if (!Par2Repairer::IsPar2Filename(extrafile))
       continue;
 
-    const Result added = verifier.AddPar2File(extrafile);
+    const Result added = verifier.AddPar2File(extrafile, false);
     if (added != eFileIOError)
       result = added;
   }
