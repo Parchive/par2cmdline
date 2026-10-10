@@ -32,8 +32,7 @@ class CriticalPacket;
 class Par2SetCreator
 {
 public:
-  Par2SetCreator(std::ostream &sout, std::ostream &serr, const NoiseLevel noiselevel,
-              Backends backends = Backends());
+  explicit Par2SetCreator(Backends backends = Backends());
   ~Par2SetCreator(void);
 
   // Ask the operation in progress to stop as soon as it can, from any thread.
@@ -50,6 +49,10 @@ public:
     observer = _observer;
     errorlog.SetObserver(_observer);
   }
+
+  // How much detail of the work the observer is given
+  void SetVerbosity(const Verbosity _verbosity) {verbosity = _verbosity;}
+
 
   // Why the last operation failed, and forgetting it before the next one
   bool GetLastError(Par2Error *error) const {return errorlog.First(error);}
@@ -143,6 +146,9 @@ protected:
   // Close all files.
   bool CloseFiles(void);
 
+  // Tell the observer of each recovery file, now that it is written in full
+  void ReportWritten(void);
+
   // Delete every recovery file created so far, so that a create which stops
   // part way leaves nothing of the set behind.
   void DeleteIncompleteRecoveryFiles(void);
@@ -150,9 +156,6 @@ protected:
   u32                                 GetFileThreads(void) const {return filethreads;}
 
 protected:
-  std::ostream &sout; // stream for output (for commandline, this is cout)
-  std::ostream &serr; // stream for errors (for commandline, this is cerr)
-
   // What Process was given, kept for the phases to read
   std::string parfilename;                // The name of the set being created
   std::string basepath;                   // What the source file names are relative to
@@ -161,10 +164,10 @@ protected:
 
   ErrorLog errorlog;           // Why the last operation failed
 
-  const NoiseLevel noiselevel; // How noisy we should be
   const Backends backends;     // The implementations the application supplied
 
   Par2Observer *observer;      // Notified of progress, or 0
+  Verbosity verbosity;         // How much detail it is given
 
   std::atomic<bool> cancelled; // Set by Cancel from any thread
 
@@ -222,8 +225,7 @@ protected:
 };
 
 // Determine how many recovery files to create.
-bool ComputeRecoveryFileCount(std::ostream &sout,
-			      std::ostream &serr,
+bool ComputeRecoveryFileCount(std::string *error,
 			      u32 *recoveryfilecount,
 			      Scheme recoveryfilescheme,
 			      u32 recoveryblockcount,
@@ -232,7 +234,7 @@ bool ComputeRecoveryFileCount(std::ostream &sout,
 
 // Work out the block size which divides files of these sizes into blockcount
 // blocks, or as near to that as a multiple of 4 allows.
-bool ComputeBlockSizeFromCount(std::ostream &serr,
+bool ComputeBlockSizeFromCount(std::string *error,
 			       u64 *blocksize,
 			       u32 blockcount,
 			       const std::vector<u64> &filesizes);

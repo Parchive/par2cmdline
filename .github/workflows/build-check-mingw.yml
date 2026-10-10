@@ -11,15 +11,19 @@ jobs:
     steps:
     - uses: actions/checkout@v7
 
-    - name: Install MinGW
-      run: sudo apt-get update && sudo apt-get install -y mingw-w64 autoconf automake libtool
+    - name: Install MinGW and Wine
+      run: sudo apt-get update && sudo apt-get install -y mingw-w64 wine
 
-    - name: Build and test
+    - name: Build
       run: |
-        export CC=x86_64-w64-mingw32-gcc
-        export CXX=x86_64-w64-mingw32-g++
-        export AR=x86_64-w64-mingw32-ar
-        export RANLIB=x86_64-w64-mingw32-ranlib
-        ./automake.sh
-        ./configure --host=x86_64-w64-mingw32
-        make -j"$(nproc)"
+        cmake -B build-cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DPAR2_KEEP_ASSERTS=ON \
+          -DCMAKE_TOOLCHAIN_FILE=cmake/toolchains/x86_64-w64-mingw32.cmake
+        cmake --build build-cmake
+
+    - name: Run Tests
+      env:
+        WINEDEBUG: -all
+        WINEDLLOVERRIDES: mscoree,mshtml=
+      run: |
+        wineboot --init
+        ctest --test-dir build-cmake --output-on-failure

@@ -6,15 +6,35 @@ on:
 
 jobs:
   build-check-linux:
-    runs-on: ubuntu-latest
+    name: build-check-linux (${{ matrix.arch }})
+
+    strategy:
+      matrix:
+        include:
+        - arch: amd64
+          runner: ubuntu-latest
+        - arch: arm64
+          runner: ubuntu-24.04-arm
+
+    runs-on: ${{ matrix.runner }}
 
     steps:
     - uses: actions/checkout@v7
 
+    - name: Install Ninja
+      if: runner.arch == 'ARM64'
+      run: sudo apt-get update && sudo apt-get install -y ninja-build
+
     - name: Build and test
       run: |
-        ./automake.sh
-        ./configure
-        make -j"$(nproc)"
-        make check VERBOSE=yes
-        make distcheck VERBOSE=yes
+        cmake -B build-cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DPAR2_KEEP_ASSERTS=ON
+        cmake --build build-cmake
+        ctest --test-dir build-cmake --output-on-failure
+
+    - name: Build and test from the source archive
+      run: |
+        version=$(sed -n 's/^  VERSION \([0-9.]*\)$/\1/p' CMakeLists.txt)
+        git archive --prefix="par2cmdline-$version/" HEAD | tar -x -C "$RUNNER_TEMP"
+        cmake -S "$RUNNER_TEMP/par2cmdline-$version" -B "$RUNNER_TEMP/dist" -G Ninja -DCMAKE_BUILD_TYPE=Release -DPAR2_KEEP_ASSERTS=ON
+        cmake --build "$RUNNER_TEMP/dist"
+        ctest --test-dir "$RUNNER_TEMP/dist" --output-on-failure

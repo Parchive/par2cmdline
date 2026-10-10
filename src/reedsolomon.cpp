@@ -55,7 +55,7 @@ u32 gcd(u32 a, u32 b)
   }
 }
 
-template <> bool ReedSolomon<Galois8>::SetInput(const std::vector<bool> &present, std::ostream &sout, std::ostream &serr)
+template <> bool ReedSolomon<Galois8>::SetInput(const std::vector<bool> &present)
 {
   inputcount = (u32)present.size();
 
@@ -84,7 +84,7 @@ template <> bool ReedSolomon<Galois8>::SetInput(const std::vector<bool> &present
   return true;
 }
 
-template <> bool ReedSolomon<Galois8>::SetInput(u32 count, std::ostream &sout, std::ostream &serr)
+template <> bool ReedSolomon<Galois8>::SetInput(u32 count)
 {
   inputcount = count;
 
@@ -186,7 +186,7 @@ template <> bool ReedSolomon<Galois8>::InternalProcess(const Galois8 &factor, si
 
 // Set which of the source files are present and which are missing
 // and compute the base values to use for the vandermonde matrix.
-template <> bool ReedSolomon<Galois16>::SetInput(const std::vector<bool> &present, std::ostream &sout, std::ostream &serr)
+template <> bool ReedSolomon<Galois16>::SetInput(const std::vector<bool> &present)
 {
   inputcount = (u32)present.size();
 
@@ -217,7 +217,6 @@ template <> bool ReedSolomon<Galois16>::SetInput(const std::vector<bool> &presen
     }
     if (logbase >= G::Limit)
     {
-      serr << "Too many input blocks for Reed Solomon matrix." << std::endl;
       return false;
     }
     G::ValueType base = G(logbase++).ALog();
@@ -230,7 +229,7 @@ template <> bool ReedSolomon<Galois16>::SetInput(const std::vector<bool> &presen
 
 // Record that the specified number of source files are all present
 // and compute the base values to use for the vandermonde matrix.
-template <> bool ReedSolomon<Galois16>::SetInput(u32 count, std::ostream &sout, std::ostream &serr)
+template <> bool ReedSolomon<Galois16>::SetInput(u32 count)
 {
   inputcount = count;
 
@@ -253,7 +252,6 @@ template <> bool ReedSolomon<Galois16>::SetInput(u32 count, std::ostream &sout, 
     }
     if (logbase >= G::Limit)
     {
-      serr << "Too many input blocks for Reed Solomon matrix." << std::endl;
       return false;
     }
     G::ValueType base = G(logbase++).ALog();

@@ -38,6 +38,13 @@ echo $dashes
 echo $banner
 echo $dashes
 
+if [ "$PARBINARY" = "wine $execdir/par2.exe" ]; then
+    echo "Skipping: Wine sees a symbolic link as the file it points to."
+    cd "$TESTROOT"
+    rm -rf "run$testname"
+    exit 77
+fi
+
 # generate test data and links
 echo -n '01234567890abcdef' > test_file
 ln -s test_file test_link

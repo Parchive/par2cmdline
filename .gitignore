@@ -20,30 +20,19 @@ tests/runtest*
 tests/*_test
 tests/.dirstamp
 
-# autotools output
-aclocal.m4
-autom4te.cache/
-compile
-test-driver
-Makefile.in
-Makefile
-config.h
-config.status
-configure
-stamp-h
-stamp-h1
-src/.dirstamp
-install-sh
-missing
-ar-lib
+# cmake output
+/build-cmake/
+CMakeUserPresets.json
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+CTestTestfile.cmake
+Testing/
 
 # windows
-Release/
-Debug/
 *.old
-*.vcxproj.user
-*.suo
 .vs/
+out/
 
 test.*
 # Linux perf record output

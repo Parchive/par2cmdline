@@ -32,12 +32,10 @@ static char THIS_FILE[]=__FILE__;
 #endif
 
 
-Par2SetCreator::Par2SetCreator(std::ostream &sout, std::ostream &serr, const NoiseLevel noiselevel, Backends backends)
-: sout(sout)
-, serr(serr)
-, noiselevel(noiselevel)
-, backends(std::move(backends))
+Par2SetCreator::Par2SetCreator(Backends backends)
+: backends(std::move(backends))
 , observer(0)
+, verbosity(vbNone)
 , cancelled(false)
 , totalthreads(default_threads())
 , filethreads(_FILE_THREADS)
@@ -150,8 +148,8 @@ Result Par2SetCreator::Process(
     return eFileIOError;
   }
 
-  if (noiselevel > nlSilent)
-    sout << "Done" << std::endl;
+  ReportWritten();
+
 
   return eSuccess;
 }
@@ -213,20 +211,19 @@ Result Par2SetCreator::PrepareCreation(void)
   // The exponent of the last recovery block has to fit in 16 bits
   if ((u64)firstrecoveryblock + recoveryblockcount >= 65536)
   {
-    serr << "First recovery block number is too high." << std::endl;
     errorlog.Record(ecInvalidSetting, "The recovery blocks would need exponents above 65535");
     return eInvalidCommandLineArguments;
   }
 
   // Determine how many recovery files to create.
-  if (!ComputeRecoveryFileCount(sout,
-				serr,
+  std::string error;
+  if (!ComputeRecoveryFileCount(&error,
 				&recoveryfilecount,
 				recoveryfilescheme,
 				recoveryblockcount,
 				largestfilesize,
 				blocksize)) {
-    errorlog.RecordIfNone(ecInvalidSetting, "The recovery file scheme cannot be used");
+    errorlog.RecordIfNone(ecInvalidSetting, error);
     return eInvalidCommandLineArguments;
   }
 
@@ -237,19 +234,9 @@ Result Par2SetCreator::PrepareCreation(void)
     return eLogicError;
   }
 
-  if (recoveryblockcount > 0 && noiselevel >= nlDebug)
-    sout << "[DEBUG] Process chunk size: " << chunksize << std::endl;
+  if (recoveryblockcount > 0 && observer && verbosity >= vbDebug)
+    observer->OnDetail(vbDebug, "[DEBUG] Process chunk size: " + std::to_string(chunksize));
 
-  if (noiselevel > nlQuiet)
-  {
-    // Display information.
-    sout << "Block size: " << blocksize << "\n"
-      "Source file count: " << sourcefilecount << "\n"
-      "Source block count: " << sourceblockcount << "\n"
-      "Recovery block count: " << recoveryblockcount << "\n"
-      "Recovery file count: " << recoveryfilecount << "\n"
-      << std::endl;
-  }
 
   return eSuccess;
 }
@@ -342,7 +329,7 @@ Result Par2SetCreator::ComputeRecoveryData(void)
   }
 
   // Set the total amount of data to be processed.
-  ProgressMeter<u64> progress(sout, "Processing: ", blocksize * sourceblockcount, noiselevel, phProcessing, observer);
+  ProgressMeter<u64> progress(blocksize * sourceblockcount, phProcessing, observer);
 
   // Start at an offset of 0 within a block.
   u64 blockoffset = 0;
@@ -363,9 +350,6 @@ Result Par2SetCreator::ComputeRecoveryData(void)
 
     blockoffset += blocklength;
   }
-
-  if (noiselevel > nlQuiet)
-    sout << "Writing recovery packets" << std::endl;
 
   // Finish computation of the recovery packets and write the headers to disk.
   if (!WriteRecoveryPacketHeaders())
@@ -394,9 +378,6 @@ Result Par2SetCreator::WriteCriticalData(void)
     return eLogicError;
   }
 
-  if (noiselevel > nlQuiet)
-    sout << "Writing verification packets" << std::endl;
-
   // Write all other critical packets to disk.
   if (!WriteCriticalPackets())
   {
@@ -414,7 +395,7 @@ Result Par2SetCreator::WriteCriticalData(void)
 bool Par2SetCreator::CheckBasepath(void)
 {
   std::string checkfilename = parfilename + ".check.par2";
-  std::unique_ptr<DiskFile> diskfile = std::make_unique<DiskFile>(sout, serr, &errorlog);
+  std::unique_ptr<DiskFile> diskfile = std::make_unique<DiskFile>(&errorlog);
   size_t dummysize = 4096;
 
   if (!diskfile->Create(checkfilename, dummysize))
@@ -452,14 +433,12 @@ bool Par2SetCreator::ComputeBlockCount(void)
 
   if (blocksize == 0)
   {
-    serr << "ERROR: Block size was zero!" << std::endl;
     errorlog.Record(ecInvalidSetting, "The block size was zero");
     return false;
   }
 
   if (blocksize % 4 != 0)
   {
-    serr << "ERROR: Block size was not a multiple of 4 bytes!" << std::endl;
     errorlog.Record(ecInvalidSetting, "The block size was not a multiple of 4 bytes");
     return false;
   }
@@ -474,7 +453,6 @@ bool Par2SetCreator::ComputeBlockCount(void)
 
   if (count > 32768)
   {
-    serr << "Block size is too small. It would require " << count << "blocks." << std::endl;
     errorlog.Record(ecTooManySourceBlocks, "The block size would need more blocks than can be held");
     return false;
   }
@@ -535,7 +513,7 @@ bool Par2SetCreator::OpenSourceFiles(void)
   for (size_t i=0; i<extrafiles.size(); ++i)
     mttotalsize += DiskFile::GetFileSize(extrafiles[i]);
 
-  ProgressMeter<u64> progress(sout, "", mttotalsize, noiselevel, phHashing, observer);
+  ProgressMeter<u64> progress(mttotalsize, phHashing, observer);
 
   foreach_parallel(extrafiles, GetFileThreads(), [&](const std::string &extrafile)
   {
@@ -547,11 +525,6 @@ bool Par2SetCreator::OpenSourceFiles(void)
     std::string name;
     DiskFile::SplitRelativeFilename(extrafile, basepath, name);
 
-    if (noiselevel > nlSilent)
-    {
-      LockedStream(sout) << "Opening: " << name << std::endl;
-    }
-
     // The name the set records, which has '/' between directories everywhere
     std::string reported = name;
 #ifdef _WIN32
@@ -562,9 +535,16 @@ bool Par2SetCreator::OpenSourceFiles(void)
       observer->OnFile(progress.GetPhase(), reported);
 
     // Open the source file and compute its Hashes and CRCs.
-    if (!sourcefile->Open(noiselevel, sout, serr, extrafile, blocksize, deferhashcomputation, basepath, progress, backends, &cancelled, &errorlog))
+    if (!sourcefile->Open(extrafile, blocksize, deferhashcomputation, basepath, progress, backends, &cancelled, &errorlog))
     {
-      const u32 needed = sourcefile->BlockCount();
+      Par2FileResult result;
+      result.filename = reported;
+      result.localfilename = extrafile;
+      result.exists = sourcefile->Opened();
+      if (result.exists)
+        result.filesize = sourcefile->FileSize();
+      result.blocksneeded = sourcefile->BlockCount();
+
       delete sourcefile;
       openfailed = true;
 
@@ -572,14 +552,26 @@ bool Par2SetCreator::OpenSourceFiles(void)
         errorlog.RecordIfNone(ecFileReadFailed, "Could not read the source file", extrafile);
 
       if (observer)
-        observer->OnFileDone(progress.GetPhase(), reported, 0, needed);
+        observer->OnFileDone(progress.GetPhase(), result);
 
       return;
     }
 
     // Every block of a file just read is there by definition
     if (observer)
-      observer->OnFileDone(progress.GetPhase(), reported, sourcefile->BlockCount(), sourcefile->BlockCount());
+    {
+      Par2FileResult result;
+      result.filename = reported;
+      result.localfilename = extrafile;
+      result.exists = true;
+      result.filesize = sourcefile->FileSize();
+      result.scanned = true;
+      result.blocksfound = sourcefile->BlockCount();
+      result.blocksneeded = sourcefile->BlockCount();
+      result.complete = true;
+
+      observer->OnFileDone(progress.GetPhase(), result);
+    }
 
     // Record the file verification and file description packets
     // in the critical packet list.
@@ -811,7 +803,7 @@ bool Par2SetCreator::InitialiseOutputFiles(void)
 
       if (filename.str().length() > _MAX_PATH)
       {
-        serr << filename.str() << " pathlength is more than " << _MAX_PATH << "." << std::endl;
+        errorlog.Record(ecFileCreateFailed, "The name is longer than this system allows", filename.str());
         return false;
       }
       fileallocations[filenumber].filename = filename.str();
@@ -820,7 +812,7 @@ bool Par2SetCreator::InitialiseOutputFiles(void)
     std::string mainpar = parfilename + ".par2";
     if (mainpar.length() > _MAX_PATH)
     {
-      serr << mainpar << " pathlength is more than " << _MAX_PATH << "." << std::endl;
+      errorlog.Record(ecFileCreateFailed, "The name is longer than this system allows", mainpar);
       return false;
     }
     fileallocations[recoveryfilecount].filename = mainpar;
@@ -828,7 +820,7 @@ bool Par2SetCreator::InitialiseOutputFiles(void)
 
   // Allocate the recovery files
   {
-    recoveryfiles.resize(recoveryfilecount+1, DiskFile(sout, serr, &errorlog)); // pass default constructor.
+    recoveryfiles.resize(recoveryfilecount+1, DiskFile(&errorlog)); // pass default constructor.
 
     // Sort critical packets, so we get consistency.
     criticalpackets.sort(CriticalPacket::CompareLess);
@@ -955,7 +947,6 @@ bool Par2SetCreator::AllocateBuffers(void)
 
   if (transferbuffer == NULL || outputbuffer == NULL)
   {
-    serr << "Could not allocate buffer memory." << std::endl;
     errorlog.Record(ecOutOfMemory, "Could not allocate the transfer buffers");
     return false;
   }
@@ -970,14 +961,12 @@ bool Par2SetCreator::AllocateBuffers(void)
 
   if (!processor)
   {
-    serr << "Could not allocate buffer memory." << std::endl;
     errorlog.Record(ecProcessorFailed, "The processor the application supplied built nothing");
     return false;
   }
 
   if (!processor->Init(chunksize, recoveryblockcount))
   {
-    serr << "Could not allocate buffer memory." << std::endl;
     errorlog.Record(ecOutOfMemory, "The processor could not allocate its buffers");
     return false;
   }
@@ -989,7 +978,7 @@ bool Par2SetCreator::AllocateBuffers(void)
 bool Par2SetCreator::ComputeRSMatrix(void)
 {
   // Set the number of input blocks
-  if (!rs.SetInput(sourceblockcount, sout, serr))
+  if (!rs.SetInput(sourceblockcount))
     return false;
 
   // Set the number of output blocks to be created
@@ -999,7 +988,7 @@ bool Par2SetCreator::ComputeRSMatrix(void)
     return false;
 
   // Compute the RS matrix
-  if (!rs.Compute(noiselevel, sout, serr, observer))
+  if (!rs.Compute(observer, verbosity))
     return false;
 
   return true;
@@ -1126,9 +1115,6 @@ bool Par2SetCreator::ProcessData(u64 blockoffset, size_t blocklength, ProgressMe
   if (failed || IsCancelled())
     return false;
 
-  if (noiselevel > nlQuiet)
-    sout << "Writing recovery packets\r";
-
   // For each output block
   for (u32 outputblock=0; outputblock<recoveryblockcount;outputblock++)
   {
@@ -1141,7 +1127,7 @@ bool Par2SetCreator::ProcessData(u64 blockoffset, size_t blocklength, ProgressMe
     {
       if (!processor->GetOutput(outputblock, outputbuffer))
       {
-        serr << "Could not read the recovery data back from the processor." << std::endl;
+        errorlog.Record(ecProcessorFailed, "The processor could not return the recovery data");
         return false;
       }
       outbuf = outputbuffer;
@@ -1151,9 +1137,6 @@ bool Par2SetCreator::ProcessData(u64 blockoffset, size_t blocklength, ProgressMe
     if (!recoverypackets[outputblock].WriteData(blockoffset, blocklength, outbuf))
       return false;
   }
-
-  if (noiselevel > nlQuiet)
-    sout << "Wrote " << recoveryblockcount * blocklength << " bytes to disk" << std::endl;
 
   return true;
 }
@@ -1252,6 +1235,31 @@ bool Par2SetCreator::CloseFiles(void)
   }
 
   return closed;
+}
+
+// Tell the observer of each recovery file, now that it is written in full
+void Par2SetCreator::ReportWritten(void)
+{
+  if (0 == observer)
+    return;
+
+  for (auto &recoveryfile : recoveryfiles)
+  {
+    Par2FileResult result;
+    result.filename = recoveryfile.FileName();
+    result.localfilename = recoveryfile.FileName();
+    result.exists = true;
+    result.filesize = recoveryfile.FileSize();
+
+    for (auto &packet : recoverypackets)
+    {
+      if (packet.GetDataBlock()->GetDiskFile() == &recoveryfile)
+        ++result.blocksfound;
+    }
+
+    observer->OnFile(phWriting, result.filename);
+    observer->OnFileDone(phWriting, result);
+  }
 }
 
 } // namespace par2

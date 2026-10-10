@@ -83,7 +83,9 @@ int test1() {
   }
   files = DiskFile::FindFiles(".", "input1?.txt", false);
 #ifdef _WIN32
-  if (files->size() != 1 || *(files->begin()) != "." + fs + "input1.txt") {
+  // Under Wine ? matches exactly one character
+  if (GetProcAddress(GetModuleHandleA("ntdll.dll"), "wine_get_version") == nullptr
+      && (files->size() != 1 || *(files->begin()) != "." + fs + "input1.txt")) {
     std::cout << "FindFiles failed on empty ?" << std::endl;
     return 1;
   }
@@ -224,7 +226,7 @@ int test2() {
 
   // read input1.txt
   {
-    DiskFile diskfile(std::cout, std::cerr);
+    DiskFile diskfile(0);
     if (diskfile.IsOpen()) {
       std::cout << "IsOpen failed 1" << std::endl;
       return 1;
@@ -324,7 +326,7 @@ int test2() {
 
     const char *input2_contents = "diskfile_test test3 input2.txt is longer";
 
-    DiskFile diskfile(std::cout, std::cerr);
+    DiskFile diskfile(0);
     if (diskfile.IsOpen()) {
       std::cout << "IsOpen failed 1" << std::endl;
       return 1;
@@ -442,7 +444,7 @@ int test2() {
     srand(23461119);
     for (size_t blocksize = 1; blocksize < buffer_len; blocksize *=2) {
       { // scope for variables used in writing
-	DiskFile diskfile(std::cout, std::cerr);
+	DiskFile diskfile(0);
 
 	if (!diskfile.Create("input2.txt", strlen(input2_contents))) {
 	  std::cout << "Create failed" << std::endl;
@@ -477,7 +479,7 @@ int test2() {
       }
 
       { // scope for variables used in reading.
-	DiskFile diskfile(std::cout, std::cerr);
+	DiskFile diskfile(0);
 
 	if (!diskfile.Open("input2.txt", strlen(input2_contents))) {
 	  std::cout << "Open failed 1" << std::endl;
@@ -531,7 +533,7 @@ int test3() {
     return 1;
   }
 
-  DiskFile df1(std::cout, std::cerr);
+  DiskFile df1(0);
   df1.Open("input1.txt");
   if (!dfm.Insert(&df1)) {
     std::cout << "Insert failed" << std::endl;
@@ -542,7 +544,7 @@ int test3() {
     return 1;
   }
 
-  DiskFile df2(std::cout, std::cerr);
+  DiskFile df2(0);
   df2.Open("input1.txt");
   if (dfm.Insert(&df2)) {
     std::cout << "Insert succeeded when it shouldn't have" << std::endl;
@@ -611,7 +613,7 @@ int test5() {
   input1 << input1_contents;
   input1.close();
 
-  DiskFile diskfile(std::cout, std::cerr);
+  DiskFile diskfile(0);
   if (diskfile.Create("input1.txt", strlen(input1_contents))) {
     std::cout << "Create succeeded when file already existed!" << std::endl;
     return 1;
@@ -632,7 +634,7 @@ int test6() {
   const char *input1_contents = "diskfile_test test6 input1.txt";
 
   {
-    DiskFile diskfile(std::cout, std::cerr);
+    DiskFile diskfile(0);
     if (!diskfile.Create("input1.txt", strlen(input1_contents))) {
       std::cout << "Create failed!" << std::endl;
       return 1;
@@ -647,7 +649,7 @@ int test6() {
   }
 
   {
-    DiskFile diskfile(std::cout, std::cerr);
+    DiskFile diskfile(0);
 
     if (!diskfile.Open("input1.txt")) {
       std::cout << "Open failed" << std::endl;
@@ -681,7 +683,7 @@ int test6() {
 
   // try again, writing mid-file with different maxlength.
   {
-    DiskFile diskfile(std::cout, std::cerr);
+    DiskFile diskfile(0);
     if (!diskfile.Create("input2.txt", strlen(input2_contents))) {
       std::cout << "Create 2 failed." << std::endl;
       return 1;
@@ -702,7 +704,7 @@ int test6() {
 
 
   {
-    DiskFile diskfile(std::cout, std::cerr);
+    DiskFile diskfile(0);
 
     if (!diskfile.Open("input2.txt")) {
       std::cout << "Open failed" << std::endl;

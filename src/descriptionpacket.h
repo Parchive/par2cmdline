@@ -68,8 +68,8 @@ public:
 
   // Converts filename from local disk to how it will be encoded
   // in the Par2 file, and back again.
-  static std::string TranslateFilenameFromLocalToPar2(std::ostream &sout, std::ostream &serr, const NoiseLevel noiselevel, std::string local_filename, const ErrorLog *errorlog = 0);
-  static std::string TranslateFilenameFromPar2ToLocal(std::ostream &sout, std::ostream &serr, const NoiseLevel noiselevel, std::string par2_encoded_filename, const ErrorLog *errorlog = 0);
+  static std::string TranslateFilenameFromLocalToPar2(std::string local_filename, const ErrorLog *errorlog = 0);
+  static std::string TranslateFilenameFromPar2ToLocal(std::string par2_encoded_filename, const ErrorLog *errorlog = 0);
 
 };
 

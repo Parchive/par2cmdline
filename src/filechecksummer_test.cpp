@@ -153,7 +153,7 @@ static bool WriteTestFile(std::vector<char> &data, u64 filesize)
   for (u64 i = 0; i < filesize; i++)
     data[(size_t)i] = (char)(1 + (i * 37 + (i >> 3)) % 255);
 
-  DiskFile diskfile(std::cout, std::cerr);
+  DiskFile diskfile(0);
   const bool ok = diskfile.Create(testfile, filesize)
                   && (filesize == 0 || diskfile.Write(0, &data[0], (size_t)filesize));
   diskfile.Close();
@@ -173,7 +173,7 @@ static bool TestFileSize(u64 blocksize, u64 filesize)
   u32 windowtable[256];
   GenerateWindowTable(blocksize, windowtable);
 
-  DiskFile diskfile(std::cout, std::cerr);
+  DiskFile diskfile(0);
   if (!diskfile.Open(testfile, filesize))
   {
     std::cerr << "could not open " << testfile << std::endl;

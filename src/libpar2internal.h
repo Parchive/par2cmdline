@@ -24,7 +24,9 @@
 #ifdef _WIN32
 // Windows includes
 #define WIN32_LEAN_AND_MEAN
+#ifndef NOMINMAX
 #define NOMINMAX
+#endif
 #include <windows.h>
 
 // System includes
@@ -210,41 +212,6 @@ typedef unsigned int     size_t;
 
 #include <cassert>
 
-// Holds a lock for the duration of one output statement, so that lines written
-// from several threads do not interleave.
-class LockedStream
-{
-public:
-  explicit LockedStream(std::ostream &stream)
-    : stream(stream)
-    , lock(Mutex())
-  {
-  }
-
-  template<typename T>
-  LockedStream& operator<<(const T &value)
-  {
-    stream << value;
-    return *this;
-  }
-
-  LockedStream& operator<<(std::ostream& (*manipulator)(std::ostream&))
-  {
-    stream << manipulator;
-    return *this;
-  }
-
-private:
-  static std::mutex& Mutex(void)
-  {
-    static std::mutex mutex;
-    return mutex;
-  }
-
-  std::ostream &stream;
-  std::lock_guard<std::mutex> lock;
-};
-
 #ifdef offsetof
 #undef offsetof
 #endif
@@ -284,6 +251,10 @@ u64 GetTotalPhysicalMemory(void);
 // when the memory cannot be found
 size_t DefaultMemoryLimit(void);
 
+// What the work may use: the caller's limit, or the default when it set none,
+// and never less than the 1MB the command line allows
+size_t MemoryLimit(const size_t requested);
+
 // The directory a PAR2 file is in, which is where the tool looks with no -B
 std::string BasePathFor(const std::string &parfilename);
 
@@ -293,6 +264,22 @@ std::string WithSeparator(const std::string &path);
 
 // The name of a set, without the ".par2" its index file ends in
 std::string SetNameFor(const std::string &parfilename);
+
+// A basepath absolute and ending in a separator, which is the form every path
+// the API reports. Empty is left alone.
+std::string NormaliseBasePath(const std::string &path);
+
+// How much logging/status information to write
+// to output or error stream
+typedef enum
+{
+  nlUnknown = 0,
+  nlSilent,       // Absolutely no output (other than errors)
+  nlQuiet,        // Bare minimum of output
+  nlNormal,       // Normal level of output
+  nlNoisy,        // Lots of output
+  nlDebug         // Extra debugging information
+} NoiseLevel;
 
 } // namespace par2
 

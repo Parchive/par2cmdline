@@ -27,7 +27,7 @@ namespace par2
 class Par1Repairer
 {
 public:
-  Par1Repairer(std::ostream &sout, std::ostream &serr, const NoiseLevel noiselevel);
+  Par1Repairer(std::ostream &sout, std::ostream &serr, const NoiseLevel noiselevel, Par2Observer *observer);
   ~Par1Repairer(void);
 
   Result Process(const size_t memorylimit,
@@ -102,6 +102,8 @@ protected:
   std::ostream &sout; // stream for output (for commandline, this is cout)
   std::ostream &serr; // stream for errors (for commandline, this is cerr)
   const NoiseLevel   noiselevel;              // How noisy we should be
+  Par2Observer      *observer;                // Told of progress and of what goes wrong
+  ErrorLog           errorlog;                // Offers what goes wrong to the observer
 
   std::string               searchpath;              // Where to find files on disk
   DiskFileMap               diskfilemap;             // Map from filename to DiskFile
@@ -138,6 +140,18 @@ protected:
   u8                       *outputbuffer;            // Buffer for writing DataBlocks (chunksize * missingblockcount)
   bool                      ignore16kfilehash;       // The 16k file hash values may be invalid
 };
+
+// The tool's verify and repair of a PAR1 set, in one call
+Result par1repair(std::ostream &sout,
+                  std::ostream &serr,
+                  const NoiseLevel noiselevel,
+                  const size_t memorylimit,
+                  const u32 nthreads,
+                  const std::string &parfilename,
+                  const std::vector<std::string> &extrafiles,
+                  const bool dorepair,
+                  const bool purgefiles,
+                  Par2Observer *observer);
 
 } // namespace par2
 

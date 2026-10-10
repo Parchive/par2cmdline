@@ -41,8 +41,7 @@
 
 #endif
 
-#include <par2/libpar2.h>
-#include "diskfile.h"
+#include "libpar2internal.h"
 
 namespace par2
 {
@@ -54,16 +53,18 @@ namespace par2
 class CommandLine
 {
 public:
+  // What is parsed is reported to sout and serr, or to std::cout and std::cerr
   CommandLine(void);
+  CommandLine(std::ostream &sout, std::ostream &serr);
 
   // Parse the supplied command line arguments.
   bool Parse(int argc, const char * const *argv);
 
 
-  static void showversion(void);
-  static void banner(void);
+  void showversion(void);
+  void banner(void);
   // Display details of the correct format for command line parameters.
-  static void usage(void);
+  void usage(void);
 
   // What operation will we be carrying out
   typedef enum
@@ -89,6 +90,8 @@ public:
   u32                    GetFirstRecoveryBlock(void) const {return firstblock;}
   u32                    GetRecoveryFileCount(void) const  {return recoveryfilecount;}
   u32                    GetRecoveryBlockCount(void) const {return recoveryblockcount;}
+  u32                    GetSourceBlockCount(void) const   {return sourceblockcount;}
+  u64                    GetLargestFileSize(void) const    {return largestfilesize;}
   Scheme                 GetRecoveryFileScheme(void) const {return recoveryfilescheme;}
   size_t                 GetMemoryLimit(void) const        {return memorylimit;}
   NoiseLevel             GetNoiseLevel(void) const        {return noiselevel;}
@@ -107,7 +110,8 @@ public:
   u32                                 GetFileThreads(void) {return filethreads;}
 
 
-  static bool ComputeRecoveryBlockCount(u32 *recoveryblockcount,
+  static bool ComputeRecoveryBlockCount(std::ostream &serr,
+					u32 *recoveryblockcount,
 					u32 sourceblockcount,
 					u64 blocksize,
 					u32 firstblock,
@@ -133,6 +137,9 @@ protected:
   bool ComputeRecoveryBlockCount();
 
   bool                         SetParFilename(std::string filename);
+
+  std::ostream &sout;          // Where the output is written
+  std::ostream &serr;          // and where the errors are
 
   FileSizeCache filesize_cache;// Caches the size of each file,
                                // to prevent multiple calls to OS.
@@ -194,6 +201,8 @@ protected:
   u32 recoveryfilecount;       // How many recovery files should be created.
 
   u32 recoveryblockcount;      // How many recovery blocks should be created.
+  u32 sourceblockcount;        // How many blocks the source files come to
+  u64 largestfilesize;         // The size of the largest source file
   bool recoveryblockcountset;  // Set if the recoveryblockcount as been specified
 
   u32 redundancy;              // What percentage of recovery data should

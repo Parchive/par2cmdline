@@ -23,7 +23,9 @@
 
 #ifdef _WIN32
 
+#include <sstream>
 #include <string>
+#include <vector>
 #include "utf8.h"
 #include "wargs.h"
 
@@ -130,7 +132,7 @@ int test5()
 int test6()
 {
   wchar_t* wargv[1] = { nullptr };
-  WideToUtf8ArgsAdapter adapter(0, wargv);
+  WideToUtf8ArgsAdapter adapter(0, wargv, std::cerr);
   const char* const* utf8Args = adapter.GetUtf8Args();
 
   return nullptr == utf8Args;
@@ -140,7 +142,7 @@ int test7()
 {
   // L"Привет", L"мир", L"!"
   wchar_t* wargv[3] = { const_cast<wchar_t*>(L"\x041F\x0440\x0438\x0432\x0435\x0442"), const_cast<wchar_t*>(L"\x043C\x0438\x0440"), const_cast<wchar_t*>(L"!") };
-  WideToUtf8ArgsAdapter adapter(3, wargv);
+  WideToUtf8ArgsAdapter adapter(3, wargv, std::cerr);
   const char* const* utf8Args = adapter.GetUtf8Args();
 
   for (int i = 0; i < 3; ++i) {
@@ -161,7 +163,8 @@ int test7()
 int test8()
 {
   wchar_t* wargv[3] = { const_cast<wchar_t*>(L"arg1"), nullptr, const_cast<wchar_t*>(L"arg3") };
-  WideToUtf8ArgsAdapter adapter(3, wargv);
+  std::ostringstream told;
+  WideToUtf8ArgsAdapter adapter(3, wargv, told);
   const char* const* utf8Args = adapter.GetUtf8Args();
 
   if (std::string(utf8Args[0]) != "arg1")
@@ -174,6 +177,10 @@ int test8()
     return 1;
 
   if (adapter.GetArgc() != 2)
+    return 1;
+
+  // The skipped argument is reported to the stream the adapter was given
+  if (told.str().find("Skipping argument 1.") == std::string::npos)
     return 1;
 
   return 0;
@@ -244,6 +251,32 @@ int test11()
   return converted != wide;
 }
 
+// Every argument is converted, however many there are
+int test12()
+{
+  std::vector<std::wstring> args;
+  for (int i = 0; i < 200; ++i)
+    args.push_back(L"arg" + std::to_wstring(i));
+
+  std::vector<wchar_t*> wargv;
+  for (std::wstring &arg : args)
+    wargv.push_back(&arg[0]);
+
+  WideToUtf8ArgsAdapter adapter((int)wargv.size(), wargv.data(), std::cerr);
+  const char* const* utf8Args = adapter.GetUtf8Args();
+
+  if (adapter.GetArgc() != 200)
+    return 1;
+
+  for (int i = 0; i < 200; ++i)
+  {
+    if (std::string(utf8Args[i]) != "arg" + std::to_string(i))
+      return 1;
+  }
+
+  return utf8Args[200] != nullptr;
+}
+
 int main()
 {
   if (test1())
@@ -309,6 +342,12 @@ int main()
   if (test11())
   {
     std::cerr << "FAILED: test11" << std::endl;
+    return 1;
+  }
+
+  if (test12())
+  {
+    std::cerr << "FAILED: test12" << std::endl;
     return 1;
   }
 

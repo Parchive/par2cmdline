@@ -30,26 +30,14 @@ namespace par2
 class Par2Repairer
 {
 public:
-  Par2Repairer(std::ostream &sout, std::ostream &serr, const NoiseLevel noiselevel,
-               const Backends &backends = Backends());
+  explicit Par2Repairer(const Backends &backends = Backends());
   ~Par2Repairer(void);
 
-  Result Process(const size_t memorylimit,
-		 const std::string &basepath,
-		 const u32 nthreads,
-		 const u32 filethreads,
-		 std::string parfilename,
-		 const std::vector<std::string> &extrafiles,
-		 const bool dorepair,   // derived from operation
-		 const bool purgefiles,
-		 const bool renameonly,
-		 const bool skipdata,
-		 const u64 skipleaway,
-		 const bool fullhash
-		 );
+  // Test whether a filename has a .par2 / .PAR2 / .Par2 extension
+  static bool IsPar2Filename(const std::string &filename);
 
   // Ask the operation in progress to stop as soon as it can, from any thread.
-  // Process then returns eCancelled, having removed any partly written files.
+  // The work then returns eCancelled, having removed any partly written files.
   // The flag stays set, so it must be cleared before reusing this object.
   void Cancel(void) {cancelled.store(true, std::memory_order_relaxed);}
   void ClearCancel(void) {cancelled.store(false, std::memory_order_relaxed);}
@@ -62,6 +50,10 @@ public:
     observer = _observer;
     errorlog.SetObserver(_observer);
   }
+
+  // How much detail of the work the observer is given
+  void SetVerbosity(const Verbosity _verbosity) {verbosity = _verbosity;}
+
 
   // Why the last operation failed, and forgetting it before the next one
   bool GetLastError(Par2Error *error) const {return errorlog.First(error);}
@@ -167,9 +159,6 @@ protected:
   // Load packets from other PAR2 files with names based on the original PAR2 file
   bool LoadPacketsFromOtherFiles(std::string filename);
 
-  // Test whether a filename has a .par2 / .PAR2 / .Par2 extension
-  static bool IsPar2Filename(const std::string &filename);
-
   // Load packets from any other PAR2 files whose names are given on the command line
   bool LoadPacketsFromExtraFiles(const std::vector<std::string> &extrafiles);
 
@@ -205,9 +194,8 @@ protected:
   // place as a target or complete file
   void DiscardScannedFile(DiskFile *diskfile);
 
-  // What the files scanned so far add up to, as a verify of the set says it,
-  // with the summary written out when report is set
-  Result ScanOutcome(const bool report = true);
+  // What the files scanned so far add up to, as a verify of the set says it
+  Result ScanOutcome(void);
 
   // Attempt to match the data in the DiskFile with the source file, reporting
   // the file to the observer for as long as the match takes
@@ -215,7 +203,7 @@ protected:
 
   // The match itself. sourcefile is changed when the data belongs to another
   // file of the set, and blocksfound is how many of its blocks were found.
-  bool MatchDataFile(DiskFile *diskfile, Par2RepairerSourceFile *&sourcefile, const std::string &basepath, ProgressMeter<u64> &progress, const bool renameonly, u32 &blocksfound);
+  bool MatchDataFile(DiskFile *diskfile, Par2RepairerSourceFile *&sourcefile, const std::string &basepath, ProgressMeter<u64> &progress, const bool renameonly, Par2FileResult &result);
 
   // Check the blocks of a source file at the offsets where they are expected
   // to be found. One thread reads the file in order while the others check the
@@ -243,13 +231,13 @@ protected:
                     MatchType               &matchtype,  // [out]    The type of match
                     MD5Hash                 &hashfull,   // [out]    The full hash of the file
                     MD5Hash                 &hash16k,    // [out]    The hash of the first 16k
-                    u32                     &count);     // [out]    The number of blocks found
+                    Par2FileResult          &result);    // [out]    What the scan found
 
   // Find out how much data we have found
   void UpdateVerificationResults(void);
 
-  // Check the verification results and report the results
-  bool CheckVerificationResults(void);
+  // Tell the observer of each file the repair has written in full
+  void ReportWritten(void);
 
   // Rename any damaged or missnamed target files.
   bool RenameTargetFiles(void);
@@ -275,10 +263,6 @@ protected:
   // Delete all of the partly reconstructed files
   bool DeleteIncompleteTargetFiles(void);
 
-  // list the files needing verification
-  bool RemoveBackupFiles(void);
-  bool RemoveParFiles(void);
-
   // Make the buffers the files being scanned read into, or give them up when
   // no file will have its blocks checked where they are expected to be
   void ResetScanBuffers(const size_t filecount, const u64 filesize = 0);
@@ -289,15 +273,12 @@ protected:
     {return (u32)std::max<size_t>(1, std::min<size_t>(filethreads, filecount));}
 
 protected:
-  std::ostream &sout; // stream for output (for commandline, this is cout)
-  std::ostream &serr; // stream for errors (for commandline, this is cerr)
-
   ErrorLog errorlog;  // Why the last operation failed
 
-  NoiseLevel noiselevel;                    // OnScreen display
   const Backends backends;                  // The implementations the application supplied
 
   Par2Observer *observer;                   // Notified of progress, or 0
+  Verbosity verbosity;                      // How much detail it is given
 
   std::atomic<bool> cancelled;              // Set by Cancel from any thread
 

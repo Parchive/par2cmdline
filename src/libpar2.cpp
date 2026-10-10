@@ -94,9 +94,7 @@ size_t DefaultMemoryLimit(void)
   return (size_t)limit * 1048576;
 }
 
-// What the work may use: the caller's limit, or the default when it set none,
-// and never less than the 1MB the command line allows
-static size_t MemoryLimit(const size_t requested)
+size_t MemoryLimit(const size_t requested)
 {
   return std::max<size_t>((requested != 0) ? requested : DefaultMemoryLimit(), 1048576);
 }
@@ -106,9 +104,8 @@ static size_t MemoryLimit(const size_t requested)
 class Par2Verifier::Impl : public Par2Repairer
 {
 public:
-  Impl(std::ostream &sout, std::ostream &serr, NoiseLevel noiselevel,
-       const std::string &_basepath, const Backends &backends)
-    : Par2Repairer(sout, serr, noiselevel, backends)
+  Impl(const std::string &_basepath, const Backends &backends)
+    : Par2Repairer(backends)
     , prepared(eInsufficientCriticalData)
     , preparefailure()
   {
@@ -192,11 +189,6 @@ public:
     return prepared;
   }
 
-  void SetNoiseLevel(const NoiseLevel _noiselevel)
-  {
-    noiselevel = _noiselevel;
-  }
-
   // Forget every scan, keeping what the PAR2 files hold
   void DiscardScans(void)
   {
@@ -274,7 +266,8 @@ public:
   Result Check(const std::vector<std::string> &_extrafiles,
                const size_t memorylimit,
                const u32 _nthreads,
-               const u32 _filethreads)
+               const u32 _filethreads,
+               const bool renameonly)
   {
     ClearLastError();
 
@@ -295,7 +288,7 @@ public:
 
     std::vector<std::string> extrafiles = _extrafiles;
 
-    return VerifyFiles(basepath, extrafiles, false);
+    return VerifyFiles(basepath, extrafiles, renameonly);
   }
 
   Result Rebuild(const size_t memorylimit,
@@ -350,10 +343,8 @@ std::string SetNameFor(const std::string &parfilename)
   return parfilename;
 }
 
-// Absolute and ending in a separator, which is the form every path this API
-// reports. The separator goes on first, so "." names the directory itself.
-// Empty is left alone.
-static std::string NormaliseBasePath(const std::string &path)
+// The separator goes on first, so "." names the directory itself
+std::string NormaliseBasePath(const std::string &path)
 {
   if (path.empty())
     return path;
@@ -379,13 +370,8 @@ std::string BasePathFor(const std::string &parfilename)
 // What a Par2Verifier keeps of its own, apart from the engine
 struct Par2Verifier::State
 {
-  State(std::ostream &_sout, std::ostream &_serr, NoiseLevel _noiselevel,
-        const std::string &_basepath, Backends _backends)
-  : nullstream()
-  , sout(_sout)
-  , serr(_serr)
-  , noiselevel(_noiselevel)
-  , backends(std::move(_backends))
+  State(const std::string &_basepath, Backends _backends)
+  : backends(std::move(_backends))
   , observer(0)
   , memorylimit(MemoryLimit(0))
   , nthreads(0)
@@ -393,6 +379,8 @@ struct Par2Verifier::State
   , skipdata(false)
   , skipleaway(DEFAULT_SKIP_LEAWAY)
   , fullhash(false)
+  , renameonly(false)
+  , verbosity(vbNone)
   , par2files()
   , scannedfiles()
   , knownblocks()
@@ -407,10 +395,6 @@ struct Par2Verifier::State
   {
   }
 
-  std::unique_ptr<std::ostream> nullstream;
-  std::ostream &sout;
-  std::ostream &serr;
-  NoiseLevel noiselevel;
   Backends backends;
   Par2Observer *observer;
   size_t memorylimit;
@@ -419,6 +403,8 @@ struct Par2Verifier::State
   bool skipdata;
   u64 skipleaway;
   bool fullhash;
+  bool renameonly;
+  Verbosity verbosity;
   std::vector<std::string> par2files;
   std::set<std::string> scannedfiles;
   std::map<std::string, std::vector<bool> > knownblocks;
@@ -426,6 +412,7 @@ struct Par2Verifier::State
   bool scanned;
   bool repaired;
   bool readback;
+  std::mutex workmutex;
   std::mutex cancelmutex;
   bool cancelled;
   bool restarting;
@@ -443,14 +430,15 @@ void Par2Verifier::Restart(void)
   {
     std::lock_guard<std::mutex> lock(state->cancelmutex);
     state->restarting = true;
-    impl = std::make_unique<Impl>(state->sout, state->serr, nlSilent, state->basepath, state->backends);
+    impl = std::make_unique<Impl>(state->basepath, state->backends);
   }
 
   // The replay repeats work the observer has already been told about, so it is
-  // told none of it, and nothing is written to the streams again. The observer
-  // is attached once the handle is back where it was.
+  // told none of it. The observer is attached once the handle is back where it
+  // was.
   impl->SetDataSkipping(state->skipdata, state->skipleaway);
   impl->SetFullHash(state->fullhash);
+  impl->SetVerbosity(state->verbosity);
 
   for (std::map<std::string, std::vector<bool> >::const_iterator kb = state->knownblocks.begin();
        kb != state->knownblocks.end();
@@ -484,7 +472,7 @@ void Par2Verifier::Restart(void)
 
   for (const auto &f : rescan)
   {
-    if (impl->IsCancelled() || eCancelled == VerifyFile(f))
+    if (impl->IsCancelled() || eCancelled == DoVerifyFile(f))
     {
       cutshort = true;
       break;
@@ -498,54 +486,13 @@ void Par2Verifier::Restart(void)
     state->verified = false;
   }
 
-  impl->SetNoiseLevel(state->noiselevel);
   impl->SetObserver(state->observer);
 }
 
-// Discards everything written to it
-class NullStream : public std::ostream
-{
-public:
-  NullStream(void)
-  : std::ostream(&buffer)
-  , buffer()
-  {
-  }
-
-private:
-  class Buffer : public std::streambuf
-  {
-  protected:
-    int_type overflow(int_type c) override
-    {
-      return c;
-    }
-
-    std::streamsize xsputn(const char *, std::streamsize n) override
-    {
-      return n;
-    }
-  };
-
-  Buffer buffer;
-};
-
-Par2Verifier::Par2Verifier(std::ostream &sout, std::ostream &serr, NoiseLevel noiselevel,
-                           const std::string &_basepath, Backends _backends)
-: state(new State(sout, serr, noiselevel, _basepath, std::move(_backends)))
-, impl(new Impl(sout, serr, noiselevel, state->basepath, state->backends))
-{
-}
-
 Par2Verifier::Par2Verifier(const std::string &_basepath, Backends _backends)
-: Par2Verifier(std::unique_ptr<std::ostream>(new NullStream), _basepath, std::move(_backends))
+: state(new State(_basepath, std::move(_backends)))
+, impl(new Impl(state->basepath, state->backends))
 {
-}
-
-Par2Verifier::Par2Verifier(std::unique_ptr<std::ostream> _nullstream, const std::string &_basepath, Backends _backends)
-: Par2Verifier(*_nullstream, *_nullstream, nlSilent, _basepath, std::move(_backends))
-{
-  state->nullstream = std::move(_nullstream);
 }
 
 Par2Verifier::~Par2Verifier() = default;
@@ -600,6 +547,8 @@ void Par2Verifier::RecordLastError(const ErrorCode code, const std::string &mess
 
 bool Par2Verifier::GetLastError(Par2Error *error) const
 {
+  std::lock_guard<std::mutex> lock(state->workmutex);
+
   if (0 == error || ecNone == state->lasterror.code)
     return false;
 
@@ -609,17 +558,23 @@ bool Par2Verifier::GetLastError(Par2Error *error) const
 
 void Par2Verifier::SetObserver(Par2Observer *_observer)
 {
+  std::lock_guard<std::mutex> lock(state->workmutex);
+
   state->observer = _observer;
   impl->SetObserver(_observer);
 }
 
 void Par2Verifier::SetMemoryLimit(const size_t _memorylimit)
 {
+  std::lock_guard<std::mutex> lock(state->workmutex);
+
   state->memorylimit = MemoryLimit(_memorylimit);
 }
 
 void Par2Verifier::SetDataSkipping(const bool enabled, const u64 leaway)
 {
+  std::lock_guard<std::mutex> lock(state->workmutex);
+
   state->skipdata = enabled;
   state->skipleaway = (leaway != 0) ? leaway : DEFAULT_SKIP_LEAWAY;
 
@@ -628,18 +583,43 @@ void Par2Verifier::SetDataSkipping(const bool enabled, const u64 leaway)
 
 void Par2Verifier::SetFullHash(const bool enabled)
 {
+  std::lock_guard<std::mutex> lock(state->workmutex);
+
   state->fullhash = enabled;
 
   impl->SetFullHash(state->fullhash);
 }
 
+void Par2Verifier::SetRenameOnly(const bool enabled)
+{
+  std::lock_guard<std::mutex> lock(state->workmutex);
+
+  state->renameonly = enabled;
+}
+
+void Par2Verifier::SetVerbosity(const Verbosity verbosity)
+{
+  std::lock_guard<std::mutex> lock(state->workmutex);
+
+  state->verbosity = verbosity;
+  impl->SetVerbosity(verbosity);
+}
+
 void Par2Verifier::SetThreadCounts(const u32 _nthreads, const u32 _filethreads)
 {
+  std::lock_guard<std::mutex> lock(state->workmutex);
+
   state->nthreads = _nthreads;
   state->filethreads = _filethreads;
 }
 
-Result Par2Verifier::AddPar2File(const std::string &_parfilename)
+Result Par2Verifier::AddPar2File(const std::string &parfilename)
+{
+  std::lock_guard<std::mutex> lock(state->workmutex);
+  return DoAddPar2File(parfilename);
+}
+
+Result Par2Verifier::DoAddPar2File(const std::string &_parfilename)
 try
 {
   const std::string parfilename = DiskFile::GetCanonicalPathname(_parfilename);
@@ -701,17 +681,23 @@ catch (...)
 
 bool Par2Verifier::GetSetInfo(Par2SetInfo *info) const
 {
+  std::lock_guard<std::mutex> lock(state->workmutex);
+
   return impl->GetSetInfo(info);
 }
 
 bool Par2Verifier::GetFileInfo(std::vector<Par2FileInfo> *files) const
 {
+  std::lock_guard<std::mutex> lock(state->workmutex);
+
   return impl->GetFileInfo(files);
 }
 
 bool Par2Verifier::GetBlockChecksums(const std::string &filename,
                                     std::vector<u32> *crcs) const
 {
+  std::lock_guard<std::mutex> lock(state->workmutex);
+
   return impl->GetBlockChecksums(filename, crcs);
 }
 
@@ -722,6 +708,8 @@ bool Par2Verifier::GetBlockChecksums(const std::string &filename,
 bool Par2Verifier::GetFoundBlocks(const std::string &filename,
                                   std::vector<bool> *blocks) const
 {
+  std::lock_guard<std::mutex> lock(state->workmutex);
+
   if (!state->verified || (state->repaired && !state->readback))
     return false;
 
@@ -730,6 +718,8 @@ bool Par2Verifier::GetFoundBlocks(const std::string &filename,
 
 std::vector<std::string> Par2Verifier::GetBackupFiles(void) const
 {
+  std::lock_guard<std::mutex> lock(state->workmutex);
+
   std::vector<std::string> files;
   impl->GetBackupFiles(&files);
   return files;
@@ -737,6 +727,8 @@ std::vector<std::string> Par2Verifier::GetBackupFiles(void) const
 
 std::vector<std::pair<std::string, std::string> > Par2Verifier::GetRenamedFiles(void) const
 {
+  std::lock_guard<std::mutex> lock(state->workmutex);
+
   std::vector<std::pair<std::string, std::string> > files;
   impl->GetRenamedFiles(&files);
   return files;
@@ -744,6 +736,8 @@ std::vector<std::pair<std::string, std::string> > Par2Verifier::GetRenamedFiles(
 
 bool Par2Verifier::GetVerifyResult(Par2VerifyResult *result) const
 {
+  std::lock_guard<std::mutex> lock(state->workmutex);
+
   if (!state->verified)
     return false;
 
@@ -753,6 +747,8 @@ bool Par2Verifier::GetVerifyResult(Par2VerifyResult *result) const
 bool Par2Verifier::SetKnownBlocks(const std::string &filename,
                                  const std::vector<bool> &blocks)
 {
+  std::lock_guard<std::mutex> lock(state->workmutex);
+
   if (!impl->SetKnownBlocks(filename, blocks))
     return false;
 
@@ -766,10 +762,18 @@ bool Par2Verifier::SetKnownBlocks(const std::string &filename,
 
 std::map<std::string, std::vector<bool> > Par2Verifier::GetKnownBlocks(void) const
 {
+  std::lock_guard<std::mutex> lock(state->workmutex);
+
   return state->knownblocks;
 }
 
 Result Par2Verifier::Verify(const std::vector<std::string> &extrafiles)
+{
+  std::lock_guard<std::mutex> lock(state->workmutex);
+  return DoVerify(extrafiles);
+}
+
+Result Par2Verifier::DoVerify(const std::vector<std::string> &extrafiles)
 try
 {
   // A full pass covers everything the individual scans did, so they are dropped
@@ -784,7 +788,8 @@ try
 
   state->verified = false;
 
-  const Result result = impl->Check(extrafiles, state->memorylimit, state->nthreads, state->filethreads);
+  const Result result = impl->Check(extrafiles, state->memorylimit, state->nthreads, state->filethreads,
+                                    state->renameonly);
   TakeLastError(result);
 
   if (result != eInsufficientCriticalData)
@@ -801,6 +806,12 @@ catch (...)
 }
 
 Result Par2Verifier::VerifyFile(const std::string &filename)
+{
+  std::lock_guard<std::mutex> lock(state->workmutex);
+  return DoVerifyFile(filename);
+}
+
+Result Par2Verifier::DoVerifyFile(const std::string &filename)
 try
 {
   // After a repair a new engine starts from nothing, and each file is scanned
@@ -836,6 +847,12 @@ catch (...)
 }
 
 Result Par2Verifier::Repair(const bool verifyafter)
+{
+  std::lock_guard<std::mutex> lock(state->workmutex);
+  return DoRepair(verifyafter);
+}
+
+Result Par2Verifier::DoRepair(const bool verifyafter)
 try
 {
   if (!state->verified)
@@ -904,8 +921,8 @@ void Par2Verifier::ClearCancel(void)
 class Par2Creator::Impl : public Par2SetCreator
 {
 public:
-  Impl(std::ostream &sout, std::ostream &serr, NoiseLevel noiselevel, const Backends &backends)
-    : Par2SetCreator(sout, serr, noiselevel, backends)
+  explicit Impl(const Backends &backends)
+    : Par2SetCreator(backends)
   {
   }
 };
@@ -913,13 +930,8 @@ public:
 // What a Par2Creator keeps of its own, apart from the engine
 struct Par2Creator::State
 {
-  State(std::ostream &_sout, std::ostream &_serr, NoiseLevel _noiselevel,
-        const std::string &_basepath, Backends _backends)
-  : nullstream()
-  , sout(_sout)
-  , serr(_serr)
-  , noiselevel(_noiselevel)
-  , backends(std::move(_backends))
+  State(const std::string &_basepath, Backends _backends)
+  : backends(std::move(_backends))
   , observer(0)
   , sourcefiles()
   , blocksize(0)
@@ -932,16 +944,13 @@ struct Par2Creator::State
   , memorylimit(MemoryLimit(0))
   , nthreads(0)
   , filethreads(0)
+  , verbosity(vbNone)
   , cancelled(false)
   , basepath(NormaliseBasePath(_basepath))
   , lasterror()
   {
   }
 
-  std::unique_ptr<std::ostream> nullstream;
-  std::ostream &sout;
-  std::ostream &serr;
-  NoiseLevel noiselevel;
   Backends backends;
   Par2Observer *observer;
   std::vector<std::string> sourcefiles;
@@ -955,6 +964,8 @@ struct Par2Creator::State
   size_t memorylimit;
   u32 nthreads;
   u32 filethreads;
+  Verbosity verbosity;
+  std::mutex workmutex;
   std::mutex cancelmutex;
   bool cancelled;
   std::string basepath;
@@ -968,8 +979,9 @@ void Par2Creator::Restart(void)
 {
   std::lock_guard<std::mutex> lock(state->cancelmutex);
 
-  impl = std::make_unique<Impl>(state->sout, state->serr, state->noiselevel, state->backends);
+  impl = std::make_unique<Impl>(state->backends);
   impl->SetObserver(state->observer);
+  impl->SetVerbosity(state->verbosity);
 
   if (state->cancelled)
     impl->Cancel();
@@ -985,84 +997,106 @@ void Par2Creator::TakeLastError(const Result result)
     impl->GetLastError(&state->lasterror);
 }
 
-Par2Creator::Par2Creator(std::ostream &sout, std::ostream &serr, NoiseLevel noiselevel,
-                         const std::string &_basepath, Backends _backends)
-: state(new State(sout, serr, noiselevel, _basepath, std::move(_backends)))
-, impl(new Impl(sout, serr, noiselevel, state->backends))
-{
-}
-
 Par2Creator::Par2Creator(const std::string &_basepath, Backends _backends)
-: Par2Creator(std::unique_ptr<std::ostream>(new NullStream), _basepath, std::move(_backends))
+: state(new State(_basepath, std::move(_backends)))
+, impl(new Impl(state->backends))
 {
-}
-
-Par2Creator::Par2Creator(std::unique_ptr<std::ostream> _nullstream, const std::string &_basepath, Backends _backends)
-: Par2Creator(*_nullstream, *_nullstream, nlSilent, _basepath, std::move(_backends))
-{
-  state->nullstream = std::move(_nullstream);
 }
 
 Par2Creator::~Par2Creator() = default;
 
 void Par2Creator::SetObserver(Par2Observer *_observer)
 {
+  std::lock_guard<std::mutex> lock(state->workmutex);
+
   state->observer = _observer;
   impl->SetObserver(_observer);
 }
 
 void Par2Creator::SetSourceFiles(const std::vector<std::string> &filenames)
 {
+  std::lock_guard<std::mutex> lock(state->workmutex);
+
   state->sourcefiles = filenames;
 }
 
 void Par2Creator::SetBlockSize(const u64 _blocksize)
 {
+  std::lock_guard<std::mutex> lock(state->workmutex);
+
   state->blocksize = _blocksize;
   state->sourceblockcount = 0;
 }
 
 void Par2Creator::SetSourceBlockCount(const u32 blockcount)
 {
+  std::lock_guard<std::mutex> lock(state->workmutex);
+
   state->sourceblockcount = blockcount;
   state->blocksize = 0;
 }
 
 void Par2Creator::SetRecoveryBlockCount(const u32 _recoveryblockcount)
 {
+  std::lock_guard<std::mutex> lock(state->workmutex);
+
   state->recoveryblockcount = _recoveryblockcount;
   state->redundancy = 0;
 }
 
 void Par2Creator::SetRedundancy(const u32 percent)
 {
+  std::lock_guard<std::mutex> lock(state->workmutex);
+
   state->redundancy = percent;
   state->recoveryblockcount = 0;
 }
 
 void Par2Creator::SetRecoveryFileScheme(const Scheme scheme, const u32 _recoveryfilecount)
 {
+  std::lock_guard<std::mutex> lock(state->workmutex);
+
   state->recoveryfilescheme = scheme;
   state->recoveryfilecount = _recoveryfilecount;
 }
 
 void Par2Creator::SetFirstRecoveryBlock(const u32 firstblock)
 {
+  std::lock_guard<std::mutex> lock(state->workmutex);
+
   state->firstrecoveryblock = firstblock;
 }
 
 void Par2Creator::SetMemoryLimit(const size_t _memorylimit)
 {
+  std::lock_guard<std::mutex> lock(state->workmutex);
+
   state->memorylimit = MemoryLimit(_memorylimit);
 }
 
 void Par2Creator::SetThreadCounts(const u32 _nthreads, const u32 _filethreads)
 {
+  std::lock_guard<std::mutex> lock(state->workmutex);
+
   state->nthreads = _nthreads;
   state->filethreads = _filethreads;
 }
 
+void Par2Creator::SetVerbosity(const Verbosity verbosity)
+{
+  std::lock_guard<std::mutex> lock(state->workmutex);
+
+  state->verbosity = verbosity;
+  impl->SetVerbosity(verbosity);
+}
+
 Result Par2Creator::Create(const std::string &parfilename)
+{
+  std::lock_guard<std::mutex> lock(state->workmutex);
+  return DoCreate(parfilename);
+}
+
+Result Par2Creator::DoCreate(const std::string &parfilename)
 try
 {
   // Taken from the name of each set when none was given, before any file is
@@ -1109,11 +1143,11 @@ try
     for (const auto &file : files)
       filesizes.push_back(DiskFile::GetFileSize(file));
 
+    std::string error;
     if (0 != state->sourceblockcount
-        && !ComputeBlockSizeFromCount(state->serr, &setblocksize, state->sourceblockcount, filesizes))
+        && !ComputeBlockSizeFromCount(&error, &setblocksize, state->sourceblockcount, filesizes))
     {
-      ReportError(state->lasterror, state->observer, ecInvalidSetting,
-                  "The source block count cannot divide these files");
+      ReportError(state->lasterror, state->observer, ecInvalidSetting, error);
 
       return eInvalidCommandLineArguments;
     }
@@ -1166,6 +1200,8 @@ void Par2Creator::ClearCancel(void)
 
 bool Par2Creator::GetLastError(Par2Error *error) const
 {
+  std::lock_guard<std::mutex> lock(state->workmutex);
+
   if (0 == error || ecNone == state->lasterror.code)
     return false;
 
@@ -1174,107 +1210,8 @@ bool Par2Creator::GetLastError(Par2Error *error) const
 }
 
 
-Result par2create(std::ostream &sout,
-		  std::ostream &serr,
-		  const NoiseLevel noiselevel,
-		  const size_t memorylimit,
-		  const std::string &basepath,
-		  const u32 nthreads,
-		  const u32 filethreads,
-		  const std::string &parfilename,
-		  const std::vector<std::string> &extrafiles,
-		  const u64 blocksize,
-		  const u32 firstblock,
-		  const Scheme recoveryfilescheme,
-		  const u32 recoveryfilecount,
-		  const u32 recoveryblockcount,
-		  const Backends &backends
-		  )
-{
-  Par2SetCreator creator(sout, serr, noiselevel, backends);
-  Result result = creator.Process(
-				  MemoryLimit(memorylimit),
-				  basepath,
-				  nthreads,
-				  filethreads,
-				  parfilename,
-				  extrafiles,
-				  blocksize,
-				  firstblock,
-				  recoveryfilescheme,
-				  recoveryfilecount,
-				  recoveryblockcount
-				  );
-  return result;
-}
-
-
-Result par2repair(std::ostream &sout,
-		  std::ostream &serr,
-		  const NoiseLevel noiselevel,
-		  const size_t memorylimit,
-		  const std::string &basepath,
-		  const u32 nthreads,
-		  const u32 filethreads,
-		  const std::string &parfilename,
-		  const std::vector<std::string> &extrafiles,
-		  const bool dorepair,   // derived from operation
-		  const bool purgefiles,
-		  const bool renameonly,
-		  const bool skipdata,
-		  const u64 skipleaway,
-		  const bool fullhash,
-		  const Backends &backends
-		  )
-{
-  Par2Repairer repairer(sout, serr, noiselevel, backends);
-  Result result = repairer.Process(
-				   MemoryLimit(memorylimit),
-				   basepath,
-				   nthreads,
-				   filethreads,
-				   parfilename,
-				   extrafiles,
-				   dorepair,
-				   purgefiles,
-				   renameonly,
-				   skipdata,
-				   skipleaway,
-				   fullhash);
-
-  return result;
-}
-
-
-Result par1repair(std::ostream &sout,
-		  std::ostream &serr,
-		  const NoiseLevel noiselevel,
-		  const size_t memorylimit,
-		  // basepath is not used by Par1
-		  const u32 nthreads,
-		  // filethreads is not used by Par1
-		  const std::string &parfilename,
-		  const std::vector<std::string> &extrafiles,
-		  const bool dorepair,   // derived from operation
-		  const bool purgefiles
-		  // skipdata is not used by Par1
-		  // skipleaway is not used by Par1
-		  )
-{
-  Par1Repairer repairer(sout, serr, noiselevel);
-  Result result = repairer.Process(MemoryLimit(memorylimit),
-				   nthreads,
-				   parfilename,
-				   extrafiles,
-				   dorepair,
-				   purgefiles);
-  return result;
-}
-
-
 // Determine how many recovery files to create.
-bool ComputeRecoveryFileCount(std::ostream &sout,
-			      std::ostream &serr,
+bool ComputeRecoveryFileCount(std::string *error,
 			      u32 *recoveryfilecount,
 			      Scheme recoveryfilescheme,
 			      u32 recoveryblockcount,
@@ -1293,7 +1230,8 @@ bool ComputeRecoveryFileCount(std::ostream &sout,
   case scUnknown:
     {
       //assert(false);
-      serr << "Scheme unspecified (create, verify, or repair)." << std::endl;
+      if (error)
+        *error = "No recovery file scheme was given";
       return false;
     }
     break;
@@ -1317,7 +1255,8 @@ bool ComputeRecoveryFileCount(std::ostream &sout,
       {
         // You cannot have more recovery files than there are recovery blocks
         // to put in them.
-        serr << "Too many recovery files specified." << std::endl;
+        if (error)
+          *error = "There are more recovery files than recovery blocks to put in them";
         return false;
       }
     }
@@ -1332,7 +1271,8 @@ bool ComputeRecoveryFileCount(std::ostream &sout,
 
       if (0 == blocksize || 0 == largestfilesize)
       {
-        serr << "The source files are empty." << std::endl;
+        if (error)
+          *error = "The source files are empty";
         return false;
       }
 
@@ -1355,7 +1295,7 @@ bool ComputeRecoveryFileCount(std::ostream &sout,
 
 // Work out the block size which divides files of these sizes into blockcount
 // blocks, or as near to that as a multiple of 4 allows.
-bool ComputeBlockSizeFromCount(std::ostream &serr,
+bool ComputeBlockSizeFromCount(std::string *error,
 			       u64 *blocksize,
 			       u32 blockcount,
 			       const std::vector<u64> &filesizes)
@@ -1364,8 +1304,10 @@ bool ComputeBlockSizeFromCount(std::ostream &serr,
   {
     // The block count cannot be less than the number of files.
 
-    serr << "Block count (" << blockcount <<
-            ") cannot be smaller than the number of files(" << filesizes.size() << "). " << std::endl;
+    if (error)
+      *error = "The block count (" + std::to_string(blockcount)
+               + ") cannot be smaller than the number of files ("
+               + std::to_string(filesizes.size()) + ")";
     return false;
   }
   else if (blockcount == filesizes.size())
@@ -1437,12 +1379,14 @@ bool ComputeBlockSizeFromCount(std::ostream &serr,
 
       if (count > 32768)
       {
-        serr << "Error calculating block size. cannot be higher than 32768." << std::endl;
+        if (error)
+          *error = "The block size for this block count would need more than 32768 blocks";
         return false;
       }
       else if (count == 0)
       {
-        serr << "Error calculating block size. cannot be 0." << std::endl;
+        if (error)
+          *error = "The block size for this block count would give no blocks";
         return false;
       }
 

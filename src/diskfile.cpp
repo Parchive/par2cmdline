@@ -49,8 +49,6 @@ namespace par2
 
 DiskFile::Failure::~Failure(void)
 {
-  LockedStream(*file.serr) << message.str() << std::endl;
-
   if (file.errorlog)
     file.errorlog->Record(code, message.str(), name);
 }
@@ -62,10 +60,8 @@ DiskFile::Failure::~Failure(void)
 #define OffsetType __int64
 #define MaxOffset 0x7fffffffffffffffI64
 
-DiskFile::DiskFile(std::ostream &sout, std::ostream &serr, ErrorLog *errorlog)
-: sout(&sout)
-, serr(&serr)
-, errorlog(errorlog)
+DiskFile::DiskFile(ErrorLog *errorlog)
+: errorlog(errorlog)
 {
   filename = "";
   filesize = 0;
@@ -246,8 +242,6 @@ bool DiskFile::Write(u64 _offset, const void *buffer, size_t length, LengthType 
       std::ostringstream message;
       message << "Incomplete write to \"" << filename << "\" at offset " << _offset << ".  Expected to write " << write << " bytes and wrote " << wrote << " bytes.";
 
-      LockedStream(*serr) << "INFO: " << message.str() << std::endl;
-
       if (errorlog)
         errorlog->Warn(wcIncompleteWrite, message.str(), filename);
     }
@@ -350,8 +344,6 @@ bool DiskFile::Read(u64 _offset, void *buffer, size_t length, LengthType maxleng
       std::ostringstream message;
       message << "Incomplete read from \"" << filename << "\" at offset " << _offset << ".  Tried to read " << want << " bytes and received " << got << " bytes.";
 
-      LockedStream(*serr) << message.str() << std::endl;
-
       if (errorlog)
         errorlog->Warn(wcIncompleteRead, message.str(), filename);
     }
@@ -381,10 +373,7 @@ std::string DiskFile::GetCanonicalPathname(std::string filename)
 {
   std::wstring wfilename;
   if (!utf8::Utf8ToWide(filename, wfilename))
-  {
-    LockedStream(std::cerr) << "Could not convert \"" << filename << "\" to a wide string." << std::endl;
     return filename;
-  }
 
   // First call to get required buffer size
   DWORD length = GetFullPathNameW(wfilename.c_str(), 0, nullptr, nullptr);
@@ -425,10 +414,7 @@ std::unique_ptr< std::list<std::string> > DiskFile::FindFiles(std::string path, 
 
   std::wstring wwildcard;
   if (!utf8::Utf8ToWide(path + wildcard, wwildcard))
-  {
-    LockedStream(std::cerr) << "Could not convert \"" << path + wildcard << "\" to a wide string." << std::endl;
     return std::unique_ptr< std::list<std::string> >(matches);
-  }
 
   WIN32_FIND_DATAW fd;
   HANDLE h = ::FindFirstFileW(wwildcard.c_str(), &fd);
@@ -472,10 +458,7 @@ u64 DiskFile::GetFileSize(std::string filename)
 {
   std::wstring wfilename;
   if (!utf8::Utf8ToWide(filename, wfilename))
-  {
-    LockedStream(std::cerr) << "Could not convert \"" << filename << "\" to a wide string." << std::endl;
     return 0;
-  }
 
   struct _stati64 st;
   if ((0 == _wstati64(wfilename.c_str(), &st)) && (0 != (st.st_mode & S_IFREG)))
@@ -492,10 +475,7 @@ bool DiskFile::FileExists(std::string filename)
 {
   std::wstring wfilename;
   if (!utf8::Utf8ToWide(filename, wfilename))
-  {
-    LockedStream(std::cerr) << "Could not convert \"" << filename << "\" to a wide string." << std::endl;
     return false;
-  }
 
   struct _stati64 st;
   return ((0 == _wstati64(wfilename.c_str(), &st)) && (0 != (st.st_mode & _S_IFREG)));
@@ -513,10 +493,8 @@ bool DiskFile::FileExists(std::string filename)
 #define MaxOffset ((std::numeric_limits<OffsetType>::max)())
 
 
-DiskFile::DiskFile(std::ostream &sout, std::ostream &serr, ErrorLog *errorlog)
-: sout(&sout)
-, serr(&serr)
-, errorlog(errorlog)
+DiskFile::DiskFile(ErrorLog *errorlog)
+: errorlog(errorlog)
 {
   //filename;
   filesize = 0;
@@ -1047,8 +1025,6 @@ bool DiskFile::Delete(void)
 #endif
   else
   {
-    LockedStream(*serr) << "Cannot delete " << filename << std::endl;
-
     return false;
   }
 }

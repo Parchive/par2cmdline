@@ -19,6 +19,8 @@
 
 #include <iostream>
 #include <fstream>
+#include <string>
+#include <vector>
 
 #include "libpar2internal.h"
 
@@ -46,206 +48,188 @@ int test1() {
   return 0;
 }
 
+// What a translation warns of, as the observer is told
+class Heard : public Par2Observer
+{
+public:
+  Heard(void)
+  {
+    errorlog.SetObserver(this);
+  }
+
+  void OnWarning(const Par2Warning &warning) override
+  {
+    warnings.push_back(warning);
+  }
+
+  ErrorLog errorlog;
+  std::vector<Par2Warning> warnings;
+};
+
+// A name, what it translates to, and how many warnings that gives
+struct Translation
+{
+  std::string from;
+  std::string to;
+  size_t warnings;
+};
+
+// Whether translating from gave other than expected: a different name, or a
+// different number of warnings, or any not of code or not naming the file the
+// warning is about
+static bool Unexpected(const char *translator, const Translation &expected,
+                       const std::string &to, const Heard &heard,
+                       const WarningCode code, const std::string &warned)
+{
+  bool unexpected = false;
+
+  if (to != expected.to) {
+    std::cout << translator << " returned \"" << to << "\" for \"" << expected.from
+              << "\", not \"" << expected.to << "\"" << std::endl;
+    unexpected = true;
+  }
+  if (heard.warnings.size() != expected.warnings) {
+    std::cout << translator << " warned " << heard.warnings.size() << " times for \""
+              << expected.from << "\", not " << expected.warnings << std::endl;
+    unexpected = true;
+  }
+  for (const Par2Warning &warning : heard.warnings) {
+    if (warning.code != code || warning.filename != warned) {
+      std::cout << translator << " warned of \"" << warning.filename << "\" with code "
+                << warning.code << " for \"" << expected.from << "\"" << std::endl;
+      unexpected = true;
+    }
+  }
+
+  return unexpected;
+}
+
 // test TranslateFilenameFromLocalToPar2
 int test2() {
   // The input to this function is the filename from a Par2 file.
   // The output is a "safe" filename
-  std::string par2filename;
-  par2filename = DescriptionPacket::TranslateFilenameFromLocalToPar2(std::cout, std::cerr, nlNormal, "input1.txt");
-  if (par2filename != "input1.txt") {
-    std::cout << "TranslateFilenameFromLocalToPar2 nothing" << std::endl;
-    return 1;
-  }
-  par2filename = DescriptionPacket::TranslateFilenameFromLocalToPar2(std::cout, std::cerr, nlNormal, "dir" + fs + "input1.txt");
-  if (par2filename != "dir/input1.txt") {
-    std::cout << "TranslateFilenameFromLocalToPar2 " << fs << std::endl;
-    return 1;
-  }
-  // leading dash is ugly, but allowed
-  par2filename = DescriptionPacket::TranslateFilenameFromLocalToPar2(std::cout, std::cerr, nlNormal, "-input1.txt");
-  if (par2filename != "-input1.txt") {
-    std::cout << "TranslateFilenameFromLocalToPar2 nothing" << std::endl;
-    return 1;
-  }
-
-  std::cout << "---------------------------------------------------------" << std::endl;
-  std::cout << "The following calls to Translate should produce warnings:" << std::endl;
-  std::cout << "---------------------------------------------------------" << std::endl;
-  // tabs are a control character
-  par2filename = DescriptionPacket::TranslateFilenameFromLocalToPar2(std::cout, std::cerr, nlNormal, "\tinput1.txt");
-  if (par2filename != "\tinput1.txt") {
-    std::cout << "TranslateFilenameFromLocalToPar2 tab" << std::endl;
-    return 1;
-  }
-  // colon causes problem on Windows and OSX/MacOS
-  par2filename = DescriptionPacket::TranslateFilenameFromLocalToPar2(std::cout, std::cerr, nlNormal, ":input1.txt");
-  if (par2filename != ":input1.txt") {
-  std::cout << "TranslateFilenameFromLocalToPar2 :" << std::endl;
-    return 1;
-  }
-  // Astrix causes problems everywhere
-  par2filename = DescriptionPacket::TranslateFilenameFromLocalToPar2(std::cout, std::cerr, nlNormal, "*input1.txt");
-  if (par2filename != "*input1.txt") {
-    std::cout << "TranslateFilenameFromLocalToPar2 2" << std::endl;
-    return 1;
-  }
-  // Astrix causes problems everywhere
-  par2filename = DescriptionPacket::TranslateFilenameFromLocalToPar2(std::cout, std::cerr, nlNormal, "?input1.txt");
-  if (par2filename != "?input1.txt") {
-    std::cout << "TranslateFilenameFromLocalToPar2 3" << std::endl;
-    return 1;
-  }
+  const std::vector<Translation> translations = {
+    {"input1.txt", "input1.txt", 0},
+    {"dir" + fs + "input1.txt", "dir/input1.txt", 0},
+    // leading dash is ugly, but allowed
+    {"-input1.txt", "-input1.txt", 0},
+    // tabs are a control character
+    {"\tinput1.txt", "\tinput1.txt", 1},
+    // colon causes problem on Windows and OSX/MacOS
+    {":input1.txt", ":input1.txt", 1},
+    // Astrix causes problems everywhere
+    {"*input1.txt", "*input1.txt", 1},
+    {"?input1.txt", "?input1.txt", 1},
 #ifdef _WIN32
-  // UNIX backslash on Windows systems
-  par2filename = DescriptionPacket::TranslateFilenameFromLocalToPar2(std::cout, std::cerr, nlNormal, "/input1.txt");
-  if (par2filename != "/input1.txt") {
-    std::cout << "TranslateFilenameFromLocalToPar2 4" << std::endl;
-    return 1;
-  }
+    // UNIX backslash on Windows systems
+    {"/input1.txt", "/input1.txt", 1},
 #else
-  // Windows backslash on UNIX systems
-  par2filename = DescriptionPacket::TranslateFilenameFromLocalToPar2(std::cout, std::cerr, nlNormal, "\\input1.txt");
-  if (par2filename != "\\input1.txt") {
-    std::cout << "TranslateFilenameFromLocalToPar2 5" << std::endl;
-    return 1;
-  }
+    // Windows backslash on UNIX systems
+    {"\\input1.txt", "\\input1.txt", 1},
 #endif
+    // absolute path on Windows, for the colon and for where it is
+    {"C:" + fs + "input1.txt", "C:/input1.txt", 2},
+    // absolute path on UNIX
+    {fs + "input1.txt", "/input1.txt", 1},
+    // referencing parent directory
+    {".." + fs + "input1.txt", "../input1.txt", 1},
+    {"tricky" + fs + ".." + fs + ".." + fs + "input1.txt", "tricky/../../input1.txt", 1},
+  };
 
-  // absolute path on Windows
-  par2filename = DescriptionPacket::TranslateFilenameFromLocalToPar2(std::cout, std::cerr, nlNormal, "C:" + fs + "input1.txt");
-  if (par2filename != "C:/input1.txt") {
-    std::cout << "TranslateFilenameFromLocalToPar2 2" << std::endl;
-    return 1;
+  for (const Translation &translation : translations) {
+    Heard heard;
+    const std::string to = DescriptionPacket::TranslateFilenameFromLocalToPar2(translation.from, &heard.errorlog);
+    if (Unexpected("TranslateFilenameFromLocalToPar2", translation, to, heard,
+                   wcFilenameUnsafe, translation.to))
+      return 1;
   }
-  // absolute path on UNIX
-  par2filename = DescriptionPacket::TranslateFilenameFromLocalToPar2(std::cout, std::cerr, nlNormal, fs + "input1.txt");
-if (par2filename != "/input1.txt") {
-    std::cout << "TranslateFilenameFromLocalToPar2 2" << std::endl;
-    return 1;
-  }
-  // referencing parent directory
-  par2filename = DescriptionPacket::TranslateFilenameFromLocalToPar2(std::cout, std::cerr, nlNormal, ".." + fs + "input1.txt");
-  if (par2filename != "../input1.txt") {
-    std::cout << "TranslateFilenameFromLocalToPar2 2" << std::endl;
-    return 1;
-  }
-  par2filename = DescriptionPacket::TranslateFilenameFromLocalToPar2(std::cout, std::cerr, nlNormal, "tricky" + fs + ".." + fs + ".." + fs + "input1.txt");
-  if (par2filename != "tricky/../../input1.txt") {
-    std::cout << "TranslateFilenameFromLocalToPar2 2" << std::endl;
-    return 1;
-  }
-
-  std::cout << "--------------------------------------" << std::endl;
-  std::cout << "End of code meant to produce warnings." << std::endl;
-  std::cout << "--------------------------------------" << std::endl;
 
   return 0;
 }
 
 // tests TranslateFilenameFromPar2ToLocal
 int test3() {
-  std::string local_filename;
-  std::string expected;
-
-  local_filename = DescriptionPacket::TranslateFilenameFromPar2ToLocal(std::cout, std::cerr, nlNormal, "input1.txt");
-  if (local_filename != "input1.txt") {
-    std::cout << "TranslateFilenameFromPar2ToLocal normal" << std::endl;
-    return 1;
-  }
-  local_filename = DescriptionPacket::TranslateFilenameFromPar2ToLocal(std::cout, std::cerr, nlNormal, "dir/input1.txt");
-  if (local_filename != "dir" + fs + "input1.txt") {
-    std::cout << "TranslateFilenameFromPar2ToLocal directory" << std::endl;
-    return 1;
-  }
-
-  // no one likes control characters, like tab.
-  local_filename = DescriptionPacket::TranslateFilenameFromPar2ToLocal(std::cout, std::cerr, nlNormal, "\t");
-  expected = DescriptionPacket::UrlEncodeChar('\t');
-  if (local_filename != expected) {
-    std::cout << "TranslateFilenameFromPar2ToLocal tab" << std::endl;
-    return 1;
-  }
-
-
+  const std::vector<Translation> translations = {
+    {"input1.txt", "input1.txt", 0},
+    {"dir/input1.txt", "dir" + fs + "input1.txt", 0},
+    // no one likes control characters, like tab.
+    {"\t", DescriptionPacket::UrlEncodeChar('\t'), 1},
 #ifdef _WIN32
-  // Windows does not allow certain characters in filenames
-  local_filename = DescriptionPacket::TranslateFilenameFromPar2ToLocal(std::cout, std::cerr, nlNormal, "\"*:<>?|%abcd");
-  expected = DescriptionPacket::UrlEncodeChar('\"')
-    + DescriptionPacket::UrlEncodeChar('*')
-    + DescriptionPacket::UrlEncodeChar(':')
-    + DescriptionPacket::UrlEncodeChar('<')
-    + DescriptionPacket::UrlEncodeChar('>')
-    + DescriptionPacket::UrlEncodeChar('?')
-    + DescriptionPacket::UrlEncodeChar('|')
-    + "%abcd";
-  if (local_filename != expected) {
-    std::cout << "TranslateFilenameFromPar2ToLocal windows" << std::endl;
-    return 1;
-  }
+    // Windows does not allow certain characters in filenames
+    {"\"*:<>?|%abcd",
+     DescriptionPacket::UrlEncodeChar('\"')
+     + DescriptionPacket::UrlEncodeChar('*')
+     + DescriptionPacket::UrlEncodeChar(':')
+     + DescriptionPacket::UrlEncodeChar('<')
+     + DescriptionPacket::UrlEncodeChar('>')
+     + DescriptionPacket::UrlEncodeChar('?')
+     + DescriptionPacket::UrlEncodeChar('|')
+     + "%abcd",
+     7},
+    // Do not allow absolute paths on Windows
+    {"C:/system_file", "C" + DescriptionPacket::UrlEncodeChar(':') + "\\system_file", 1},
 #else
-  // other UNIXes - no need to test.
-  local_filename = DescriptionPacket::TranslateFilenameFromPar2ToLocal(std::cout, std::cerr, nlNormal, "\"*:<>?|%abcd");
-  expected = "\"*:<>?|%abcd";
-  if (local_filename != expected) {
-    std::cout << "TranslateFilenameFromPar2ToLocal UNIX" << std::endl;
-    return 1;
-  }
+    // other UNIXes - no need to test.
+    {"\"*:<>?|%abcd", "\"*:<>?|%abcd", 0},
+    // UNIXes and OSX/MacOS check for absolute paths
+    {"/system_file", DescriptionPacket::UrlEncodeChar('/') + "system_file", 1},
+    // and take a Windows slash for a mistake
+    {"dir\\input1.txt", "dir/input1.txt", 1},
 #endif
+    // prevent access through parents
+    {"../system_file",
+     DescriptionPacket::UrlEncodeChar('.') + DescriptionPacket::UrlEncodeChar('.')
+     + fs + "system_file",
+     1},
+    {"tricky/../../system_file",
+     "tricky" + fs
+     + DescriptionPacket::UrlEncodeChar('.') + DescriptionPacket::UrlEncodeChar('.') + fs
+     + DescriptionPacket::UrlEncodeChar('.') + DescriptionPacket::UrlEncodeChar('.') + fs
+     + "system_file",
+     2},
+  };
 
+  for (const Translation &translation : translations) {
+    Heard heard;
+    const std::string to = DescriptionPacket::TranslateFilenameFromPar2ToLocal(translation.from, &heard.errorlog);
+    if (Unexpected("TranslateFilenameFromPar2ToLocal", translation, to, heard,
+                   wcFilenameChanged, translation.from))
+      return 1;
+  }
 
-#ifdef _WIN32
-  // Do not allow absolute paths on Windows
-  local_filename = DescriptionPacket::TranslateFilenameFromPar2ToLocal(std::cout, std::cerr, nlNormal, "C:/system_file");
-  expected = "C"
-    + DescriptionPacket::UrlEncodeChar(':')
-    + "\\system_file";
-  if (local_filename != expected) {
-    std::cout << "TranslateFilenameFromPar2ToLocal windows absolute" << std::endl;
-    return 1;
-  }
-#else
-  // UNIXes and OSX/MacOS check for absolute paths
-  local_filename = DescriptionPacket::TranslateFilenameFromPar2ToLocal(std::cout, std::cerr, nlNormal, "/system_file");
-  expected = DescriptionPacket::UrlEncodeChar('/')
-    + "system_file";
-  if (local_filename != expected) {
-    std::cout << "TranslateFilenameFromPar2ToLocal UNIX absolute" << std::endl;
-    return 1;
-  }
-#endif
+  return 0;
+}
 
-  // prevent access through parents
-  local_filename = DescriptionPacket::TranslateFilenameFromPar2ToLocal(std::cout, std::cerr, nlNormal, "../system_file");
-  expected = DescriptionPacket::UrlEncodeChar('.')
-    + DescriptionPacket::UrlEncodeChar('.')
-    + fs
-    + "system_file";
-  if (local_filename != expected) {
-    std::cout << "TranslateFilenameFromPar2ToLocal parent" << std::endl;
-    std::cout << "    returned = " << local_filename << std::endl;
-    std::cout << "    expected = " << expected << std::endl;
-    return 1;
-  }
-  local_filename = DescriptionPacket::TranslateFilenameFromPar2ToLocal(std::cout, std::cerr, nlNormal, "tricky/../../system_file");
-  expected = "tricky"
-    + fs
-    + DescriptionPacket::UrlEncodeChar('.')
-    + DescriptionPacket::UrlEncodeChar('.')
-    + fs
-    + DescriptionPacket::UrlEncodeChar('.')
-    + DescriptionPacket::UrlEncodeChar('.')
-    + fs
-    + "system_file";
-  if (local_filename != expected) {
-    std::cout << "TranslateFilenameFromPar2ToLocal parent" << std::endl;
-    std::cout << "    returned = " << local_filename << std::endl;
-    std::cout << "    expected = " << expected << std::endl;
+// With no errorlog to tell, the name is still made safe
+int test4() {
+  if (DescriptionPacket::TranslateFilenameFromPar2ToLocal("\t") != DescriptionPacket::UrlEncodeChar('\t')) {
+    std::cout << "TranslateFilenameFromPar2ToLocal with nothing to tell" << std::endl;
     return 1;
   }
 
   return 0;
 }
 
+// A warning which a few lines explain further carries them, and one which
+// needs none carries none
+int test5() {
+  Heard parent;
+  DescriptionPacket::TranslateFilenameFromLocalToPar2(".." + fs + "input1.txt", &parent.errorlog);
+  if (parent.warnings.size() != 1 || parent.warnings[0].detail.empty()
+      || parent.warnings[0].detail.back() != '\n') {
+    std::cout << "a parent directory is explained further" << std::endl;
+    return 1;
+  }
+
+  Heard unsafe;
+  DescriptionPacket::TranslateFilenameFromLocalToPar2("*input1.txt", &unsafe.errorlog);
+  if (unsafe.warnings.size() != 1 || !unsafe.warnings[0].detail.empty()) {
+    std::cout << "an unsafe character needs no further explaining" << std::endl;
+    return 1;
+  }
+
+  return 0;
+}
 
 int main() {
   if (test1()) {
@@ -258,6 +242,14 @@ int main() {
   }
   if (test3()) {
     std::cerr << "FAILED: test3" << std::endl;
+    return 1;
+  }
+  if (test4()) {
+    std::cerr << "FAILED: test4" << std::endl;
+    return 1;
+  }
+  if (test5()) {
+    std::cerr << "FAILED: test5" << std::endl;
     return 1;
   }
 

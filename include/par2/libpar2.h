@@ -23,7 +23,6 @@
 #include <array>
 #include <map>
 #include <memory>
-#include <ostream>
 #include <string>
 #include <utility>
 #include <vector>
@@ -44,19 +43,6 @@ typedef enum
   scLimited,       // Limit PAR2 file size
   scUniform        // All PAR2 files the same size
 } Scheme;
-
-
-// How much logging/status information to write
-// to output or error stream
-typedef enum
-{
-  nlUnknown = 0,
-  nlSilent,       // Absolutely no output (other than errors)
-  nlQuiet,        // Bare minimum of output
-  nlNormal,       // Normal level of output
-  nlNoisy,        // Lots of output
-  nlDebug         // Extra debugging information
-} NoiseLevel;
 
 
 // What a par2 operation returns, which is also the tool's exit code
@@ -168,6 +154,11 @@ typedef enum WarningCode
   wcIncompleteWrite = 3,
   wcIncompleteRead = 4,
 
+  // A packet which disagrees with the rest of the set was left out of it: a
+  // recovery block of the wrong size, or a file whose packets disagree about
+  // how many blocks it has
+  wcPacketDiscarded = 5,
+
 } WarningCode;
 
 
@@ -183,8 +174,21 @@ typedef enum Phase
   phSolving = 4,         // Solving it, which only a repair with missing blocks needs
   phProcessing = 5,      // Computing recovery data, or rebuilding missing blocks
   phVerifyingRepair = 6, // Reading back what a repair has just written
+  phWriting = 7,         // A file the work wrote: a PAR2 file a create made, or
+                         // a file a repair rebuilt
 
 } Phase;
+
+
+// How much detail of the work the observer is given through OnDetail, each
+// level taking in those below it
+typedef enum Verbosity
+{
+  vbNone = 0,            // None, which is where a handle starts
+  vbVerbose = 1,         // Where a scan found no data, the -v option
+  vbDebug = 2,           // How the work is going about it, the -vv option
+
+} Verbosity;
 
 
 // Something worth knowing which did not stop the work.
@@ -193,8 +197,11 @@ struct Par2Warning
   WarningCode code{};
   std::string message;    // One line, without a trailing newline
   std::string filename;   // The file it concerns, empty when it concerns none:
-                          // the name the set records for wcFilenameUnsafe and
-                          // wcFilenameChanged, and its absolute path otherwise
+                          // the name the set records for wcFilenameUnsafe,
+                          // wcFilenameChanged and wcPacketDiscarded, and its
+                          // absolute path otherwise
+  std::string detail;     // Lines which say more of it, each ending in a
+                          // newline, and empty when there is nothing more
 };
 
 
@@ -262,18 +269,57 @@ struct Par2VerifyResult
 };
 
 
+// What checking one file found, as OnFileDone reports it
+struct Par2FileResult
+{
+  std::string filename;         // The name OnFile gave it
+  std::string localfilename;    // The file on this system, absolute
+  bool exists{};                // False when there was no file to read
+  u64 filesize{};               // Its size, when it exists
+  bool target{};                // Read as the file the set names at this
+                                // path, rather than as an extra file
+  bool scanned{};               // A verdict on its blocks was reached
+  u32 blocksfound{};            // Blocks of the set found in it
+  u32 blocksneeded{};           // Blocks of the file they belong to
+  bool complete{};              // It is that file, whole and unchanged
+  std::string matchedfilename;  // The name the set records for the file
+                                // its blocks belong to, or the file it
+                                // matched whole, and empty when there is
+                                // no one such file
+  std::string matchedlocalfilename; // Where that file belongs, absolute
+  bool severalfiles{};          // Its blocks belong to several of the
+                                // set's files
+  u32 duplicateblocks{};        // Blocks found which other files had
+                                // already supplied
+  u64 skippedbytes{};           // Bytes passed over by data skipping
+  u32 packetsfound{};           // Packets a PAR2 file held which had not
+                                // been read before
+};
+
+// scanned is false for a PAR2 file, for a file which is not there, could not
+// be read to the end or was written off through SetKnownBlocks, and when the
+// set records no block checksums, so that files can only be compared whole. A
+// file found complete with no blocks counted was matched that way. A create
+// reads every block of each source file, so a file it read is scanned and
+// complete. An extra file a rename-only verify stopped scanning is not
+// scanned either, and blocksfound counts the blocks it found before stopping.
+//
+// A file reported in phWriting has blocksfound counting the blocks written to
+// it: every block of a file a repair rebuilt, which is written but not yet
+// read back, or the recovery blocks a PAR2 file holds.
+
+
 // Receives progress and per-file results from a par2 operation.
 //
 // Every method has an empty default, so an implementation only overrides what
 // it needs. The methods are called from whichever thread is doing the work,
 // which may be one of several worker threads, so they must be thread safe, and
 // they must not throw.
-// They are not affected by the NoiseLevel, which only controls what is written
-// to the output stream.
 //
 // OnProgress is called with a lock held which the other threads reporting
 // progress may wait on, so it should return quickly. A callback may call
-// Cancel on the handle it is reporting for, and nothing else of that handle.
+// Cancel on the handle it is reporting for, and nothing else of that handle:
+// the call it reports on holds the handle until it returns.
 class Par2Observer
 {
 public:
@@ -299,6 +345,10 @@ public:
   //
   // Several files are read at once, so a Create's pairs interleave, and the
   // order they arrive in is not the order the set ends up recording them in.
+  //
+  // phWriting reports each file the work wrote once it is written in full,
+  // so its OnFile and OnFileDone arrive together, and it has no progress of
+  // its own: the writing is done as part of phProcessing.
   virtual void OnFile(Phase phase, const std::string &filename) {}
 
   // Progress through one step of the work, in thousandths, running upwards and
@@ -320,12 +370,11 @@ public:
   // phHashing reports nothing.
   virtual void OnProgress(Phase phase, u32 permille) {}
 
-  // This file has been checked. blocksfound of blocksneeded were usable, both
-  // zero for a PAR2 file, which has no blocks of its own to account for.
-  virtual void OnFileDone(Phase phase,
-                          const std::string &filename,
-                          u32 blocksfound,
-                          u32 blocksneeded) {}
+  // This file has been checked, and result says what it held. A PAR2 file has
+  // no blocks of its own to account for, so blocksneeded is zero, blocksfound
+  // counts the recovery blocks it added to the set and packetsfound every
+  // packet it added.
+  virtual void OnFileDone(Phase phase, const Par2FileResult &result) {}
 
   // Something went wrong. Called once per error as it is found, from the
   // thread that found it, so a caller wanting every error rather than only the
@@ -338,21 +387,27 @@ public:
   // per warning as it is found, from the thread that found it.
   //
   // Nothing else reports these: there is no GetLastWarning, because no outcome
-  // depends on them. The NoiseLevel does not affect them either, though it
-  // still decides whether the same thing is written to the error stream.
+  // depends on them.
   virtual void OnWarning(const Par2Warning &warning) {}
+
+  // A detail of the work, at a verbosity the handle was given through
+  // SetVerbosity, as one or more lines of text without a trailing newline,
+  // from the thread doing the work. It is meant for a person to read, and its
+  // wording may change.
+  virtual void OnDetail(Verbosity verbosity, const std::string &text) {}
 };
 
 
 // Verifies and repairs one PAR2 set.
 //
 // PAR2 files are added one at a time, so a caller which is still collecting
-// them can add each as it arrives and ask what the set now describes. Several
-// of these may be used at once, as long as each is only used from one thread at
-// a time.
+// them can add each as it arrives and ask what the set now describes.
 //
-// Verify and Repair are also available as the par2repair function below, which
-// does the whole job in one call.
+// Several of these may be used at once, and one may be called from several
+// threads at once. Its calls take turns, each finishing before the next
+// starts, so files fed to VerifyFile from several threads are scanned one
+// after another. Cancel and ClearCancel are the exception, and take effect
+// straight away.
 //
 // The calls which return a Result report a failure through it rather than
 // throwing, whatever the work or the implementations the application supplies
@@ -371,18 +426,9 @@ public:
   //
   // backends holds the implementations the application supplies, each of which
   // falls back to the one built in when it is left empty.
-  Par2Verifier(std::ostream &sout, std::ostream &serr, NoiseLevel noiselevel,
-               const std::string &basepath = std::string(),
-               Backends backends = Backends());
-
-  // Built without streams nothing is written anywhere, and the work is
-  // followed through an observer instead. There is no NoiseLevel because
-  // everything it governs is written output. The one exception is on Windows,
-  // where a filename which is not valid UTF-8 is reported on stderr as it is
-  // converted.
   //
-  // The observer is told exactly what it is told otherwise: OnSetInfo, OnFile,
-  // OnFileDone, OnProgress, OnError and OnWarning all arrive unchanged.
+  // Nothing is written anywhere, and the work is followed through an observer
+  // instead.
   explicit Par2Verifier(const std::string &basepath,
                         Backends backends = Backends());
 
@@ -493,6 +539,18 @@ public:
   // Applies to Verify and to VerifyFile.
   void SetFullHash(const bool enabled);
 
+  // Look among the extra files only for the set's files whole under another
+  // name, the -O option: the scan of an extra file stops at the first data
+  // which is not the next block of one of them, keeping the blocks it found
+  // before that, and a repair uses those as it would any others. Applies to
+  // Verify.
+  void SetRenameOnly(const bool enabled);
+
+  // How much detail of the work the observer is given through OnDetail. None
+  // is given unless this asks for it, and nothing is spent putting into words
+  // a detail which is not wanted.
+  void SetVerbosity(const Verbosity verbosity);
+
   // Threads for the main processing and for hashing files in parallel, the -t
   // and -T options. Either left zero stays at the default. They are read by
   // the next Verify, VerifyFile or Repair.
@@ -598,7 +656,10 @@ private:
   class Impl;
   struct State;
 
-  Par2Verifier(std::unique_ptr<std::ostream> nullstream, const std::string &basepath, Backends backends);
+  Result DoAddPar2File(const std::string &parfilename);
+  Result DoVerify(const std::vector<std::string> &extrafiles);
+  Result DoVerifyFile(const std::string &filename);
+  Result DoRepair(const bool verifyafter);
 
   void Restart(void);
   void TakeLastError(const Result result);
@@ -610,8 +671,7 @@ private:
 
 
 // Creates a PAR2 set from an application, with progress, cancellation and the
-// implementations the application supplies. The one-shot par2create below does
-// the same job in a single call.
+// implementations the application supplies.
 //
 // A create never writes over an existing file: if any file of the set it
 // would write is already there, it fails with eFileIOError. A cancel, or a
@@ -619,7 +679,8 @@ private:
 // had made, and nothing else.
 //
 // Create reports a failure through the Result it returns rather than throwing,
-// as the calls of Par2Verifier do.
+// as the calls of Par2Verifier do, and its calls take turns when it is called
+// from several threads at once, as theirs do.
 class Par2Creator
 {
 public:
@@ -628,15 +689,9 @@ public:
   //
   // backends holds the implementations the application supplies, each of which
   // falls back to the one built in when it is left empty.
-  Par2Creator(std::ostream &sout, std::ostream &serr, NoiseLevel noiselevel,
-              const std::string &basepath = std::string(),
-              Backends backends = Backends());
-
-  // Built without streams nothing is written anywhere, and the work is
-  // followed through an observer instead. There is no NoiseLevel because
-  // everything it governs is written output. The one exception is on Windows,
-  // where a filename which is not valid UTF-8 is reported on stderr as it is
-  // converted.
+  //
+  // Nothing is written anywhere, and the work is followed through an observer
+  // instead.
   explicit Par2Creator(const std::string &basepath,
                        Backends backends = Backends());
   ~Par2Creator();
@@ -686,6 +741,11 @@ public:
   // The -t and -T equivalents. Either left zero stays at the default.
   void SetThreadCounts(const u32 nthreads, const u32 filethreads);
 
+  // How much detail of the work the observer is given through OnDetail. None
+  // is given unless this asks for it, and nothing is spent putting into words
+  // a detail which is not wanted.
+  void SetVerbosity(const Verbosity verbosity);
+
   // Create the set, writing parfilename and the volume files beside it. A
   // trailing ".par2" is optional: the volume files are named after the set
   // rather than after its index file, so "set" and "set.par2" mean the same.
@@ -716,7 +776,7 @@ private:
   class Impl;
   struct State;
 
-  Par2Creator(std::unique_ptr<std::ostream> nullstream, const std::string &basepath, Backends backends);
+  Result DoCreate(const std::string &parfilename);
 
   void Restart(void);
   void TakeLastError(const Result result);
@@ -724,59 +784,6 @@ private:
   std::unique_ptr<State> state;
   std::unique_ptr<Impl> impl;
 };
-
-
-Result par2create(std::ostream &sout,
-			  std::ostream &serr,
-			  const NoiseLevel noiselevel,
-			  const size_t memorylimit,
-			  const std::string &basepath,
-			  const u32 nthreads,
-			  const u32 filethreads,
-			  const std::string &parfilename,
-			  const std::vector<std::string> &extrafiles,
-			  const u64 blocksize,
-			  const u32 firstblock,
-			  const Scheme recoveryfilescheme,
-			  const u32 recoveryfilecount,
-			  const u32 recoveryblockcount,
-			  const Backends &backends = Backends()
-			  );
-
-
-Result par2repair(std::ostream &sout,
-		  std::ostream &serr,
-		  const NoiseLevel noiselevel,
-		  const size_t memorylimit,
-		  const std::string &basepath,
-		  const u32 nthreads,
-		  const u32 filethreads,
-		  const std::string &parfilename,
-		  const std::vector<std::string> &extrafiles,
-		  const bool dorepair,   // derived from operation
-		  const bool purgefiles,
-		  const bool renameonly,
-		  const bool skipdata,
-		  const u64 skipleaway,
-		  const bool fullhash = false,
-		  const Backends &backends = Backends()
-		  );
-
-
-Result par1repair(std::ostream &sout,
-		  std::ostream &serr,
-		  const NoiseLevel noiselevel,
-		  const size_t memorylimit,
-		  // basepath is not used by Par1
-		  const u32 nthreads,
-		  // filethreads is not used by Par1
-		  const std::string &parfilename,
-		  const std::vector<std::string> &extrafiles,
-		  const bool dorepair,   // derived from operation
-		  const bool purgefiles
-		  // skipdata is not used by Par1
-		  // skipleaway is not used by Par1
-		  );
 
 } // namespace par2
 

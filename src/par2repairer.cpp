@@ -50,12 +50,10 @@ bool Par2Repairer::IsPar2Filename(const std::string &filename)
     && ext[4] == '2');
 }
 
-Par2Repairer::Par2Repairer(std::ostream &sout, std::ostream &serr, const NoiseLevel noiselevel, const Backends &backends)
-: sout(sout)
-, serr(serr)
-, noiselevel(noiselevel)
-, backends(backends)
+Par2Repairer::Par2Repairer(const Backends &backends)
+: backends(backends)
 , observer(0)
+, verbosity(vbNone)
 , cancelled(false)
 , packetsloaded(0)
 , searchpath()
@@ -142,82 +140,6 @@ Par2Repairer::~Par2Repairer(void)
 
   delete mainpacket;
   delete creatorpacket;
-}
-
-Result Par2Repairer::Process(
-			     const size_t memorylimit,
-			     const std::string &_basepath,
-			     const u32 nthreads,
-			     const u32 _filethreads,
-			     std::string parfilename,
-			     const std::vector<std::string> &_extrafiles,
-			     const bool dorepair,   // derived from operation
-			     const bool purgefiles,
-			     const bool renameonly,
-			     const bool _skipdata,
-			     const u64 _skipleaway,
-			     const bool _fullhash
-			     )
-{
-  ClearLastError();
-
-  // Should we skip data whilst scanning files
-  skipdata = _skipdata;
-
-  // How much leaway should we allow when scanning files
-  skipleaway = _skipleaway;
-
-  // Should the whole of each file be hashed as well as its blocks
-  fullhash = _fullhash;
-
-  // Get filenames from the command line
-  basepath = _basepath;
-  std::vector<std::string> extrafiles = _extrafiles;
-
-  ApplyThreadCounts(nthreads, _filethreads);
-  ApplyMemoryLimit(memorylimit);
-
-  if (!LoadPackets(parfilename, extrafiles) || IsCancelled())
-  {
-    if (IsCancelled())
-      return eCancelled;
-
-    errorlog.RecordIfNone(ecInternalError, "Could not load the PAR2 packets", parfilename);
-    return eLogicError;
-  }
-
-  if (noiselevel > nlQuiet)
-    sout << '\n';
-
-  Result preparedresult = PreparePackets();
-  if (preparedresult != eSuccess)
-    return preparedresult;
-
-  Result verifyresult = VerifyFiles(basepath, extrafiles, renameonly);
-
-  // Are any of the files incomplete
-  if (verifyresult == eRepairPossible)
-  {
-    // Do we want to carry out a repair
-    if (!dorepair)
-      return eRepairPossible;
-
-    Result repairresult = RepairFiles(memorylimit, basepath);
-    if (repairresult != eSuccess)
-      return repairresult;
-  }
-  else if (verifyresult != eSuccess)
-  {
-    return verifyresult;
-  }
-
-  if (purgefiles == true)
-  {
-    RemoveBackupFiles();
-    RemoveParFiles();
-  }
-
-  return eSuccess;
 }
 
 // Apply the thread counts, leaving either at its default when it is zero
@@ -317,7 +239,7 @@ Result Par2Repairer::ScanFile(const std::string &filename, const std::string &ba
   // packets still hold its DiskFile
   if (previous != 0 && packetfiles.count(previous) != 0)
   {
-    return ScanOutcome(false);
+    return ScanOutcome();
   }
 
   if (previous != 0)
@@ -327,11 +249,11 @@ Result Par2Repairer::ScanFile(const std::string &filename, const std::string &ba
   auto expected = sourcefilesbytarget.find(pathname);
   Par2RepairerSourceFile *sourcefile = (expected == sourcefilesbytarget.end()) ? 0 : expected->second;
 
-  auto *diskfile = new DiskFile(sout, serr, &errorlog);
+  auto *diskfile = new DiskFile(&errorlog);
   if (!diskfile->Open(pathname))
   {
     delete diskfile;
-    return ScanOutcome(false);
+    return ScanOutcome();
   }
 
   if (!diskFileMap.Insert(diskfile))
@@ -355,7 +277,7 @@ Result Par2Repairer::ScanFile(const std::string &filename, const std::string &ba
     sourcefile->SetCompleteFile(0);
   }
 
-  ProgressMeter<u64> progress(sout, "Scanning: ", diskfile->FileSize(), noiselevel, phScanning, observer);
+  ProgressMeter<u64> progress(diskfile->FileSize(), phScanning, observer);
 
   ResetScanBuffers(1, diskfile->FileSize());
 
@@ -377,17 +299,14 @@ Result Par2Repairer::ScanFile(const std::string &filename, const std::string &ba
     return eCancelled;
   }
 
-  return ScanOutcome(false);
+  return ScanOutcome();
 }
 
-Result Par2Repairer::ScanOutcome(const bool report)
+Result Par2Repairer::ScanOutcome(void)
 {
   UpdateVerificationResults();
 
-  // CheckVerificationResults writes the summary out and comes to the same answer
-  const bool possible = report ? CheckVerificationResults()
-                               : recoverypacketmap.size() >= missingblockcount;
-  if (!possible)
+  if (recoverypacketmap.size() < missingblockcount)
     return eRepairNotPossible;
 
   if (completefilecount < mainpacket->RecoverableFileCount())
@@ -440,10 +359,7 @@ Result Par2Repairer::VerifyFiles(const std::string &basepath,
   // buffers are given up rather than held against the memory a repair needs
   scanbuffers.Reset(0, 0);
 
-  if (noiselevel > nlSilent)
-    sout << '\n';
-
-  // Check the verification results and report the results
+  // Check the verification results
   return ScanOutcome();
 }
 
@@ -454,9 +370,6 @@ Result Par2Repairer::RepairFiles(const size_t memorylimit, const std::string &ba
   ClearLastError();
 
   ApplyMemoryLimit(memorylimit);
-
-  if (noiselevel > nlSilent)
-    sout << '\n';
 
   // Rename any damaged or missnamed target files.
   if (!RenameTargetFiles())
@@ -501,11 +414,8 @@ Result Par2Repairer::RepairFiles(const size_t memorylimit, const std::string &ba
       return eFileIOError;
     }
 
-    if (noiselevel > nlSilent)
-      sout << '\n';
-
     // Set the total amount of data to be processed.
-    ProgressMeter<u64> progress(sout, missingblockcount > 0 ? "Repairing: " : "Processing: ", blocksize * sourceblockcount, noiselevel, phProcessing, observer);
+    ProgressMeter<u64> progress(blocksize * sourceblockcount, phProcessing, observer);
 
     // Start at an offset of 0 within a block.
     u64 blockoffset = 0;
@@ -539,6 +449,8 @@ Result Par2Repairer::RepairFiles(const size_t memorylimit, const std::string &ba
       }
     }
 
+    ReportWritten();
+
     // The repaired files are scanned into buffers of their own, so the ones
     // the repair read and wrote through are given up first
     delete [] (u8*)transferbuffer;
@@ -548,9 +460,6 @@ Result Par2Repairer::RepairFiles(const size_t memorylimit, const std::string &ba
 
     if (verifyafter)
     {
-      if (noiselevel > nlSilent)
-        sout << "\nVerifying repaired files:\n" << std::endl;
-
       // Verify that all of the reconstructed target files are now correct
       ResetScanBuffers(verifylist.size());
 
@@ -587,12 +496,8 @@ Result Par2Repairer::RepairFiles(const size_t memorylimit, const std::string &ba
   // Are all of the target files now complete?
   if (verifyafter && completefilecount<mainpacket->RecoverableFileCount())
   {
-    serr << "Repair Failed." << std::endl;
     return eRepairFailed;
   }
-
-  if (noiselevel > nlSilent)
-    sout << "\nRepair complete." << std::endl;
 
   return eSuccess;
 }
@@ -1012,7 +917,7 @@ bool Par2Repairer::LoadPacketsFromFile(const std::string &filename, bool reread,
   }
   else
   {
-    diskfile = new DiskFile(sout, serr, &errorlog);
+    diskfile = new DiskFile(&errorlog);
 
     // Open the file
     if (!diskfile->Open(filename))
@@ -1024,14 +929,6 @@ bool Par2Repairer::LoadPacketsFromFile(const std::string &filename, bool reread,
         *opened = false;
       return true;
     }
-  }
-
-  if (noiselevel > nlSilent)
-  {
-    std::string path;
-    std::string name;
-    DiskFile::SplitFilename(filename, path, name);
-    sout << "Loading \"" << name << "\"." << std::endl;
   }
 
   if (observer)
@@ -1058,7 +955,7 @@ bool Par2Repairer::LoadPacketsFromFile(const std::string &filename, bool reread,
     u8 *buffer = new u8[buffersize];
 
     // Progress indicator
-    ProgressMeter<u64> progress(sout, "Loading: ", filesize, noiselevel, phLoading, observer);
+    ProgressMeter<u64> progress(filesize, phLoading, observer);
 
     // Start at the beginning of the file
     u64 offset = 0;
@@ -1234,27 +1131,18 @@ bool Par2Repairer::LoadPacketsFromFile(const std::string &filename, bool reread,
 
   if (packets > 0)
   {
-    if (noiselevel > nlQuiet)
-    {
-      sout << "Loaded " << packets << " new packets";
-      if (recoverypackets > 0) sout << " including " << recoverypackets << " recovery blocks";
-      sout << std::endl;
-    }
-
     // Remember that the file was processed
     if (owned)
     {
       bool success = diskFileMap.Insert(diskfile);
       assert(success);
+      (void)success;
     }
 
     packetfiles[diskfile] = !cutshort;
   }
   else
   {
-    if (noiselevel > nlQuiet)
-      sout << "No new packets found" << std::endl;
-
     if (owned)
     {
       // Remembered by name only
@@ -1270,7 +1158,17 @@ bool Par2Repairer::LoadPacketsFromFile(const std::string &filename, bool reread,
   }
 
   if (observer)
-    observer->OnFileDone(phLoading, filename, 0, 0);
+  {
+    Par2FileResult result;
+    result.filename = filename;
+    result.localfilename = filename;
+    result.exists = true;
+    result.filesize = filesize;
+    result.blocksfound = recoverypackets;
+    result.packetsfound = packets;
+
+    observer->OnFileDone(phLoading, result);
+  }
 
   return true;
 }
@@ -1576,7 +1474,6 @@ bool Par2Repairer::CheckPacketConsistency(void)
     // If we don't have a main packet, then there is nothing more that we can do.
     // We cannot verify or repair any files.
 
-    serr << "Main packet not found." << std::endl;
     return false;
   }
 
@@ -1595,7 +1492,11 @@ bool Par2Repairer::CheckPacketConsistency(void)
       }
       else
       {
-        serr << "Incorrect sized recovery block for exponent " << rp->second->Exponent() << " discarded" << std::endl;
+        {
+          std::ostringstream message;
+          message << "Incorrect sized recovery block for exponent " << rp->second->Exponent() << " discarded";
+          errorlog.Warn(wcPacketDiscarded, message.str());
+        }
 
         delete rp->second;
         std::map<u32,RecoveryPacket*>::iterator x = rp++;
@@ -1624,7 +1525,9 @@ bool Par2Repairer::CheckPacketConsistency(void)
       // Compute and store the block count from the filesize and blocksize
       if (!sf->second->SetBlockCount(blocksize))
       {
-        serr << "Too many blocks in source file \"" << descriptionpacket->FileName() << "\" discarded" << std::endl;
+        errorlog.Warn(wcPacketDiscarded,
+                      "Too many blocks in source file \"" + descriptionpacket->FileName() + "\" discarded",
+                      descriptionpacket->FileName());
 
         delete sf->second;
         std::map<MD5Hash, Par2RepairerSourceFile*>::iterator x = sf++;
@@ -1652,7 +1555,9 @@ bool Par2Repairer::CheckPacketConsistency(void)
       {
         // The block counts are different!
 
-        serr << "Incorrectly sized verification packet for \"" << descriptionpacket->FileName() << "\" discarded" << std::endl;
+        errorlog.Warn(wcPacketDiscarded,
+                      "Incorrectly sized verification packet for \"" + descriptionpacket->FileName() + "\" discarded",
+                      descriptionpacket->FileName());
 
         // Discard the source file
 
@@ -1668,19 +1573,6 @@ bool Par2Repairer::CheckPacketConsistency(void)
       // Proceed to the next file
       ++sf;
     }
-  }
-
-  if (noiselevel > nlQuiet)
-  {
-    sout << "There are "
-      << mainpacket->RecoverableFileCount()
-      << " recoverable files and "
-      << mainpacket->TotalFileCount() - mainpacket->RecoverableFileCount()
-      << " other files.\n"
-         "The block size used was "
-      << blocksize
-      << " bytes."
-      << std::endl;
   }
 
   return true;
@@ -1701,7 +1593,7 @@ bool Par2Repairer::CreateSourceFileList(void)
 
     if (sourcefile)
     {
-      sourcefile->ComputeTargetFileName(sout, serr, noiselevel, basepath, &errorlog);
+      sourcefile->ComputeTargetFileName(basepath, &errorlog);
     }
 
     sourcefiles.push_back(sourcefile);
@@ -1729,7 +1621,6 @@ bool Par2Repairer::AllocateSourceBlocks(void)
       u32 blockcount = sourcefile->BlockCount();
       if (blockcount > ((u32)~0) - sourceblockcount)
       {
-        serr << "Too many source blocks in recovery set." << std::endl;
         errorlog.Record(ecTooManySourceBlocks, "Too many source blocks in the recovery set");
         return false;
       }
@@ -1793,17 +1684,6 @@ bool Par2Repairer::AllocateSourceBlocks(void)
 
     blocksallocated = true;
     totaldatasize = totalsize;
-
-    if (noiselevel > nlQuiet)
-    {
-      sout << "There are a total of "
-        << sourceblockcount
-        << " data blocks.\n"
-           "The total size of the data files is "
-        << totalsize
-        << " bytes."
-        << std::endl;
-    }
   }
 
   return true;
@@ -1814,8 +1694,8 @@ bool Par2Repairer::AllocateSourceBlocks(void)
 // a verification packet
 bool Par2Repairer::PrepareVerificationHashTable(void)
 {
-  if (noiselevel >= nlDebug)
-    sout << "[DEBUG] Prepare verification hashtable" << std::endl;
+  if (observer && verbosity >= vbDebug)
+    observer->OnDetail(vbDebug, "[DEBUG] Prepare verification hashtable");
 
   // Choose a size for the hash table
   verificationhashtable.SetLimit(sourceblockcount);
@@ -1856,8 +1736,8 @@ bool Par2Repairer::PrepareVerificationHashTable(void)
 // Compute the table for the sliding CRC computation
 bool Par2Repairer::ComputeWindowTable(void)
 {
-  if (noiselevel >= nlDebug)
-    sout << "[DEBUG] compute window table" << std::endl;
+  if (observer && verbosity >= vbDebug)
+    observer->OnDetail(vbDebug, "[DEBUG] compute window table");
 
   if (blockverifiable)
   {
@@ -1876,9 +1756,6 @@ static bool SortSourceFilesByFileName(Par2RepairerSourceFile *low,
 // Attempt to verify all of the source files
 bool Par2Repairer::VerifySourceFiles(const std::string &basepath, std::vector<std::string>& extrafiles)
 {
-  if (noiselevel > nlQuiet)
-    sout << "\nVerifying source files:\n" << std::endl;
-
   std::atomic<bool> finalresult(true);
 
   // Created a sorted list of the source files and verify them in that
@@ -1906,8 +1783,6 @@ bool Par2Repairer::VerifySourceFiles(const std::string &basepath, std::vector<st
       // Was this one of the recoverable files
       if (filenumber < mainpacket->RecoverableFileCount())
       {
-        serr << "No details available for recoverable file number " << filenumber+1 << ".\nRecovery will not be possible." << std::endl;
-
         {
           std::ostringstream message;
           message << "No details available for recoverable file number " << filenumber+1;
@@ -1919,7 +1794,6 @@ bool Par2Repairer::VerifySourceFiles(const std::string &basepath, std::vector<st
       }
       else
       {
-        serr << "No details available for non-recoverable file number " << filenumber - mainpacket->RecoverableFileCount() + 1 << std::endl;
       }
     }
 
@@ -1928,7 +1802,7 @@ bool Par2Repairer::VerifySourceFiles(const std::string &basepath, std::vector<st
   }
 
   std::sort(sortedfiles.begin(), sortedfiles.end(), SortSourceFilesByFileName);
-  ProgressMeter<u64> progress(sout, "Scanning: ", mttotalsize, noiselevel, phScanning, observer);
+  ProgressMeter<u64> progress(mttotalsize, phScanning, observer);
 
   // Start verifying the files
   foreach_parallel(sortedfiles, FileThreads(sortedfiles.size()), [&](Par2RepairerSourceFile *sourcefile)
@@ -1941,12 +1815,12 @@ bool Par2Repairer::VerifySourceFiles(const std::string &basepath, std::vector<st
     const std::string& name = DiskFile::SplitRelativeFilename(file, basepath);
     const std::string& target_pathname = DiskFile::GetCanonicalPathname(file);
 
-    if (noiselevel >= nlDebug)
+    if (observer && verbosity >= vbDebug)
     {
-      LockedStream(sout) << "[DEBUG] VerifySourceFiles ----\n"
-        "[DEBUG] file: " << file << "\n"
-        "[DEBUG] name: " << name << "\n"
-        "[DEBUG] targ: " << target_pathname << std::endl;
+      observer->OnDetail(vbDebug, "[DEBUG] VerifySourceFiles ----\n"
+                                  "[DEBUG] file: " + file + "\n"
+                                  "[DEBUG] name: " + name + "\n"
+                                  "[DEBUG] targ: " + target_pathname);
     }
 
     // if the target file is in the list of extra files, we remove it
@@ -1966,7 +1840,7 @@ bool Par2Repairer::VerifySourceFiles(const std::string &basepath, std::vector<st
       }
     }
 
-    auto *diskfile = new DiskFile(sout, serr, &errorlog);
+    auto *diskfile = new DiskFile(&errorlog);
 
     // Does the target file exist
     if (!diskfile->Open(file))
@@ -1974,17 +1848,16 @@ bool Par2Repairer::VerifySourceFiles(const std::string &basepath, std::vector<st
       // The file does not exist.
       delete diskfile;
 
-      if (noiselevel > nlSilent)
-      {
-        LockedStream(sout) << "Target: \"" << name << "\" - missing." << std::endl;
-      }
-
       if (observer)
       {
-        const std::string reported = ReportedName(sourcefile, name);
+        Par2FileResult result;
+        result.filename = ReportedName(sourcefile, name);
+        result.localfilename = file;
+        result.target = true;
+        result.blocksneeded = BlocksNeeded(sourcefile);
 
-        observer->OnFile(progress.GetPhase(), reported);
-        observer->OnFileDone(progress.GetPhase(), reported, 0, BlocksNeeded(sourcefile));
+        observer->OnFile(progress.GetPhase(), result.filename);
+        observer->OnFileDone(progress.GetPhase(), result);
       }
 
       return;
@@ -2005,16 +1878,19 @@ bool Par2Repairer::VerifySourceFiles(const std::string &basepath, std::vector<st
       diskfile->Close();
       delete diskfile;
 
-      LockedStream(serr) << "Source file " << name << " is a duplicate." << std::endl;
-
       errorlog.Record(ecDuplicateSourceFile, "The set names this file more than once", file);
 
       if (observer)
       {
-        const std::string reported = ReportedName(sourcefile, name);
+        Par2FileResult result;
+        result.filename = ReportedName(sourcefile, name);
+        result.localfilename = file;
+        result.exists = true;
+        result.target = true;
+        result.blocksneeded = BlocksNeeded(sourcefile);
 
-        observer->OnFile(progress.GetPhase(), reported);
-        observer->OnFileDone(progress.GetPhase(), reported, 0, BlocksNeeded(sourcefile));
+        observer->OnFile(progress.GetPhase(), result.filename);
+        observer->OnFileDone(progress.GetPhase(), result);
       }
 
       finalresult = false;
@@ -2045,9 +1921,6 @@ bool Par2Repairer::VerifySourceFiles(const std::string &basepath, std::vector<st
 // Scan any extra files specified on the command line
 bool Par2Repairer::VerifyExtraFiles(const std::vector<std::string> &extrafiles, const std::string &basepath, const bool renameonly)
 {
-  if (noiselevel > nlQuiet)
-    sout << "\nScanning extra files:\n" << std::endl;
-
   if (completefilecount < mainpacket->RecoverableFileCount())
   {
     // Total size of extra files for mt-progress line
@@ -2055,7 +1928,7 @@ bool Par2Repairer::VerifyExtraFiles(const std::vector<std::string> &extrafiles, 
     for (size_t i=0; i<extrafiles.size(); ++i)
       mttotalextrasize += DiskFile::GetFileSize(extrafiles[i]);
 
-    ProgressMeter<u64> progress(sout, "Scanning: ", mttotalextrasize, noiselevel, phScanning, observer);
+    ProgressMeter<u64> progress(mttotalextrasize, phScanning, observer);
 
     foreach_parallel(extrafiles, FileThreads(extrafiles.size()), [&](const std::string &extrafile)
     {
@@ -2077,7 +1950,7 @@ bool Par2Repairer::VerifyExtraFiles(const std::vector<std::string> &extrafiles, 
         }
         if (b)
         {
-          auto *diskfile = new DiskFile(sout, serr, &errorlog);
+          auto *diskfile = new DiskFile(&errorlog);
 
           // Does the file exist
           if (!diskfile->Open(filename))
@@ -2131,16 +2004,31 @@ bool Par2Repairer::VerifyDataFile(DiskFile *diskfile, Par2RepairerSourceFile *so
   if (observer)
     observer->OnFile(progress.GetPhase(), name);
 
-  u32 blocksfound = 0;
-  const bool matched = MatchDataFile(diskfile, sourcefile, basepath, progress, renameonly, blocksfound);
+  Par2FileResult result;
+  result.filename = name;
+  result.localfilename = diskfile->FileName();
+  result.exists = true;
+  result.filesize = diskfile->FileSize();
+  result.target = sourcefile != 0;
+
+  const bool matched = MatchDataFile(diskfile, sourcefile, basepath, progress, renameonly, result);
+
+  result.blocksneeded = BlocksNeeded(sourcefile);
+
+  // The file the blocks were found to belong to, when there is just one
+  if (sourcefile != 0 && (result.blocksfound > 0 || result.complete) && !result.severalfiles)
+  {
+    result.matchedfilename = sourcefile->GetDescriptionPacket()->FileName();
+    result.matchedlocalfilename = sourcefile->TargetFileName();
+  }
 
   if (observer)
-    observer->OnFileDone(progress.GetPhase(), name, blocksfound, BlocksNeeded(sourcefile));
+    observer->OnFileDone(progress.GetPhase(), result);
 
   return matched;
 }
 
-bool Par2Repairer::MatchDataFile(DiskFile *diskfile, Par2RepairerSourceFile *&sourcefile, const std::string &basepath, ProgressMeter<u64> &progress, const bool renameonly, u32 &blocksfound)
+bool Par2Repairer::MatchDataFile(DiskFile *diskfile, Par2RepairerSourceFile *&sourcefile, const std::string &basepath, ProgressMeter<u64> &progress, const bool renameonly, Par2FileResult &result)
 {
   MatchType matchtype; // What type of match was made
   MD5Hash hashfull{};  // The MD5 Hash of the whole file
@@ -2159,7 +2047,7 @@ bool Par2Repairer::MatchDataFile(DiskFile *diskfile, Par2RepairerSourceFile *&so
                       matchtype,  // [out]
                       hashfull,   // [out]
                       hash16k,    // [out]
-                      blocksfound)) // [out]
+                      result))    // [out]
       return false;
 
     switch (matchtype)
@@ -2272,10 +2160,8 @@ bool Par2Repairer::MatchDataFile(DiskFile *diskfile, Par2RepairerSourceFile *&so
           hash16k == sourcefile->GetDescriptionPacket()->Hash16k() &&
           hashfull == sourcefile->GetDescriptionPacket()->HashFull())
       {
-        if (noiselevel > nlSilent)
-        {
-          LockedStream(sout) << diskfile->FileName() << " is a perfect match for " << sourcefile->GetDescriptionPacket()->FileName() << std::endl;
-        }
+        result.complete = true;
+
         // Record that we have a perfect match for this source file
         sourcefile->SetCompleteFile(diskfile);
 
@@ -2623,13 +2509,10 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
                                 MatchType               &matchtype,   // [out]
                                 MD5Hash                 &hashfull,    // [out] only set if there are unverifiable source files
                                 MD5Hash                 &hash16k,     // [out] only set if there are unverifiable source files
-                                u32                     &count)       // [out]
+                                Par2FileResult          &result)      // [out]
 {
-  // Remember which file we wanted to match
-  Par2RepairerSourceFile *originalsourcefile = sourcefile;
-
-  std::string name;
-  DiskFile::SplitRelativeFilename(diskfile->FileName(), basepath, name);
+  // How many blocks have been found
+  u32 &count = result.blocksfound;
 
   // Is the file empty
   if (diskfile->FileSize() == 0)
@@ -2645,35 +2528,9 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
       hashfull = hash16k;
     }
 
-    // If the file is empty, then just return
-    if (noiselevel > nlSilent)
-    {
-      if (originalsourcefile != 0)
-      {
-        LockedStream(sout) << "Target: \"" << name << "\" - empty." << std::endl;
-      }
-      else
-      {
-        LockedStream(sout) << "File: \"" << name << "\" - empty." << std::endl;
-      }
-    }
+    result.scanned = true;
 
     return true;
-  }
-
-  std::string shortname;
-  if (name.size() > 56)
-  {
-    shortname = name.substr(0, 28) + "..." + name.substr(name.size()-28);
-  }
-  else
-  {
-    shortname = name;
-  }
-
-  if (noiselevel > nlQuiet)
-  {
-    LockedStream(sout) << "Opening: \"" << shortname << "\"" << std::endl;
   }
 
   // Assume we will make a perfect match for the file
@@ -2856,11 +2713,10 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
     // Did we find a match
     if (currententry != 0)
     {
-      if (lastmatchoffset < filechecksummer.Offset() && noiselevel > nlNormal)
+      if (lastmatchoffset < filechecksummer.Offset() && observer && verbosity >= vbVerbose)
       {
-        progress.PrintLine((std::ostringstream()
-          << "No data found between offset " << lastmatchoffset
-          << " and " << filechecksummer.Offset()).str());
+        observer->OnDetail(vbVerbose, "No data found between offset " + std::to_string(lastmatchoffset)
+                                    + " and " + std::to_string(filechecksummer.Offset()));
       }
 
       // Is this the first match
@@ -2983,11 +2839,10 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
   if (filechecksummer.Offset() >= rangeend)
     progress.Add(filechecksummer.Offset() - oldoffset);
 
-  if (lastmatchoffset < filechecksummer.Offset() && noiselevel > nlNormal)
+  if (lastmatchoffset < filechecksummer.Offset() && observer && verbosity >= vbVerbose)
   {
-    progress.PrintLine((std::ostringstream()
-      << "No data found between offset " << lastmatchoffset
-      << " and " << filechecksummer.Offset()).str());
+    observer->OnDetail(vbVerbose, "No data found between offset " + std::to_string(lastmatchoffset)
+                                + " and " + std::to_string(filechecksummer.Offset()));
   }
 
   }
@@ -2998,14 +2853,14 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
 
   }
 
-  if (noiselevel >= nlDebug)
+  if (observer && verbosity >= vbDebug)
   {
     std::ostringstream ss;
     if (duplicatecount > 0)
       ss << "[DEBUG] duplicates: " << duplicatecount << '\n';
     ss << "[DEBUG] matchcount: " << count << "\n"
       "[DEBUG] ----------------------";
-    progress.PrintLine(ss.str());
+    observer->OnDetail(vbDebug, ss.str());
   }
 
   // Did we make any matches at all
@@ -3025,159 +2880,18 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
            hashfull != sourcefile->GetDescriptionPacket()->HashFull()))))
     {
       matchtype = ePartialMatch;
-
-      if (noiselevel > nlSilent)
-      {
-        // Did we find data from multiple target files
-        if (multipletargets)
-        {
-          // Were we scanning the target file or an extra file
-          if (originalsourcefile != 0)
-          {
-            LockedStream(sout) << "Target: \""
-              << name
-              << "\" - damaged, found "
-              << count
-              << " data blocks from several target files."
-              << std::endl;
-          }
-          else
-          {
-            LockedStream(sout) << "File: \""
-              << name
-              << "\" - found "
-              << count
-              << " data blocks from several target files."
-              << std::endl;
-          }
-        }
-        else
-        {
-          // Did we find data blocks that belong to the target file
-          if (originalsourcefile == sourcefile)
-          {
-            LockedStream(sout) << "Target: \""
-              << name
-              << "\" - damaged. Found "
-              << count
-              << " of "
-              << sourcefile->GetVerificationPacket()->BlockCount()
-              << " data blocks."
-              << std::endl;
-          }
-          // Were we scanning the target file or an extra file
-          else if (originalsourcefile != 0)
-          {
-            std::string targetname;
-            DiskFile::SplitRelativeFilename(sourcefile->TargetFileName(), basepath, targetname);
-
-            LockedStream(sout) << "Target: \""
-              << name
-              << "\" - damaged. Found "
-              << count
-              << " of "
-              << sourcefile->GetVerificationPacket()->BlockCount()
-              << " data blocks from \""
-              << targetname
-              << "\"."
-              << std::endl;
-          }
-          else
-          {
-            std::string targetname;
-            DiskFile::SplitRelativeFilename(sourcefile->TargetFileName(), basepath, targetname);
-
-            LockedStream(sout) << "File: \""
-              << name
-              << "\" - found "
-              << count
-              << " of "
-              << sourcefile->GetVerificationPacket()->BlockCount()
-              << " data blocks from \""
-              << targetname
-              << "\"."
-              << std::endl;
-          }
-        }
-
-        if (skippeddata > 0)
-        {
-          LockedStream(sout) << skippeddata << " bytes of data were skipped whilst scanning.\n"
-            "If there are not enough blocks found to repair: try again "
-            "with the -N option." << std::endl;
-        }
-      }
-    }
-    else
-    {
-      if (noiselevel > nlSilent)
-      {
-        // Did we match the target file
-        if (originalsourcefile == sourcefile)
-        {
-          LockedStream(sout) << "Target: \"" << name << "\" - found." << std::endl;
-        }
-        // Were we scanning the target file or an extra file
-        else if (originalsourcefile != 0)
-        {
-          std::string targetname;
-          DiskFile::SplitRelativeFilename(sourcefile->TargetFileName(), basepath, targetname);
-
-          LockedStream(sout) << "Target: \""
-            << name
-            << "\" - is a match for \""
-            << targetname
-            << "\"."
-            << std::endl;
-        }
-        else
-        {
-          std::string targetname;
-          DiskFile::SplitRelativeFilename(sourcefile->TargetFileName(), basepath, targetname);
-
-          LockedStream(sout) << "File: \""
-            << name
-            << "\" - is a match for \""
-            << targetname
-            << "\"."
-            << std::endl;
-        }
-      }
     }
   }
   else
   {
     matchtype = eNoMatch;
-
-    if (noiselevel > nlSilent)
-    {
-      // We found not data, but did the file actually contain blocks we
-      // had already found in other files.
-      if (duplicatecount > 0)
-      {
-        LockedStream(sout) << "File: \""
-          << name
-          << "\" - found "
-          << duplicatecount
-          << " duplicate data blocks."
-          << std::endl;
-      }
-      else
-      {
-        LockedStream(sout) << "File: \""
-          << name
-          << "\" - no data found."
-          << std::endl;
-      }
-
-      if (skippeddata > 0)
-      {
-        LockedStream(sout) << skippeddata << " bytes of data were skipped whilst scanning.\n"
-          "If there are not enough blocks found to repair: try again "
-          "with the -N option." << std::endl;
-      }
-    }
   }
+
+  result.scanned = true;
+  result.complete = matchtype == eFullMatch;
+  result.severalfiles = multipletargets;
+  result.duplicateblocks = duplicatecount;
+  result.skippedbytes = skippeddata;
 
   return true;
 }
@@ -3256,75 +2970,29 @@ void Par2Repairer::UpdateVerificationResults(void)
   missingblockcount = sourceblockcount - availableblockcount;
 }
 
-// Check the verification results and report the results
-bool Par2Repairer::CheckVerificationResults(void)
+// Tell the observer of each file the repair has written in full
+void Par2Repairer::ReportWritten(void)
 {
-  // Is repair needed
-  if (completefilecount < mainpacket->RecoverableFileCount() ||
-      renamedfilecount > 0 ||
-      damagedfilecount > 0 ||
-      missingfilecount > 0)
+  if (0 == observer)
+    return;
+
+  for (auto *sourcefile : verifylist)
   {
-    if (noiselevel > nlSilent)
-      sout << "Repair is required." << std::endl;
-    if (noiselevel > nlQuiet)
-    {
-      if (renamedfilecount > 0) sout << renamedfilecount << " file(s) have the wrong name.\n";
-      if (missingfilecount > 0) sout << missingfilecount << " file(s) are missing.\n";
-      if (damagedfilecount > 0) sout << damagedfilecount << " file(s) exist but are damaged.\n";
-      if (completefilecount > 0) sout << completefilecount << " file(s) are ok.\n";
+    if (0 == sourcefile)
+      continue;
 
-      sout << "You have " << availableblockcount
-        << " out of " << sourceblockcount
-        << " data blocks available." << std::endl;
-      if (recoverypacketmap.size() > 0)
-        sout << "You have " << (u32)recoverypacketmap.size()
-          << " recovery blocks available." << std::endl;
-    }
+    Par2FileResult result;
+    result.filename = sourcefile->GetDescriptionPacket()->FileName();
+    result.localfilename = sourcefile->TargetFileName();
+    result.exists = true;
+    result.filesize = sourcefile->GetDescriptionPacket()->FileSize();
+    result.target = true;
+    result.blocksfound = BlocksNeeded(sourcefile);
+    result.blocksneeded = BlocksNeeded(sourcefile);
 
-    // Is repair possible
-    if (recoverypacketmap.size() >= missingblockcount)
-    {
-      if (noiselevel > nlSilent)
-        sout << "Repair is possible." << std::endl;
-
-      if (noiselevel > nlQuiet)
-      {
-        if (recoverypacketmap.size() > missingblockcount)
-          sout << "You have an excess of "
-            << (u32)recoverypacketmap.size() - missingblockcount
-            << " recovery blocks." << std::endl;
-
-        if (missingblockcount > 0)
-          sout << missingblockcount
-            << " recovery blocks will be used to repair." << std::endl;
-        else if (recoverypacketmap.size())
-          sout << "None of the recovery blocks will be used for the repair." << std::endl;
-      }
-
-      return true;
-    }
-    else
-    {
-      if (noiselevel > nlSilent)
-      {
-        sout << "Repair is not possible.\n"
-          "You need " << missingblockcount - recoverypacketmap.size()
-          << " more recovery blocks to be able to repair." << std::endl;
-      }
-
-      return false;
-    }
+    observer->OnFile(phWriting, result.filename);
+    observer->OnFileDone(phWriting, result);
   }
-  else
-  {
-    if (noiselevel > nlSilent)
-      sout << "All files are correct, repair is not required." << std::endl;
-
-    return true;
-  }
-
-  return true;
 }
 
 // Rename any damaged or missnamed target files.
@@ -3353,6 +3021,7 @@ bool Par2Repairer::RenameTargetFiles(void)
 
         bool success = diskFileMap.Insert(targetfile);
         assert(success);
+        (void)success;
 
         if (!renamed)
           return false;
@@ -3392,6 +3061,7 @@ bool Par2Repairer::RenameTargetFiles(void)
 
         bool success = diskFileMap.Insert(targetfile);
         assert(success);
+        (void)success;
 
         if (!renamed)
           return false;
@@ -3438,14 +3108,13 @@ bool Par2Repairer::CreateTargetFiles(void)
       // If the file does not exist
       if (!sourcefile->GetTargetExists())
       {
-        auto *targetfile = new DiskFile(sout, serr, &errorlog);
+        auto *targetfile = new DiskFile(&errorlog);
         std::string filename = sourcefile->TargetFileName();
         u64 filesize = sourcefile->GetDescriptionPacket()->FileSize();
 
         // A file which already exists but was never scanned is not written over
         if (DiskFile::FileExists(filename))
         {
-          serr << "\"" << filename << "\" already exists but was not scanned." << std::endl;
           errorlog.Record(ecNotVerified, "The file already exists but was not scanned", filename);
           delete targetfile;
           return false;
@@ -3465,6 +3134,7 @@ bool Par2Repairer::CreateTargetFiles(void)
         // Remember this file
         bool success = diskFileMap.Insert(targetfile);
         assert(success);
+        (void)success;
 
         u64 offset = 0;
         std::vector<DataBlock>::iterator tb = sourcefile->TargetBlocks();
@@ -3552,7 +3222,7 @@ bool Par2Repairer::ComputeRSmatrix(void)
   }
 
   // Set the number of source blocks and which of them are present
-  if (!rs.SetInput(present, sout, serr))
+  if (!rs.SetInput(present))
   {
     errorlog.Record(ecProcessorFailed, "Could not give the source blocks to the Reed Solomon matrix");
     return false;
@@ -3607,7 +3277,7 @@ bool Par2Repairer::ComputeRSmatrix(void)
   if (ownfactors)
     return true;
 
-  bool success = rs.Compute(noiselevel, sout, serr, observer);
+  bool success = rs.Compute(observer, verbosity);
 
   return success;
 }
@@ -3685,24 +3355,21 @@ bool Par2Repairer::AllocateBuffers(size_t memorylimit)
 
   if (!processor)
   {
-    serr << "Could not allocate buffer memory." << std::endl;
     errorlog.Record(ecProcessorFailed, "The processor the application supplied built nothing");
     return false;
   }
 
   if (!processor->Init((size_t)chunksize, missingblockcount))
   {
-    serr << "Could not allocate buffer memory." << std::endl;
     errorlog.Record(ecOutOfMemory, "The processor could not allocate its buffers");
     return false;
   }
 
-  if (noiselevel >= nlDebug)
-    sout << "[DEBUG] Process chunk size: " << chunksize << std::endl;
+  if (observer && verbosity >= vbDebug)
+    observer->OnDetail(vbDebug, "[DEBUG] Process chunk size: " + std::to_string(chunksize));
 
   if (transferbuffer == NULL || outputbuffer == NULL)
   {
-    serr << "Could not allocate buffer memory." << std::endl;
     errorlog.Record(ecOutOfMemory, "Could not allocate the transfer buffers");
     return false;
   }
@@ -3713,8 +3380,6 @@ bool Par2Repairer::AllocateBuffers(size_t memorylimit)
 // Read source data, process it through the RS matrix and write it to disk.
 bool Par2Repairer::ProcessData(u64 blockoffset, size_t blocklength, ProgressMeter<u64> &progress)
 {
-  u64 totalwritten = 0;
-
   std::vector<DataBlock*>::iterator inputblock = inputblocks.begin();
   std::vector<DataBlock*>::iterator copyblock  = copyblocks.begin();
   u32                          inputindex = 0;
@@ -3800,8 +3465,6 @@ bool Par2Repairer::ProcessData(u64 blockoffset, size_t blocklength, ProgressMete
             failed = true;
             break;
           }
-
-          totalwritten += wrote;
         }
         ++copyblock;
       }
@@ -3869,7 +3532,6 @@ bool Par2Repairer::ProcessData(u64 blockoffset, size_t blocklength, ProgressMete
         size_t wrote;
         if (!(*copyblock)->WriteData(blockoffset, blocklength, transferbuffer, wrote))
           return false;
-        totalwritten += wrote;
       }
 
       progress.Add(blocklength);
@@ -3888,9 +3550,6 @@ bool Par2Repairer::ProcessData(u64 blockoffset, size_t blocklength, ProgressMete
   if (failed || stopped)
     return false;
 
-  if (noiselevel > nlQuiet)
-    sout << "Writing recovered data\r";
-
   // For each output block that has been recomputed
   std::vector<DataBlock*>::iterator outputblock = outputblocks.begin();
   for (u32 outputindex=0; outputindex<missingblockcount;outputindex++)
@@ -3901,7 +3560,6 @@ bool Par2Repairer::ProcessData(u64 blockoffset, size_t blocklength, ProgressMete
     {
       if (!processor->GetOutput(outputindex, outputbuffer))
       {
-        serr << "Could not read the repaired data back from the processor." << std::endl;
         errorlog.Record(ecProcessorFailed, "The processor could not return the rebuilt data");
         return false;
       }
@@ -3912,13 +3570,9 @@ bool Par2Repairer::ProcessData(u64 blockoffset, size_t blocklength, ProgressMete
     size_t wrote;
     if (!(*outputblock)->WriteData(blockoffset, blocklength, outbuf, wrote))
       return false;
-    totalwritten += wrote;
 
     ++outputblock;
   }
-
-  if (noiselevel > nlQuiet)
-    sout << "Wrote " << totalwritten << " bytes to disk" << std::endl;
 
   return true;
 }
@@ -3938,7 +3592,7 @@ bool Par2Repairer::VerifyTargetFiles(const std::string &basepath)
     if (verifylist[i])
       mttotalsize += verifylist[i]->GetDescriptionPacket()->FileSize();
   }
-  ProgressMeter<u64> progress(sout, "Scanning: ", mttotalsize, noiselevel, phVerifyingRepair, observer);
+  ProgressMeter<u64> progress(mttotalsize, phVerifyingRepair, observer);
 
   // Iterate through each file in the verification list
   foreach_parallel(verifylist, FileThreads(verifylist.size()), [&](Par2RepairerSourceFile *sourcefile)
@@ -4041,70 +3695,6 @@ bool Par2Repairer::DeleteIncompleteTargetFiles(void)
       backupnames.erase(original);
       backuplist.erase(backuplist.begin() + i);
     }
-  }
-
-  return true;
-}
-
-bool Par2Repairer::RemoveBackupFiles(void)
-{
-  std::vector<DiskFile*>::iterator bf = backuplist.begin();
-
-  if (noiselevel > nlSilent
-      && bf != backuplist.end())
-  {
-    sout << "\nPurge backup files." << std::endl;
-  }
-
-  // Iterate through each file in the backuplist
-  while (bf != backuplist.end())
-  {
-    if (noiselevel > nlSilent)
-    {
-      std::string name;
-      std::string path;
-      DiskFile::SplitFilename((*bf)->FileName(), path, name);
-      sout << "Remove \"" << name << "\"." << std::endl;
-    }
-
-    if ((*bf)->IsOpen())
-      (*bf)->Close();
-    (*bf)->Delete();
-
-    ++bf;
-  }
-
-  return true;
-}
-
-bool Par2Repairer::RemoveParFiles(void)
-{
-  if (noiselevel > nlSilent
-      && !par2list.empty())
-  {
-    sout << "\nPurge par files." << std::endl;
-  }
-
-  for (std::list<std::string>::const_iterator s=par2list.begin(); s!=par2list.end(); ++s)
-  {
-    DiskFile *diskfile = new DiskFile(sout, serr);
-
-    if (diskfile->Open(*s))
-    {
-      if (noiselevel > nlSilent)
-      {
-        std::string name;
-        std::string path;
-        DiskFile::SplitFilename((*s), path, name);
-        sout << "Remove \"" << name << "\"." << std::endl;
-      }
-
-      if (diskfile->IsOpen())
-        diskfile->Close();
-      diskfile->Delete();
-    }
-
-    delete diskfile;
   }
 
   return true;

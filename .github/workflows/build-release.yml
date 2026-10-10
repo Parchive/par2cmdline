@@ -13,6 +13,9 @@ jobs:
   build-check-mingw:
     uses: ./.github/workflows/build-check-mingw.yml
 
+  build-check-linux-cross:
+    uses: ./.github/workflows/build-check-linux-cross.yml
+
   build-check-windows:
     uses: ./.github/workflows/build-check-windows.yml
 
@@ -29,6 +32,7 @@ jobs:
   build-linux:
     needs:
     - build-check-linux
+    - build-check-linux-cross
 
     name: build-linux (${{ matrix.arch }})
 
@@ -36,49 +40,44 @@ jobs:
       matrix:
         include:
         - arch: amd64
-          configure_host:
-          xcc:
+          runner: ubuntu-latest
+          cmake_args:
         - arch: arm64
-          configure_host: --host=aarch64-linux-gnu
-          xcc: aarch64-linux-gnu-
+          runner: ubuntu-24.04-arm
+          cmake_args:
         - arch: armhf
-          configure_host: --host=armv7l-linux-gnueabihf
-          xcc: arm-linux-gnueabihf-
+          runner: ubuntu-latest
+          cmake_args: -DCMAKE_TOOLCHAIN_FILE=cmake/toolchains/arm-linux-gnueabihf.cmake
 
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.runner }}
 
     steps:
     - uses: actions/checkout@v7
 
-    - name: Install cross toolchains
-      if: matrix.arch != 'amd64'
+    - name: Install Ninja
+      if: runner.arch == 'ARM64'
+      run: sudo apt-get update && sudo apt-get install -y ninja-build
+
+    - name: Install the cross toolchain
+      if: matrix.arch == 'armhf'
       run: |
         sudo apt-get update
-        case "${{ matrix.arch }}" in
-          arm64)
-            sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu libc6-dev-arm64-cross
-            ;;
-          armhf)
-            sudo apt-get install -y gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf libc6-dev-armhf-cross
-            ;;
-        esac
+        sudo apt-get install -y g++-arm-linux-gnueabihf libc6-dev-armhf-cross
 
     - name: Build
-      env:
-        CC: ${{ matrix.xcc }}gcc
-        CXX: ${{ matrix.xcc }}g++
-        LDFLAGS: -static -s
       run: |
-        ./automake.sh
-        ./configure ${{ matrix.configure_host }}
-        make -j"$(nproc)"
+        cmake -B build-cmake -G Ninja -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_EXE_LINKER_FLAGS="-static -s" \
+          -DPAR2_BUILD_TESTS=OFF \
+          ${{ matrix.cmake_args }}
+        cmake --build build-cmake
 
     - name: Upload binary artifact
       uses: actions/upload-artifact@v7
       with:
         name: par2cmdline-linux-${{ matrix.arch }}
         path: |
-          par2
+          build-cmake/par2
         retention-days: 5
 
   build-windows:
@@ -100,18 +99,18 @@ jobs:
     steps:
     - uses: actions/checkout@v7
 
-    - name: Add MSBuild to PATH
-      uses: microsoft/setup-msbuild@v3
-
     - name: Build
-      run: msbuild -property:Configuration=Release -property:Platform=${{ matrix.platform }} par2cmdline.sln
+      run: |
+        cmake -B build-cmake -A ${{ matrix.platform }} -DPAR2_BUILD_TESTS=OFF \
+          -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded
+        cmake --build build-cmake --config Release -j
 
     - name: Upload binary artifact
       uses: actions/upload-artifact@v7
       with:
         name: par2cmdline-win-${{ matrix.name }}
         path: |
-          ${{ matrix.platform }}/Release/par2.exe
+          build-cmake/par2.exe
         retention-days: 5
 
   build-macos:
@@ -124,36 +123,32 @@ jobs:
       matrix:
         include:
         - arch: amd64
-          xcxxflags: -arch x86_64 -mmacosx-version-min=10.13
+          osx_arch: x86_64
+          osx_target: '10.13'
         - arch: arm64
-          xcxxflags: -arch arm64 -mmacosx-version-min=11.0
+          osx_arch: arm64
+          osx_target: '11.0'
 
     runs-on: macos-latest
 
     steps:
     - uses: actions/checkout@v7
 
-    - name: prepare
-      run: brew install automake
-
-    # NOTE: setting CFLAGS/CXXFLAGS suppresses autoconf's default "-g -O2",
-    # so -O2 must be passed explicitly or the build ends up unoptimised.
     - name: Build
-      env:
-        CFLAGS: -O3 ${{ matrix.xcxxflags }}
-        CXXFLAGS: -O3 ${{ matrix.xcxxflags }}
       run: |
-        ./automake.sh
-        ./configure
-        make -j"$(sysctl -n hw.ncpu)"
-        strip par2
+        cmake -B build-cmake -G Ninja -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_OSX_ARCHITECTURES=${{ matrix.osx_arch }} \
+          -DCMAKE_OSX_DEPLOYMENT_TARGET=${{ matrix.osx_target }} \
+          -DPAR2_BUILD_TESTS=OFF
+        cmake --build build-cmake
+        strip build-cmake/par2
 
     - name: Upload binary artifact
       uses: actions/upload-artifact@v7
       with:
         name: par2cmdline-macos-${{ matrix.arch }}
         path: |
-          par2
+          build-cmake/par2
         retention-days: 5
 
   build-macos-universal:
@@ -228,25 +223,25 @@ jobs:
           | tar -xJ -C sysroot ./usr/include ./usr/lib ./lib
 
     - name: Build
-      env:
-        LDFLAGS: -static -s
       run: |
         SYSROOT="$PWD/sysroot"
-        ./automake.sh
-        ./configure --host=${{ matrix.triple }} \
-          CC="clang --target=${{ matrix.triple }} --sysroot=$SYSROOT -fuse-ld=lld" \
-          CXX="clang++ --target=${{ matrix.triple }} --sysroot=$SYSROOT -stdlib=libc++ -fuse-ld=lld"
-        make -j"$(nproc)"
+        cmake -B build-cmake -G Ninja -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_TOOLCHAIN_FILE=cmake/toolchains/freebsd.cmake \
+          -DPAR2_FREEBSD_SYSROOT="$SYSROOT" \
+          -DPAR2_FREEBSD_TARGET=${{ matrix.triple }} \
+          -DCMAKE_EXE_LINKER_FLAGS="-static -s" \
+          -DPAR2_BUILD_TESTS=OFF
+        cmake --build build-cmake
 
     - name: Verify the binary targets FreeBSD
       run: |
-        file par2
-        file par2 | grep -q "FreeBSD" || { echo "not a FreeBSD binary"; exit 1; }
+        file build-cmake/par2
+        file build-cmake/par2 | grep -q "FreeBSD" || { echo "not a FreeBSD binary"; exit 1; }
 
     - name: Upload binary artifact
       uses: actions/upload-artifact@v7
       with:
         name: par2cmdline-freebsd-${{ matrix.arch }}
         path: |
-          par2
+          build-cmake/par2
         retention-days: 5

@@ -31,7 +31,7 @@ static char THIS_FILE[]=__FILE__;
 #endif
 #endif
 
-Par1RepairerSourceFile::Par1RepairerSourceFile(std::ostream &sout, std::ostream &serr, const NoiseLevel noiselevel, PAR1FILEENTRY *fileentry, const std::string &searchpath)
+Par1RepairerSourceFile::Par1RepairerSourceFile(const ErrorLog *errorlog, PAR1FILEENTRY *fileentry, const std::string &searchpath)
 : hashfull(fileentry->hashfull)
 , hash16k(fileentry->hash16k)
 {
@@ -60,7 +60,7 @@ Par1RepairerSourceFile::Par1RepairerSourceFile(std::ostream &sout, std::ostream 
   }
 
   // Translate any characters the OS does not like;
-  filename = DescriptionPacket::TranslateFilenameFromPar2ToLocal(sout, serr, noiselevel, filename);
+  filename = DescriptionPacket::TranslateFilenameFromPar2ToLocal(filename, errorlog);
 
   // Strip the path from the filename
   std::string::size_type where;

@@ -36,6 +36,13 @@ echo $dashes
 echo $banner
 echo $dashes
 
+if [ "$PARBINARY" = "wine $execdir/par2.exe" ]; then
+    echo "Skipping: the arguments are longer than a Windows command line allows."
+    cd "$TESTROOT"
+    rm -rf "run$testname"
+    exit 77
+fi
+
 # Generate 2001 non-empty data files (each 512 bytes).
 # The old hard-coded blockcount=2000 default would fail here because the
 # number of source files exceeded the block count.
