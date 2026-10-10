@@ -883,6 +883,17 @@ bool CommandLine::ReadArgs(int argc, const char * const *argv)
     fullhash = true;
   }
 
+  // A wildcard which matches no file, or a name with nothing there, is said,
+  // and the work goes on without it
+  auto missing = [&](const std::string &filename, const std::string &name) {
+    if (noiselevel == nlSilent || noiselevel == nlQuiet)
+      return;
+    if (name.find_first_of("*?") != std::string::npos)
+      sout << "No files match: " << filename << std::endl;
+    else if (!DiskFile::FileExists(filename) && !DiskFile::DirectoryExists(filename))
+      sout << "Ignoring non-existent source file: " << filename << std::endl;
+  };
+
   // The lists and names among the options, then the PAR2 file, the files,
   // and the lists of them, where the first "--" is not a name
   std::vector<std::string> arguments;
@@ -927,11 +938,11 @@ bool CommandLine::ReadArgs(int argc, const char * const *argv)
       std::string line;
       while (std::getline(*input, line))
       {
-        // 2. Trim whitespace or skip whitespace-only lines
-        // This finds the first non-whitespace character
+        // 2. Trim whitespace, and skip whitespace-only lines
         size_t first = line.find_first_not_of(" \t\r\n");
         if (first == std::string::npos)
           continue; // Line is empty or only whitespace
+        line = line.substr(first, line.find_last_not_of(" \t\r\n") - first + 1);
 
         // 3. All files in the list are treated as source files.
 
@@ -941,7 +952,9 @@ bool CommandLine::ReadArgs(int argc, const char * const *argv)
           DiskFile::FindFiles(lpath, lname, recursive, followlinks)
         );
 
-        if (filenames)
+        if (!filenames || filenames->empty())
+          missing(line, lname);
+        else
         {
           for (auto const& fn : *filenames)
           {
@@ -967,7 +980,9 @@ bool CommandLine::ReadArgs(int argc, const char * const *argv)
         DiskFile::FindFiles(path, name, recursive, followlinks)
       );
 
-      if (filenames)
+      if (!filenames || filenames->empty())
+        missing(arg, name);
+      else
       {
         for (auto const& fn : *filenames)
         {

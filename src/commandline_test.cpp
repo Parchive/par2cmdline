@@ -22,8 +22,10 @@
 
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include <stdlib.h>
 #ifndef _WIN32
+#include <sys/stat.h>
 #include <unistd.h>
 #endif
 
@@ -1980,6 +1982,75 @@ int test13() {
 }
 
 
+// test which names on the command line are said to be missing
+int test14() {
+#ifndef _WIN32
+  std::ofstream input1;
+  input1.open("test14_input1.txt");
+  input1 << "commandline_test test14 input1.txt\n";
+  input1.close();
+  mkdir("test14_dir", 0755);
+  remove("test14_missing.txt");
+
+  const char *argv[] = {"par2", "create", "test14.par2", "test14_input1.txt", "test14_dir", "test14_missing.txt"};
+  std::ostringstream sout, serr;
+  CommandLine commandline(sout, serr);
+  if (!commandline.Parse(sizeof(argv) / sizeof(argv[0]), argv)) {
+    std::cout << "test14 could not parse: " << serr.str() << std::endl;
+    return 1;
+  }
+
+  // a directory without -R is not taken, but it is there
+  if (sout.str().find("non-existent source file: test14_dir") != std::string::npos) {
+    std::cout << "test14 said an existing directory does not exist" << std::endl;
+    return 1;
+  }
+  if (sout.str().find("non-existent source file: test14_missing.txt") == std::string::npos) {
+    std::cout << "test14 did not say a missing file does not exist" << std::endl;
+    return 1;
+  }
+
+  // nothing is said with -q, nor of a "--" after the PAR2 file
+  const char *quietargv[] = {"par2", "create", "-q", "test14.par2", "test14_input1.txt", "test14_missing.txt", "*.test14"};
+  const char *dashargv[] = {"par2", "create", "test14.par2", "test14_input1.txt", "--", "test14_input1.txt"};
+  for (int quiet = 0; quiet < 2; quiet++) {
+    std::ostringstream said, errors;
+    CommandLine line(said, errors);
+    const char * const *args = quiet ? quietargv : dashargv;
+    const int count = quiet ? sizeof(quietargv) / sizeof(quietargv[0]) : sizeof(dashargv) / sizeof(dashargv[0]);
+    if (!line.Parse(count, args)) {
+      std::cout << "test14 could not parse: " << errors.str() << std::endl;
+      return 1;
+    }
+    if (said.str().find("No files match") != std::string::npos ||
+        said.str().find("non-existent") != std::string::npos) {
+      std::cout << "test14 said a name is missing: " << said.str() << std::endl;
+      return 1;
+    }
+  }
+
+  // a list's lines are trimmed, including a CRLF line ending
+  std::ofstream list;
+  list.open("test14_list.txt", std::ios::binary);
+  list << "  test14_input1.txt \r\n\r\n";
+  list.close();
+  const char *listargv[] = {"par2", "create", "test14.par2", "@test14_list.txt"};
+  std::ostringstream listout, listerr;
+  CommandLine listline(listout, listerr);
+  if (!listline.Parse(sizeof(listargv) / sizeof(listargv[0]), listargv) ||
+      listline.GetExtraFiles().size() != 1) {
+    std::cout << "test14 did not take the file in the list: " << listout.str() << listerr.str() << std::endl;
+    return 1;
+  }
+  remove("test14_list.txt");
+
+  remove("test14_input1.txt");
+  rmdir("test14_dir");
+#endif
+  return 0;
+}
+
+
 int main() {
   std::cout << "Tests 1 through 4 were moved to libpar2_test." << std::endl;
 
@@ -2019,6 +2090,10 @@ int main() {
   }
   if (test13()) {
     std::cerr << "FAILED: test13" << std::endl;
+    return 1;
+  }
+  if (test14()) {
+    std::cerr << "FAILED: test14" << std::endl;
     return 1;
   }
 
