@@ -91,6 +91,7 @@ The build takes the following options:
     -DPAR2_BUILD_TESTS=OFF    skip the test suite
     -DPAR2_INSTALL=OFF        skip the install rules
     -DPAR2_KEEP_ASSERTS=ON    keep assert checks in an optimised build
+    -DPAR2_SYSTEM_CXXOPTS=ON  use the system's cxxopts rather than the copy in libs
 
 To cross-compile, name one of the toolchain files in *cmake/toolchains*:
 
