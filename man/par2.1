@@ -149,6 +149,9 @@ An internal logic error occurred
 .TP
 .B 8
 Out of memory or other memory error
+.TP
+.B 9
+Cancelled by Ctrl+C or SIGTERM, having removed the files a create or repair was part way through writing. A second one ends par2 straight away
 .SH EXAMPLES
 With PAR 2.0 you can create PAR2 recovery files for as few as 1 or as many as 32768 files. If you wanted to create PAR1 recovery files for a single file you are forced to split the file into multiple parts and RAR is frequently used for this purpose. You do NOT need to split files with PAR 2.0.
 
