@@ -813,6 +813,16 @@ bool CommandLine::ReadArgs(int argc, const char * const *argv)
     fullhash = true;
   }
 
+  // A name which matches no file is said, and the work goes on without it
+  auto missing = [&](const std::string &filename, const std::string &name) {
+    if (noiselevel == nlSilent)
+      return;
+    if (name.find_first_of("*?") != std::string::npos)
+      sout << "No files match: " << filename << std::endl;
+    else
+      sout << "Ignoring non-existent source file: " << filename << std::endl;
+  };
+
   // The PAR2 file, then the files, and the lists of them
   const std::vector<std::string> none;
   for (const std::string &arg : result.count("files") ? result["files"].as<std::vector<std::string> >() : none)
@@ -859,7 +869,9 @@ bool CommandLine::ReadArgs(int argc, const char * const *argv)
           DiskFile::FindFiles(lpath, lname, recursive, followlinks)
         );
 
-        if (filenames)
+        if (!filenames || filenames->empty())
+          missing(line, lname);
+        else
         {
           for (auto const& fn : *filenames)
           {
@@ -885,7 +897,9 @@ bool CommandLine::ReadArgs(int argc, const char * const *argv)
         DiskFile::FindFiles(path, name, recursive, followlinks)
       );
 
-      if (filenames)
+      if (!filenames || filenames->empty())
+        missing(arg, name);
+      else
       {
         for (auto const& fn : *filenames)
         {
