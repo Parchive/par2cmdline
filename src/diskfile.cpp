@@ -42,6 +42,7 @@ static char THIS_FILE[]=__FILE__;
 #include "utf8.h"
 #include <cwctype>
 #include <iostream>
+#include <set>
 #endif
 
 namespace par2
@@ -416,6 +417,9 @@ std::unique_ptr< std::list<std::string> > DiskFile::FindFiles(std::string path, 
   if (!utf8::Utf8ToWide(path + wildcard, wwildcard))
     return std::unique_ptr< std::list<std::string> >(matches);
 
+  // The directories which match, which are taken whole
+  std::set<std::string> taken;
+
   WIN32_FIND_DATAW fd;
   HANDLE h = ::FindFirstFileW(wwildcard.c_str(), &fd);
   if (h != INVALID_HANDLE_VALUE)
@@ -438,6 +442,8 @@ std::unique_ptr< std::list<std::string> > DiskFile::FindFiles(std::string path, 
         if (!utf8::WideToUtf8(fd.cFileName, name))
           continue;
 
+        taken.insert(name);
+
         std::string nwwildcard="*";
         std::unique_ptr< std::list<std::string> > dirmatches(
           DiskFile::FindFiles(path + name, nwwildcard, true, followlinks)
@@ -449,6 +455,34 @@ std::unique_ptr< std::list<std::string> > DiskFile::FindFiles(std::string path, 
       }
     } while (::FindNextFileW(h, &fd));
     ::FindClose(h);
+  }
+
+  // A directory which does not match is searched for files which do
+  std::wstring wall;
+  if (recursive && wildcard.find_first_of("*?") != std::string::npos &&
+      utf8::Utf8ToWide(path + "*", wall))
+  {
+    h = ::FindFirstFileW(wall.c_str(), &fd);
+    if (h != INVALID_HANDLE_VALUE)
+    {
+      do
+      {
+        if (0 == (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) || fd.cFileName[0] == '.')
+          continue;
+
+        std::string name;
+        if (!utf8::WideToUtf8(fd.cFileName, name) || taken.count(name) != 0)
+          continue;
+
+        std::unique_ptr< std::list<std::string> > dirmatches(
+          DiskFile::FindFiles(path + name, wildcard, true, followlinks)
+        );
+
+        if (dirmatches)
+          matches->splice(matches->end(), *dirmatches);
+      } while (::FindNextFileW(h, &fd));
+      ::FindClose(h);
+    }
   }
 
   return std::unique_ptr< std::list<std::string> >(matches);
@@ -881,7 +915,8 @@ std::unique_ptr< std::list<std::string> > DiskFile::FindFiles(std::string path, 
         if (name == "." || name == "..")
           continue;
 
-        if (MatchesWildcard(name, wildcard))
+        const bool matched = MatchesWildcard(name, wildcard);
+        if (matched || recursive)
         {
           struct stat st;
           std::string fn = path + name;
@@ -890,17 +925,19 @@ std::unique_ptr< std::list<std::string> > DiskFile::FindFiles(std::string path, 
             if (S_ISDIR(st.st_mode) &&
                 recursive == true)
             {
-              std::string nwwildcard="*";
+              // A directory which matches is taken whole, and one which does
+              // not is searched for files which do
+              std::string nwwildcard = matched ? "*" : wildcard;
               std::unique_ptr< std::list<std::string> > dirmatches(
                                DiskFile::FindFiles(fn, nwwildcard, true, followlinks)
                                );
               matches->splice(matches->end(), *dirmatches);
             }
-            else if (S_ISREG(st.st_mode))
+            else if (matched && S_ISREG(st.st_mode))
             {
               matches->push_back(path + name);
             }
-            else if (followlinks && S_ISLNK(st.st_mode))
+            else if (matched && followlinks && S_ISLNK(st.st_mode))
             {
               struct stat stt;
               if (stat(fn.c_str(), &stt) == 0 && S_ISREG(stt.st_mode))
