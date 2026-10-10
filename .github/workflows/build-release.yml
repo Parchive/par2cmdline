@@ -29,6 +29,10 @@ jobs:
     if: github.event_name == 'workflow_dispatch'
     uses: ./.github/workflows/build-check-valgrind.yml
 
+  build-check-tsan:
+    if: github.event_name == 'workflow_dispatch'
+    uses: ./.github/workflows/build-check-tsan.yml
+
   build-linux:
     needs:
     - build-check-linux
