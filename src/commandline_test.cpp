@@ -507,10 +507,43 @@ int test9() {
   if (test9_helper("par2 repair -R foo.par2"))
     return 1;
 
-  // Should "-v" cause an error (for being in the wrong place)
-  // or be treated as a filename?
-  //if (test9_helper("par2 create foo.par2 input1.txt input2.txt -v"))
-  //  return 1;
+  // help or the version after the operation
+  if (test9_helper("par2 create -h foo.par2 input1.txt input2.txt"))
+    return 1;
+  if (test9_helper("par2 create -V foo.par2 input1.txt input2.txt"))
+    return 1;
+
+  // a flag given a value
+  if (test9_helper("par2 repair --purge=false foo.par2 input1.txt input2.txt"))
+    return 1;
+  if (test9_helper("par2 create --uniform=0 foo.par2 input1.txt input2.txt"))
+    return 1;
+
+  // an option given twice
+  if (test9_helper("par2 create -a foo.par2 -a bar.par2 input1.txt input2.txt"))
+    return 1;
+  if (test9_helper("par2 create -B . -B .. foo.par2 input1.txt input2.txt"))
+    return 1;
+  if (test9_helper("par2 create -t2 -t3 foo.par2 input1.txt input2.txt"))
+    return 1;
+  if (test9_helper("par2 create -T2 --file-threads 3 foo.par2 input1.txt input2.txt"))
+    return 1;
+  if (test9_helper("par2 repair -N -S8 -S16 foo.par2 input1.txt input2.txt"))
+    return 1;
+
+  // a basepath which is not a directory
+  if (test9_helper("par2 create -B test9_no_such_dir foo.par2 input1.txt input2.txt"))
+    return 1;
+
+  // an option missing its value
+  if (test9_helper("par2 create -B"))
+    return 1;
+  if (test9_helper("par2 create -c foo.par2 input1.txt input2.txt"))
+    return 1;
+  if (test9_helper("par2 create -f foo.par2 input1.txt input2.txt"))
+    return 1;
+  if (test9_helper("par2 create -a"))
+    return 1;
 
   // bad combinations of options
   if (test9_helper("par2 create -v -q foo.par2 input1.txt input2.txt"))
@@ -552,6 +585,30 @@ int test9() {
   if (test9_helper("par2 create -fad foo.par2 input1.txt input2.txt"))
     return 1;
   if (test9_helper("par2 create -nad foo.par2 input1.txt input2.txt"))
+    return 1;
+  if (test9_helper("par2 create -t4x foo.par2 input1.txt input2.txt"))
+    return 1;
+  if (test9_helper("par2 create -rm foo.par2 input1.txt input2.txt"))
+    return 1;
+  if (test9_helper("par2 create -rmabc foo.par2 input1.txt input2.txt"))
+    return 1;
+  if (test9_helper("par2 create -m99999999999999999999 foo.par2 input1.txt input2.txt"))
+    return 1;
+  if (test9_helper("par2 create -n99999999999 foo.par2 input1.txt input2.txt"))
+    return 1;
+  if (test9_helper("par2 create -b40000 foo.par2 input1.txt input2.txt"))
+    return 1;
+  if (test9_helper("par2 create -r5 --redundancy-size 1k foo.par2 input1.txt input2.txt"))
+    return 1;
+  if (test9_helper("par2 create --redundancy-size 1x foo.par2 input1.txt input2.txt"))
+    return 1;
+  if (test9_helper("par2 create -rk0 foo.par2 input1.txt input2.txt"))
+    return 1;
+  if (test9_helper("par2 create -r0 foo.par2 input1.txt input2.txt"))
+    return 1;
+  if (test9_helper("par2 create --redundancy-size 0k foo.par2 input1.txt input2.txt"))
+    return 1;
+  if (test9_helper("par2 create --block-count foo.par2 input1.txt input2.txt"))
     return 1;
 
 
@@ -754,7 +811,22 @@ int test10() {
 
   // TODO: -B option
 
-  // -v
+  // -v after the PAR2 file is the name of a file
+  if (test10_helper("par2 create foo.par2 input1.txt input2.txt -v",
+		    default_noiselevel,
+		    default_memorylimit,
+		    default_basepath,
+		    default_nthreads,
+		    default_filethreads,
+		    default_parfilename,
+		    default_extrafiles,
+		    default_blocksize,
+		    default_firstblock,
+		    default_recoveryfilescheme,
+		    default_recoveryfilecount,
+		    default_recoveryblockcount)) {
+    return 1;
+  }
   if (test10_helper("par2 create -v foo.par2 input1.txt input2.txt",
 		    nlNoisy,
 		    default_memorylimit,
@@ -845,6 +917,22 @@ int test10() {
 		    default_memorylimit,
 		    default_basepath,
 		    42,
+		    default_filethreads,
+		    default_parfilename,
+		    default_extrafiles,
+		    default_blocksize,
+		    default_firstblock,
+		    default_recoveryfilescheme,
+		    default_recoveryfilecount,
+		    default_recoveryblockcount)) {
+    return 1;
+  }
+  // more threads than the most are capped
+  if (test10_helper("par2 create -t1000 foo.par2 input1.txt input2.txt",
+		    default_noiselevel,
+		    default_memorylimit,
+		    default_basepath,
+		    256,
 		    default_filethreads,
 		    default_parfilename,
 		    default_extrafiles,
@@ -967,6 +1055,51 @@ int test10() {
 		    default_recoveryblockcount)) {
     return 1;
   }
+  if (test10_helper("par2 create --block-count=2 foo.par2 input1.txt input2.txt",
+		    default_noiselevel,
+		    default_memorylimit,
+		    default_basepath,
+		    default_nthreads,
+		    default_filethreads,
+		    default_parfilename,
+		    default_extrafiles,
+		    longestfilelen_rounded_up,
+		    default_firstblock,
+		    default_recoveryfilescheme,
+		    default_recoveryfilecount,
+		    default_recoveryblockcount)) {
+    return 1;
+  }
+  if (test10_helper("par2 create --block-count 2 foo.par2 input1.txt input2.txt",
+		    default_noiselevel,
+		    default_memorylimit,
+		    default_basepath,
+		    default_nthreads,
+		    default_filethreads,
+		    default_parfilename,
+		    default_extrafiles,
+		    longestfilelen_rounded_up,
+		    default_firstblock,
+		    default_recoveryfilescheme,
+		    default_recoveryfilecount,
+		    default_recoveryblockcount)) {
+    return 1;
+  }
+  if (test10_helper("par2 create -b 2 foo.par2 input1.txt input2.txt",
+		    default_noiselevel,
+		    default_memorylimit,
+		    default_basepath,
+		    default_nthreads,
+		    default_filethreads,
+		    default_parfilename,
+		    default_extrafiles,
+		    longestfilelen_rounded_up,
+		    default_firstblock,
+		    default_recoveryfilescheme,
+		    default_recoveryfilecount,
+		    default_recoveryblockcount)) {
+    return 1;
+  }
   if (test10_helper("par2 create -s8 foo.par2 input1.txt input2.txt",
 		    default_noiselevel,
 		    default_memorylimit,
@@ -1039,6 +1172,21 @@ int test10() {
 		    optionr_recoveryblockcount)) {
     return 1;
   }
+  if (test10_helper("par2 create --redundancy-size 1k foo.par2 input1.txt input2.txt",
+		    default_noiselevel,
+		    default_memorylimit,
+		    default_basepath,
+		    default_nthreads,
+		    default_filethreads,
+		    default_parfilename,
+		    default_extrafiles,
+		    default_blocksize,
+		    default_firstblock,
+		    default_recoveryfilescheme,
+		    default_recoveryfilecount,
+		    optionr_recoveryblockcount)) {
+    return 1;
+  }
   if (test10_helper("par2 create -c42 foo.par2 input1.txt input2.txt",
 		    default_noiselevel,
 		    default_memorylimit,
@@ -1054,7 +1202,37 @@ int test10() {
 		    42)) {
     return 1;
   }
+  if (test10_helper("par2 create -c 42 foo.par2 input1.txt input2.txt",
+		    default_noiselevel,
+		    default_memorylimit,
+		    default_basepath,
+		    default_nthreads,
+		    default_filethreads,
+		    default_parfilename,
+		    default_extrafiles,
+		    default_blocksize,
+		    default_firstblock,
+		    default_recoveryfilescheme,
+		    default_recoveryfilecount,
+		    42)) {
+    return 1;
+  }
   if (test10_helper("par2 create -f42 foo.par2 input1.txt input2.txt",
+		    default_noiselevel,
+		    default_memorylimit,
+		    default_basepath,
+		    default_nthreads,
+		    default_filethreads,
+		    default_parfilename,
+		    default_extrafiles,
+		    default_blocksize,
+		    42,
+		    default_recoveryfilescheme,
+		    default_recoveryfilecount,
+		    default_recoveryblockcount)) {
+    return 1;
+  }
+  if (test10_helper("par2 create -f 42 foo.par2 input1.txt input2.txt",
 		    default_noiselevel,
 		    default_memorylimit,
 		    default_basepath,
@@ -1526,6 +1704,22 @@ int test11() {
 		    default_skipleaway)) {
     return 1;
   }
+  // -p after the PAR2 file is the name of a file
+  if (test11_helper("par2 repair foo.par2 input1.txt input2.txt -p",
+		    default_noiselevel,
+		    default_memorylimit,
+		    default_basepath,
+		    default_nthreads,
+		    default_filethreads,
+		    default_parfilename,
+		    default_extrafiles,
+		    CommandLine::verPar2,
+		    CommandLine::opRepair,
+		    default_purgefiles,
+		    default_skipdata,
+		    default_skipleaway)) {
+    return 1;
+  }
   // Do we want -p with verify??
   if (test11_helper("par2 verify -p foo.par2 input1.txt input2.txt",
 		    default_noiselevel,
@@ -1559,7 +1753,22 @@ int test11() {
       ) {
     return 1;
   }
-  // -S
+  // -S, after -N or before it
+  if (test11_helper("par2 repair -S42 -N foo.par2 input1.txt input2.txt",
+		    default_noiselevel,
+		    default_memorylimit,
+		    default_basepath,
+		    default_nthreads,
+		    default_filethreads,
+		    default_parfilename,
+		    default_extrafiles,
+		    CommandLine::verPar2,
+		    CommandLine::opRepair,
+		    default_purgefiles,
+		    true,
+		    42)) {
+    return 1;
+  }
   if (test11_helper("par2 repair -N -S42 foo.par2 input1.txt input2.txt",
 		    default_noiselevel,
 		    default_memorylimit,
