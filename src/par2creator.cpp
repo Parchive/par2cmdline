@@ -950,8 +950,8 @@ void Par2SetCreator::DeleteIncompleteRecoveryFiles(void)
 // Allocate memory buffers for reading and writing data to disk.
 bool Par2SetCreator::AllocateBuffers(void)
 {
-  transferbuffer = new (std::nothrow) u8[chunksize * NUM_TRANSFER_BUFFERS];
-  outputbuffer = new (std::nothrow) u8[chunksize];
+  transferbuffer = AllocateBytes(chunksize * NUM_TRANSFER_BUFFERS);
+  outputbuffer = AllocateBytes(chunksize);
 
   if (transferbuffer == NULL || outputbuffer == NULL)
   {
