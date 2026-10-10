@@ -86,12 +86,22 @@ std::string Par2RepairerSourceFile::FileName(void) const
   return descriptionpacket ? descriptionpacket->FileName() : std::string();
 }
 
-void Par2RepairerSourceFile::ComputeTargetFileName(const std::string &path, const ErrorLog *errorlog)
+void Par2RepairerSourceFile::ComputeTargetFileName(const std::string &path, FilenameMatcher &matcher, const ErrorLog *errorlog)
 {
   // Get a version of the filename compatible with the OS, saying what was
   // changed only the first time it is worked out
   const bool first = targetfilename.empty();
   std::string filename = DescriptionPacket::TranslateFilenameFromPar2ToLocal(FileName(), first ? errorlog : 0);
+
+#ifndef _WIN32
+  // A name the set records in a code page is written in UTF-8
+  const std::string utf8 = FilenameToUtf8(filename);
+  if (utf8 != filename && first && errorlog)
+    errorlog->Warn(wcFilenameChanged,
+                   "The set records \"" + utf8 + "\" in a code page rather than UTF-8.",
+                   FileName());
+  filename = utf8;
+#endif
 
   targetfilename = path + filename;
 
@@ -102,6 +112,18 @@ void Par2RepairerSourceFile::ComputeTargetFileName(const std::string &path, cons
     const std::string described = path + DescriptionPacket::TranslateFilenameFromPar2ToLocal(descriptionpacket->FileName());
     if (described != targetfilename)
       otherfilenames.push_back(described);
+  }
+
+  // Or another spelling of either name, under which the file is on disk
+  std::vector<std::string> names(1, targetfilename);
+  names.insert(names.end(), otherfilenames.begin(), otherfilenames.end());
+
+  for (const auto &name : names)
+  {
+    const std::string spelling = matcher.Resolve(name);
+    if (!spelling.empty() && spelling != targetfilename &&
+        std::find(otherfilenames.begin(), otherfilenames.end(), spelling) == otherfilenames.end())
+      otherfilenames.push_back(spelling);
   }
 }
 

@@ -142,6 +142,7 @@ add_library(libpar2 STATIC
   src/diskfile.cpp src/diskfile.h
   src/errorlog.h
   src/filechecksummer.cpp src/filechecksummer.h
+  src/filenamematcher.cpp src/filenamematcher.h
   src/galois.cpp src/galois.h
   src/letype.h
   src/mainpacket.cpp src/mainpacket.h
@@ -159,6 +160,7 @@ add_library(libpar2 STATIC
   src/progressmeter.h
   src/recoverypacket.cpp src/recoverypacket.h
   src/reedsolomon.cpp src/reedsolomon.h
+  src/unicodedata.h
   src/unicodefilenamepacket.cpp src/unicodefilenamepacket.h
   src/verificationhashtable.cpp src/verificationhashtable.h
   src/verificationpacket.cpp src/verificationpacket.h

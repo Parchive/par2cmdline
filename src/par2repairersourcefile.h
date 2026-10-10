@@ -84,10 +84,11 @@ public:
   DiskFile* GetCompleteFile(void) const;
 
   // Compute/Get the filename for the final repaired version of the file
-  void ComputeTargetFileName(const std::string &path, const ErrorLog *errorlog = 0);
+  void ComputeTargetFileName(const std::string &path, FilenameMatcher &matcher, const ErrorLog *errorlog = 0);
   std::string TargetFileName(void) const;
 
-  // The other names the set gives the file, where it may be on disk instead
+  // Where else the file may be on disk: under the name in its description
+  // packet, or another spelling of either name
   const std::vector<std::string>& OtherFileNames(void) const {return otherfilenames;}
 
   // Get the number of blocks that the file uses
@@ -122,7 +123,7 @@ protected:
   DiskFile                    *completefile;        // A complete version of the file
 
   std::string                  targetfilename;      // The filename of the target file
-  std::vector<std::string>     otherfilenames;      // Other names the set gives the file
+  std::vector<std::string>     otherfilenames;      // Where else the file may be on disk
   u64                          diskfilesize;        // The filesize of sourcefile on disk
 };
 
