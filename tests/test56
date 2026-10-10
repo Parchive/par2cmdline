@@ -1,0 +1,66 @@
+#!/bin/sh
+
+execdir="$PWD"
+
+if [ -n "${PARVALGRINDOPTS+set}" ]
+then
+    PARBINARY="valgrind $PARVALGRINDOPTS $execdir/par2"
+elif [ "`which wine`" != "" ] && [ -f "$execdir/par2.exe" ]
+then
+    PARBINARY="wine $execdir/par2.exe"
+else
+    PARBINARY="$execdir/par2"
+fi
+
+if [ -z "$srcdir" ] || [ "." = "$srcdir" ]; then
+  srcdir="$PWD"
+  TESTDATA="$srcdir/tests"
+else
+  srcdir="$PWD/$srcdir"
+  TESTDATA="$srcdir/tests"
+fi
+
+TESTROOT="$PWD"
+
+testname=$(basename $0)
+rm -f "$testname.log"
+rm -rf "run$testname"
+
+mkdir "run$testname" && cd "run$testname" || { echo "ERROR: Could not change to test directory" ; exit 1; } >&2
+banner="Checking the 16k hash of a file"
+
+banner="Recursing into subdirectories for the files a wildcard matches"
+dashes=`echo "$banner" | sed s/./-/g`
+
+echo $dashes
+echo $banner
+echo $dashes
+
+mkdir -p sub/deep
+for file in top.txt sub/a.txt sub/deep/b.txt sub/notes.dat
+do
+  echo "$file" > "$file"
+done
+
+# The wildcard matches files in the subdirectories as well as at the top.
+$PARBINARY c -q -q -R recursed.par2 '*.txt' || { echo "ERROR: Could not create with -R" ; exit 1; } >&2
+found=`$PARBINARY v recursed.par2 | sed -n 's/^There are \([0-9]*\) recoverable files.*/\1/p'`
+if [ "$found" != 3 ]
+then
+  echo "ERROR: -R with *.txt found $found files, expected 3" >&2
+  exit 1
+fi
+
+# Without -R only the top is searched.
+$PARBINARY c -q -q flat.par2 '*.txt' || { echo "ERROR: Could not create without -R" ; exit 1; } >&2
+found=`$PARBINARY v flat.par2 | sed -n 's/^There are \([0-9]*\) recoverable files.*/\1/p'`
+if [ "$found" != 1 ]
+then
+  echo "ERROR: *.txt without -R found $found files, expected 1" >&2
+  exit 1
+fi
+
+cd "$TESTROOT"
+rm -rf "run$testname"
+
+exit 0
