@@ -41,6 +41,7 @@ option(PAR2_BUILD_TOOL "Build the par2 command line tool" ${PAR2_IS_TOP_LEVEL})
 option(PAR2_BUILD_TESTS "Build the test suite" ${PAR2_IS_TOP_LEVEL})
 option(PAR2_INSTALL "Generate the install rules" ${PAR2_IS_TOP_LEVEL})
 option(PAR2_KEEP_ASSERTS "Keep assert checks in optimised builds" OFF)
+option(PAR2_SYSTEM_CXXOPTS "Build against the system's cxxopts rather than the copy in libs" OFF)
 
 if(PAR2_IS_TOP_LEVEL AND NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
   set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type" FORCE)
@@ -188,6 +189,8 @@ par2_add_size_options(libpar2)
 
 target_link_libraries(libpar2 PUBLIC Threads::Threads ${PAR2_ATOMIC_LIBRARY})
 
+add_subdirectory(libs)
+
 add_library(par2cli STATIC
   src/cli.cpp
   src/commandline.cpp src/commandline.h
@@ -217,7 +220,7 @@ target_include_directories(par2cli PUBLIC
 par2_add_internal_options(par2cli)
 par2_add_size_options(par2cli)
 
-target_link_libraries(par2cli PUBLIC libpar2)
+target_link_libraries(par2cli PUBLIC libpar2 PRIVATE $<BUILD_INTERFACE:par2_cxxopts>)
 
 if(PAR2_BUILD_TOOL)
   add_executable(par2
