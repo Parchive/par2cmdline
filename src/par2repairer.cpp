@@ -2133,6 +2133,8 @@ bool Par2Repairer::MatchDataFile(DiskFile *diskfile, Par2RepairerSourceFile *&so
         offset += want;
       }
 
+      delete [] buffer;
+
       // Compute the file hash
       context.Final(hashfull);
 
