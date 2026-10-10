@@ -128,7 +128,7 @@ public:
 
   // setchanged reports whether the set the packets describe is now a
   // different shape, which is what makes an earlier scan of the data useless
-  Result Add(const std::string &parfilename, bool *setchanged)
+  Result Add(const std::string &parfilename, const bool volumes, bool *setchanged)
   {
     ClearLastError();
 
@@ -148,7 +148,8 @@ public:
     // Read it again even if it has been seen before. What a cancel left read is
     // prepared all the same, so that no packet stays unchecked.
     bool opened = true;
-    const bool loaded = LoadPackets(parfilename, none, true, &opened);
+    const bool loaded = volumes ? LoadPackets(parfilename, none, true, &opened)
+                                : LoadPacketsFromFile(parfilename, true, &opened);
     const bool stopped = IsCancelled();
 
     if (!loaded && !stopped)
@@ -405,7 +406,7 @@ struct Par2Verifier::State
   bool fullhash;
   bool renameonly;
   Verbosity verbosity;
-  std::vector<std::string> par2files;
+  std::vector<std::pair<std::string, bool> > par2files;
   std::set<std::string> scannedfiles;
   std::map<std::string, std::vector<bool> > knownblocks;
   bool verified;
@@ -449,7 +450,7 @@ void Par2Verifier::Restart(void)
 
   for (const auto &par2file : state->par2files)
   {
-    impl->Add(par2file, 0);
+    impl->Add(par2file.first, par2file.second, 0);
   }
 
   state->verified = false;
@@ -613,20 +614,22 @@ void Par2Verifier::SetThreadCounts(const u32 _nthreads, const u32 _filethreads)
   state->filethreads = _filethreads;
 }
 
-Result Par2Verifier::AddPar2File(const std::string &parfilename)
+Result Par2Verifier::AddPar2File(const std::string &parfilename, const bool volumes)
 {
   std::lock_guard<std::mutex> lock(state->workmutex);
-  return DoAddPar2File(parfilename);
+  return DoAddPar2File(parfilename, volumes);
 }
 
-Result Par2Verifier::DoAddPar2File(const std::string &_parfilename)
+Result Par2Verifier::DoAddPar2File(const std::string &_parfilename, const bool volumes)
 try
 {
   const std::string parfilename = DiskFile::GetCanonicalPathname(_parfilename);
 
-  // Naming the same file again reads nothing more, and says what the packets
-  // read so far amount to
-  if (std::find(state->par2files.begin(), state->par2files.end(), parfilename) != state->par2files.end())
+  // Naming the same file again reads nothing more, unless the volumes beside it
+  // are now wanted too, and says what the packets read so far amount to
+  const auto known = std::find_if(state->par2files.begin(), state->par2files.end(),
+                                  [&](const std::pair<std::string, bool> &par2file) { return par2file.first == parfilename; });
+  if (known != state->par2files.end() && (known->second || !volumes))
   {
     const Result result = impl->Prepared();
     TakeLastError(result);
@@ -642,7 +645,7 @@ try
   }
 
   bool setchanged = false;
-  const Result result = impl->Add(parfilename, &setchanged);
+  const Result result = impl->Add(parfilename, volumes, &setchanged);
 
   // Restart replays the scans through VerifyFile, which would otherwise leave
   // the handle holding what the replay found rather than what Add recorded
@@ -654,7 +657,10 @@ try
   // not remembered, so that naming it again after ClearCancel reads the rest.
   if (result != eFileIOError && result != eCancelled)
   {
-    state->par2files.push_back(parfilename);
+    if (known != state->par2files.end())
+      known->second = true;
+    else
+      state->par2files.push_back(std::make_pair(parfilename, volumes));
   }
   else if (derived && result == eFileIOError)
   {

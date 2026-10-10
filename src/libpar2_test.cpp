@@ -662,6 +662,75 @@ int test7() {
 }
 
 
+// A PAR2 file read alone leaves the volumes beside it unread until they are
+// asked for
+int test8() {
+  const char *const datafile = "libpar2_test8.data";
+  const char *const leftovers[] = {datafile, "libpar2_test8.par2",
+				   "libpar2_test8.vol0+1.par2", "libpar2_test8.vol1+2.par2"};
+
+  // A create never overwrites, so whatever an earlier run left goes first
+  for (const char *leftover : leftovers)
+    remove(leftover);
+
+  {
+    std::ofstream data(datafile, std::ofstream::out | std::ofstream::binary);
+    for (int i = 0; i < 20000; ++i)
+      data.put((char)(i * 11 + i / 256));
+  }
+
+  // Counts the PAR2 files read
+  class Loads : public Par2Observer
+  {
+  public:
+    Loads(void) : count(0) {}
+    void OnFile(Phase phase, const std::string &) override { if (phase == phLoading) ++count; }
+    std::atomic<int> count;
+  };
+
+  int failed = 1;
+
+  Par2Creator creator("");
+  creator.SetSourceFiles(std::vector<std::string>(1, datafile));
+  creator.SetBlockSize(4096);
+  creator.SetRecoveryBlockCount(3);
+  creator.SetRecoveryFileScheme(scVariable, 2);
+
+  Result result = creator.Create("libpar2_test8");
+  if (result != eSuccess) {
+    std::cerr << "creating the set returned " << result << std::endl;
+  } else {
+    Loads loads;
+    Par2Verifier verifier("");
+    verifier.SetObserver(&loads);
+
+    Par2SetInfo info;
+    if (eSuccess != verifier.AddPar2File("libpar2_test8.vol1+2.par2", false)
+	|| !verifier.GetSetInfo(&info)) {
+      std::cerr << "the volume read alone does not describe the set" << std::endl;
+    } else if (loads.count != 1 || info.recoveryblockcount != 2) {
+      std::cerr << "reading one volume read " << loads.count << " files and "
+		<< info.recoveryblockcount << " recovery blocks" << std::endl;
+    } else if (eSuccess != verifier.AddPar2File("libpar2_test8.vol1+2.par2", false) || loads.count != 1) {
+      std::cerr << "reading the volume alone again read " << loads.count << " files" << std::endl;
+    } else if (eSuccess != verifier.AddPar2File("libpar2_test8.vol1+2.par2")
+	       || !verifier.GetSetInfo(&info)) {
+      std::cerr << "the volumes beside it could not be read" << std::endl;
+    } else if (loads.count != 3 || info.recoveryblockcount != 3) {
+      std::cerr << "asking for the volumes read " << loads.count << " files and "
+		<< info.recoveryblockcount << " recovery blocks" << std::endl;
+    } else {
+      failed = 0;
+    }
+  }
+
+  for (const char *leftover : leftovers)
+    remove(leftover);
+
+  return failed;
+}
+
+
 int main() {
   if (test1()) {
     std::cerr << "FAILED: test1" << std::endl;
@@ -689,6 +758,10 @@ int main() {
   }
   if (test7()) {
     std::cerr << "FAILED: test7" << std::endl;
+    return 1;
+  }
+  if (test8()) {
+    std::cerr << "FAILED: test8" << std::endl;
     return 1;
   }
 
