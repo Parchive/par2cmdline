@@ -36,6 +36,8 @@ class DataBlock
 {
 public:
   DataBlock(void);
+  DataBlock(const DataBlock &other);
+  DataBlock &operator=(const DataBlock &other);
   ~DataBlock(void);
 
 public:
@@ -72,20 +74,39 @@ public:
   bool WriteData(u64 position, size_t size, const void *buffer, size_t &wrote);
 
 protected:
-  DiskFile *diskfile;  // Which disk file is the block associated with
-  u64       offset;    // What is the file offset
-  u64       length;    // How large is the block
-  u64       filesize;  // How large was the original file
+  // Set by one thread while others read it: offset is stored before
+  // diskfile, and diskfile is loaded before offset
+  std::atomic<DiskFile*> diskfile;  // Which disk file is the block associated with
+  std::atomic<u64>       offset;    // What is the file offset
+  u64                    length;    // How large is the block
+  u64                    filesize;  // How large was the original file
 };
 
 
 // Construct the data block
 inline DataBlock::DataBlock(void)
+: diskfile(0)
+, offset(0)
+, length(0)
+, filesize(0)
 {
-  diskfile = 0;
-  offset = 0;
-  length = 0;
-  filesize = 0;
+}
+
+inline DataBlock::DataBlock(const DataBlock &other)
+: diskfile(other.GetDiskFile())
+, offset(other.GetOffset())
+, length(other.length)
+, filesize(other.filesize)
+{
+}
+
+inline DataBlock &DataBlock::operator=(const DataBlock &other)
+{
+  offset.store(other.GetOffset(), std::memory_order_relaxed);
+  diskfile.store(other.GetDiskFile(), std::memory_order_release);
+  length = other.length;
+  filesize = other.filesize;
+  return *this;
 }
 
 // Destroy the data block
@@ -107,48 +128,50 @@ inline void DataBlock::SetFilesize(u64 _filesize)
 // Set the location of the block
 inline void DataBlock::SetLocation(DiskFile *_diskfile, u64 _offset)
 {
-  diskfile = _diskfile;
-  offset = _offset;
+  offset.store(_offset, std::memory_order_relaxed);
+  diskfile.store(_diskfile, std::memory_order_release);
 }
 
 // Clear the location of the block
 inline void DataBlock::ClearLocation(void)
 {
-  diskfile = 0;
-  offset = 0;
+  diskfile.store(0, std::memory_order_release);
+  offset.store(0, std::memory_order_relaxed);
 }
 
 // Check to see of the location is known
 inline bool DataBlock::IsSet(void) const
 {
+  DiskFile *file = GetDiskFile();
+
   if (filesize > 0)
   {
-    if (diskfile != 0)
+    if (file != 0)
     {
-      if ((offset + length) > diskfile->FileSize()
-          && filesize > diskfile->FileSize())
+      if ((GetOffset() + length) > file->FileSize()
+          && filesize > file->FileSize())
       {
         return false;
       }
       else
       {
-        return (diskfile != 0);
+        return (file != 0);
       }
     }
   }
-  return (diskfile != 0);
+  return (file != 0);
 }
 
 // Which disk file is this data block in
 inline DiskFile* DataBlock::GetDiskFile(void) const
 {
-  return diskfile;
+  return diskfile.load(std::memory_order_acquire);
 }
 
 // What offset is the block located at
 inline u64 DataBlock::GetOffset(void) const
 {
-  return offset;
+  return offset.load(std::memory_order_relaxed);
 }
 
 // What is the length of this block
