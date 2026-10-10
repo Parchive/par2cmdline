@@ -33,13 +33,15 @@ static char THIS_FILE[]=__FILE__;
 // Open the file associated with the data block if is not already open
 bool DataBlock::Open(void)
 {
-  if (diskfile == 0)
+  DiskFile *file = GetDiskFile();
+
+  if (file == 0)
     return false;
 
-  if (diskfile->IsOpen())
+  if (file->IsOpen())
     return true;
 
-  return diskfile->Open();
+  return file->Open();
 }
 
 // Read some data at a specified position within a data block
@@ -49,21 +51,22 @@ bool DataBlock::ReadData(u64    position, // Position within the block
                          size_t size,     // Size of the memory buffer
                          void  *buffer)   // Pointer to memory buffer
 {
-  assert(diskfile != 0);
+  DiskFile *file = GetDiskFile();
+  assert(file != 0);
 
   // Check to see if the position from which data is to be read
   // is within the bounds of the data block
   if (length > position)
   {
     // Compute the file offset and how much data to physically read from disk
-    u64    fileoffset = offset + position;
+    u64    fileoffset = GetOffset() + position;
     size_t want       = (size_t)std::min(
         std::min((u64)size, length - position),
-        diskfile->FileSize() - fileoffset
+        file->FileSize() - fileoffset
     );
 
     // Read the data from the file into the buffer
-    if (!diskfile->Read(fileoffset, buffer, want))
+    if (!file->Read(fileoffset, buffer, want))
       return false;
 
     // If the read extends beyond the end of the data block,
@@ -90,7 +93,8 @@ bool DataBlock::WriteData(u64         position, // Position within the block
                           const void *buffer,   // Pointer to memory buffer
                           size_t     &wrote)    // Amount actually written
 {
-  assert(diskfile != 0);
+  DiskFile *file = GetDiskFile();
+  assert(file != 0);
 
   wrote = 0;
 
@@ -99,11 +103,11 @@ bool DataBlock::WriteData(u64         position, // Position within the block
   if (length > position)
   {
     // Compute the file offset and how much data to physically write to disk
-    u64    fileoffset = offset + position;
+    u64    fileoffset = GetOffset() + position;
     size_t have       = (size_t)std::min((u64)size, length - position);
 
     // Write the data from the buffer to disk
-    if (!diskfile->Write(fileoffset, buffer, have))
+    if (!file->Write(fileoffset, buffer, have))
       return false;
 
     wrote = have;
