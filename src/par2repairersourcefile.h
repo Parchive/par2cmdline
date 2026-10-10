@@ -87,6 +87,9 @@ public:
   void ComputeTargetFileName(const std::string &path, const ErrorLog *errorlog = 0);
   std::string TargetFileName(void) const;
 
+  // The other names the set gives the file, where it may be on disk instead
+  const std::vector<std::string>& OtherFileNames(void) const {return otherfilenames;}
+
   // Get the number of blocks that the file uses
   u32 BlockCount(void) const {return blockcount;}
 
@@ -119,6 +122,7 @@ protected:
   DiskFile                    *completefile;        // A complete version of the file
 
   std::string                  targetfilename;      // The filename of the target file
+  std::vector<std::string>     otherfilenames;      // Other names the set gives the file
   u64                          diskfilesize;        // The filesize of sourcefile on disk
 };
 

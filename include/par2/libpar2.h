@@ -257,6 +257,10 @@ struct Par2FileInfo
 // absolute, and available as soon as the packets describing the file have been
 // read. The library hands it to the system as it stands, which on Windows
 // means as UTF-8.
+//
+// A file which is on disk under its description packet's name rather than its
+// unicode one is found by Verify as an extra file which matches it, and a
+// repair renames it.
 
 
 // What a verify found, and what it would take to repair it
@@ -609,9 +613,11 @@ public:
   // own purge option deletes. An application tidying up after a repair can
   // delete or keep them as it prefers.
   //
-  // Only files par2 renamed itself are listed. A file the application supplied
-  // as an extra file is never included, even if its blocks were used, because
-  // the application knows what it supplied and may still want it.
+  // Only files par2 renamed itself are listed: a damaged target, and a damaged
+  // copy the verify found under another name the set gives the file, such as
+  // its description packet's name. A file the application supplied as an extra
+  // file is never included, even if its blocks were used, because the
+  // application knows what it supplied and may still want it.
   //
   // Emptied by the next Verify, and by an AddPar2File which changes the shape
   // of the set.

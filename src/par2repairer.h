@@ -335,6 +335,9 @@ protected:
   std::map<const DiskFile*, std::string>    backupnames;  // What each backup was called before it was renamed
   // What each renamed file was found as, keyed by the name the set records
   std::map<std::string, std::string>        renamedlist;
+  // The source file each file the verify found under another name the set
+  // gives it is for, keyed by its path
+  std::map<std::string, Par2RepairerSourceFile*> othernamedfiles;
   std::list<std::string>                    par2list;     // list of par2 files
 
   u64                       blocksize;               // The block size.

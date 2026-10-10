@@ -323,6 +323,7 @@ Result Par2Repairer::VerifyFiles(const std::string &basepath,
   ClearLastError();
 
   renamedlist.clear();
+  othernamedfiles.clear();
 
   if (!PrepareForScanning())
   {
@@ -1906,6 +1907,22 @@ bool Par2Repairer::VerifySourceFiles(const std::string &basepath, std::vector<st
       // The file does not exist.
       delete diskfile;
 
+      // One under another name the set gives it is found by the scan of the
+      // extra files, and renamed by a repair
+      {
+        std::lock_guard<std::mutex> lock(extraFilesMutex);
+        for (const auto &other : sourcefile->OtherFileNames())
+        {
+          const std::string pathname = DiskFile::GetCanonicalPathname(other);
+          if (DiskFile::FileExists(pathname) &&
+              std::find(extrafiles.begin(), extrafiles.end(), pathname) == extrafiles.end())
+          {
+            extrafiles.push_back(pathname);
+            othernamedfiles[pathname] = sourcefile;
+          }
+        }
+      }
+
       if (observer)
       {
         Par2FileResult result;
@@ -3097,6 +3114,44 @@ bool Par2Repairer::RenameTargetFiles(void)
 
     ++sf;
     ++filenumber;
+  }
+
+  // Rename any damaged copy found under another name the set gives a file,
+  // which the repair would otherwise leave beside the one it rebuilds
+  for (const auto &other : othernamedfiles)
+  {
+    DiskFile *copy = diskFileMap.Find(other.first);
+    if (copy == 0)
+      continue;
+
+    // A complete copy is renamed into place instead
+    const bool complete = std::any_of(sourcefiles.begin(), sourcefiles.end(),
+                                      [copy](const Par2RepairerSourceFile *sf) { return sf && sf->GetCompleteFile() == copy; });
+
+    // A file holding none of the blocks is not a copy at all
+    const Par2RepairerSourceFile *sourcefile = other.second;
+    std::vector<DataBlock>::iterator block = sourcefile->SourceBlocks();
+    bool holdsblocks = false;
+    for (u32 i = 0; i < sourcefile->BlockCount() && !holdsblocks; i++, ++block)
+      holdsblocks = (block->GetDiskFile() == copy);
+
+    if (complete || !holdsblocks)
+      continue;
+
+    diskFileMap.Remove(copy);
+
+    const std::string original = copy->FileName();
+    const bool renamed = copy->Rename();
+
+    bool success = diskFileMap.Insert(copy);
+    assert(success);
+    (void)success;
+
+    if (!renamed)
+      return false;
+
+    backuplist.push_back(copy);
+    backupnames[copy] = original;
   }
 
   filenumber = 0;
