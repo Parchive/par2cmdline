@@ -412,6 +412,7 @@ struct Par2Verifier::State
   bool scanned;
   bool repaired;
   bool readback;
+  std::mutex workmutex;
   std::mutex cancelmutex;
   bool cancelled;
   bool restarting;
@@ -471,7 +472,7 @@ void Par2Verifier::Restart(void)
 
   for (const auto &f : rescan)
   {
-    if (impl->IsCancelled() || eCancelled == VerifyFile(f))
+    if (impl->IsCancelled() || eCancelled == DoVerifyFile(f))
     {
       cutshort = true;
       break;
@@ -546,6 +547,8 @@ void Par2Verifier::RecordLastError(const ErrorCode code, const std::string &mess
 
 bool Par2Verifier::GetLastError(Par2Error *error) const
 {
+  std::lock_guard<std::mutex> lock(state->workmutex);
+
   if (0 == error || ecNone == state->lasterror.code)
     return false;
 
@@ -555,17 +558,23 @@ bool Par2Verifier::GetLastError(Par2Error *error) const
 
 void Par2Verifier::SetObserver(Par2Observer *_observer)
 {
+  std::lock_guard<std::mutex> lock(state->workmutex);
+
   state->observer = _observer;
   impl->SetObserver(_observer);
 }
 
 void Par2Verifier::SetMemoryLimit(const size_t _memorylimit)
 {
+  std::lock_guard<std::mutex> lock(state->workmutex);
+
   state->memorylimit = MemoryLimit(_memorylimit);
 }
 
 void Par2Verifier::SetDataSkipping(const bool enabled, const u64 leaway)
 {
+  std::lock_guard<std::mutex> lock(state->workmutex);
+
   state->skipdata = enabled;
   state->skipleaway = (leaway != 0) ? leaway : DEFAULT_SKIP_LEAWAY;
 
@@ -574,6 +583,8 @@ void Par2Verifier::SetDataSkipping(const bool enabled, const u64 leaway)
 
 void Par2Verifier::SetFullHash(const bool enabled)
 {
+  std::lock_guard<std::mutex> lock(state->workmutex);
+
   state->fullhash = enabled;
 
   impl->SetFullHash(state->fullhash);
@@ -581,22 +592,34 @@ void Par2Verifier::SetFullHash(const bool enabled)
 
 void Par2Verifier::SetRenameOnly(const bool enabled)
 {
+  std::lock_guard<std::mutex> lock(state->workmutex);
+
   state->renameonly = enabled;
 }
 
 void Par2Verifier::SetVerbosity(const Verbosity verbosity)
 {
+  std::lock_guard<std::mutex> lock(state->workmutex);
+
   state->verbosity = verbosity;
   impl->SetVerbosity(verbosity);
 }
 
 void Par2Verifier::SetThreadCounts(const u32 _nthreads, const u32 _filethreads)
 {
+  std::lock_guard<std::mutex> lock(state->workmutex);
+
   state->nthreads = _nthreads;
   state->filethreads = _filethreads;
 }
 
-Result Par2Verifier::AddPar2File(const std::string &_parfilename)
+Result Par2Verifier::AddPar2File(const std::string &parfilename)
+{
+  std::lock_guard<std::mutex> lock(state->workmutex);
+  return DoAddPar2File(parfilename);
+}
+
+Result Par2Verifier::DoAddPar2File(const std::string &_parfilename)
 try
 {
   const std::string parfilename = DiskFile::GetCanonicalPathname(_parfilename);
@@ -658,17 +681,23 @@ catch (...)
 
 bool Par2Verifier::GetSetInfo(Par2SetInfo *info) const
 {
+  std::lock_guard<std::mutex> lock(state->workmutex);
+
   return impl->GetSetInfo(info);
 }
 
 bool Par2Verifier::GetFileInfo(std::vector<Par2FileInfo> *files) const
 {
+  std::lock_guard<std::mutex> lock(state->workmutex);
+
   return impl->GetFileInfo(files);
 }
 
 bool Par2Verifier::GetBlockChecksums(const std::string &filename,
                                     std::vector<u32> *crcs) const
 {
+  std::lock_guard<std::mutex> lock(state->workmutex);
+
   return impl->GetBlockChecksums(filename, crcs);
 }
 
@@ -679,6 +708,8 @@ bool Par2Verifier::GetBlockChecksums(const std::string &filename,
 bool Par2Verifier::GetFoundBlocks(const std::string &filename,
                                   std::vector<bool> *blocks) const
 {
+  std::lock_guard<std::mutex> lock(state->workmutex);
+
   if (!state->verified || (state->repaired && !state->readback))
     return false;
 
@@ -687,6 +718,8 @@ bool Par2Verifier::GetFoundBlocks(const std::string &filename,
 
 std::vector<std::string> Par2Verifier::GetBackupFiles(void) const
 {
+  std::lock_guard<std::mutex> lock(state->workmutex);
+
   std::vector<std::string> files;
   impl->GetBackupFiles(&files);
   return files;
@@ -694,6 +727,8 @@ std::vector<std::string> Par2Verifier::GetBackupFiles(void) const
 
 std::vector<std::pair<std::string, std::string> > Par2Verifier::GetRenamedFiles(void) const
 {
+  std::lock_guard<std::mutex> lock(state->workmutex);
+
   std::vector<std::pair<std::string, std::string> > files;
   impl->GetRenamedFiles(&files);
   return files;
@@ -701,6 +736,8 @@ std::vector<std::pair<std::string, std::string> > Par2Verifier::GetRenamedFiles(
 
 bool Par2Verifier::GetVerifyResult(Par2VerifyResult *result) const
 {
+  std::lock_guard<std::mutex> lock(state->workmutex);
+
   if (!state->verified)
     return false;
 
@@ -710,6 +747,8 @@ bool Par2Verifier::GetVerifyResult(Par2VerifyResult *result) const
 bool Par2Verifier::SetKnownBlocks(const std::string &filename,
                                  const std::vector<bool> &blocks)
 {
+  std::lock_guard<std::mutex> lock(state->workmutex);
+
   if (!impl->SetKnownBlocks(filename, blocks))
     return false;
 
@@ -723,10 +762,18 @@ bool Par2Verifier::SetKnownBlocks(const std::string &filename,
 
 std::map<std::string, std::vector<bool> > Par2Verifier::GetKnownBlocks(void) const
 {
+  std::lock_guard<std::mutex> lock(state->workmutex);
+
   return state->knownblocks;
 }
 
 Result Par2Verifier::Verify(const std::vector<std::string> &extrafiles)
+{
+  std::lock_guard<std::mutex> lock(state->workmutex);
+  return DoVerify(extrafiles);
+}
+
+Result Par2Verifier::DoVerify(const std::vector<std::string> &extrafiles)
 try
 {
   // A full pass covers everything the individual scans did, so they are dropped
@@ -759,6 +806,12 @@ catch (...)
 }
 
 Result Par2Verifier::VerifyFile(const std::string &filename)
+{
+  std::lock_guard<std::mutex> lock(state->workmutex);
+  return DoVerifyFile(filename);
+}
+
+Result Par2Verifier::DoVerifyFile(const std::string &filename)
 try
 {
   // After a repair a new engine starts from nothing, and each file is scanned
@@ -794,6 +847,12 @@ catch (...)
 }
 
 Result Par2Verifier::Repair(const bool verifyafter)
+{
+  std::lock_guard<std::mutex> lock(state->workmutex);
+  return DoRepair(verifyafter);
+}
+
+Result Par2Verifier::DoRepair(const bool verifyafter)
 try
 {
   if (!state->verified)
@@ -906,6 +965,7 @@ struct Par2Creator::State
   u32 nthreads;
   u32 filethreads;
   Verbosity verbosity;
+  std::mutex workmutex;
   std::mutex cancelmutex;
   bool cancelled;
   std::string basepath;
@@ -947,68 +1007,96 @@ Par2Creator::~Par2Creator() = default;
 
 void Par2Creator::SetObserver(Par2Observer *_observer)
 {
+  std::lock_guard<std::mutex> lock(state->workmutex);
+
   state->observer = _observer;
   impl->SetObserver(_observer);
 }
 
 void Par2Creator::SetSourceFiles(const std::vector<std::string> &filenames)
 {
+  std::lock_guard<std::mutex> lock(state->workmutex);
+
   state->sourcefiles = filenames;
 }
 
 void Par2Creator::SetBlockSize(const u64 _blocksize)
 {
+  std::lock_guard<std::mutex> lock(state->workmutex);
+
   state->blocksize = _blocksize;
   state->sourceblockcount = 0;
 }
 
 void Par2Creator::SetSourceBlockCount(const u32 blockcount)
 {
+  std::lock_guard<std::mutex> lock(state->workmutex);
+
   state->sourceblockcount = blockcount;
   state->blocksize = 0;
 }
 
 void Par2Creator::SetRecoveryBlockCount(const u32 _recoveryblockcount)
 {
+  std::lock_guard<std::mutex> lock(state->workmutex);
+
   state->recoveryblockcount = _recoveryblockcount;
   state->redundancy = 0;
 }
 
 void Par2Creator::SetRedundancy(const u32 percent)
 {
+  std::lock_guard<std::mutex> lock(state->workmutex);
+
   state->redundancy = percent;
   state->recoveryblockcount = 0;
 }
 
 void Par2Creator::SetRecoveryFileScheme(const Scheme scheme, const u32 _recoveryfilecount)
 {
+  std::lock_guard<std::mutex> lock(state->workmutex);
+
   state->recoveryfilescheme = scheme;
   state->recoveryfilecount = _recoveryfilecount;
 }
 
 void Par2Creator::SetFirstRecoveryBlock(const u32 firstblock)
 {
+  std::lock_guard<std::mutex> lock(state->workmutex);
+
   state->firstrecoveryblock = firstblock;
 }
 
 void Par2Creator::SetMemoryLimit(const size_t _memorylimit)
 {
+  std::lock_guard<std::mutex> lock(state->workmutex);
+
   state->memorylimit = MemoryLimit(_memorylimit);
 }
 
 void Par2Creator::SetThreadCounts(const u32 _nthreads, const u32 _filethreads)
 {
+  std::lock_guard<std::mutex> lock(state->workmutex);
+
   state->nthreads = _nthreads;
   state->filethreads = _filethreads;
 }
 
 void Par2Creator::SetVerbosity(const Verbosity verbosity)
 {
+  std::lock_guard<std::mutex> lock(state->workmutex);
+
   state->verbosity = verbosity;
   impl->SetVerbosity(verbosity);
 }
 
 Result Par2Creator::Create(const std::string &parfilename)
+{
+  std::lock_guard<std::mutex> lock(state->workmutex);
+  return DoCreate(parfilename);
+}
+
+Result Par2Creator::DoCreate(const std::string &parfilename)
 try
 {
   // Taken from the name of each set when none was given, before any file is
@@ -1112,6 +1200,8 @@ void Par2Creator::ClearCancel(void)
 
 bool Par2Creator::GetLastError(Par2Error *error) const
 {
+  std::lock_guard<std::mutex> lock(state->workmutex);
+
   if (0 == error || ecNone == state->lasterror.code)
     return false;
 

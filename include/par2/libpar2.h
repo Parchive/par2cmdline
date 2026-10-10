@@ -318,7 +318,8 @@ struct Par2FileResult
 //
 // OnProgress is called with a lock held which the other threads reporting
 // progress may wait on, so it should return quickly. A callback may call
-// Cancel on the handle it is reporting for, and nothing else of that handle.
+// Cancel on the handle it is reporting for, and nothing else of that handle:
+// the call it reports on holds the handle until it returns.
 class Par2Observer
 {
 public:
@@ -400,9 +401,13 @@ public:
 // Verifies and repairs one PAR2 set.
 //
 // PAR2 files are added one at a time, so a caller which is still collecting
-// them can add each as it arrives and ask what the set now describes. Several
-// of these may be used at once, as long as each is only used from one thread at
-// a time.
+// them can add each as it arrives and ask what the set now describes.
+//
+// Several of these may be used at once, and one may be called from several
+// threads at once. Its calls take turns, each finishing before the next
+// starts, so files fed to VerifyFile from several threads are scanned one
+// after another. Cancel and ClearCancel are the exception, and take effect
+// straight away.
 //
 // The calls which return a Result report a failure through it rather than
 // throwing, whatever the work or the implementations the application supplies
@@ -651,6 +656,11 @@ private:
   class Impl;
   struct State;
 
+  Result DoAddPar2File(const std::string &parfilename);
+  Result DoVerify(const std::vector<std::string> &extrafiles);
+  Result DoVerifyFile(const std::string &filename);
+  Result DoRepair(const bool verifyafter);
+
   void Restart(void);
   void TakeLastError(const Result result);
   void RecordLastError(const ErrorCode code, const std::string &message);
@@ -669,7 +679,8 @@ private:
 // had made, and nothing else.
 //
 // Create reports a failure through the Result it returns rather than throwing,
-// as the calls of Par2Verifier do.
+// as the calls of Par2Verifier do, and its calls take turns when it is called
+// from several threads at once, as theirs do.
 class Par2Creator
 {
 public:
@@ -764,6 +775,8 @@ public:
 private:
   class Impl;
   struct State;
+
+  Result DoCreate(const std::string &parfilename);
 
   void Restart(void);
   void TakeLastError(const Result result);

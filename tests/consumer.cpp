@@ -27,6 +27,7 @@
 
 #include <cstdio>
 #include <algorithm>
+#include <atomic>
 #include <fstream>
 #include <iterator>
 #include <map>
@@ -44,6 +45,7 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <thread>
 #include <vector>
 
 // An embedding application is free to use these names itself.
@@ -514,6 +516,88 @@ int main()
 
     Check(index, "the index file was read");
     Check(added == RECOVERYBLOCKS, "the PAR2 files added every recovery block between them");
+  }
+
+  // A verifier called from several threads at once takes the calls in turn,
+  // and ends where calling them one after another leaves it
+  {
+    par2::Par2Verifier alone("");
+    Check(par2::eSuccess == alone.AddPar2File(PARFILE), "AddPar2File for the threaded check");
+    for (const char *data : DATA)
+      alone.VerifyFile(data);
+
+    par2::Par2VerifyResult expected;
+    Check(alone.GetVerifyResult(&expected), "the files fed in one by one were verified");
+
+    Counting observer;
+    par2::Par2Verifier shared("");
+    shared.SetObserver(&observer);
+    Check(par2::eSuccess == shared.AddPar2File(PARFILE), "AddPar2File for the shared verifier");
+
+    // A file is fed in from each thread, while another asks what has been
+    // found so far
+    std::atomic<bool> feeding(true);
+    std::vector<std::thread> feeders;
+    for (const char *data : DATA)
+      feeders.emplace_back([&shared, data] { shared.VerifyFile(data); });
+
+    std::thread reader([&shared, &feeding]
+    {
+      while (feeding)
+      {
+        par2::Par2VerifyResult sofar;
+        shared.GetVerifyResult(&sofar);
+
+        std::vector<bool> found;
+        shared.GetFoundBlocks(DATA[0], &found);
+      }
+    });
+
+    for (auto &feeder : feeders)
+      feeder.join();
+    feeding = false;
+    reader.join();
+
+    par2::Par2VerifyResult together;
+    Check(shared.GetVerifyResult(&together), "the files fed in from several threads were verified");
+    Check(together.completefilecount == expected.completefilecount
+          && together.availableblockcount == expected.availableblockcount
+          && together.missingblockcount == expected.missingblockcount,
+          "and the result is the one feeding them in turn gives");
+    Check(observer.done == observer.files, "every file started on was finished");
+  }
+
+  // A creator called from several threads at once makes each set in turn
+  {
+    par2::Par2Creator creator("");
+    creator.SetSourceFiles({DATA[0], DATA[1]});
+    creator.SetBlockSize(BLOCKSIZE);
+    creator.SetRecoveryBlockCount(2);
+    creator.SetRecoveryFileScheme(par2::scUniform, 1);
+
+    const char *const sets[] = {"threaded-a", "threaded-b"};
+    std::atomic<int> made(0);
+    std::vector<std::thread> makers;
+    for (const char *set : sets)
+      makers.emplace_back([&creator, &made, set]
+      {
+        if (par2::eSuccess == creator.Create(set))
+          ++made;
+      });
+    for (auto &maker : makers)
+      maker.join();
+
+    Check(2 == made, "both sets were made");
+
+    for (const char *set : sets)
+    {
+      par2::Par2Verifier verifier("");
+      Check(par2::eSuccess == verifier.AddPar2File(std::string(set) + ".par2")
+            && par2::eSuccess == verifier.Verify(),
+            "and each verifies");
+      std::remove((std::string(set) + ".par2").c_str());
+      std::remove((std::string(set) + ".vol0+2.par2").c_str());
+    }
   }
 
   // Two verifiers used one after the other do not disturb each other
