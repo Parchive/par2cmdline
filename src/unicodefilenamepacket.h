@@ -34,6 +34,13 @@ public:
   ~UnicodeFilenamePacket(void) {};
 
 public:
+  // Construct the packet for a name in UTF-8. False when it is not UTF-8.
+  bool Create(const std::string &utf8);
+
+  // Store the file the name belongs to in the packet
+  void FileId(const MD5Hash &fileid);
+
+public:
   // Load a unicode filename packet from a specified file
   bool Load(DiskFile *diskfile, u64 offset, PACKET_HEADER &header);
 

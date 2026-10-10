@@ -31,6 +31,11 @@ namespace par2
 // an accented letter as its own character or as the letter followed by the
 // accent.
 
+// The characters of a UTF-8 string. False when the string is not UTF-8, which
+// includes a sequence longer than the character needs, a half of a surrogate
+// pair, and a character above the last one Unicode has.
+bool DecodeUtf8(const std::string &text, std::vector<u32> &characters);
+
 // Append a character to a UTF-8 string
 void AppendUtf8(std::string &text, u32 character);
 

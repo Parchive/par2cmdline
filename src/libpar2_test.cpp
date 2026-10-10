@@ -731,6 +731,122 @@ int test8() {
 }
 
 
+// The file id of each file description packet of a PAR2 file
+static std::vector<MD5Hash> DescribedFileIds(const char *par2file) {
+  std::ifstream file(par2file, std::ios::binary);
+  const std::string bytes((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+
+  std::vector<MD5Hash> fileids;
+  for (size_t offset = 0; offset + sizeof(PACKET_HEADER) <= bytes.size(); ) {
+    const PACKET_HEADER *header = (const PACKET_HEADER*)&bytes[offset];
+    if (header->type == filedescriptionpacket_type)
+      fileids.push_back(((const FILEDESCRIPTIONPACKET*)header)->fileid);
+    offset += (size_t)header->length;
+  }
+  return fileids;
+}
+
+// The unicode filename packets of a PAR2 file, as the file id and the name
+// each gives
+static std::vector<std::pair<MD5Hash, std::string> > UnicodeNames(const char *par2file) {
+  std::ifstream file(par2file, std::ios::binary);
+  const std::string bytes((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+
+  std::vector<std::pair<MD5Hash, std::string> > names;
+  for (size_t offset = 0; offset + sizeof(PACKET_HEADER) <= bytes.size(); ) {
+    const PACKET_HEADER *header = (const PACKET_HEADER*)&bytes[offset];
+    if (header->type == unicodefilenamepacket_type) {
+      const UNICODEFILENAMEPACKET *packet = (const UNICODEFILENAMEPACKET*)header;
+      size_t count = ((size_t)header->length - sizeof(UNICODEFILENAMEPACKET)) / 2;
+      while (count > 0 && packet->name[2*count-2] == 0 && packet->name[2*count-1] == 0)
+        --count;
+      std::string name;
+      UnicodeFilenamePacket::Utf16ToUtf8(packet->name, count, name);
+      names.push_back(std::make_pair(packet->fileid, name));
+    }
+    offset += (size_t)header->length;
+  }
+  return names;
+}
+
+// A create gives a name which is not plain ASCII in a unicode filename packet
+// too, and only such a name
+int test9() {
+  const std::string unicodedata = "libpar2_test9_caf\xc3\xa9_\xf0\x9f\x98\x80.data";
+  const char *const asciidata = "libpar2_test9.data";
+  const char *const leftovers[] = {"libpar2_test9u.par2", "libpar2_test9u.vol0+1.par2",
+                                   "libpar2_test9a.par2", "libpar2_test9a.vol0+1.par2"};
+
+  // DiskFile takes the names in UTF-8 on every system
+  auto removeleftovers = [&]() {
+    for (const char *leftover : leftovers)
+      remove(leftover);
+    for (const std::string &name : {unicodedata, std::string(asciidata)}) {
+      DiskFile file;
+      if (file.Open(name)) {
+        file.Close();
+        file.Delete();
+      }
+    }
+  };
+
+  removeleftovers();
+
+  for (const std::string &name : {unicodedata, std::string(asciidata)}) {
+    std::string data;
+    for (int i = 0; i < 20000; ++i)
+      data += (char)(i * 7 + i / 256);
+    DiskFile file;
+    if (!file.Create(name, data.size()) || !file.Write(0, data.data(), data.size())) {
+      std::cerr << "could not write " << name << std::endl;
+      return 1;
+    }
+  }
+
+  int failed = 1;
+
+  Par2Creator unicodecreator("");
+  unicodecreator.SetSourceFiles(std::vector<std::string>(1, unicodedata));
+  unicodecreator.SetBlockSize(4096);
+  unicodecreator.SetRecoveryBlockCount(1);
+
+  Par2Creator asciicreator("");
+  asciicreator.SetSourceFiles(std::vector<std::string>(1, asciidata));
+  asciicreator.SetBlockSize(4096);
+  asciicreator.SetRecoveryBlockCount(1);
+
+  if (unicodecreator.Create("libpar2_test9u") != eSuccess
+      || asciicreator.Create("libpar2_test9a") != eSuccess) {
+    std::cerr << "creating the sets failed" << std::endl;
+  } else {
+    const std::vector<std::pair<MD5Hash, std::string> > unicode = UnicodeNames("libpar2_test9u.par2");
+
+    Par2Verifier verifier("");
+    std::vector<Par2FileInfo> files;
+
+    if (unicode.size() != 1 || unicode[0].second != unicodedata) {
+      std::cerr << "the set does not give the name in one unicode filename packet" << std::endl;
+    } else if (DescribedFileIds("libpar2_test9u.par2") != std::vector<MD5Hash>(1, unicode[0].first)) {
+      std::cerr << "the unicode filename packet is not for the file described" << std::endl;
+    } else if (!UnicodeNames("libpar2_test9a.par2").empty()) {
+      std::cerr << "a set of a plain ASCII name has a unicode filename packet" << std::endl;
+    } else if (verifier.AddPar2File("libpar2_test9u.par2") != eSuccess
+               || !verifier.GetFileInfo(&files) || files.size() != 1
+               || files[0].filename != unicodedata) {
+      std::cerr << "the set does not describe the file by its name" << std::endl;
+    } else if (verifier.Verify() != eSuccess) {
+      std::cerr << "the file is not found under its name" << std::endl;
+    } else {
+      failed = 0;
+    }
+  }
+
+  removeleftovers();
+
+  return failed;
+}
+
+
 int main() {
   if (test1()) {
     std::cerr << "FAILED: test1" << std::endl;
@@ -762,6 +878,10 @@ int main() {
   }
   if (test8()) {
     std::cerr << "FAILED: test8" << std::endl;
+    return 1;
+  }
+  if (test9()) {
+    std::cerr << "FAILED: test9" << std::endl;
     return 1;
   }
 

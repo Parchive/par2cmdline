@@ -30,6 +30,57 @@ static char THIS_FILE[]=__FILE__;
 #endif
 #endif
 
+bool UnicodeFilenamePacket::Create(const std::string &utf8)
+{
+  std::vector<u32> characters;
+  if (!DecodeUtf8(utf8, characters) || characters.empty())
+    return false;
+
+  // Each character above U+FFFF is written as a pair of surrogates
+  std::vector<u16> units;
+  for (u32 character : characters)
+  {
+    if (character < 0x10000)
+    {
+      units.push_back((u16)character);
+    }
+    else
+    {
+      units.push_back((u16)(0xD800 + ((character - 0x10000) >> 10)));
+      units.push_back((u16)(0xDC00 + ((character - 0x10000) & 0x3FF)));
+    }
+  }
+
+  // The name is padded with a zero unit to reach a multiple of 4 bytes
+  UNICODEFILENAMEPACKET *packet = (UNICODEFILENAMEPACKET *)AllocatePacket(sizeof(*packet) + (~3 & (3 + 2 * units.size())));
+
+  packet->header.magic  = packet_magic;
+  packet->header.length = packetlength;
+  //packet->header.hash;  // Not known yet
+  //packet->header.setid; // Not known yet
+  packet->header.type   = unicodefilenamepacket_type;
+
+  //packet->fileid;       // Not known yet
+
+  for (size_t i = 0; i < units.size(); i++)
+  {
+    packet->name[2*i]   = (u8)(units[i] & 0xFF);
+    packet->name[2*i+1] = (u8)(units[i] >> 8);
+  }
+
+  filename = utf8;
+
+  return true;
+}
+
+void UnicodeFilenamePacket::FileId(const MD5Hash &fileid)
+{
+  assert(packetdata != 0);
+
+  // Store the fileid in the packet.
+  ((UNICODEFILENAMEPACKET*)packetdata)->fileid = fileid;
+}
+
 bool UnicodeFilenamePacket::Load(DiskFile *diskfile, u64 offset, PACKET_HEADER &header)
 {
   // Is the packet big enough to hold a name

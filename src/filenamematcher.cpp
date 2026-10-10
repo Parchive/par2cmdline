@@ -57,7 +57,7 @@ static const u32 hangulsyllablecount = 19 * hangulvowelcount * hangultrailcount;
 // Reads the characters of a UTF-8 string. False when the string is not UTF-8,
 // which includes a sequence longer than the character needs, a half of a
 // surrogate pair, and a character above the last one Unicode has.
-static bool DecodeUtf8(const std::string &text, std::vector<u32> &characters)
+bool DecodeUtf8(const std::string &text, std::vector<u32> &characters)
 {
   characters.clear();
 
