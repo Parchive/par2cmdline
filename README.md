@@ -370,6 +370,9 @@ built in, link `par2::cli` and call `par2::run`:
       return par2::run(argc, argv, std::cout, std::cerr, backends);
     }
 
+`par2::cancel` stops a run from another thread, which then returns
+`eCancelled`. The tool calls it on Ctrl+C.
+
 ## Reed-Solomon Coding
 
 PAR2 uses Reed-Solomon Coding to perform its calculations. For details of this coding technique try the following link:

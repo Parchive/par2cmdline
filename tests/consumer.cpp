@@ -2949,6 +2949,42 @@ int main()
     std::remove(clipar);
   }
 
+  // The command line stops when cancel is called from another thread, and
+  // cancel says when there is nothing to stop
+  {
+    Check(!par2::cancel(), "cancel with no run in progress says so");
+    Check(MakeDirectory("canceldir"), "mkdir for the cancel check");
+
+    const char *const canceldata = "canceldir/cancel.data";
+    WriteData(canceldata, 13, 4000000);
+
+    const char *const create[] = {"par2", "create", "-q", "-q", "canceldir/cancel", canceldata};
+
+    std::ostringstream quiet;
+    std::ostringstream said;
+    par2::Result result = par2::eSuccess;
+    std::atomic<bool> done(false);
+    std::thread running([&] {
+      result = par2::run(6, create, quiet, said);
+      done = true;
+    });
+
+    bool cancelled = false;
+    while (!done && !cancelled)
+      cancelled = par2::cancel();
+
+    running.join();
+
+    Check(cancelled, "cancel reaches a create in progress");
+    Check(result == par2::eCancelled, "which returns eCancelled");
+    Check(said.str() == "Cancelled.\n", "and says so on the error stream");
+    Check(!std::ifstream("canceldir/cancel.par2").good(), "leaving no PAR2 file behind");
+    Check(!par2::cancel(), "cancel after the run has ended says there is nothing to stop");
+
+    std::remove(canceldata);
+    std::remove("canceldir/cancel.par2");
+  }
+
   // A repair needs a verify of its own, and what it renamed is scanned by a
   // new engine rather than the one which renamed it
   {

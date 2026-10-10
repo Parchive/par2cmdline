@@ -27,6 +27,9 @@
 #endif
 
 #include <algorithm>
+#include <functional>
+#include <list>
+#include <mutex>
 #include <new>
 #include <set>
 
@@ -638,10 +641,39 @@ static void Remove(Printer &printer, const std::string &filename)
     printer.Err(nlSilent, "Cannot delete " + filename + "\n");
 }
 
+// The handles of the runs in progress, which cancel stops
+static std::mutex runningmutex;
+static std::list<std::function<void(void)> > running;
+
+// Makes a handle one that cancel stops, for as long as this lives
+class Running
+{
+public:
+  template <typename Handle>
+  explicit Running(Handle &handle)
+  {
+    std::lock_guard<std::mutex> lock(runningmutex);
+    entry = running.insert(running.end(), [&handle] { handle.Cancel(); });
+  }
+
+  ~Running()
+  {
+    std::lock_guard<std::mutex> lock(runningmutex);
+    running.erase(entry);
+  }
+
+  Running(const Running &) = delete;
+  Running &operator=(const Running &) = delete;
+
+private:
+  std::list<std::function<void(void)> >::iterator entry;
+};
+
 // The tool's create
 static Result Create(CommandLine &commandline, const Backends &backends, Printer &printer)
 {
   Par2Creator creator(commandline.GetBasePath(), backends);
+  Running cancellable(creator);
   creator.SetObserver(&printer);
   creator.SetSourceFiles(commandline.GetExtraFiles());
   creator.SetBlockSize(commandline.GetBlockSize());
@@ -683,6 +715,7 @@ static Result Create(CommandLine &commandline, const Backends &backends, Printer
 static Result Repair(CommandLine &commandline, const Backends &backends, Printer &printer)
 {
   Par2Verifier verifier(commandline.GetBasePath(), backends);
+  Running cancellable(verifier);
   verifier.SetObserver(&printer);
   verifier.SetMemoryLimit(commandline.GetMemoryLimit());
   verifier.SetThreadCounts(commandline.GetNumThreads(), commandline.GetFileThreads());
@@ -739,6 +772,9 @@ static Result Repair(CommandLine &commandline, const Backends &backends, Printer
 
   result = verifier.Verify(commandline.GetExtraFiles());
   printer.Finish();
+
+  if (result == eCancelled)
+    return result;
 
   Par2VerifyResult verified;
   if (!verifier.GetVerifyResult(&verified))
@@ -898,6 +934,9 @@ try
       default:
         break;
     }
+
+    if (result == eCancelled)
+      printer.Err(nlSilent, "Cancelled.\n");
   }
 
   return result;
@@ -905,6 +944,16 @@ try
 catch (...)
 {
   return Thrown(serr);
+}
+
+bool cancel(void)
+{
+  std::lock_guard<std::mutex> lock(runningmutex);
+
+  for (const auto &stop : running)
+    stop();
+
+  return !running.empty();
 }
 
 #ifdef _WIN32

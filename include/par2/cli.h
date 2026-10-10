@@ -46,6 +46,15 @@ namespace par2
 Result run(int argc, const char * const *argv, std::ostream &sout, std::ostream &serr,
            const Backends &backends = Backends());
 
+// Stop the work of every run in progress, from any thread, as Cancel stops a
+// handle's: each returns eCancelled, having removed the files a create or a
+// repair was part way through writing. False when no run is doing work that
+// can be cancelled, such as one reading PAR1 files or one yet to start.
+//
+// It takes a lock, so a POSIX signal handler must not call it. A thread which
+// waits for the signal, as the tool's main does, can.
+bool cancel(void);
+
 #ifdef _WIN32
 
 // The arguments a wide entry point is given, converted to UTF-8 before they
