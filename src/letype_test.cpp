@@ -86,7 +86,7 @@ int test4() {
 
   for (int i = 0; i < 256*256; i++) {
     unsigned long z = 0;
-    z += (rand() % 256)*256*256*256;
+    z += (rand() % 256)*256ul*256ul*256ul;
     z += (rand() % 256)*256*256;
     z += (rand() % 256)*256;
     z += (rand() % 256);
