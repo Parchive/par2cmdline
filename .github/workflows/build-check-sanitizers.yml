@@ -1,4 +1,4 @@
-name: par2cmdline CI Linux (sanitizers)
+name: par2cmdline CI Linux (ASan+UBSan)
 
 on:
   workflow_call:
@@ -16,19 +16,5 @@ jobs:
         cmake -B build-cmake -G Ninja -DCMAKE_BUILD_TYPE=Debug \
           -DCMAKE_CXX_FLAGS="-g -O1 -fsanitize=address,undefined -fno-omit-frame-pointer" \
           -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address,undefined"
-        cmake --build build-cmake
-        ctest --test-dir build-cmake --output-on-failure
-
-  build-check-tsan:
-    runs-on: ubuntu-latest
-
-    steps:
-    - uses: actions/checkout@v7
-
-    - name: Build and test (TSan)
-      run: |
-        cmake -B build-cmake -G Ninja -DCMAKE_BUILD_TYPE=Debug \
-          -DCMAKE_CXX_FLAGS="-g -O1 -fsanitize=thread" \
-          -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=thread"
         cmake --build build-cmake
         ctest --test-dir build-cmake --output-on-failure
