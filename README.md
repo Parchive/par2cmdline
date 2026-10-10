@@ -53,8 +53,9 @@ You should have received par2cmdline in the form of source code which you can co
 
 If you have only downloaded a precompiled executable, then the source code should be available from the same location where you downloaded the executable from.
 
-On Windows, open the source directory in Visual Studio, which reads
-*CMakeLists.txt* directly, or build it from a command prompt:
+On Windows, open the source directory in Visual Studio, which offers the x64
+Debug and x64 Release configurations in *CMakePresets.json*, or build it from a
+command prompt:
 
     cmake -B build-cmake -A x64
     cmake --build build-cmake --config Release
@@ -72,6 +73,12 @@ To compile on Linux and other Unix variants use the following commands:
     cmake --build build-cmake -j"$(getconf _NPROCESSORS_ONLN)"
     ctest --test-dir build-cmake
     cmake --install build-cmake
+
+or through the presets, with CMake 3.21 or later:
+
+    cmake --preset release
+    cmake --build --preset release
+    ctest --preset release
 
 For FreeBSD you must install the following dependencies:
 

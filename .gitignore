@@ -22,6 +22,7 @@ tests/.dirstamp
 
 # cmake output
 /build-cmake/
+CMakeUserPresets.json
 CMakeCache.txt
 CMakeFiles/
 cmake_install.cmake
