@@ -3672,8 +3672,8 @@ bool Par2Repairer::AllocateBuffers(size_t memorylimit)
     chunksize = MAX_CHUNK_SIZE;
 
   // Allocate the two buffers
-  transferbuffer = new (std::nothrow) u8[(size_t)chunksize * NUM_TRANSFER_BUFFERS];
-  outputbuffer = new (std::nothrow) u8[(size_t)chunksize];
+  transferbuffer = AllocateBytes((size_t)chunksize * NUM_TRANSFER_BUFFERS);
+  outputbuffer = AllocateBytes((size_t)chunksize);
 
   ProcessorConfig config;
   config.numthreads = totalthreads;

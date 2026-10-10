@@ -198,6 +198,7 @@ typedef unsigned int     size_t;
 #include <sstream>
 #include <algorithm>
 #include <memory>
+#include <new>
 #include <limits>
 
 #include <ctype.h>
@@ -338,6 +339,17 @@ std::string SetNameFor(const std::string &parfilename);
 #ifdef _WIN32
 #include "utf8.h"
 #endif
+
+namespace par2
+{
+
+// An array of count bytes, or 0 when there is not the memory for it
+inline u8 *AllocateBytes(const size_t count)
+{
+  return new (std::nothrow) u8[count];
+}
+
+} // namespace par2
 
 // Heap checking
 #ifdef _MSC_VER
