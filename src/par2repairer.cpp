@@ -1906,6 +1906,19 @@ bool Par2Repairer::VerifySourceFiles(const std::string &basepath, std::vector<st
       // The file does not exist.
       delete diskfile;
 
+      // One under another name the set gives it is found by the scan of the
+      // extra files, and renamed by a repair
+      {
+        std::lock_guard<std::mutex> lock(extraFilesMutex);
+        for (const auto &other : sourcefile->OtherFileNames())
+        {
+          const std::string pathname = DiskFile::GetCanonicalPathname(other);
+          if (DiskFile::FileExists(pathname) &&
+              std::find(extrafiles.begin(), extrafiles.end(), pathname) == extrafiles.end())
+            extrafiles.push_back(pathname);
+        }
+      }
+
       if (observer)
       {
         Par2FileResult result;

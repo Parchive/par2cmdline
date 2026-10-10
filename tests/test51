@@ -1,0 +1,79 @@
+#!/bin/sh
+
+execdir="$PWD"
+
+if [ -n "${PARVALGRINDOPTS+set}" ]
+then
+    PARBINARY="valgrind $PARVALGRINDOPTS $execdir/par2"
+elif [ "`which wine`" != "" ] && [ -f "$execdir/par2.exe" ]
+then
+    PARBINARY="wine $execdir/par2.exe"
+else
+    PARBINARY="$execdir/par2"
+fi
+
+if [ -z "$srcdir" ] || [ "." = "$srcdir" ]; then
+  srcdir="$PWD"
+  TESTDATA="$srcdir/tests"
+else
+  srcdir="$PWD/$srcdir"
+  TESTDATA="$srcdir/tests"
+fi
+
+TESTROOT="$PWD"
+
+testname=$(basename $0)
+rm -f "$testname.log"
+rm -rf "run$testname"
+
+mkdir "run$testname" && cd "run$testname" || { echo "ERROR: Could not change to test directory" ; exit 1; } >&2
+
+banner="A file is named by the unicode filename packet the set gives it"
+dashes=`echo "$banner" | sed s/./-/g`
+
+echo $dashes
+echo $banner
+echo $dashes
+
+tar -xzf "$TESTDATA/unicode-name.tar.gz" || { echo "ERROR: Could not extract the test files" ; exit 1; } >&2
+
+# unicode.par2 names the file data_ascii.bin in its description packet and
+# this in its unicode filename packet, which takes its place.
+unicode=`printf 'data_\303\251_\360\237\230\200.bin'`
+cp data_ascii.bin original.bin
+
+mv data_ascii.bin "$unicode"
+
+$PARBINARY v -q unicode.par2 || { echo "ERROR: The file was not found under its unicode name" ; exit 1; } >&2
+
+# A file under the name in the description packet has the wrong name, and a
+# repair renames it.
+mv "$unicode" data_ascii.bin
+
+$PARBINARY v unicode.par2 > verify.out 2>&1
+result=$?
+if [ $result -ne 1 ]
+then
+  echo "ERROR: Verifying the file under its description packet's name gave $result, expected 1" >&2
+  exit 1
+fi
+
+grep -F "\"data_ascii.bin\" - is a match for \"$unicode\"" verify.out > /dev/null \
+  || { echo "ERROR: The file was not matched to its unicode name" ; exit 1; } >&2
+
+$PARBINARY r -q unicode.par2 || { echo "ERROR: Repair failed" ; exit 1; } >&2
+
+cmp "$unicode" original.bin || { echo "ERROR: The file was not renamed to its unicode name" ; exit 1; } >&2
+test ! -f data_ascii.bin || { echo "ERROR: The file is still under its description packet's name" ; exit 1; } >&2
+
+# bad.par2 has a unicode filename packet which is not UTF-16, so the name in
+# its description packet is used.
+$PARBINARY v bad.par2 > bad.out 2>&1 || { echo "ERROR: The file was not found under its description packet's name" ; exit 1; } >&2
+
+grep -F "does not hold UTF-16" bad.out > /dev/null \
+  || { echo "ERROR: The packet which is not UTF-16 was not reported" ; exit 1; } >&2
+
+cd "$TESTROOT"
+rm -rf "run$testname"
+
+exit 0

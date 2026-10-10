@@ -94,6 +94,15 @@ void Par2RepairerSourceFile::ComputeTargetFileName(const std::string &path, cons
   std::string filename = DescriptionPacket::TranslateFilenameFromPar2ToLocal(FileName(), first ? errorlog : 0);
 
   targetfilename = path + filename;
+
+  // The name in the description packet, when the unicode name is used instead
+  otherfilenames.clear();
+  if (descriptionpacket && FileName() != descriptionpacket->FileName())
+  {
+    const std::string described = path + DescriptionPacket::TranslateFilenameFromPar2ToLocal(descriptionpacket->FileName());
+    if (described != targetfilename)
+      otherfilenames.push_back(described);
+  }
 }
 
 std::string Par2RepairerSourceFile::TargetFileName(void) const
