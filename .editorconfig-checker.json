@@ -4,7 +4,7 @@
   "IgnoreDefaults": false,
   "SpacesAfterTabs": false,
   "NoColor": false,
-  "Exclude": ["\\.par2$"],
+  "Exclude": ["\\.par2$", "^libs/cxxopts/"],
   "AllowedContentTypes": [],
   "PassedFiles": [],
   "Disable": {
