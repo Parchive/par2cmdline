@@ -481,6 +481,51 @@ bool DiskFile::FileExists(std::string filename)
   return ((0 == _wstati64(wfilename.c_str(), &st)) && (0 != (st.st_mode & _S_IFREG)));
 }
 
+bool DiskFile::DirectoryExists(std::string path)
+{
+  // The system takes a directory without its trailing separator, except a
+  // drive's root
+  while (path.size() > 1 && (*path.rbegin() == PATHSEP[0] || *path.rbegin() == ALTPATHSEP[0]) &&
+         path[path.size() - 2] != ':')
+    path.erase(path.size() - 1);
+
+  std::wstring wpath;
+  if (!utf8::Utf8ToWide(path, wpath))
+    return false;
+
+  const DWORD attributes = ::GetFileAttributesW(wpath.c_str());
+  return attributes != INVALID_FILE_ATTRIBUTES && 0 != (attributes & FILE_ATTRIBUTE_DIRECTORY);
+}
+
+std::unique_ptr< std::list<std::string> > DiskFile::FindDirectories(std::string path)
+{
+  if (*path.rbegin() != PATHSEP[0])
+    path += PATHSEP;
+
+  std::list<std::string> *matches = new std::list<std::string>;
+
+  std::wstring wwildcard;
+  if (!utf8::Utf8ToWide(path + "*", wwildcard))
+    return std::unique_ptr< std::list<std::string> >(matches);
+
+  WIN32_FIND_DATAW fd;
+  HANDLE h = ::FindFirstFileW(wwildcard.c_str(), &fd);
+  if (h != INVALID_HANDLE_VALUE)
+  {
+    do
+    {
+      std::string name;
+      if (0 != (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) &&
+          0 == (fd.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT) &&
+          utf8::WideToUtf8(fd.cFileName, name) && name != "." && name != "..")
+        matches->push_back(path + name);
+    } while (::FindNextFileW(h, &fd));
+    ::FindClose(h);
+  }
+
+  return std::unique_ptr< std::list<std::string> >(matches);
+}
+
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 #else // !_WIN32
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -966,6 +1011,39 @@ bool DiskFile::FileExists(std::string filename)
   struct stat st;
   return ((0 == stat(filename.c_str(), &st)) && (0 != (st.st_mode & S_IFREG)));
 }
+
+bool DiskFile::DirectoryExists(std::string path)
+{
+  struct stat st;
+  return ((0 == stat(path.c_str(), &st)) && S_ISDIR(st.st_mode));
+}
+
+std::unique_ptr< std::list<std::string> > DiskFile::FindDirectories(std::string path)
+{
+  if (*path.rbegin() != '/')
+    path += '/';
+
+  std::list<std::string> *matches = new std::list<std::string>;
+
+  DIR *dirp = opendir(path.c_str());
+  if (dirp != 0)
+  {
+    struct dirent *d;
+    while ((d = readdir(dirp)) != 0)
+    {
+      const std::string name = d->d_name;
+      if (name == "." || name == "..")
+        continue;
+
+      struct stat st;
+      if (lstat((path + name).c_str(), &st) == 0 && S_ISDIR(st.st_mode))
+        matches->push_back(path + name);
+    }
+    closedir(dirp);
+  }
+
+  return std::unique_ptr< std::list<std::string> >(matches);
+}
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 #endif
 
@@ -1134,6 +1212,9 @@ bool DiskFile::Rename(std::string _filename)
 {
   assert(hFile == INVALID_HANDLE_VALUE);
 
+  if (!CreateParentDirectory(_filename))
+    return false;
+
   std::wstring wfilename, _wfilename;
   if (utf8::Utf8ToWide(filename, wfilename) && utf8::Utf8ToWide(_filename, _wfilename) && ::MoveFileW(wfilename.c_str(), _wfilename.c_str()))
   {
@@ -1150,6 +1231,9 @@ bool DiskFile::Rename(std::string _filename)
 bool DiskFile::Rename(std::string _filename)
 {
   assert(file == 0);
+
+  if (!CreateParentDirectory(_filename))
+    return false;
 
   if (::rename(filename.c_str(), _filename.c_str()) == 0)
   {

@@ -1,0 +1,155 @@
+//  This file is part of par2cmdline (a PAR 2.0 compatible file verification and
+//  repair tool). See http://parchive.sourceforge.net for details of PAR 2.0.
+//
+//  Copyright (c) 2026 Michael Nightingale
+//
+//  par2cmdline is free software; you can redistribute it and/or modify
+//  it under the terms of the GNU General Public License as published by
+//  the Free Software Foundation; either version 2 of the License, or
+//  (at your option) any later version.
+//
+//  par2cmdline is distributed in the hope that it will be useful,
+//  but WITHOUT ANY WARRANTY; without even the implied warranty of
+//  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//  GNU General Public License for more details.
+//
+//  You should have received a copy of the GNU General Public License
+//  along with this program; if not, write to the Free Software
+//  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+
+#include "libpar2internal.h"
+
+namespace par2
+{
+
+#ifdef _MSC_VER
+#ifdef _DEBUG
+#undef THIS_FILE
+static char THIS_FILE[]=__FILE__;
+#define new DEBUG_NEW
+#endif
+#endif
+
+bool UnicodeFilenamePacket::Create(const std::string &utf8)
+{
+  std::vector<u32> characters;
+  if (!DecodeUtf8(utf8, characters) || characters.empty())
+    return false;
+
+  // Each character above U+FFFF is written as a pair of surrogates
+  std::vector<u16> units;
+  for (u32 character : characters)
+  {
+    if (character < 0x10000)
+    {
+      units.push_back((u16)character);
+    }
+    else
+    {
+      units.push_back((u16)(0xD800 + ((character - 0x10000) >> 10)));
+      units.push_back((u16)(0xDC00 + ((character - 0x10000) & 0x3FF)));
+    }
+  }
+
+  // The name is padded with a zero unit to reach a multiple of 4 bytes
+  UNICODEFILENAMEPACKET *packet = (UNICODEFILENAMEPACKET *)AllocatePacket(sizeof(*packet) + (~3 & (3 + 2 * units.size())));
+
+  packet->header.magic  = packet_magic;
+  packet->header.length = packetlength;
+  //packet->header.hash;  // Not known yet
+  //packet->header.setid; // Not known yet
+  packet->header.type   = unicodefilenamepacket_type;
+
+  //packet->fileid;       // Not known yet
+
+  for (size_t i = 0; i < units.size(); i++)
+  {
+    packet->name[2*i]   = (u8)(units[i] & 0xFF);
+    packet->name[2*i+1] = (u8)(units[i] >> 8);
+  }
+
+  filename = utf8;
+
+  return true;
+}
+
+void UnicodeFilenamePacket::FileId(const MD5Hash &fileid)
+{
+  assert(packetdata != 0);
+
+  // Store the fileid in the packet.
+  ((UNICODEFILENAMEPACKET*)packetdata)->fileid = fileid;
+}
+
+bool UnicodeFilenamePacket::Load(DiskFile *diskfile, u64 offset, PACKET_HEADER &header)
+{
+  // Is the packet big enough to hold a name
+  if (header.length <= sizeof(UNICODEFILENAMEPACKET))
+  {
+    return false;
+  }
+
+  // Is the packet too large (what is the longest permissible filename)
+  if (header.length - sizeof(UNICODEFILENAMEPACKET) > 200000)
+  {
+    return false;
+  }
+
+  // Allocate the packet
+  UNICODEFILENAMEPACKET *packet = (UNICODEFILENAMEPACKET *)AllocatePacket((size_t)header.length);
+
+  packet->header = header;
+
+  // Read the rest of the packet from disk
+  if (!diskfile->Read(offset + sizeof(PACKET_HEADER),
+                      &packet->fileid,
+                      (size_t)packet->header.length - sizeof(PACKET_HEADER)))
+    return false;
+
+  // The name less the zero units it is padded with
+  size_t count = ((size_t)packet->header.length - sizeof(UNICODEFILENAMEPACKET)) / 2;
+  while (count > 0 && packet->name[2*count-2] == 0 && packet->name[2*count-1] == 0)
+    --count;
+
+  if (count == 0 || !Utf16ToUtf8(packet->name, count, filename))
+    filename.clear();
+
+  return true;
+}
+
+bool UnicodeFilenamePacket::Utf16ToUtf8(const u8 *units, size_t count, std::string &utf8)
+{
+  utf8.clear();
+
+  for (size_t i = 0; i < count; i++)
+  {
+    u32 character = units[2*i] | ((u32)units[2*i+1] << 8);
+
+    if (character == 0)
+      return false;
+
+    // A high surrogate and the low one which follows it are one character
+    if (character >= 0xD800 && character <= 0xDBFF)
+    {
+      if (i + 1 == count)
+        return false;
+
+      const u32 low = units[2*i+2] | ((u32)units[2*i+3] << 8);
+      if (low < 0xDC00 || low > 0xDFFF)
+        return false;
+
+      character = 0x10000 + ((character - 0xD800) << 10) + (low - 0xDC00);
+      i++;
+    }
+    else if (character >= 0xDC00 && character <= 0xDFFF)
+    {
+      return false;
+    }
+
+    AppendUtf8(utf8, character);
+  }
+
+  return true;
+}
+
+} // namespace par2

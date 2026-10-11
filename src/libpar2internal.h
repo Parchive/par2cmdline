@@ -299,6 +299,7 @@ typedef enum
 #include "reference_processor.h"
 
 #include "diskfile.h"
+#include "filenamematcher.h"
 #include "datablock.h"
 
 #include "criticalpacket.h"
@@ -307,6 +308,7 @@ typedef enum
 #include "mainpacket.h"
 #include "creatorpacket.h"
 #include "descriptionpacket.h"
+#include "unicodefilenamepacket.h"
 #include "verificationpacket.h"
 #include "recoverypacket.h"
 

@@ -323,6 +323,7 @@ Result Par2Repairer::VerifyFiles(const std::string &basepath,
   ClearLastError();
 
   renamedlist.clear();
+  othernamedfiles.clear();
 
   if (!PrepareForScanning())
   {
@@ -625,7 +626,7 @@ bool Par2Repairer::GetFileInfo(std::vector<Par2FileInfo> *files) const
     const DescriptionPacket *descriptionpacket = sourcefile->GetDescriptionPacket();
 
     Par2FileInfo info;
-    info.filename = descriptionpacket->FileName();
+    info.filename = sourcefile->FileName();
     info.localfilename = sourcefile->TargetFileName();
     info.filesize = descriptionpacket->FileSize();
     info.blockcount = verificationpacket ? verificationpacket->BlockCount() : 0;
@@ -742,7 +743,7 @@ bool Par2Repairer::TakeKnownBlocks(DiskFile               *diskfile,
     return false;
 
   std::map<std::string, std::vector<bool> >::const_iterator kb =
-    knownblocks.find(descriptionpacket->FileName());
+    knownblocks.find(sourcefile->FileName());
   if (kb == knownblocks.end())
     return false;
 
@@ -781,7 +782,7 @@ static std::string ReportedName(const Par2RepairerSourceFile *sourcefile, const 
   if (sourcefile == 0 || sourcefile->GetDescriptionPacket() == 0)
     return localname;
 
-  return sourcefile->GetDescriptionPacket()->FileName();
+  return sourcefile->FileName();
 }
 
 // Load packets from the specified PAR2 file, from the other PAR2 files whose
@@ -853,7 +854,7 @@ Result Par2Repairer::PreparePackets(void)
     if (0 == sourcefile || 0 == sourcefile->GetDescriptionPacket())
       continue;
 
-    sourcefilesbyname.insert(std::make_pair(sourcefile->GetDescriptionPacket()->FileName(), sourcefile));
+    sourcefilesbyname.insert(std::make_pair(sourcefile->FileName(), sourcefile));
   }
 
   // The source file each canonical path belongs to, for finding the one a
@@ -1113,6 +1114,13 @@ bool Par2Repairer::LoadPacketsFromFile(const std::string &filename, bool reread,
             packets++;
           }
         }
+        else if (unicodefilenamepacket_type == header.type)
+        {
+          if (LoadUnicodeFilenamePacket(diskfile, offset, header))
+          {
+            packets++;
+          }
+        }
       }
 
       // Advance to the next packet
@@ -1341,6 +1349,57 @@ bool Par2Repairer::LoadCreatorPacket(DiskFile *diskfile, u64 offset, PACKET_HEAD
   return true;
 }
 
+// Finish loading a unicode filename packet
+bool Par2Repairer::LoadUnicodeFilenamePacket(DiskFile *diskfile, u64 offset, PACKET_HEADER &header)
+{
+  UnicodeFilenamePacket *packet = new UnicodeFilenamePacket;
+
+  // Load the packet from disk
+  if (!packet->Load(diskfile, offset, header))
+  {
+    delete packet;
+    return false;
+  }
+
+  // What is the fileid
+  const MD5Hash &fileid = packet->FileId();
+
+  // Look up the fileid in the source file map for an existing source file entry
+  std::map<MD5Hash, Par2RepairerSourceFile*>::iterator sfmi = sourcefilemap.find(fileid);
+  Par2RepairerSourceFile *sourcefile = (sfmi == sourcefilemap.end()) ? 0 :sfmi->second;
+
+  // Does the source file already have a unicode filename packet
+  if (sourcefile && sourcefile->GetUnicodeFilenamePacket())
+  {
+    // Yes. We don't need another copy.
+    delete packet;
+    return false;
+  }
+
+  if (!sourcefile)
+  {
+    // Create a new source file for the packet
+    sourcefile = new Par2RepairerSourceFile(NULL, NULL);
+
+    // Record the source file in the source file map
+    sourcefilemap.insert(std::pair<MD5Hash, Par2RepairerSourceFile*>(fileid, sourcefile));
+  }
+
+  // A name which is not UTF-16 is kept, so that the other copies of the packet
+  // are not read, and the name in the description packet is used instead
+  sourcefile->SetUnicodeFilenamePacket(packet);
+
+  if (packet->FileName().empty())
+  {
+    errorlog.Warn(wcPacketDiscarded,
+                  "Unicode filename packet which does not hold UTF-16 discarded",
+                  diskfile->FileName());
+    return false;
+  }
+
+  return true;
+}
+
 // Load packets from other PAR2 files with names based on the original PAR2 file
 bool Par2Repairer::LoadPacketsFromOtherFiles(std::string filename)
 {
@@ -1526,8 +1585,8 @@ bool Par2Repairer::CheckPacketConsistency(void)
       if (!sf->second->SetBlockCount(blocksize))
       {
         errorlog.Warn(wcPacketDiscarded,
-                      "Too many blocks in source file \"" + descriptionpacket->FileName() + "\" discarded",
-                      descriptionpacket->FileName());
+                      "Too many blocks in source file \"" + sf->second->FileName() + "\" discarded",
+                      sf->second->FileName());
 
         delete sf->second;
         std::map<MD5Hash, Par2RepairerSourceFile*>::iterator x = sf++;
@@ -1556,8 +1615,8 @@ bool Par2Repairer::CheckPacketConsistency(void)
         // The block counts are different!
 
         errorlog.Warn(wcPacketDiscarded,
-                      "Incorrectly sized verification packet for \"" + descriptionpacket->FileName() + "\" discarded",
-                      descriptionpacket->FileName());
+                      "Incorrectly sized verification packet for \"" + sf->second->FileName() + "\" discarded",
+                      sf->second->FileName());
 
         // Discard the source file
 
@@ -1582,6 +1641,9 @@ bool Par2Repairer::CheckPacketConsistency(void)
 // into the correct order and determine their filenames
 bool Par2Repairer::CreateSourceFileList(void)
 {
+  // The directories are read as they are before anything is repaired
+  FilenameMatcher matcher;
+
   // For each FileId entry in the main packet
   for (u32 filenumber=0; filenumber<mainpacket->TotalFileCount(); filenumber++)
   {
@@ -1593,7 +1655,7 @@ bool Par2Repairer::CreateSourceFileList(void)
 
     if (sourcefile)
     {
-      sourcefile->ComputeTargetFileName(basepath, &errorlog);
+      sourcefile->ComputeTargetFileName(basepath, matcher, &errorlog);
     }
 
     sourcefiles.push_back(sourcefile);
@@ -1848,6 +1910,22 @@ bool Par2Repairer::VerifySourceFiles(const std::string &basepath, std::vector<st
       // The file does not exist.
       delete diskfile;
 
+      // One under another name the set gives it is found by the scan of the
+      // extra files, and renamed by a repair
+      {
+        std::lock_guard<std::mutex> lock(extraFilesMutex);
+        for (const auto &other : sourcefile->OtherFileNames())
+        {
+          const std::string pathname = DiskFile::GetCanonicalPathname(other);
+          if (DiskFile::FileExists(pathname) &&
+              std::find(extrafiles.begin(), extrafiles.end(), pathname) == extrafiles.end())
+          {
+            extrafiles.push_back(pathname);
+            othernamedfiles[pathname] = sourcefile;
+          }
+        }
+      }
+
       if (observer)
       {
         Par2FileResult result;
@@ -2018,7 +2096,7 @@ bool Par2Repairer::VerifyDataFile(DiskFile *diskfile, Par2RepairerSourceFile *so
   // The file the blocks were found to belong to, when there is just one
   if (sourcefile != 0 && (result.blocksfound > 0 || result.complete) && !result.severalfiles)
   {
-    result.matchedfilename = sourcefile->GetDescriptionPacket()->FileName();
+    result.matchedfilename = sourcefile->FileName();
     result.matchedlocalfilename = sourcefile->TargetFileName();
   }
 
@@ -2984,7 +3062,7 @@ void Par2Repairer::ReportWritten(void)
       continue;
 
     Par2FileResult result;
-    result.filename = sourcefile->GetDescriptionPacket()->FileName();
+    result.filename = sourcefile->FileName();
     result.localfilename = sourcefile->TargetFileName();
     result.exists = true;
     result.filesize = sourcefile->GetDescriptionPacket()->FileSize();
@@ -3039,6 +3117,44 @@ bool Par2Repairer::RenameTargetFiles(void)
 
     ++sf;
     ++filenumber;
+  }
+
+  // Rename any damaged copy found under another name the set gives a file,
+  // which the repair would otherwise leave beside the one it rebuilds
+  for (const auto &other : othernamedfiles)
+  {
+    DiskFile *copy = diskFileMap.Find(other.first);
+    if (copy == 0)
+      continue;
+
+    // A complete copy is renamed into place instead
+    const bool complete = std::any_of(sourcefiles.begin(), sourcefiles.end(),
+                                      [copy](const Par2RepairerSourceFile *sf) { return sf && sf->GetCompleteFile() == copy; });
+
+    // A file holding none of the blocks is not a copy at all
+    const Par2RepairerSourceFile *sourcefile = other.second;
+    std::vector<DataBlock>::iterator block = sourcefile->SourceBlocks();
+    bool holdsblocks = false;
+    for (u32 i = 0; i < sourcefile->BlockCount() && !holdsblocks; i++, ++block)
+      holdsblocks = (block->GetDiskFile() == copy);
+
+    if (complete || !holdsblocks)
+      continue;
+
+    diskFileMap.Remove(copy);
+
+    const std::string original = copy->FileName();
+    const bool renamed = copy->Rename();
+
+    bool success = diskFileMap.Insert(copy);
+    assert(success);
+    (void)success;
+
+    if (!renamed)
+      return false;
+
+    backuplist.push_back(copy);
+    backupnames[copy] = original;
   }
 
   filenumber = 0;

@@ -26,6 +26,7 @@ namespace par2
 
 class DescriptionPacket;
 class VerificationPacket;
+class UnicodeFilenamePacket;
 class DiskFile;
 
 // The Par2CreatorSourceFile contains the file verification and file description
@@ -80,6 +81,7 @@ public:
 protected:
   DescriptionPacket  *descriptionpacket;  // The file description packet.
   VerificationPacket *verificationpacket; // The file verification packet.
+  UnicodeFilenamePacket *unicodefilenamepacket; // The unicode filename packet, if the name needs one.
   DiskFile           *diskfile;           // The source file
 
   u64    filesize;      // The size of the source file.

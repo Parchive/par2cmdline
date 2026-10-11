@@ -51,6 +51,15 @@ public:
   VerificationPacket* GetVerificationPacket(void) const {return verificationpacket;}
   void SetVerificationPacket(VerificationPacket *verificationpacket);
 
+  // Get/Set the unicode filename packet
+  UnicodeFilenamePacket* GetUnicodeFilenamePacket(void) const {return unicodefilenamepacket;}
+  void SetUnicodeFilenamePacket(UnicodeFilenamePacket *unicodefilenamepacket);
+
+  // The name the set gives the file: the one in its unicode filename packet
+  // when it has one which holds UTF-16, otherwise the one in its description
+  // packet
+  std::string FileName(void) const;
+
   // Record the details as to which data blocks belong to this source
   // file and set the length of each allocated block correctly.
   void SetBlocks(u32 _blocknumber,
@@ -75,8 +84,12 @@ public:
   DiskFile* GetCompleteFile(void) const;
 
   // Compute/Get the filename for the final repaired version of the file
-  void ComputeTargetFileName(const std::string &path, const ErrorLog *errorlog = 0);
+  void ComputeTargetFileName(const std::string &path, FilenameMatcher &matcher, const ErrorLog *errorlog = 0);
   std::string TargetFileName(void) const;
+
+  // Where else the file may be on disk: under the name in its description
+  // packet, or another spelling of either name
+  const std::vector<std::string>& OtherFileNames(void) const {return otherfilenames;}
 
   // Get the number of blocks that the file uses
   u32 BlockCount(void) const {return blockcount;}
@@ -97,6 +110,7 @@ public:
 protected:
   DescriptionPacket           *descriptionpacket;   // The file description packet
   VerificationPacket          *verificationpacket;  // The file verification packet
+  UnicodeFilenamePacket       *unicodefilenamepacket; // The unicode filename packet
 
   u32                          blockcount;          // The number of DataBlocks in the file
   u32                          firstblocknumber;    // The block number of the first DataBlock
@@ -109,6 +123,7 @@ protected:
   DiskFile                    *completefile;        // A complete version of the file
 
   std::string                  targetfilename;      // The filename of the target file
+  std::vector<std::string>     otherfilenames;      // Where else the file may be on disk
   u64                          diskfilesize;        // The filesize of sourcefile on disk
 };
 

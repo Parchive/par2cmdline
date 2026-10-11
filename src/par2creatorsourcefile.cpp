@@ -35,6 +35,7 @@ Par2CreatorSourceFile::Par2CreatorSourceFile(void)
 {
   descriptionpacket = 0;
   verificationpacket = 0;
+  unicodefilenamepacket = 0;
   diskfile = 0;
   filesize = 0;
   //diskfilename;
@@ -47,6 +48,7 @@ Par2CreatorSourceFile::~Par2CreatorSourceFile(void)
 {
   delete descriptionpacket;
   delete verificationpacket;
+  delete unicodefilenamepacket;
   delete diskfile;
 }
 
@@ -74,6 +76,17 @@ bool Par2CreatorSourceFile::Open(const std::string &extrafile, u64 blocksize, bo
 
   verificationpacket = new VerificationPacket;
   verificationpacket->Create(blockcount);
+
+  // A name which is not plain ASCII is given in UTF-16 too
+  if (std::any_of(parfilename.begin(), parfilename.end(), [](char ch) { return (unsigned char)ch >= 0x80; }))
+  {
+    unicodefilenamepacket = new UnicodeFilenamePacket;
+    if (!unicodefilenamepacket->Create(parfilename))
+    {
+      delete unicodefilenamepacket;
+      unicodefilenamepacket = 0;
+    }
+  }
 
   // Create the diskfile object
   diskfile  = new DiskFile(errorlog);
@@ -117,6 +130,8 @@ bool Par2CreatorSourceFile::Open(const std::string &extrafile, u64 blocksize, bo
     // Compute the fileid and store it in the verification packet.
     descriptionpacket->ComputeFileId();
     verificationpacket->FileId(descriptionpacket->FileId());
+    if (unicodefilenamepacket)
+      unicodefilenamepacket->FileId(descriptionpacket->FileId());
 
     // Allocate a hasher for the block and file hashes computed
     // during the recovery data generation phase
@@ -268,6 +283,8 @@ bool Par2CreatorSourceFile::Open(const std::string &extrafile, u64 blocksize, bo
     // Compute the fileid and store it in the verification packet.
     descriptionpacket->ComputeFileId();
     verificationpacket->FileId(descriptionpacket->FileId());
+    if (unicodefilenamepacket)
+      unicodefilenamepacket->FileId(descriptionpacket->FileId());
   }
 
   return true;
@@ -285,6 +302,8 @@ void Par2CreatorSourceFile::RecordCriticalPackets(std::list<CriticalPacket*> &cr
   // the critical packet list.
   criticalpackets.push_back(descriptionpacket);
   criticalpackets.push_back(verificationpacket);
+  if (unicodefilenamepacket)
+    criticalpackets.push_back(unicodefilenamepacket);
 }
 
 bool Par2CreatorSourceFile::CompareLess(const Par2CreatorSourceFile* const &left, const Par2CreatorSourceFile* const &right)

@@ -146,7 +146,8 @@ typedef enum WarningCode
   wcFilenameUnsafe = 1,
 
   // The name a file will be written under is not the name the set records,
-  // because the recorded one could not be used as it stands
+  // because the recorded one could not be used as it stands or is in a code
+  // page rather than UTF-8
   wcFilenameChanged = 2,
 
   // A read or a write moved fewer bytes than were asked for, and the rest was
@@ -238,10 +239,13 @@ struct Par2FileInfo
                                 // identifies a file whose name is unknown
 };
 
-// filename is exactly what the set records, byte for byte, and is how the
-// other calls name the file, so it need not be UTF-8 and they take it back
-// unchanged. Nothing checks it, so it must not be trusted as a path: it may be
-// absolute, climb out with "..", or hold characters this system will not take.
+// filename is the name the set records: the one in the file's unicode filename
+// packet, as UTF-8, when the set has one which holds UTF-16, and otherwise
+// exactly the bytes of its file description packet, which need not be UTF-8.
+// It is the same on every system and is how the other calls name the file, so
+// they take it back unchanged. Nothing checks it, so it must not be trusted as
+// a path: it may be absolute, climb out with "..", or hold characters this
+// system will not take.
 // localfilename is the one to open or write, since an absolute path or one
 // climbing out with ".." is defused before it is reported.
 //
@@ -254,6 +258,10 @@ struct Par2FileInfo
 // absolute, and available as soon as the packets describing the file have been
 // read. The library hands it to the system as it stands, which on Windows
 // means as UTF-8.
+//
+// A file which is on disk under its description packet's name rather than its
+// unicode one is found by Verify as an extra file which matches it, and a
+// repair renames it.
 
 
 // What a verify found, and what it would take to repair it
@@ -336,8 +344,8 @@ public:
   // step of the work the file is part of, as OnProgress reports it. The first
   // file of a step can arrive before the step's first progress.
   //
-  // filename is the name the set records, byte for byte, so it is the same on
-  // every system and need not be UTF-8.
+  // filename is the name the set records, as Par2FileInfo describes it, so it
+  // is the same on every system and need not be UTF-8.
   // Nothing checks it, so it must not be trusted as a path.
   // A file the set does not name - a PAR2 file, or an extra file offered to a
   // verify - is named as it is on this one, and keeps that name for both
@@ -606,9 +614,11 @@ public:
   // own purge option deletes. An application tidying up after a repair can
   // delete or keep them as it prefers.
   //
-  // Only files par2 renamed itself are listed. A file the application supplied
-  // as an extra file is never included, even if its blocks were used, because
-  // the application knows what it supplied and may still want it.
+  // Only files par2 renamed itself are listed: a damaged target, and a damaged
+  // copy the verify found under another name the set gives the file, such as
+  // its description packet's name. A file the application supplied as an extra
+  // file is never included, even if its blocks were used, because the
+  // application knows what it supplied and may still want it.
   //
   // Emptied by the next Verify, and by an AddPar2File which changes the shape
   // of the set.
