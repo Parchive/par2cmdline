@@ -77,7 +77,7 @@ public:
 #ifdef _WIN32
   bool IsOpen(void) const {return hFile != INVALID_HANDLE_VALUE;}
 #else
-  bool IsOpen(void) const {return file != 0;}
+  bool IsOpen(void) const {return fd >= 0;}
 #endif
 
   // Read some data from the file
@@ -85,7 +85,7 @@ public:
   bool Read(u64 offset, void *buffer, size_t length,
 	    LengthType maxlength = MAX_LENGTH);
 
-  // Close the file, false when what was still buffered could not be written
+  // Close the file, false when the system reports that closing it failed
   bool Close(void);
 
   // Get the size of the file
@@ -163,11 +163,8 @@ protected:
 #ifdef _WIN32
   HANDLE hFile;
 #else
-  FILE *file;
+  int    fd;
 #endif
-
-  // Current write offset within the file. Read() neither uses nor updates it.
-  u64    offset;
 
   // Does the file exist
   bool   exists;

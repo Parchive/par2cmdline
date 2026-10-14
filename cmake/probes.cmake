@@ -41,17 +41,15 @@ if(HAVE_STDIO_H AND HAVE_STDLIB_H AND HAVE_STRING_H AND HAVE_LIMITS_H)
 endif()
 
 check_symbol_exists(memcpy string.h HAVE_MEMCPY)
-check_symbol_exists(fseeko stdio.h HAVE_FSEEKO)
 
 test_big_endian(WORDS_BIGENDIAN)
 
-# DiskFile::Read is given the position to read from, using ReadFile with an
-# OVERLAPPED offset on Windows and pread everywhere else.
 if(NOT WIN32)
   check_symbol_exists(pread unistd.h HAVE_PREAD)
-  if(NOT HAVE_PREAD)
+  check_symbol_exists(pwrite unistd.h HAVE_PWRITE)
+  if(NOT HAVE_PREAD OR NOT HAVE_PWRITE)
     message(FATAL_ERROR
-      "par2cmdline needs pread, or the Windows API, to read a file at an explicit offset")
+      "par2cmdline needs pread and pwrite, or the Windows API, to read and write a file at an explicit offset")
   endif()
 endif()
 

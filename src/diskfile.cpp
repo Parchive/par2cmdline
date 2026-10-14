@@ -65,7 +65,6 @@ DiskFile::DiskFile(ErrorLog *errorlog)
 {
   filename = "";
   filesize = 0;
-  offset = 0;
 
   hFile = INVALID_HANDLE_VALUE;
 
@@ -155,11 +154,10 @@ bool DiskFile::Create(std::string _filename, u64 _filesize)
   if (filesize > 0)
   {
     // Seek to the end of the file
-    LONG* ptrfilesize = (LONG*)&filesize;
-    LONG lowoffset = ptrfilesize[0];
-    LONG highoffset = ptrfilesize[1];
+    LARGE_INTEGER end;
+    end.QuadPart = (LONGLONG)filesize;
 
-    if (INVALID_SET_FILE_POINTER == SetFilePointer(hFile, lowoffset, &highoffset, FILE_BEGIN))
+    if (!::SetFilePointerEx(hFile, end, NULL, FILE_BEGIN))
     {
       DWORD error = ::GetLastError();
 
@@ -187,10 +185,17 @@ bool DiskFile::Create(std::string _filename, u64 _filesize)
     }
   }
 
-  offset = filesize;
-
   exists = true;
   return true;
+}
+
+// Where a read or a write starts, without using the handle's file pointer
+static OVERLAPPED Overlapped(const u64 offset)
+{
+  OVERLAPPED overlapped = {};
+  overlapped.Offset = (DWORD)offset;
+  overlapped.OffsetHigh = (DWORD)(offset >> 32);
+  return overlapped;
 }
 
 // Write some data to disk
@@ -198,25 +203,6 @@ bool DiskFile::Create(std::string _filename, u64 _filesize)
 bool DiskFile::Write(u64 _offset, const void *buffer, size_t length, LengthType maxlength)
 {
   assert(hFile != INVALID_HANDLE_VALUE);
-
-  if (offset != _offset)
-  {
-    LONG* ptroffset = (LONG*)&_offset;
-    LONG lowoffset = ptroffset[0];
-    LONG highoffset = ptroffset[1];
-
-    // Seek to the required offset
-    if (INVALID_SET_FILE_POINTER == SetFilePointer(hFile, lowoffset, &highoffset, FILE_BEGIN))
-    {
-      DWORD error = ::GetLastError();
-
-      Failure(*this, ecFileWriteFailed, filename) << "Could not write " << (u64)length << " bytes to \"" << filename << "\" at offset " << _offset << ": " << ErrorMessage(error);
-
-      return false;
-    }
-    offset = _offset;
-  }
-
 
   while (length > 0) {
 
@@ -228,7 +214,8 @@ bool DiskFile::Write(u64 _offset, const void *buffer, size_t length, LengthType 
     DWORD wrote = 0;
 
     // Write the data
-    if (!::WriteFile(hFile, buffer, write, &wrote, NULL))
+    OVERLAPPED overlapped = Overlapped(_offset);
+    if (!::WriteFile(hFile, buffer, write, &wrote, &overlapped))
     {
       DWORD error = ::GetLastError();
 
@@ -246,13 +233,13 @@ bool DiskFile::Write(u64 _offset, const void *buffer, size_t length, LengthType 
         errorlog->Warn(wcIncompleteWrite, message.str(), filename);
     }
 
-    offset += wrote;
+    _offset += wrote;
     length -= wrote;
     buffer = ((char *) buffer) + wrote;
 
-    if (filesize < offset)
+    if (filesize < _offset)
     {
-      filesize = offset;
+      filesize = _offset;
     }
   }
 
@@ -292,7 +279,6 @@ bool DiskFile::Open(const std::string &_filename, u64 _filesize)
     return false;
   }
 
-  offset = 0;
   exists = true;
 
   return true;
@@ -313,16 +299,8 @@ bool DiskFile::Read(u64 _offset, void *buffer, size_t length, LengthType maxleng
       want = (LengthType)length;
     DWORD got = 0;
 
-    // Read from the given position without using the handle's file pointer
-    ULARGE_INTEGER position;
-    position.QuadPart = (ULONGLONG)_offset;
-
-    OVERLAPPED overlapped;
-    memset(&overlapped, 0, sizeof(overlapped));
-    overlapped.Offset = position.LowPart;
-    overlapped.OffsetHigh = position.HighPart;
-
     // Read the data
+    OVERLAPPED overlapped = Overlapped(_offset);
     if (!::ReadFile(hFile, buffer, want, &got, &overlapped))
     {
       DWORD error = ::GetLastError();
@@ -530,10 +508,6 @@ std::unique_ptr< std::list<std::string> > DiskFile::FindDirectories(std::string 
 #else // !_WIN32
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#ifdef HAVE_FSEEKO
-# define fseek fseeko
-#endif
-
 #define OffsetType off_t
 #define MaxOffset ((std::numeric_limits<OffsetType>::max)())
 
@@ -543,9 +517,8 @@ DiskFile::DiskFile(ErrorLog *errorlog)
 {
   //filename;
   filesize = 0;
-  offset = 0;
 
-  file = 0;
+  fd = -1;
 
   exists = false;
 }
@@ -553,8 +526,8 @@ DiskFile::DiskFile(ErrorLog *errorlog)
 
 DiskFile::~DiskFile(void)
 {
-  if (file != 0)
-    fclose(file);
+  if (fd >= 0)
+    close(fd);
 }
 
 bool DiskFile::CreateParentDirectory(std::string _pathname)
@@ -592,7 +565,7 @@ bool DiskFile::CreateParentDirectory(std::string _pathname)
 // space on disk for it.
 bool DiskFile::Create(std::string _filename, u64 _filesize)
 {
-  assert(file == 0);
+  assert(fd < 0);
 
   filename = _filename;
   filesize = _filesize;
@@ -606,7 +579,7 @@ bool DiskFile::Create(std::string _filename, u64 _filesize)
     return false;
   }
 
-  int fd = open(_filename.c_str(), O_WRONLY | O_CREAT | O_EXCL | O_NOFOLLOW, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+  fd = open(_filename.c_str(), O_WRONLY | O_CREAT | O_EXCL | O_NOFOLLOW, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
   if (fd < 0)
   {
     Failure(*this, ecFileCreateFailed, _filename) << "Could not create " << _filename << ": " << strerror(errno);
@@ -614,43 +587,15 @@ bool DiskFile::Create(std::string _filename, u64 _filesize)
     return false;
   }
 
-  file = fdopen(fd, "wb");
-  if (file == 0)
+  if (ftruncate(fd, (OffsetType)_filesize))
   {
-    int savederrno = errno;
+    Failure(*this, ecFileCreateFailed, _filename) << "Could not set end of file of " << _filename << ": " << strerror(errno);
+
     close(fd);
+    fd = -1;
     ::remove(filename.c_str());
-    errno = savederrno;
-
-    Failure(*this, ecFileCreateFailed, _filename) << "Could not create " << _filename << ": " << strerror(errno);
-
     return false;
   }
-
-  if (_filesize > 0)
-  {
-    if (fseek(file, (OffsetType)_filesize-1, SEEK_SET))
-    {
-      Failure(*this, ecFileCreateFailed, _filename) << "Could not set end of file of " << _filename << ": " << strerror(errno);
-
-      fclose(file);
-      file = 0;
-      ::remove(filename.c_str());
-      return false;
-    }
-
-    if (1 != fwrite(&_filesize, 1, 1, file))
-    {
-      Failure(*this, ecFileCreateFailed, _filename) << "Could not set end of file of " << _filename << ": " << strerror(errno);
-
-      fclose(file);
-      file = 0;
-      ::remove(filename.c_str());
-      return false;
-    }
-  }
-
-  offset = filesize;
 
   exists = true;
   return true;
@@ -660,23 +605,12 @@ bool DiskFile::Create(std::string _filename, u64 _filesize)
 
 bool DiskFile::Write(u64 _offset, const void *buffer, size_t length, LengthType maxlength)
 {
-  assert(file != 0);
+  assert(fd >= 0);
 
-  if (offset != _offset)
+  if (_offset > (u64)MaxOffset)
   {
-    if (_offset > (u64)MaxOffset)
-    {
-        Failure(*this, ecFileWriteFailed, filename) << "Could not write " << (u64)length << " bytes to " << filename << " at offset " << _offset;
-      return false;
-    }
-
-
-    if (fseek(file, (OffsetType)_offset, SEEK_SET))
-    {
-      Failure(*this, ecFileWriteFailed, filename) << "Could not write " << (u64)length << " bytes to " << filename << " at offset " << _offset << ": " << strerror(errno);
-      return false;
-    }
-    offset = _offset;
+    Failure(*this, ecFileWriteFailed, filename) << "Could not write " << (u64)length << " bytes to " << filename << " at offset " << _offset;
+    return false;
   }
 
   while (length > 0) {
@@ -687,20 +621,29 @@ bool DiskFile::Write(u64 _offset, const void *buffer, size_t length, LengthType 
     else
       write = length;
 
-    LengthType wrote = fwrite(buffer, 1, write, file);
-    if (wrote != write)
+    ssize_t wrote = pwrite(fd, buffer, write, (OffsetType)_offset);
+    if (wrote < 0 && errno == EINTR)
+      continue;
+
+    if (wrote < 0)
     {
       Failure(*this, ecFileWriteFailed, filename) << "Could not write " << (u64)length << " bytes to " << filename << " at offset " << _offset << ": " << strerror(errno);
       return false;
     }
 
-    offset += wrote;
+    if (wrote == 0)
+    {
+      Failure(*this, ecFileWriteFailed, filename) << "Could not write " << (u64)length << " bytes to " << filename << " at offset " << _offset << ": nothing was written.";
+      return false;
+    }
+
+    _offset += wrote;
     length -= wrote;
     buffer = ((char *) buffer) + wrote;
 
-    if (filesize < offset)
+    if (filesize < _offset)
     {
-      filesize = offset;
+      filesize = _offset;
     }
   }
 
@@ -711,7 +654,7 @@ bool DiskFile::Write(u64 _offset, const void *buffer, size_t length, LengthType 
 
 bool DiskFile::Open(const std::string &_filename, u64 _filesize)
 {
-  assert(file == 0);
+  assert(fd < 0);
 
   filename = _filename;
   filesize = _filesize;
@@ -722,8 +665,8 @@ bool DiskFile::Open(const std::string &_filename, u64 _filesize)
     return false;
   }
 
-  file = fopen(filename.c_str(), "rb");
-  if (file == 0)
+  fd = open(filename.c_str(), O_RDONLY);
+  if (fd < 0)
   {
     if (errno != ENOENT && errno != ENOTDIR)
       Failure(*this, ecFileOpenFailed, _filename) << "Could not open " << _filename << ": " << strerror(errno);
@@ -731,7 +674,6 @@ bool DiskFile::Open(const std::string &_filename, u64 _filesize)
     return false;
   }
 
-  offset = 0;
   exists = true;
 
   return true;
@@ -741,15 +683,13 @@ bool DiskFile::Open(const std::string &_filename, u64 _filesize)
 
 bool DiskFile::Read(u64 _offset, void *buffer, size_t length, LengthType maxlength)
 {
-  assert(file != 0);
+  assert(fd >= 0);
 
   if (_offset > (u64)MaxOffset)
   {
     Failure(*this, ecFileReadFailed, filename) << "Could not read " << (u64)length << " bytes from " << filename << " at offset " << _offset;
     return false;
   }
-
-  int fd = fileno(file);
 
   while (length > 0) {
 
@@ -760,11 +700,18 @@ bool DiskFile::Read(u64 _offset, void *buffer, size_t length, LengthType maxleng
       want = length;
 
     ssize_t got = pread(fd, buffer, want, (OffsetType)_offset);
-    if (got != (ssize_t)want)
-    {
-      // NOTE: This can happen on error or when hitting the end-of-file.
+    if (got < 0 && errno == EINTR)
+      continue;
 
+    if (got < 0)
+    {
       Failure(*this, ecFileReadFailed, filename) << "Could not read " << (u64)length << " bytes from " << filename << " at offset " << _offset << ": " << strerror(errno);
+      return false;
+    }
+
+    if (got == 0)
+    {
+      Failure(*this, ecFileReadFailed, filename) << "Could not read " << (u64)length << " bytes from " << filename << " at offset " << _offset << ": unexpected end of file.";
       return false;
     }
 
@@ -780,10 +727,10 @@ bool DiskFile::Close(void)
 {
   bool closed = true;
 
-  if (file != 0)
+  if (fd >= 0)
   {
-    closed = (0 == fclose(file));
-    file = 0;
+    closed = (0 == close(fd));
+    fd = -1;
   }
 
   return closed;
@@ -1073,7 +1020,7 @@ bool DiskFile::Delete(void)
     return true;
   }
 #else
-  assert(file == 0);
+  assert(fd < 0);
 
   if (filename.size() > 0 && 0 == unlink(filename.c_str()))
   {
@@ -1232,7 +1179,7 @@ bool DiskFile::MoveTo(std::string _filename, std::string &reason)
 #else
 bool DiskFile::MoveTo(std::string _filename, std::string &reason)
 {
-  assert(file == 0);
+  assert(fd < 0);
 
   if (::rename(filename.c_str(), _filename.c_str()) != 0)
   {
