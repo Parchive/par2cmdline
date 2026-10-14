@@ -373,7 +373,7 @@ Result Par2Repairer::RepairFiles(const size_t memorylimit, const std::string &ba
   ApplyMemoryLimit(memorylimit);
 
   // Rename any damaged or missnamed target files.
-  if (!RenameTargetFiles())
+  if (!RenameTargetFiles(basepath))
   {
     // Put back the files already renamed
     DeleteIncompleteTargetFiles();
@@ -3076,7 +3076,7 @@ void Par2Repairer::ReportWritten(void)
 }
 
 // Rename any damaged or missnamed target files.
-bool Par2Repairer::RenameTargetFiles(void)
+bool Par2Repairer::RenameTargetFiles(const std::string &basepath)
 {
   u32 filenumber = 0;
   std::vector<Par2RepairerSourceFile*>::iterator sf = sourcefiles.begin();
@@ -3166,9 +3166,11 @@ bool Par2Repairer::RenameTargetFiles(void)
     Par2RepairerSourceFile *sourcefile = *sf;
     if (sourcefile)
     {
-      // If there is no targetfile and there is a complete version
+      // If there is no targetfile and there is a complete version. One outside
+      // the base path is copied into place instead.
       if (sourcefile->GetTargetFile() == 0 &&
-          sourcefile->GetCompleteFile() != 0)
+          sourcefile->GetCompleteFile() != 0 &&
+          0 == sourcefile->GetCompleteFile()->FileName().compare(0, basepath.length(), basepath))
       {
         DiskFile *targetfile = sourcefile->GetCompleteFile();
 

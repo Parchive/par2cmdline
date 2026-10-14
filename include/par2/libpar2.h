@@ -647,6 +647,10 @@ public:
   // written over: the repair fails with eFileIOError and ecNotVerified, naming
   // it.
   //
+  // A complete copy of a file found under another name is renamed into place
+  // when it is inside the base path. One outside the base path, or one which
+  // cannot be renamed, is copied into place instead and left where it is.
+  //
   // verifyafter reads back and hashes everything that was rebuilt, and is
   // what turns a repair that did not work into eRepairFailed. With it off the
   // result is eSuccess unless something went wrong along the way, and

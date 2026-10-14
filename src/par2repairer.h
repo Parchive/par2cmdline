@@ -241,7 +241,7 @@ protected:
   void ReportWritten(void);
 
   // Rename any damaged or missnamed target files.
-  bool RenameTargetFiles(void);
+  bool RenameTargetFiles(const std::string &basepath);
 
   // Work out which files are being repaired, create them, and allocate
   // target DataBlocks to them, and remember them for later verification.

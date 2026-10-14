@@ -847,6 +847,87 @@ int test9() {
 }
 
 
+static void RemoveTestDirectory(const std::string &path) {
+#ifdef _WIN32
+  std::wstring wpath;
+  if (utf8::Utf8ToWide(path, wpath))
+    ::RemoveDirectoryW(wpath.c_str());
+#else
+  rmdir(path.c_str());
+#endif
+}
+
+// A complete copy outside the base path is copied into place, and left where
+// it is
+int test10() {
+  const std::string inside = "runlibpar2_test10_a";
+  const std::string outside = "runlibpar2_test10_b";
+  const std::string datafile = inside + PATHSEP "file.data";
+  const std::string copy = outside + PATHSEP "file.data";
+  const std::string leftovers[] = {datafile, copy, inside + PATHSEP "file.par2",
+				   inside + PATHSEP "file.vol0+1.par2"};
+
+  // A create never overwrites, so whatever an earlier run left goes first
+  for (const std::string &leftover : leftovers)
+    remove(leftover.c_str());
+
+  std::string content;
+  for (int i = 0; i < 20000; ++i)
+    content.push_back((char)(i * 13 + i / 256));
+
+  DiskFile directories(0);
+  directories.CreateParentDirectory(datafile);
+  directories.CreateParentDirectory(copy);
+  {
+    std::ofstream data(datafile.c_str(), std::ofstream::out | std::ofstream::binary);
+    data << content;
+  }
+
+  int failed = 1;
+
+  Par2Creator creator("");
+  creator.SetSourceFiles(std::vector<std::string>(1, datafile));
+  creator.SetBlockSize(4096);
+  creator.SetRecoveryBlockCount(1);
+
+  Result result = creator.Create(inside + PATHSEP "file");
+  if (result != eSuccess) {
+    std::cerr << "creating the set returned " << result << std::endl;
+  } else if (0 != rename(datafile.c_str(), copy.c_str())) {
+    std::cerr << "the file could not be moved out of the base path" << std::endl;
+  } else {
+    Par2Verifier verifier("");
+
+    if (eSuccess != (result = verifier.AddPar2File(inside + PATHSEP "file.par2"))) {
+      std::cerr << "reading the set returned " << result << std::endl;
+    } else if (eRepairPossible != (result = verifier.Verify(std::vector<std::string>(1, copy)))) {
+      std::cerr << "verifying with the copy outside the base path returned " << result << std::endl;
+    } else if (eSuccess != (result = verifier.Repair())) {
+      std::cerr << "repairing from the copy outside the base path returned " << result << std::endl;
+    } else {
+      std::ifstream repaired(datafile.c_str(), std::ifstream::in | std::ifstream::binary);
+      std::ifstream left(copy.c_str(), std::ifstream::in | std::ifstream::binary);
+      const std::string repairedcontent((std::istreambuf_iterator<char>(repaired)), std::istreambuf_iterator<char>());
+      const std::string leftcontent((std::istreambuf_iterator<char>(left)), std::istreambuf_iterator<char>());
+
+      if (repairedcontent != content) {
+	std::cerr << "the file in the base path was not rebuilt" << std::endl;
+      } else if (leftcontent != content) {
+	std::cerr << "the copy outside the base path was moved" << std::endl;
+      } else {
+	failed = 0;
+      }
+    }
+  }
+
+  for (const std::string &leftover : leftovers)
+    remove(leftover.c_str());
+  RemoveTestDirectory(inside);
+  RemoveTestDirectory(outside);
+
+  return failed;
+}
+
 int main() {
   if (test1()) {
     std::cerr << "FAILED: test1" << std::endl;
@@ -882,6 +963,10 @@ int main() {
   }
   if (test9()) {
     std::cerr << "FAILED: test9" << std::endl;
+    return 1;
+  }
+  if (test10()) {
+    std::cerr << "FAILED: test10" << std::endl;
     return 1;
   }
 
