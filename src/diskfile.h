@@ -101,6 +101,10 @@ public:
   bool Rename(void); // Pick a filename automatically
   bool Rename(std::string filename);
 
+  // Rename the file, giving the reason it could not be rather than recording
+  // it. A directory it could not create is still recorded.
+  bool Rename(std::string filename, std::string &reason);
+
   // Delete the file
   bool Delete(void);
 
@@ -167,6 +171,9 @@ protected:
 
   // Does the file exist
   bool   exists;
+
+  // Rename the file into a directory which already exists
+  bool MoveTo(std::string filename, std::string &reason);
 
 protected:
 #ifdef _WIN32

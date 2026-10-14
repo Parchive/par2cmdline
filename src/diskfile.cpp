@@ -1208,45 +1208,68 @@ std::string DiskFile::ErrorMessage(DWORD error)
   return message;
 }
 
-bool DiskFile::Rename(std::string _filename)
+bool DiskFile::MoveTo(std::string _filename, std::string &reason)
 {
   assert(hFile == INVALID_HANDLE_VALUE);
 
-  if (!CreateParentDirectory(_filename))
-    return false;
-
   std::wstring wfilename, _wfilename;
-  if (utf8::Utf8ToWide(filename, wfilename) && utf8::Utf8ToWide(_filename, _wfilename) && ::MoveFileW(wfilename.c_str(), _wfilename.c_str()))
+  if (!utf8::Utf8ToWide(filename, wfilename) || !utf8::Utf8ToWide(_filename, _wfilename))
   {
-    filename.swap(_filename);
-
-    return true;
+    reason = filename + " cannot be renamed to " + _filename + ": the name could not be converted to a wide string";
+    return false;
   }
 
-  Failure(*this, ecFileRenameFailed, filename) << filename << " cannot be renamed to " << _filename;
+  if (!::MoveFileW(wfilename.c_str(), _wfilename.c_str()))
+  {
+    reason = filename + " cannot be renamed to " + _filename + ": " + ErrorMessage(::GetLastError());
+    return false;
+  }
 
-  return false;
+  filename.swap(_filename);
+
+  return true;
 }
 #else
-bool DiskFile::Rename(std::string _filename)
+bool DiskFile::MoveTo(std::string _filename, std::string &reason)
 {
   assert(file == 0);
 
+  if (::rename(filename.c_str(), _filename.c_str()) != 0)
+  {
+    reason = filename + " cannot be renamed to " + _filename + ": " + strerror(errno);
+    return false;
+  }
+
+  filename.swap(_filename);
+
+  return true;
+}
+#endif
+
+bool DiskFile::Rename(std::string _filename)
+{
   if (!CreateParentDirectory(_filename))
     return false;
 
-  if (::rename(filename.c_str(), _filename.c_str()) == 0)
-  {
-    filename.swap(_filename);
-
+  std::string reason;
+  if (MoveTo(_filename, reason))
     return true;
-  }
 
-  Failure(*this, ecFileRenameFailed, filename) << filename << " cannot be renamed to " << _filename;
+  Failure(*this, ecFileRenameFailed, filename) << reason;
 
   return false;
 }
-#endif
+
+bool DiskFile::Rename(std::string _filename, std::string &reason)
+{
+  if (!CreateParentDirectory(_filename))
+  {
+    reason = "Could not create the directory for " + _filename;
+    return false;
+  }
+
+  return MoveTo(_filename, reason);
+}
 
 DiskFileMap::DiskFileMap(void)
 {
