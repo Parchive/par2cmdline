@@ -314,6 +314,7 @@ public:
           "WARNING: " + warning.message + "\n" + warning.detail);
       break;
     case wcFilenameChanged:
+    case wcRenameFailed:
       Err(nlQuiet, "INFO: " + warning.message + "\n" + warning.detail);
       break;
     case wcIncompleteWrite:

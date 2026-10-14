@@ -160,6 +160,11 @@ typedef enum WarningCode
   // how many blocks it has
   wcPacketDiscarded = 5,
 
+  // A complete copy of a file found under another name could not be renamed
+  // into place, such as one on another volume, so its blocks are copied there
+  // instead and the copy is left where it is
+  wcRenameFailed = 6,
+
 } WarningCode;
 
 

@@ -3175,14 +3175,25 @@ bool Par2Repairer::RenameTargetFiles(void)
         // Rename it
         diskFileMap.Remove(targetfile);
 
-        const bool renamed = targetfile->Rename(sourcefile->TargetFileName());
+        std::string reason;
+        const bool renamed = targetfile->Rename(sourcefile->TargetFileName(), reason);
 
         bool success = diskFileMap.Insert(targetfile);
         assert(success);
         (void)success;
 
+        // A copy which cannot be renamed into place is copied there instead
         if (!renamed)
-          return false;
+        {
+          errorlog.Warn(wcRenameFailed,
+                        "Could not rename \"" + targetfile->FileName() + "\" into place, so it will be copied.",
+                        targetfile->FileName(),
+                        "       " + reason + "\n");
+
+          ++sf;
+          ++filenumber;
+          continue;
+        }
 
         // A backup renamed into place is no longer a backup
         std::vector<DiskFile*>::iterator backup = std::find(backuplist.begin(), backuplist.end(), targetfile);
