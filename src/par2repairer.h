@@ -243,6 +243,11 @@ protected:
   // Open for update the damaged files which can be repaired in place
   void OpenInPlaceTargetFiles(void);
 
+  // Whether a file repaired in place is verified by reading back only the
+  // blocks the repair wrote, and verify it that way
+  bool VerifiesInPlace(const Par2RepairerSourceFile *sourcefile) const;
+  bool VerifyInPlaceFile(Par2RepairerSourceFile *sourcefile, ProgressMeter<u64> &progress);
+
   // Rename any damaged or missnamed target files.
   bool RenameTargetFiles(const std::string &basepath);
 
@@ -343,6 +348,8 @@ protected:
   // gives it is for, keyed by its path
   std::map<std::string, Par2RepairerSourceFile*> othernamedfiles;
   std::set<DiskFile*>                       inplacefiles; // Those target files being repaired in place
+  std::set<const DiskFile*>                 vouchedfiles; // Files whose scan took blocks vouched for by SetKnownBlocks
+  mutable std::mutex                        vouchedfilesMutex; // Guards vouchedfiles while files are verified in parallel
   std::list<std::string>                    par2list;     // list of par2 files
 
   u64                       blocksize;               // The block size.
