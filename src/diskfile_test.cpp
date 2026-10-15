@@ -19,6 +19,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <iterator>
 #include <memory>
 #ifndef _WIN32
 #include <unistd.h>
@@ -788,6 +789,85 @@ int test7() {
 }
 
 
+// test OpenForUpdate
+int test8() {
+  const std::string contents = "0123456789abcdefghijklmnopqrstuvwxyz";
+
+  auto cleanup = []() {
+    remove("input1.txt");
+    remove("input1_link.txt");
+    remove("input1_hardlink.txt");
+  };
+  auto fail = [&](const char *message) {
+    std::cout << message << std::endl;
+    cleanup();
+    return 1;
+  };
+
+  // OpenForUpdate takes the name and size Open was given
+  auto refused = [](const char *name, u64 size) {
+    DiskFile diskfile(0);
+    diskfile.Open(name, size);
+    diskfile.Close();
+    return !diskfile.OpenForUpdate();
+  };
+
+  remove("input1.txt");
+  {
+    std::ofstream input1("input1.txt", std::ofstream::binary);
+    input1 << contents;
+  }
+
+  {
+    DiskFile diskfile(0);
+    if (!diskfile.Open("input1.txt"))
+      return fail("Open failed");
+    diskfile.Close();
+
+    if (!diskfile.OpenForUpdate())
+      return fail("OpenForUpdate failed");
+
+    // A write, a read elsewhere, then a write which follows on from the first
+    u8 buffer[4];
+    if (!diskfile.Write(4, "WXYZ", 4)
+        || !diskfile.Read(20, buffer, 4)
+        || !diskfile.Write(8, "wxyz", 4))
+      return fail("Read or Write after OpenForUpdate failed");
+
+    if (!diskfile.Read(4, buffer, 4) || 0 != memcmp(buffer, "WXYZ", 4))
+      return fail("Read did not see what was written");
+
+    diskfile.Close();
+  }
+
+  {
+    std::string expected = contents;
+    expected.replace(4, 8, "WXYZwxyz");
+
+    std::ifstream input1("input1.txt", std::ifstream::binary);
+    std::string actual((std::istreambuf_iterator<char>(input1)), std::istreambuf_iterator<char>());
+    if (actual != expected)
+      return fail("file contents wrong after update");
+  }
+
+  if (!refused("definitely_not_here", 0) || DiskFile::FileExists("definitely_not_here"))
+    return fail("OpenForUpdate of a missing file succeeded");
+
+  if (!refused("input1.txt", contents.size() + 1))
+    return fail("OpenForUpdate with a stale size succeeded");
+
+#ifndef _WIN32
+  if (0 != symlink("input1.txt", "input1_link.txt") || !refused("input1_link.txt", contents.size()))
+    return fail("OpenForUpdate of a symlink succeeded");
+
+  if (0 != link("input1.txt", "input1_hardlink.txt") || !refused("input1.txt", contents.size()))
+    return fail("OpenForUpdate of a hard-linked file succeeded");
+#endif
+
+  cleanup();
+  return 0;
+}
+
 int main() {
   if (test1()) {
     std::cerr << "FAILED: test1" << std::endl;
@@ -815,6 +895,10 @@ int main() {
   }
   if (test7()) {
     std::cerr << "FAILED: test7" << std::endl;
+    return 1;
+  }
+  if (test8()) {
+    std::cerr << "FAILED: test8" << std::endl;
     return 1;
   }
 

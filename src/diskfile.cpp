@@ -284,6 +284,47 @@ bool DiskFile::Open(const std::string &_filename, u64 _filesize)
   return true;
 }
 
+// Open an existing file for both reading and writing
+
+bool DiskFile::OpenForUpdate(std::string *reason)
+{
+  assert(hFile == INVALID_HANDLE_VALUE);
+
+  auto refuse = [&](const std::string &why)
+  {
+    if (hFile != INVALID_HANDLE_VALUE)
+      ::CloseHandle(hFile);
+    hFile = INVALID_HANDLE_VALUE;
+    if (reason)
+      *reason = why;
+    return false;
+  };
+
+  std::wstring wfilename;
+  if (filename.empty() || !utf8::Utf8ToWide(filename, wfilename))
+    return refuse("its name cannot be used");
+
+  // A reparse point is opened as itself, and refused as Create refuses
+  // symbolic links
+  hFile = ::CreateFileW(wfilename.c_str(), GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, FILE_FLAG_OPEN_REPARSE_POINT, NULL);
+  if (hFile == INVALID_HANDLE_VALUE)
+    return refuse(ErrorMessage(::GetLastError()));
+
+  BY_HANDLE_FILE_INFORMATION info;
+  if (!::GetFileInformationByHandle(hFile, &info))
+    return refuse(ErrorMessage(::GetLastError()));
+  if (0 != (info.dwFileAttributes & (FILE_ATTRIBUTE_REPARSE_POINT | FILE_ATTRIBUTE_DIRECTORY)))
+    return refuse("it is not a regular file");
+  if (info.nNumberOfLinks != 1)
+    return refuse("it has more than one hard link");
+  if ((((u64)info.nFileSizeHigh << 32) | info.nFileSizeLow) != filesize)
+    return refuse("it changed size since it was verified");
+
+  exists = true;
+
+  return true;
+}
+
 // Read some data from disk
 
 bool DiskFile::Read(u64 _offset, void *buffer, size_t length, LengthType maxlength)
@@ -673,6 +714,47 @@ bool DiskFile::Open(const std::string &_filename, u64 _filesize)
 
     return false;
   }
+
+  exists = true;
+
+  return true;
+}
+
+// Open an existing file for both reading and writing
+
+bool DiskFile::OpenForUpdate(std::string *reason)
+{
+  assert(fd < 0);
+
+  auto refuse = [&](const std::string &why)
+  {
+    if (fd >= 0)
+      close(fd);
+    fd = -1;
+    if (reason)
+      *reason = why;
+    return false;
+  };
+
+  if (filename.empty())
+    return refuse("its name cannot be used");
+  if (filesize > (u64)MaxOffset)
+    return refuse("it is too large");
+
+  // No O_CREAT or O_TRUNC, and O_NOFOLLOW as in Create
+  fd = open(filename.c_str(), O_RDWR | O_NOFOLLOW);
+  if (fd < 0)
+    return refuse(strerror(errno));
+
+  struct stat st;
+  if (fstat(fd, &st) != 0)
+    return refuse(strerror(errno));
+  if (!S_ISREG(st.st_mode))
+    return refuse("it is not a regular file");
+  if (st.st_nlink != 1)
+    return refuse("it has more than one hard link");
+  if ((u64)st.st_size != filesize)
+    return refuse("it changed size since it was verified");
 
   exists = true;
 
