@@ -160,6 +160,11 @@ typedef enum WarningCode
   // how many blocks it has
   wcPacketDiscarded = 5,
 
+  // A complete copy of a file found under another name could not be renamed
+  // into place, such as one on another volume, so its blocks are copied there
+  // instead and the copy is left where it is
+  wcRenameFailed = 6,
+
 } WarningCode;
 
 
@@ -641,6 +646,10 @@ public:
   // A file which already exists but which VerifyFile never scanned is not
   // written over: the repair fails with eFileIOError and ecNotVerified, naming
   // it.
+  //
+  // A complete copy of a file found under another name is renamed into place
+  // when it is inside the base path. One outside the base path, or one which
+  // cannot be renamed, is copied into place instead and left where it is.
   //
   // verifyafter reads back and hashes everything that was rebuilt, and is
   // what turns a repair that did not work into eRepairFailed. With it off the

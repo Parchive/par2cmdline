@@ -1,0 +1,80 @@
+#!/bin/sh
+
+execdir="$PWD"
+
+# valgrind tests memory usage.
+# wine allow for windows testing on linux
+if [ -n "${PARVALGRINDOPTS+set}" ]
+then
+    PARBINARY="valgrind $PARVALGRINDOPTS $execdir/par2"
+elif [ "`which wine`" != "" ] && [ -f "$execdir/par2.exe" ]
+then
+    PARBINARY="wine $execdir/par2.exe"
+else
+    PARBINARY="$execdir/par2"
+fi
+
+
+if [ -z "$srcdir" ] || [ "." = "$srcdir" ]; then
+  srcdir="$PWD"
+  TESTDATA="$srcdir/tests"
+else
+  srcdir="$PWD/$srcdir"
+  TESTDATA="$srcdir/tests"
+fi
+
+TESTROOT="$PWD"
+
+testname=$(basename $0)
+rm -f "$testname.log"
+rm -rf "run$testname"
+
+mkdir "run$testname" && cd "run$testname" || { echo "ERROR: Could not change to test directory" ; exit 1; } >&2
+
+tar -xzf "$TESTDATA/flatdata.tar.gz" || { echo "ERROR: Could not extract data test files" ; exit 1; } >&2
+tar -xzf "$TESTDATA/flatdata-par2files.tar.gz" || { echo "ERROR: Could not extract par test files" ; exit 1; } >&2
+
+banner="Repairing from a complete copy which cannot be renamed into place"
+dashes=`echo "$banner" | sed s/./-/g`
+
+echo $dashes
+echo $banner
+echo $dashes
+
+if [ "`id -u`" = "0" ]; then
+    echo "Skipping: a read-only directory does not stop root renaming a file out of it."
+    cd "$TESTROOT"
+    rm -rf "run$testname"
+    exit 77
+fi
+
+cp test-0.data test-0.data.orig
+
+# A complete copy in a directory it cannot be renamed out of
+mkdir donor
+mv test-0.data donor/copy.data
+chmod a-w donor
+
+$PARBINARY r testdata.par2 donor/copy.data > repair.log 2>&1
+result=$?
+cat repair.log
+
+chmod u+w donor
+
+if [ $result -ne 0 ]; then
+    echo "ERROR: Repair from a copy which cannot be renamed failed" >&2
+    exit 1
+fi
+
+grep -q "into place, so it will be copied" repair.log || { echo "ERROR: The rename which failed was not reported" ; exit 1; } >&2
+
+cmp -s test-0.data test-0.data.orig || { echo "ERROR: Repaired file does not match the original" ; exit 1; } >&2
+
+cmp -s donor/copy.data test-0.data.orig || { echo "ERROR: The copy was not left where it was" ; exit 1; } >&2
+
+echo "Copy which cannot be renamed test passed!"
+
+cd "$TESTROOT"
+rm -rf "run$testname"
+
+exit 0
