@@ -928,6 +928,141 @@ int test10() {
   return failed;
 }
 
+// A hasher which counts the blocks it is asked to check
+class CountingHasher : public ReferenceHasher
+{
+public:
+  explicit CountingHasher(std::atomic<u32> *_checked) : checked(_checked) {}
+
+  void CheckBlocks(const void *data, u32 count, size_t filelength,
+                   const void *expected, char *matched) override
+  {
+    *checked += count;
+    ReferenceHasher::CheckBlocks(data, count, filelength, expected, matched);
+  }
+
+private:
+  std::atomic<u32> *checked;
+};
+
+// A file repaired in place is verified by reading back only the blocks the
+// repair wrote
+int test11() {
+  const char *const datafile = "libpar2_test11.data";
+  const char *const leftovers[] = {datafile, "libpar2_test11.data.1", "libpar2_test11.par2",
+                                   "libpar2_test11.vol0+1.par2", "libpar2_test11.vol1+2.par2",
+                                   "libpar2_test11.vol3+1.par2"};
+
+  for (const char *leftover : leftovers)
+    remove(leftover);
+
+  std::vector<char> original;
+  for (int i = 0; i < 20 * 4096; ++i)
+    original.push_back((char)(i * 31 + i / 256 + i / 4099));
+
+  {
+    std::ofstream data(datafile, std::ofstream::out | std::ofstream::binary);
+    data.write(original.data(), original.size());
+  }
+
+  int failed = 0;
+
+  Par2Creator creator("");
+  creator.SetSourceFiles(std::vector<std::string>(1, datafile));
+  creator.SetBlockSize(4096);
+  creator.SetRecoveryBlockCount(4);
+
+  class Written : public Par2Observer
+  {
+  public:
+    Written(void) : warnings(0) {}
+    void OnFileDone(Phase phase, const Par2FileResult &result) override
+    {
+      if (phase != phWriting)
+        return;
+      std::lock_guard<std::mutex> lock(mutex);
+      files.push_back(result);
+    }
+    void OnWarning(const Par2Warning &) override { ++warnings; }
+    std::mutex mutex;
+    std::vector<Par2FileResult> files;
+    std::atomic<int> warnings;
+  };
+
+  Result result = creator.Create("libpar2_test11");
+  if (result != eSuccess) {
+    std::cerr << "creating returned " << result << std::endl;
+    failed = 1;
+  } else {
+    {
+      std::fstream data(datafile, std::ios::binary | std::ios::in | std::ios::out);
+      data.seekp(5 * 4096 + 100);
+      for (int i = 0; i < 4; ++i)
+        data.put((char)0x5a);
+    }
+
+    std::atomic<u32> checked(0);
+
+    Backends backends;
+    backends.hasher = [&checked](const HasherConfig &) {
+      return std::unique_ptr<Hasher>(new CountingHasher(&checked));
+    };
+
+    Written written;
+    Par2Verifier verifier("", backends);
+    verifier.SetInPlaceRepair(true);
+    verifier.SetObserver(&written);
+
+    result = verifier.AddPar2File("libpar2_test11.par2");
+    if (result == eSuccess)
+      result = verifier.Verify();
+
+    if (result != eRepairPossible) {
+      std::cerr << "verifying the damaged file returned " << result << std::endl;
+      failed = 1;
+    } else {
+      checked = 0;
+
+      result = verifier.Repair();
+      if (result != eSuccess) {
+        std::cerr << "repairing in place returned " << result << std::endl;
+        failed = 1;
+      } else if (checked != 1) {
+        std::cerr << "verifying the repair checked " << checked << " blocks rather than 1" << std::endl;
+        failed = 1;
+      }
+
+      if (written.files.size() != 1 || !written.files[0].inplace || written.files[0].blocksfound != 1) {
+        std::cerr << "the file written was not reported as repaired in place, with 1 block rewritten" << std::endl;
+        failed = 1;
+      }
+
+      if (written.warnings != 0) {
+        std::cerr << "repairing in place gave " << written.warnings << " warnings" << std::endl;
+        failed = 1;
+      }
+
+      std::ifstream backup("libpar2_test11.data.1");
+      if (backup.good()) {
+        std::cerr << "repairing in place left a backup" << std::endl;
+        failed = 1;
+      }
+
+      std::ifstream data(datafile, std::ifstream::in | std::ifstream::binary);
+      std::vector<char> repaired((std::istreambuf_iterator<char>(data)), std::istreambuf_iterator<char>());
+      if (repaired != original) {
+        std::cerr << "the file repaired in place does not match the original" << std::endl;
+        failed = 1;
+      }
+    }
+  }
+
+  for (const char *leftover : leftovers)
+    remove(leftover);
+
+  return failed;
+}
+
 int main() {
   if (test1()) {
     std::cerr << "FAILED: test1" << std::endl;
@@ -967,6 +1102,10 @@ int main() {
   }
   if (test10()) {
     std::cerr << "FAILED: test10" << std::endl;
+    return 1;
+  }
+  if (test11()) {
+    std::cerr << "FAILED: test11" << std::endl;
     return 1;
   }
 
