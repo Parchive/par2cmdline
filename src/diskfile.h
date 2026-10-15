@@ -63,6 +63,11 @@ public:
   // Create a file and set its length
   bool Create(std::string filename, u64 filesize);
 
+  // Open an existing file for reading and writing, without creating or
+  // truncating it. Refuses anything but a regular file with one link which is
+  // unchanged since Open last opened it, saying why in reason.
+  bool OpenForUpdate(std::string *reason = 0);
+
   // Write some data to the file
   // maxlength should be the default value, except during testing.
   bool Write(u64 offset, const void *buffer, size_t length,
@@ -158,6 +163,7 @@ protected:
 
   std::string filename;
   u64    filesize;
+  u64    modified;  // When the file was last written, as Open found it
 
   // OS file handle
 #ifdef _WIN32

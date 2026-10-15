@@ -19,6 +19,7 @@
 
 include(CheckCXXSourceCompiles)
 include(CheckIncludeFileCXX)
+include(CheckStructHasMember)
 include(CheckSymbolExists)
 include(TestBigEndian)
 
@@ -51,6 +52,9 @@ if(NOT WIN32)
     message(FATAL_ERROR
       "par2cmdline needs pread and pwrite, or the Windows API, to read and write a file at an explicit offset")
   endif()
+
+  check_struct_has_member("struct stat" st_mtim sys/stat.h HAVE_STRUCT_STAT_ST_MTIM LANGUAGE CXX)
+  check_struct_has_member("struct stat" st_mtimespec sys/stat.h HAVE_STRUCT_STAT_ST_MTIMESPEC LANGUAGE CXX)
 endif()
 
 set(PAR2_ATOMIC_PROGRAM "

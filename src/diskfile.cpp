@@ -70,6 +70,7 @@ DiskFile::DiskFile(ErrorLog *errorlog)
 {
   filename = "";
   filesize = 0;
+  modified = 0;
 
   hFile = INVALID_HANDLE_VALUE;
 
@@ -283,6 +284,52 @@ bool DiskFile::Open(const std::string &_filename, u64 _filesize)
 
     return false;
   }
+
+  FILETIME written;
+  modified = ::GetFileTime(hFile, NULL, NULL, &written)
+             ? ((u64)written.dwHighDateTime << 32) | written.dwLowDateTime : 0;
+
+  exists = true;
+
+  return true;
+}
+
+// Open an existing file for both reading and writing
+
+bool DiskFile::OpenForUpdate(std::string *reason)
+{
+  assert(hFile == INVALID_HANDLE_VALUE);
+
+  auto refuse = [&](const std::string &why)
+  {
+    if (hFile != INVALID_HANDLE_VALUE)
+      ::CloseHandle(hFile);
+    hFile = INVALID_HANDLE_VALUE;
+    if (reason)
+      *reason = why;
+    return false;
+  };
+
+  std::wstring wfilename;
+  if (filename.empty() || !utf8::Utf8ToWide(filename, wfilename))
+    return refuse("its name cannot be used");
+
+  // A reparse point is opened as itself, and refused as Create refuses
+  // symbolic links
+  hFile = ::CreateFileW(wfilename.c_str(), GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, FILE_FLAG_OPEN_REPARSE_POINT, NULL);
+  if (hFile == INVALID_HANDLE_VALUE)
+    return refuse(ErrorMessage(::GetLastError()));
+
+  BY_HANDLE_FILE_INFORMATION info;
+  if (!::GetFileInformationByHandle(hFile, &info))
+    return refuse(ErrorMessage(::GetLastError()));
+  if (0 != (info.dwFileAttributes & (FILE_ATTRIBUTE_REPARSE_POINT | FILE_ATTRIBUTE_DIRECTORY)))
+    return refuse("it is not a regular file");
+  if (info.nNumberOfLinks != 1)
+    return refuse("it has more than one hard link");
+  if ((((u64)info.nFileSizeHigh << 32) | info.nFileSizeLow) != filesize
+      || (((u64)info.ftLastWriteTime.dwHighDateTime << 32) | info.ftLastWriteTime.dwLowDateTime) != modified)
+    return refuse("it changed since it was verified");
 
   exists = true;
 
@@ -549,12 +596,25 @@ std::unique_ptr< std::list<std::string> > DiskFile::FindDirectories(std::string 
 #define OffsetType off_t
 #define MaxOffset ((std::numeric_limits<OffsetType>::max)())
 
+// When a file was last written, in nanoseconds where the system gives them
+static u64 ModifiedTime(const struct stat &st)
+{
+#if defined(HAVE_STRUCT_STAT_ST_MTIM)
+  return (u64)st.st_mtim.tv_sec * 1000000000 + (u64)st.st_mtim.tv_nsec;
+#elif defined(HAVE_STRUCT_STAT_ST_MTIMESPEC)
+  return (u64)st.st_mtimespec.tv_sec * 1000000000 + (u64)st.st_mtimespec.tv_nsec;
+#else
+  return (u64)st.st_mtime * 1000000000;
+#endif
+}
+
 
 DiskFile::DiskFile(ErrorLog *errorlog)
 : errorlog(errorlog)
 {
   //filename;
   filesize = 0;
+  modified = 0;
 
   fd = -1;
 
@@ -711,6 +771,50 @@ bool DiskFile::Open(const std::string &_filename, u64 _filesize)
 
     return false;
   }
+
+  struct stat st;
+  modified = (0 == fstat(fd, &st)) ? ModifiedTime(st) : 0;
+
+  exists = true;
+
+  return true;
+}
+
+// Open an existing file for both reading and writing
+
+bool DiskFile::OpenForUpdate(std::string *reason)
+{
+  assert(fd < 0);
+
+  auto refuse = [&](const std::string &why)
+  {
+    if (fd >= 0)
+      close(fd);
+    fd = -1;
+    if (reason)
+      *reason = why;
+    return false;
+  };
+
+  if (filename.empty())
+    return refuse("its name cannot be used");
+  if (filesize > (u64)MaxOffset)
+    return refuse("it is too large");
+
+  // No O_CREAT or O_TRUNC, and O_NOFOLLOW as in Create
+  fd = open(filename.c_str(), O_RDWR | O_NOFOLLOW | O_CLOEXEC);
+  if (fd < 0)
+    return refuse(strerror(errno));
+
+  struct stat st;
+  if (fstat(fd, &st) != 0)
+    return refuse(strerror(errno));
+  if (!S_ISREG(st.st_mode))
+    return refuse("it is not a regular file");
+  if (st.st_nlink != 1)
+    return refuse("it has more than one hard link");
+  if ((u64)st.st_size != filesize || ModifiedTime(st) != modified)
+    return refuse("it changed since it was verified");
 
   exists = true;
 
