@@ -65,6 +65,7 @@ CommandLine::CommandLine(std::ostream &_sout, std::ostream &_serr)
 , skipdata(false)
 , skipleaway(0)
 , fullhash(false)
+, inplacerepair(false)
 , blockcount(0)
 , blocksize(0)
 , firstblock(0)
@@ -140,6 +141,8 @@ void CommandLine::usage(void)
     "  -N       : Data skipping (find badly mispositioned data blocks)\n"
     "  -S<n>    : Skip leaway (distance +/- from expected block position, default 64)\n"
     "  --full-hash : Also check the hash of the whole of each file\n"
+    "  -i       : Repair damaged files in place, without a backup (repair only,\n"
+    "             not with -N)\n"
     "Options: (create)\n"
     "  -b<n>    : Set the Block-Count (default 2000)\n"
     "  -s<n>    : Set the Block-Size (don't use both -b and -s)\n"
@@ -782,6 +785,17 @@ bool CommandLine::ReadArgs(int argc, const char * const *argv)
           }
           break;
 
+        case 'i':
+          {
+            if (operation != opRepair)
+            {
+              serr << "Cannot specify in-place unless repairing." << std::endl;
+              return false;
+            }
+            inplacerepair = true;
+          }
+          break;
+
         case 'h':
           {
             usage();
@@ -1113,6 +1127,12 @@ bool CommandLine::CheckValuesAndSetDefaults() {
       // Expect to find blocks within +/- 64 bytes of the expected
       // position relative to the last block that was found.
       skipleaway = DEFAULT_SKIP_LEAWAY;
+    }
+
+    if (inplacerepair && skipdata)
+    {
+      serr << "Cannot specify in-place repair and data skipping together." << std::endl;
+      return false;
     }
   }
 

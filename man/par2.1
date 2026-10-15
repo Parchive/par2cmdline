@@ -82,6 +82,14 @@ Skip leaway (distance +/\- from expected block position, default 64)
 .TP
 .B \-\-full\-hash
 Also check the hash of the whole of each file, not only the hash of each of its blocks
+.TP
+.B \-i
+.RB "Repair damaged files in place (repair only, cannot be used with " "\-N" ")."
+Only the blocks which are wrong are written, and no backup of the file is kept, so whatever those blocks held is lost.
+Every hard link to the file sees the repair too.
+Do not use it on a file something else may still be writing.
+A file which cannot be repaired in place is repaired with a backup, as without
+.BR \-i .
 .SH OPTIONS create
 .TP
 .B \-b<n>
@@ -281,6 +289,17 @@ You can quickly fix them with:
 Par2 will scan only the first block of each file to determine if it's a perfect match. If it is, the file will be renamed back to its original name. If it's not a perfect match (e.g., the file is damaged), it will be skipped immediately without scanning the entire file.
 
 This is particularly useful when you have hundreds of gigabytes of renamed files protected by multiple PAR2 sets, as it avoids the slow block-by-block scanning that would otherwise be required.
+
+
+IN-PLACE REPAIR
+
+Normally par2 repairs a damaged data file by renaming it to "<name>.1" and writing a whole new copy under the original name. The "-i" option writes only the rebuilt blocks back into the damaged file instead, so no backup is made and no extra free space is needed:
+
+  par2 r -i recovery.par2
+
+Every undamaged block is still read to rebuild the damaged ones. The undamaged parts of the file are never written to, so an interrupted repair can simply be run again.
+
+A file is repaired the normal way instead, and par2 says why, when it is not the length it should be, when some of its blocks were found away from their proper position, when it holds data needed to repair another file, or when it cannot be opened for writing. "-i" cannot be combined with "-N", and is ignored for PAR1 files.
 
 
 WHAT TO DO WHEN YOU ARE TOLD YOU NEED MORE RECOVERY BLOCKS

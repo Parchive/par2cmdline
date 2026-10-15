@@ -553,6 +553,14 @@ int test9() {
     return 1;
   if (test9_helper("par2 create -nad foo.par2 input1.txt input2.txt"))
     return 1;
+  if (test9_helper("par2 create -i foo.par2 input1.txt input2.txt"))
+    return 1;
+  if (test9_helper("par2 verify -i foo.par2 input1.txt input2.txt"))
+    return 1;
+  if (test9_helper("par2 repair -i -N foo.par2 input1.txt input2.txt"))
+    return 1;
+  if (test9_helper("par2 repair -N -i foo.par2 input1.txt input2.txt"))
+    return 1;
 
 
   // delete files that were created at start of test.

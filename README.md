@@ -156,6 +156,8 @@ The command line parameters for par2cmdline are as follow:
     -N       : data skipping (find badly mispositioned data blocks)
     -S<n>    : Skip leaway (distance +/- from expected block position)
     --full-hash : Also check the hash of the whole of each file
+    -i       : Repair damaged files in place, without a backup (repair only,
+               not with -N)
     -B<path> : Set the basepath to use as reference for the datafiles
     --       : Treat all following arguments as filenames
     @<file>  : Process a listing of files in a text file (or bare @ to read
@@ -247,6 +249,16 @@ To carry out a repair use the following command:
     par2 repair test.mpg.par2
 
 This tells par2cmdline to verify and if possible repair any damaged or missing files. When a repair is carried out, each file that is repaired will be verified to confirm that the repair was successful.
+
+A damaged file is not changed by a repair: it is renamed with a numbered extension, such as _test.mpg.1_, and a repaired copy is written in its place, so a repair needs room for a second copy of each damaged file.
+
+The `-i` option repairs a damaged file in place instead, writing only the blocks which are wrong. It needs no extra space and writes far less, but it keeps no backup:
+
+  * Whatever those blocks held is lost, even if the difference was a change you meant to make.
+  * Every hard link to the file sees the repair too.
+  * Do not use it on a file something else may still be writing, such as a download in progress.
+
+A file which cannot be repaired in place is repaired as it would be without `-i`, with a backup. If a repair in place is stopped part way, the file is left as it is, and repairing it again finishes the job. `-i` cannot be used with `-N`.
 
 ## Misnamed and incomplete data files
 
