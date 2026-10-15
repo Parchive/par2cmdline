@@ -243,6 +243,11 @@ protected:
   // Open for update the damaged files which can be repaired in place
   void OpenInPlaceTargetFiles(void);
 
+  // Whether a file repaired in place is verified by reading back only the
+  // blocks the repair wrote, and verify it that way
+  bool VerifiesInPlace(const Par2RepairerSourceFile *sourcefile) const;
+  bool VerifyInPlaceFile(Par2RepairerSourceFile *sourcefile, ProgressMeter<u64> &progress);
+
   // Rename any damaged or missnamed target files.
   bool RenameTargetFiles(const std::string &basepath);
 
@@ -311,6 +316,7 @@ protected:
   bool                      skipdata;                // Should we skip data whilst scanning
   u64                       skipleaway;              // The leaway +/- we should allow whilst scanning
   bool                      fullhash;                // Should the whole of each file be hashed too
+  bool                      anyvouched;              // Whether any blocks were vouched for through SetKnownBlocks
   bool                      inplacewritten;          // Whether a repair has started writing into files repaired in place
 
   bool                      firstpacket;             // Whether or not a valid packet has been found.
