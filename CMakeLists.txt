@@ -59,11 +59,7 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 include(GNUInstallDirs)
 
-# The probes below must check the toolchain with the same language standard
-# the targets are built with: the 64-bit atomics probe compiles <atomic>,
-# which needs C++11, and with no standard set it runs with the compiler's
-# default (C++98 on GCC 6 and older), failing configure on compilers that
-# can build the project fine.
+# The language standard the probes and the targets are built with
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -199,8 +195,7 @@ target_include_directories(libpar2 PUBLIC
 par2_add_internal_options(libpar2)
 par2_add_size_options(libpar2)
 
-# Record the language standard as a public requirement so an installed
-# package tells consumers what it needs.
+# The language standard a consumer of the public headers needs
 target_compile_features(libpar2 PUBLIC cxx_std_14)
 
 target_link_libraries(libpar2 PUBLIC Threads::Threads ${PAR2_ATOMIC_LIBRARY})
