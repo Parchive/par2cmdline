@@ -58,6 +58,18 @@ endif()
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 include(GNUInstallDirs)
+
+# The language standard the probes and the targets are built with
+if(NOT DEFINED CMAKE_CXX_STANDARD)
+  set(CMAKE_CXX_STANDARD 14)
+endif()
+if(NOT DEFINED CMAKE_CXX_STANDARD_REQUIRED)
+  set(CMAKE_CXX_STANDARD_REQUIRED ON)
+endif()
+if(NOT DEFINED CMAKE_CXX_EXTENSIONS)
+  set(CMAKE_CXX_EXTENSIONS OFF)
+endif()
+
 include(probes)
 
 configure_file(cmake/config.h.in "${PROJECT_BINARY_DIR}/config.h")
@@ -69,11 +81,7 @@ set(PAR2_OPTIMISED "$<OR:$<CONFIG:Release>,$<CONFIG:RelWithDebInfo>,$<CONFIG:Min
 
 # The language and warnings every target is built with
 function(par2_add_common_options target)
-  set_target_properties(${target} PROPERTIES
-    CXX_STANDARD 14
-    CXX_STANDARD_REQUIRED ON
-    CXX_EXTENSIONS OFF
-  )
+  target_compile_features(${target} PRIVATE cxx_std_14)
 
   if(MSVC)
     target_compile_options(${target} PRIVATE /utf-8)
@@ -188,6 +196,9 @@ target_include_directories(libpar2 PUBLIC
 
 par2_add_internal_options(libpar2)
 par2_add_size_options(libpar2)
+
+# The language standard a consumer of the public headers needs
+target_compile_features(libpar2 PUBLIC cxx_std_14)
 
 target_link_libraries(libpar2 PUBLIC Threads::Threads ${PAR2_ATOMIC_LIBRARY})
 
