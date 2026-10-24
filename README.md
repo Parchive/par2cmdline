@@ -91,6 +91,7 @@ The build takes the following options:
     -DPAR2_BUILD_TESTS=OFF    skip the test suite
     -DPAR2_INSTALL=OFF        skip the install rules
     -DPAR2_KEEP_ASSERTS=ON    keep assert checks in an optimised build
+    -DPAR2_SYSTEM_CXXOPTS=ON  use the system's cxxopts rather than the copy in libs
 
 To cross-compile, name one of the toolchain files in *cmake/toolchains*:
 
@@ -128,38 +129,52 @@ The command line parameters for par2cmdline are as follow:
     par2verify [options] <PAR2 file> [files]
     par2repair [options] <PAR2 file> [files]
 
-  Options:
+  Options, which come before the names (everything from the first name on is a file name):
 
-    -a<file> : Set the main PAR2 archive name
-               required on create, optional for verify and repair
-    -b<n>    : Set the Block-Count
-    -s<n>    : Set the Block-Size (don't use both -b and -s)
-    -r<n>    : Level of redundancy (%)
-    -r<c><n> : Redundancy target size, <c>=g(iga),m(ega),k(ilo) bytes
-    -c<n>    : Recovery block count (don't use both -r and -c)
-    -f<n>    : First Recovery-Block-Number
-    -u       : Uniform recovery file sizes
-    -l       : Limit size of recovery files (don't use both -u and -l)
-    -n<n>    : Number of recovery files (max 31) (don't use both -n and -l)
-    -m<n>    : Memory (in MB) to use
-    -t<n>    : Number of threads to use (Auto-detected)
-    -T<n>    : Number of files hashed in parallel
-    -v [-v]  : Be more verbose
-    -q [-q]  : Be more quiet (-qq gives silence)
-    -p       : Purge backup files and par files on successful recovery or
-               when no recovery is needed
-    -O       : Rename-only mode (skip files that are not perfect matches,
-               useful for quickly fixing renamed files)
-    -R       : Recurse into subdirectories (only useful on create)
-    -L       : Follow symlinks to files when scanning for source files
-               (create only, POSIX only, use at your own risk)
-    -N       : data skipping (find badly mispositioned data blocks)
-    -S<n>    : Skip leaway (distance +/- from expected block position)
-    --full-hash : Also check the hash of the whole of each file
-    -B<path> : Set the basepath to use as reference for the datafiles
-    --       : Treat all following arguments as filenames
-    @<file>  : Process a listing of files in a text file (or bare @ to read
-               it from stdin)
+    -a, --archive <file>      : Set the main PAR2 archive name
+                                required on create, optional for verify and repair
+    -B, --basepath <path>     : Set the basepath to use as reference for the datafiles
+    -v, --verbose [-v]        : Be more verbose
+    -q, --quiet [-q]          : Be more quiet (-qq gives silence)
+    -m, --memory <n>          : Memory (in MB) to use
+    -t, --threads <n>         : Number of threads to use (Auto-detected)
+    -T, --file-threads <n>    : Number of files hashed in parallel
+    -h, --help                : Show the help
+    -V, --version [-V]        : Show the version (-VV adds the copyright)
+
+  Verify and repair:
+
+    -p, --purge               : Purge backup files and par files on successful recovery or
+                                when no recovery is needed
+    -O, --rename-only         : Rename-only mode (skip files that are not perfect matches,
+                                useful for quickly fixing renamed files)
+    -N, --data-skipping       : Data skipping (find badly mispositioned data blocks)
+    -S, --skip-leaway <n>     : Skip leaway (distance +/- from expected block position)
+        --full-hash           : Also check the hash of the whole of each file
+
+  Create:
+
+    -b, --block-count <n>     : Set the Block-Count
+    -s, --block-size <n>      : Set the Block-Size (don't use both -b and -s)
+    -r, --redundancy <n>      : Level of redundancy (%)
+        --redundancy-size <n> : Total size of the recovery data, in bytes or with
+                                k, m or g after the number (-r<c><n>, with <c> one
+                                of k, m or g, does the same)
+    -c, --recovery-blocks <n> : Recovery block count (don't use both -r and -c)
+    -f, --first-recovery-block <n>
+                              : First Recovery-Block-Number
+    -u, --uniform             : Uniform recovery file sizes
+    -l, --limit               : Recovery files grow in size as by default, but none
+                                holds more than the largest source file
+                                (don't use both -u and -l)
+    -n, --recovery-files <n>  : Number of recovery files (max 31) (don't use both -n and -l)
+    -R, --recurse             : Recurse into subdirectories for the files a wildcard matches
+    -L, --follow-symlinks     : Follow symlinks to files when scanning for source files
+                                (POSIX only, use at your own risk)
+
+    --                        : Treat all following arguments as filenames
+    @<file>                   : Process a listing of files in a text file (or bare @ to read
+                                it from stdin)
 
 If you wish to create PAR2 files for a single source file, you may leave out the name of the PAR2 file from the command line. par2cmdline will then assume that you wish to base the filenames for the PAR2 files on the name of the source file.
 

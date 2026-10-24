@@ -40,7 +40,8 @@ typedef enum
 {
   scUnknown = 0,
   scVariable,      // Each PAR2 file will have 2x as many blocks as previous
-  scLimited,       // Limit PAR2 file size
+  scLimited,       // As scVariable, but no PAR2 file holds more blocks than
+                   // the largest source file has
   scUniform        // All PAR2 files the same size
 } Scheme;
 

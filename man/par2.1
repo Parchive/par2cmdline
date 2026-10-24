@@ -33,88 +33,92 @@ Also:
 par2cmdline is a program for creating and using PAR2 files to detect damage in data files and repair them if necessary. It can be used with any kind of file.
 .SH OPTIONS global
 .TP
-.B \-h
+.B \-h, \-\-help
 Show this help
 .TP
-.B \-V
+.B \-V, \-\-version
 Show version
 .TP
 .B \-VV
 Show version and copyright
 .SH OPTIONS all uses
+Options come before the names; everything from the first name on is a file name.
 .TP
-.BI "\-a <" "file" ">"
+.BI "\-a, \-\-archive <" "file" ">"
 Set the main PAR2 archive name; required on create, optional for verify and repair
 .TP
-.B \-B <" "path" ">"
+.BI "\-B, \-\-basepath <" "path" ">"
 Set the basepath to use as reference for the datafiles
 .TP
-.B \-v [\-v]
+.B \-v, \-\-verbose [\-v]
 Be more verbose
 .TP
-.B \-q [\-q]
+.B \-q, \-\-quiet [\-q]
 .RB "Be more quiet (" "\-q \-q" " gives silence)"
 .TP
-.B \-m<n>
+.B \-m<n>, \-\-memory <n>
 Memory (in MB) to use (default is half of total physical memory)
 .TP
-.B \-t<n>
+.B \-t<n>, \-\-threads <n>
 .RB "Number of threads used for main processing (default auto-detected)"
 .TP
-.B \-T<n>
+.B \-T<n>, \-\-file\-threads <n>
 .RB "Number of files hashed in parallel (default 2)"
 .TP
 .B \-\-
 Treat all following arguments as filenames
 .SH OPTIONS verify or repair
 .TP
-.B \-p
+.B \-p, \-\-purge
 Purge backup files and par files on successful recovery or when no recovery is needed
 .TP
-.B \-O
+.B \-O, \-\-rename\-only
 Rename-only mode (skip files that are not perfect matches, useful for quickly fixing renamed files)
 .TP
-.B \-N
+.B \-N, \-\-data\-skipping
 data skipping (find badly mispositioned data blocks)
 .TP
-.B \-S<n>
+.B \-S<n>, \-\-skip\-leaway <n>
 Skip leaway (distance +/\- from expected block position, default 64)
 .TP
 .B \-\-full\-hash
 Also check the hash of the whole of each file, not only the hash of each of its blocks
 .SH OPTIONS create
 .TP
-.B \-b<n>
+.B \-b<n>, \-\-block\-count <n>
 Set the Block\(hyCount (default 2000 when neither \-b nor \-s is specified)
 .TP
-.B \-s<n>
+.B \-s<n>, \-\-block\-size <n>
 .RB "Set the Block\(hySize (don't use both " "\-b" " and " "\-s" ")"
 .TP
-.B \-r<n>
+.B \-r<n>, \-\-redundancy <n>
 Level of redundancy (percentage, default 5%)
 .TP
-.B \-r<c><n>
-Redundancy target size, <c>=g(iga),m(ega),k(ilo) bytes
+.B \-\-redundancy\-size <n>
+Total size of the recovery data, in bytes or with k, m or g after the number
 .TP
-.B \-c<n>
+.B \-r<c><n>
+Redundancy target size, <c>=g(iga),m(ega),k(ilo) bytes, as \-\-redundancy\-size <n><c>
+.TP
+.B \-c<n>, \-\-recovery\-blocks <n>
 .RB "Recovery block count (don't use both " "\-r" " and " "\-c" ")"
 .TP
-.B \-f<n>
+.B \-f<n>, \-\-first\-recovery\-block <n>
 First Recovery\(hyBlock\(hyNumber (default 0)
 .TP
-.B \-u
+.B \-u, \-\-uniform
 Uniform recovery file sizes (default is variable sizes)
 .TP
-.B \-l
-.RB "Limit size of recovery files (don't use both " "\-u" " and " "\-l" ")"
+.B \-l, \-\-limit
+.RB "Recovery files grow in size as by default, but none holds more than the largest source file (don't use both " "\-u" " and " "\-l" ")"
 .TP
-.B \-n<n>
+.B \-n<n>, \-\-recovery\-files <n>
 .RB "Number of recovery files (max 31) (don't use both " "\-n" " and " "\-l" ")"
 .TP
-.B \-R
-Recurse into subdirectories (only useful on create)
+.B \-R, \-\-recurse
+Recurse into subdirectories for the files a wildcard matches (only useful on create)
 .TP
-.B \-L
+.B \-L, \-\-follow\-symlinks
 Follow symlinks to files when scanning for source files (create only).
 Use at your own risk: symlink targets may lie outside the basepath.
 Symlinks to directories are not followed. POSIX systems only.
