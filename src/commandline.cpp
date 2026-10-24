@@ -88,7 +88,8 @@ static void AddOptions(cxxopts::Options &parser)
     ("O,rename-only", "Rename-only mode (skip files that are not perfect matches, useful for quickly fixing renamed files)")
     ("N,data-skipping", "Data skipping (find badly mispositioned data blocks)")
     ("S,skip-leaway", "Skip leaway (distance +/- from expected block position, default 64)", cxxopts::value<std::string>(), "<n>")
-    ("full-hash", "Also check the hash of the whole of each file");
+    ("full-hash", "Also check the hash of the whole of each file")
+    ("i,in-place", "Repair damaged files in place, without a backup (repair only, not with -N)");
 
   parser.add_options("Create")
     ("b,block-count", "Set the Block-Count (default 2000)", cxxopts::value<std::string>(), "<n>")
@@ -206,6 +207,7 @@ CommandLine::CommandLine(std::ostream &_sout, std::ostream &_serr)
 , skipdata(false)
 , skipleaway(0)
 , fullhash(false)
+, inplacerepair(false)
 , blockcount(0)
 , blocksize(0)
 , firstblock(0)
@@ -883,6 +885,16 @@ bool CommandLine::ReadArgs(int argc, const char * const *argv)
     fullhash = true;
   }
 
+  if (result.count("in-place"))
+  {
+    if (operation != opRepair)
+    {
+      serr << "Cannot specify in-place repair unless repairing." << std::endl;
+      return false;
+    }
+    inplacerepair = true;
+  }
+
   // A wildcard which matches no file, or a name with nothing there, is said,
   // and the work goes on without it
   auto missing = [&](const std::string &filename, const std::string &name) {
@@ -1117,6 +1129,12 @@ bool CommandLine::CheckValuesAndSetDefaults() {
       // Expect to find blocks within +/- 64 bytes of the expected
       // position relative to the last block that was found.
       skipleaway = DEFAULT_SKIP_LEAWAY;
+    }
+
+    if (inplacerepair && skipdata)
+    {
+      serr << "Cannot specify in-place repair and data skipping together." << std::endl;
+      return false;
     }
   }
 

@@ -295,7 +295,8 @@ public:
   Result Rebuild(const size_t memorylimit,
                  const u32 _nthreads,
                  const u32 _filethreads,
-                 const bool verifyafter)
+                 const bool verifyafter,
+                 const bool inplacerepair)
   {
     ClearLastError();
 
@@ -313,7 +314,7 @@ public:
 
     ApplyThreadCounts(_nthreads, _filethreads);
 
-    return RepairFiles(memorylimit, basepath, verifyafter);
+    return RepairFiles(memorylimit, basepath, verifyafter, inplacerepair);
   }
 
 private:
@@ -381,6 +382,7 @@ struct Par2Verifier::State
   , skipleaway(DEFAULT_SKIP_LEAWAY)
   , fullhash(false)
   , renameonly(false)
+  , inplacerepair(false)
   , verbosity(vbNone)
   , par2files()
   , scannedfiles()
@@ -405,6 +407,7 @@ struct Par2Verifier::State
   u64 skipleaway;
   bool fullhash;
   bool renameonly;
+  bool inplacerepair;
   Verbosity verbosity;
   std::vector<std::pair<std::string, bool> > par2files;
   std::set<std::string> scannedfiles;
@@ -596,6 +599,13 @@ void Par2Verifier::SetRenameOnly(const bool enabled)
   std::lock_guard<std::mutex> lock(state->workmutex);
 
   state->renameonly = enabled;
+}
+
+void Par2Verifier::SetInPlaceRepair(const bool enabled)
+{
+  std::lock_guard<std::mutex> lock(state->workmutex);
+
+  state->inplacerepair = enabled;
 }
 
 void Par2Verifier::SetVerbosity(const Verbosity verbosity)
@@ -889,7 +899,7 @@ try
 
   state->repaired = true;
 
-  const Result result = impl->Rebuild(state->memorylimit, state->nthreads, state->filethreads, verifyafter);
+  const Result result = impl->Rebuild(state->memorylimit, state->nthreads, state->filethreads, verifyafter, state->inplacerepair);
 
   // A repair which only renames files writes nothing to read back
   state->readback = result == eSuccess

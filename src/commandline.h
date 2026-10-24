@@ -106,6 +106,7 @@ public:
   bool                                GetSkipData(void) const    {return skipdata;}
   u64                                 GetSkipLeaway(void) const  {return skipleaway;}
   bool                                GetFullHash(void) const    {return fullhash;}
+  bool                                GetInPlaceRepair(void) const {return inplacerepair;}
   u32                                 GetNumThreads(void) {return nthreads;}
   u32                                 GetFileThreads(void) {return filethreads;}
 
@@ -185,6 +186,9 @@ protected:
                                // allow when searching for blocks.
   bool fullhash;               // Whether to check the hash of the whole of each
                                // file as well as the hash of each of its blocks
+  bool inplacerepair;          // Write the reconstructed blocks back into
+                               // the damaged file instead of renaming it
+                               // and writing out a whole new copy.
 
 
   // options for creating par files

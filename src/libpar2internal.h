@@ -195,6 +195,7 @@ typedef unsigned int     size_t;
 // STL includes
 #include <list>
 #include <map>
+#include <set>
 #include <vector>
 #include <string>
 #include <sstream>
