@@ -928,6 +928,205 @@ int test10() {
   return failed;
 }
 
+// A hasher which counts the blocks it is asked to check, and while reject is
+// set says none of them match
+class CountingHasher : public ReferenceHasher
+{
+public:
+  explicit CountingHasher(std::atomic<u32> *_checked, std::atomic<bool> *_reject = 0)
+    : checked(_checked), reject(_reject) {}
+
+  void CheckBlocks(const void *data, u32 count, size_t filelength,
+                   const void *expected, char *matched) override
+  {
+    *checked += count;
+    ReferenceHasher::CheckBlocks(data, count, filelength, expected, matched);
+    if (reject && *reject)
+      memset(matched, 0, count);
+  }
+
+private:
+  std::atomic<u32> *checked;
+  std::atomic<bool> *reject;
+};
+
+// A file repaired in place is verified by reading back only the blocks the
+// repair wrote
+int test11() {
+  const char *const datafile = "libpar2_test11.data";
+  const char *const leftovers[] = {datafile, "libpar2_test11.data.1", "libpar2_test11.par2",
+                                   "libpar2_test11.vol0+1.par2", "libpar2_test11.vol1+2.par2",
+                                   "libpar2_test11.vol3+1.par2"};
+
+  for (const char *leftover : leftovers)
+    remove(leftover);
+
+  {
+    std::ofstream data(datafile, std::ofstream::out | std::ofstream::binary);
+    for (int i = 0; i < 20 * 4096; ++i)
+      data.put((char)(i * 31 + i / 256 + i / 4099));
+  }
+
+  int failed = 0;
+
+  Par2Creator creator("");
+  creator.SetSourceFiles(std::vector<std::string>(1, datafile));
+  creator.SetBlockSize(4096);
+  creator.SetRecoveryBlockCount(4);
+
+  class Written : public Par2Observer
+  {
+  public:
+    void OnFileDone(Phase phase, const Par2FileResult &result) override
+    {
+      if (phase == phWriting)
+        files.push_back(result);
+    }
+    std::vector<Par2FileResult> files;
+  };
+
+  Result result = creator.Create("libpar2_test11");
+  if (result != eSuccess) {
+    std::cerr << "creating returned " << result << std::endl;
+    failed = 1;
+  } else {
+    {
+      std::fstream data(datafile, std::ios::binary | std::ios::in | std::ios::out);
+      data.seekp(5 * 4096 + 100);
+      for (int i = 0; i < 4; ++i)
+        data.put((char)0x5a);
+    }
+
+    std::atomic<u32> checked(0);
+
+    Backends backends;
+    backends.hasher = [&checked](const HasherConfig &) {
+      return std::unique_ptr<Hasher>(new CountingHasher(&checked));
+    };
+
+    Written written;
+    Par2Verifier verifier("", backends);
+    verifier.SetInPlaceRepair(true);
+    verifier.SetObserver(&written);
+
+    result = verifier.AddPar2File("libpar2_test11.par2");
+    if (result == eSuccess)
+      result = verifier.Verify();
+
+    if (result != eRepairPossible) {
+      std::cerr << "verifying the damaged file returned " << result << std::endl;
+      failed = 1;
+    } else {
+      checked = 0;
+
+      result = verifier.Repair();
+      if (result != eSuccess) {
+        std::cerr << "repairing in place returned " << result << std::endl;
+        failed = 1;
+      } else if (checked != 1) {
+        std::cerr << "verifying the repair checked " << checked << " blocks rather than 1" << std::endl;
+        failed = 1;
+      } else if (written.files.size() != 1 || written.files[0].blocksfound != 1) {
+        std::cerr << "the repair did not report 1 block written" << std::endl;
+        failed = 1;
+      }
+    }
+  }
+
+  for (const char *leftover : leftovers)
+    remove(leftover);
+
+  return failed;
+}
+// The blocks a repair in place wrote are read back on several threads, wherever
+// they are in the file, and one which does not check out fails the repair
+int test12() {
+  const char *const datafile = "libpar2_test12.data";
+  const char *const leftovers[] = {datafile, "libpar2_test12.data.1", "libpar2_test12.par2",
+                                   "libpar2_test12.vol0+1.par2", "libpar2_test12.vol1+2.par2",
+                                   "libpar2_test12.vol3+4.par2", "libpar2_test12.vol7+1.par2"};
+
+  for (const char *leftover : leftovers)
+    remove(leftover);
+
+  {
+    std::ofstream data(datafile, std::ofstream::out | std::ofstream::binary);
+    for (int i = 0; i < 20 * 4096; ++i)
+      data.put((char)(i * 31 + i / 256 + i / 4099));
+  }
+
+  // Three blocks next to each other and two on their own
+  const int damaged[] = {3, 4, 5, 10, 15};
+  auto damage = [&]() {
+    std::fstream data(datafile, std::ios::binary | std::ios::in | std::ios::out);
+    for (int block : damaged) {
+      data.seekp(block * 4096 + 100);
+      data.put((char)0x5a);
+    }
+  };
+
+  int failed = 0;
+
+  Par2Creator creator("");
+  creator.SetSourceFiles(std::vector<std::string>(1, datafile));
+  creator.SetBlockSize(4096);
+  creator.SetRecoveryBlockCount(8);
+
+  Result result = creator.Create("libpar2_test12");
+  if (result != eSuccess) {
+    std::cerr << "creating returned " << result << std::endl;
+    failed = 1;
+  }
+
+  for (int reject = 0; reject < 2 && !failed; ++reject) {
+    damage();
+
+    std::atomic<u32> checked(0);
+    std::atomic<bool> rejecting(false);
+
+    Backends backends;
+    backends.hasher = [&checked, &rejecting](const HasherConfig &) {
+      return std::unique_ptr<Hasher>(new CountingHasher(&checked, &rejecting));
+    };
+
+    Par2Verifier verifier("", backends);
+    verifier.SetInPlaceRepair(true);
+    verifier.SetThreadCounts(4, 2);
+
+    result = verifier.AddPar2File("libpar2_test12.par2");
+    if (result == eSuccess)
+      result = verifier.Verify();
+
+    if (result != eRepairPossible) {
+      std::cerr << "verifying the damaged file returned " << result << std::endl;
+      failed = 1;
+      break;
+    }
+
+    checked = 0;
+    rejecting = reject != 0;
+
+    result = verifier.Repair();
+    if (reject && result != eRepairFailed) {
+      std::cerr << "a repair whose blocks did not check out returned " << result << std::endl;
+      failed = 1;
+    } else if (!reject && result != eSuccess) {
+      std::cerr << "repairing in place returned " << result << std::endl;
+      failed = 1;
+    } else if (checked != sizeof(damaged) / sizeof(damaged[0])) {
+      std::cerr << "verifying the repair checked " << checked << " blocks rather than "
+                << sizeof(damaged) / sizeof(damaged[0]) << std::endl;
+      failed = 1;
+    }
+  }
+
+  for (const char *leftover : leftovers)
+    remove(leftover);
+
+  return failed;
+}
+
+
 int main() {
   if (test1()) {
     std::cerr << "FAILED: test1" << std::endl;
@@ -967,6 +1166,14 @@ int main() {
   }
   if (test10()) {
     std::cerr << "FAILED: test10" << std::endl;
+    return 1;
+  }
+  if (test11()) {
+    std::cerr << "FAILED: test11" << std::endl;
+    return 1;
+  }
+  if (test12()) {
+    std::cerr << "FAILED: test12" << std::endl;
     return 1;
   }
 

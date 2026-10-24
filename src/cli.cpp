@@ -286,8 +286,12 @@ public:
       }
       break;
     case phWriting:
-      writtenbytes += result.filesize;
+      writtenbytes += result.byteswritten;
       writtenblocks += result.blocksfound;
+      if (result.inplace)
+        Write(sout, nlQuiet, "Rewrote " + std::to_string(result.blocksfound) + " of "
+              + std::to_string(result.blocksneeded) + " blocks of \"" + Shortened(result.filename)
+              + "\" in place.\n");
       break;
     default:
       break;
@@ -319,6 +323,9 @@ public:
       break;
     case wcIncompleteWrite:
       Err(nlSilent, "INFO: " + warning.message + "\n" + warning.detail);
+      break;
+    case wcNotRepairedInPlace:
+      Out(nlQuiet, warning.message + "\n" + warning.detail);
       break;
     default:
       Err(nlSilent, warning.message + "\n" + warning.detail);
@@ -723,6 +730,7 @@ static Result Repair(CommandLine &commandline, const Backends &backends, Printer
   verifier.SetDataSkipping(commandline.GetSkipData(), commandline.GetSkipLeaway());
   verifier.SetFullHash(commandline.GetFullHash());
   verifier.SetRenameOnly(commandline.GetRenameOnly());
+  verifier.SetInPlaceRepair(commandline.GetInPlaceRepair());
   verifier.SetVerbosity(VerbosityAt(commandline.GetNoiseLevel()));
 
   printer.SetBasePath(NormaliseBasePath(commandline.GetBasePath()));
