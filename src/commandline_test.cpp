@@ -612,6 +612,14 @@ int test9() {
     return 1;
   if (test9_helper("par2 create --block-count foo.par2 input1.txt input2.txt"))
     return 1;
+  if (test9_helper("par2 create -i foo.par2 input1.txt input2.txt"))
+    return 1;
+  if (test9_helper("par2 verify -i foo.par2 input1.txt input2.txt"))
+    return 1;
+  if (test9_helper("par2 repair -i -N foo.par2 input1.txt input2.txt"))
+    return 1;
+  if (test9_helper("par2 repair -N -i foo.par2 input1.txt input2.txt"))
+    return 1;
 
 
   // delete files that were created at start of test.
@@ -2051,6 +2059,25 @@ int test14() {
 }
 
 
+// -i and --in-place both ask for in-place repair
+int test15() {
+  std::ofstream("test15.par2").close();
+
+  int failed = 0;
+  for (const char *option : {"-i", "--in-place"}) {
+    const char *argv[] = {"par2", "repair", option, "test15.par2"};
+    std::ostringstream sout, serr;
+    CommandLine commandline(sout, serr);
+    if (!commandline.Parse(4, argv) || !commandline.GetInPlaceRepair()) {
+      std::cout << "test15 did not take " << option << ": " << serr.str() << std::endl;
+      failed = 1;
+    }
+  }
+
+  remove("test15.par2");
+  return failed;
+}
+
 int main() {
   std::cout << "Tests 1 through 4 were moved to libpar2_test." << std::endl;
 
@@ -2094,6 +2121,10 @@ int main() {
   }
   if (test14()) {
     std::cerr << "FAILED: test14" << std::endl;
+    return 1;
+  }
+  if (test15()) {
+    std::cerr << "FAILED: test15" << std::endl;
     return 1;
   }
 
