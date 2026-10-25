@@ -9,3 +9,14 @@
    ...
    fun:_ZNSt8ios_base15sync_with_stdioEb
 }
+
+# The signal thread is detached and still waiting in sigwait when par2 exits,
+# so its state and the TLS that pthread_create allocated for it are never freed
+{
+   par2_signal_thread
+   Memcheck:Leak
+   match-leak-kinds: possible,reachable
+   ...
+   fun:_ZL13HandleSignalsv
+   fun:main
+}
