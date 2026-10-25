@@ -126,6 +126,10 @@ public:
   }
 
   static bool FileExists(std::string filename);
+
+  // Check whether a directory between basepath and filename is a link, which
+  // would place filename somewhere other than under basepath.
+  static bool HasLinkedDirectory(const std::string &basepath, const std::string &filename);
   static bool DirectoryExists(std::string path);
   static u64 GetFileSize(std::string filename);
 

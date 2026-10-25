@@ -1,0 +1,61 @@
+#!/bin/sh
+
+execdir="$PWD"
+
+# valgrind tests memory usage.
+# wine allow for windows testing on linux
+if [ -n "${PARVALGRINDOPTS+set}" ]
+then
+    PARBINARY="valgrind $PARVALGRINDOPTS $execdir/par2"
+elif [ "`which wine`" != "" ] && [ -f "$execdir/par2.exe" ]
+then
+    PARBINARY="wine $execdir/par2.exe"
+else
+    PARBINARY="$execdir/par2"
+fi
+
+if [ -z "$srcdir" ] || [ "." = "$srcdir" ]; then
+  srcdir="$PWD"
+  TESTDATA="$srcdir/tests"
+else
+  srcdir="$PWD/$srcdir"
+  TESTDATA="$srcdir/tests"
+fi
+
+TESTROOT="$PWD"
+
+testname=$(basename $0)
+rm -f "$testname.log"
+rm -rf "run$testname"
+
+mkdir "run$testname" && cd "run$testname" || { echo "ERROR: Could not change to test directory" ; exit 1; } >&2
+
+banner="Reject repair through a linked directory"
+dashes=`echo "$banner" | sed s/./-/g`
+
+echo $dashes
+echo $banner
+echo $dashes
+
+mkdir -p base/sub outside
+printf 'archive controlled content\n' > base/sub/data.bin
+
+$PARBINARY c -q -r100 -B base base/recovery.par2 base/sub/data.bin >/dev/null || { echo "ERROR: could not create test recovery set" ; exit 1; } >&2
+
+rm -rf base/sub
+ln -s "$PWD/outside" base/sub
+
+$PARBINARY r -q -B base base/recovery.par2 >/dev/null 2>&1 && { echo "ERROR: repair through a linked directory succeeded unexpectedly" ; exit 1; } >&2
+
+if [ -f outside/data.bin ]
+then
+  echo "ERROR: repair wrote through a linked directory outside the basepath" >&2
+  exit 1
+fi
+
+echo "Linked directory repair target was rejected"
+
+cd "$TESTROOT"
+rm -rf "run$testname"
+
+exit 0

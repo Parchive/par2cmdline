@@ -3358,12 +3358,20 @@ bool Par2Repairer::RenameTargetFiles(const std::string &basepath)
           0 == sourcefile->GetCompleteFile()->FileName().compare(0, basepath.length(), basepath))
       {
         DiskFile *targetfile = sourcefile->GetCompleteFile();
+        const std::string targetname = sourcefile->TargetFileName();
+
+        // A directory which is a link would put the file outside the basepath
+        if (DiskFile::HasLinkedDirectory(basepath, targetname))
+        {
+          errorlog.Record(ecFileRenameFailed, "A directory on the way to it is a link", targetname);
+          return false;
+        }
 
         // Rename it
         diskFileMap.Remove(targetfile);
 
         std::string reason;
-        const bool renamed = targetfile->Rename(sourcefile->TargetFileName(), reason);
+        const bool renamed = targetfile->Rename(targetname, reason);
 
         bool success = diskFileMap.Insert(targetfile);
         assert(success);
@@ -3427,6 +3435,14 @@ bool Par2Repairer::CreateTargetFiles(void)
         auto *targetfile = new DiskFile(&errorlog);
         std::string filename = sourcefile->TargetFileName();
         u64 filesize = sourcefile->GetDescriptionPacket()->FileSize();
+
+        // A directory which is a link would put the file outside the basepath
+        if (DiskFile::HasLinkedDirectory(basepath, filename))
+        {
+          errorlog.Record(ecFileCreateFailed, "A directory on the way to it is a link", filename);
+          delete targetfile;
+          return false;
+        }
 
         // A file which already exists but was never scanned is not written over
         if (DiskFile::FileExists(filename))
