@@ -252,6 +252,35 @@ function Complete-Test {
     }
 }
 
+# Exit reporting the test as skipped
+function Exit-TestSkipped {
+    param(
+        [Parameter(Mandatory=$true)]
+        [string]$Message
+    )
+
+    Write-Host "SKIP: $Message"
+    Complete-Test
+    exit 77
+}
+
+# Create a symbolic link, skipping the test when the account may not
+function New-Symlink {
+    param(
+        [Parameter(Mandatory=$true)]
+        [string]$Path,
+        [Parameter(Mandatory=$true)]
+        [string]$Target
+    )
+
+    try {
+        New-Item -ItemType SymbolicLink -Path $Path -Target $Target -ErrorAction Stop | Out-Null
+    }
+    catch {
+        Exit-TestSkipped "creating symbolic links needs Developer Mode or an elevated shell"
+    }
+}
+
 # Exit with error
 function Exit-TestWithError {
     param(
