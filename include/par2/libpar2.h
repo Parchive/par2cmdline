@@ -166,6 +166,14 @@ typedef enum WarningCode
   // instead and the copy is left where it is
   wcRenameFailed = 6,
 
+  // A damaged file a repair was asked to rebuild in place is written as a new
+  // copy instead, and the message says why
+  wcNotRepairedInPlace = 7,
+
+  // A repair which stopped left a file it was rebuilding in place as it was,
+  // rather than deleting it as it would a new copy
+  wcInPlaceIncomplete = 8,
+
 } WarningCode;
 
 
@@ -308,6 +316,10 @@ struct Par2FileResult
   u64 skippedbytes{};           // Bytes passed over by data skipping
   u32 packetsfound{};           // Packets a PAR2 file held which had not
                                 // been read before
+  u64 byteswritten{};           // What the work wrote to it, for a file
+                                // reported in phWriting
+  bool inplace{};               // A file reported in phWriting was repaired
+                                // in place, with no backup made of it
 };
 
 // scanned is false for a PAR2 file, for a file which is not there, could not
@@ -320,7 +332,8 @@ struct Par2FileResult
 //
 // A file reported in phWriting has blocksfound counting the blocks written to
 // it: every block of a file a repair rebuilt, which is written but not yet
-// read back, or the recovery blocks a PAR2 file holds.
+// read back, only the blocks a repair in place rewrote, or the recovery blocks
+// a PAR2 file holds.
 
 
 // Receives progress and per-file results from a par2 operation.
@@ -562,6 +575,12 @@ public:
   // Verify.
   void SetRenameOnly(const bool enabled);
 
+  // Write the rebuilt blocks of a damaged file back into it, the -i option,
+  // rather than writing a new copy. A file which cannot be repaired that way is
+  // written as a new copy, with wcNotRepairedInPlace saying why, as is every
+  // file while data skipping is on. Applies to Repair.
+  void SetInPlaceRepair(const bool enabled);
+
   // How much detail of the work the observer is given through OnDetail. None
   // is given unless this asks for it, and nothing is spent putting into words
   // a detail which is not wanted.
@@ -668,7 +687,8 @@ public:
   bool GetLastError(Par2Error *error) const;
 
   // Ask the work in progress to stop, from any thread. Verify or Repair then
-  // returns eCancelled, having removed any partly written files. A repair which
+  // returns eCancelled, having removed any partly written files, apart from
+  // those being repaired in place, which are kept as they are. A repair which
   // has already written every block keeps the files it rebuilt, unchecked. The
   // request stays in force until ClearCancel.
   void Cancel(void);

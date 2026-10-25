@@ -141,7 +141,7 @@ protected:
                      const bool renameonly);
   // Rebuild whatever is missing or damaged
   Result RepairFiles(const size_t memorylimit, const std::string &basepath,
-                     bool verifyafter = true);
+                     bool verifyafter = true, const bool inplacerepair = false);
 
   // Load packets from the specified file, clearing opened if it could not be opened
   bool LoadPacketsFromFile(const std::string &filename, bool reread = false, bool *opened = 0);
@@ -240,6 +240,14 @@ protected:
   // Tell the observer of each file the repair has written in full
   void ReportWritten(void);
 
+  // Open for update the damaged files which can be repaired in place
+  void OpenInPlaceTargetFiles(void);
+
+  // Whether a file repaired in place is verified by reading back only the
+  // blocks the repair wrote, and verify it that way
+  bool VerifiesInPlace(const Par2RepairerSourceFile *sourcefile) const;
+  bool VerifyInPlaceFile(Par2RepairerSourceFile *sourcefile, ProgressMeter<u64> &progress);
+
   // Rename any damaged or missnamed target files.
   bool RenameTargetFiles(const std::string &basepath);
 
@@ -308,6 +316,8 @@ protected:
   bool                      skipdata;                // Should we skip data whilst scanning
   u64                       skipleaway;              // The leaway +/- we should allow whilst scanning
   bool                      fullhash;                // Should the whole of each file be hashed too
+  bool                      anyvouched;              // Whether any blocks were vouched for through SetKnownBlocks
+  bool                      inplacewritten;          // Whether a repair has started writing into files repaired in place
 
   bool                      firstpacket;             // Whether or not a valid packet has been found.
   MD5Hash                   setid;                   // The SetId extracted from the first packet.
@@ -338,6 +348,7 @@ protected:
   // The source file each file the verify found under another name the set
   // gives it is for, keyed by its path
   std::map<std::string, Par2RepairerSourceFile*> othernamedfiles;
+  std::set<DiskFile*>                       inplacefiles; // Those target files being repaired in place
   std::list<std::string>                    par2list;     // list of par2 files
 
   u64                       blocksize;               // The block size.

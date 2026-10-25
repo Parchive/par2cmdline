@@ -1250,6 +1250,7 @@ void Par2SetCreator::ReportWritten(void)
     result.localfilename = recoveryfile.FileName();
     result.exists = true;
     result.filesize = recoveryfile.FileSize();
+    result.byteswritten = recoveryfile.FileSize();
 
     for (auto &packet : recoverypackets)
     {

@@ -63,6 +63,11 @@ public:
   // Create a file and set its length
   bool Create(std::string filename, u64 filesize);
 
+  // Open an existing file for reading and writing, without creating or
+  // truncating it. Refuses anything but a regular file with one link which is
+  // unchanged since Open last opened it, saying why in reason.
+  bool OpenForUpdate(std::string *reason = 0);
+
   // Write some data to the file
   // maxlength should be the default value, except during testing.
   bool Write(u64 offset, const void *buffer, size_t length,
@@ -77,7 +82,7 @@ public:
 #ifdef _WIN32
   bool IsOpen(void) const {return hFile != INVALID_HANDLE_VALUE;}
 #else
-  bool IsOpen(void) const {return file != 0;}
+  bool IsOpen(void) const {return fd >= 0;}
 #endif
 
   // Read some data from the file
@@ -85,7 +90,7 @@ public:
   bool Read(u64 offset, void *buffer, size_t length,
 	    LengthType maxlength = MAX_LENGTH);
 
-  // Close the file, false when what was still buffered could not be written
+  // Close the file, false when the system reports that closing it failed
   bool Close(void);
 
   // Get the size of the file
@@ -158,16 +163,14 @@ protected:
 
   std::string filename;
   u64    filesize;
+  u64    modified;  // When the file was last written, as Open found it
 
   // OS file handle
 #ifdef _WIN32
   HANDLE hFile;
 #else
-  FILE *file;
+  int    fd;
 #endif
-
-  // Current write offset within the file. Read() neither uses nor updates it.
-  u64    offset;
 
   // Does the file exist
   bool   exists;
