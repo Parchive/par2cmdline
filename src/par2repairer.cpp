@@ -698,9 +698,9 @@ bool Par2Repairer::GetVerifyResult(Par2VerifyResult *result) const
   return true;
 }
 
-// Accept the caller's word that these blocks are intact
+// Accept the caller's word on these blocks
 bool Par2Repairer::SetKnownBlocks(const std::string &filename,
-                                  const std::vector<bool> &blocks)
+                                  const std::vector<KnownBlock> &blocks)
 {
   if (blocks.empty())
   {
@@ -720,7 +720,8 @@ bool Par2Repairer::SetKnownBlocks(const std::string &filename,
   }
 
   knownblocks[filename] = blocks;
-  anyvouched = true;
+  if (std::find(blocks.begin(), blocks.end(), kbPresent) != blocks.end())
+    anyvouched = true;
 
   return true;
 }
@@ -732,6 +733,7 @@ bool Par2Repairer::SetKnownBlocks(const std::string &filename,
 bool Par2Repairer::TakeKnownBlocks(DiskFile               *diskfile,
                                   Par2RepairerSourceFile *sourcefile,
                                   std::vector<char>      &matched,
+                                  std::vector<char>      &searchable,
                                   u32                    &matchcount)
 {
   matchcount = 0;
@@ -751,7 +753,7 @@ bool Par2Repairer::TakeKnownBlocks(DiskFile               *diskfile,
   if (diskfile->FileSize() != descriptionpacket->FileSize())
     return false;
 
-  std::map<std::string, std::vector<bool> >::const_iterator kb =
+  std::map<std::string, std::vector<KnownBlock> >::const_iterator kb =
     knownblocks.find(sourcefile->FileName());
   if (kb == knownblocks.end())
     return false;
@@ -761,13 +763,18 @@ bool Par2Repairer::TakeKnownBlocks(DiskFile               *diskfile,
     return false;
 
   matched.assign(blockcount, 0);
+  searchable.assign(blockcount, 0);
 
   for (u32 blocknumber=0; blocknumber<blockcount; ++blocknumber)
   {
-    if (kb->second[blocknumber])
+    if (kbPresent == kb->second[blocknumber])
     {
       matched[blocknumber] = 1;
       ++matchcount;
+    }
+    else if (kbUnknown == kb->second[blocknumber])
+    {
+      searchable[blocknumber] = 1;
     }
   }
 
@@ -2640,29 +2647,30 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
   const u64 filesize = diskfile->FileSize();
 
   std::vector<char> alignedmatch;
+  std::vector<char> searchable;
   u32 alignedcount = 0;
-  const bool vouched = TakeKnownBlocks(diskfile, sourcefile, alignedmatch, alignedcount);
+  const bool vouched = TakeKnownBlocks(diskfile, sourcefile, alignedmatch, searchable, alignedcount);
   const bool aligned = vouched
                        || ScanDataFileAligned(diskfile, progress, sourcefile,
                                               alignedmatch, alignedcount,
                                               hashfull, hash16k);
 
-  // Blocks vouched for are not read, and count as scanned all the same
+  // Blocks vouched for as present or missing are not read, and count as
+  // scanned all the same
   if (vouched)
   {
     for (size_t block = 0; block < alignedmatch.size(); ++block)
     {
-      if (alignedmatch[block])
+      if (alignedmatch[block] || !searchable[block])
         progress.Add(std::min(blocksize, filesize - (u64)block * blocksize));
     }
   }
 
   // Being told that none of the blocks are usable is an answer in itself, so
   // the file is not searched after all
-  if (vouched && alignedcount == 0)
+  if (vouched && alignedcount == 0
+      && std::find(searchable.begin(), searchable.end(), 1) == searchable.end())
   {
-    progress.Add(filesize);
-
     matchtype = eNoMatch;
     count = 0;
 
@@ -2672,7 +2680,11 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
   // The parts of the file which still have to be searched a byte at a time
   std::vector<std::pair<u64, u64> > searchranges;
 
-  if (aligned && alignedcount > 0)
+  // Which blocks are where the set says they should be in this file
+  std::vector<char> atownoffset;
+  Par2RepairerSourceFile *const expectedfile = sourcefile;
+
+  if (aligned && (alignedcount > 0 || vouched))
   {
     const u32 blockcount = (u32)alignedmatch.size();
 
@@ -2696,24 +2708,27 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
     if (alignedcount < blockcount)
     {
       matchtype = ePartialMatch;
+      atownoffset = alignedmatch;
 
       // In rename-only mode, skip files that are not perfect matches
       if (renameonly)
         return true;
 
-      // Search each run of blocks which was not where it was expected. The
-      // blocks on either side of a run have been claimed already, so nothing
-      // outside these ranges is left to find.
+      // Search each run of blocks which was not where it was expected, other
+      // than those the caller said are missing. The blocks on either side of a
+      // run have been claimed already, so nothing outside these ranges is left
+      // to find.
       for (u32 blocknumber=0; blocknumber<blockcount; )
       {
-        if (alignedmatch[blocknumber])
+        if (alignedmatch[blocknumber] || (vouched && !searchable[blocknumber]))
         {
           ++blocknumber;
           continue;
         }
 
         const u32 gapfirst = blocknumber;
-        while (blocknumber < blockcount && !alignedmatch[blocknumber])
+        while (blocknumber < blockcount && !alignedmatch[blocknumber]
+               && !(vouched && !searchable[blocknumber]))
           ++blocknumber;
 
         searchranges.push_back(std::make_pair((u64)gapfirst * blocksize,
@@ -2741,7 +2756,7 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
 
   // The MD5 hash of the whole file is only needed to match against source
   // files which have no verification packet, and when it was asked for.
-  const bool computefilehashes = ((fullhash && !aligned) || !unverifiablesourcefiles.empty())
+  const bool computefilehashes = ((fullhash && !filehashes) || !unverifiablesourcefiles.empty())
                                  && wholefilesearched;
 
   filehashes = filehashes || wholefilesearched;
@@ -2860,6 +2875,13 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
       // Update the number of matches found
       count++;
 
+      if (!atownoffset.empty() && currententry->SourceFile() == expectedfile)
+      {
+        const size_t blocknumber = currententry->GetDataBlock() - &*expectedfile->SourceBlocks();
+        if (blocknumber < atownoffset.size() && filechecksummer.Offset() == (u64)blocknumber * blocksize)
+          atownoffset[blocknumber] = 1;
+      }
+
       // What entry do we expect next
       nextentry = currententry->Next();
 
@@ -2950,6 +2972,13 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
     ss << "[DEBUG] matchcount: " << count << "\n"
       "[DEBUG] ----------------------";
     observer->OnDetail(vbDebug, ss.str());
+  }
+
+  // A search which found every block where it belongs leaves the file whole
+  if (matchtype == ePartialMatch && !multipletargets && !atownoffset.empty()
+      && std::find(atownoffset.begin(), atownoffset.end(), 0) == atownoffset.end())
+  {
+    matchtype = eFullMatch;
   }
 
   // Did we make any matches at all

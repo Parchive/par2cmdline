@@ -1047,6 +1047,250 @@ int test11() {
   return failed;
 }
 
+// A file only partly vouched for is whole when the rest of its blocks are found
+// where they belong, and still damaged when one of them is not
+int test12() {
+  const char *const datafile = "libpar2_test12.data";
+  const char *const leftovers[] = {datafile, "libpar2_test12.data.1", "libpar2_test12.par2",
+                                   "libpar2_test12.vol0+1.par2", "libpar2_test12.vol1+2.par2",
+                                   "libpar2_test12.vol3+1.par2"};
+
+  for (const char *leftover : leftovers)
+    remove(leftover);
+
+  {
+    std::ofstream data(datafile, std::ofstream::out | std::ofstream::binary);
+    for (int i = 0; i < 20 * 4096; ++i)
+      data.put((char)(i * 31 + i / 256 + i / 4099));
+  }
+
+  int failed = 0;
+
+  Par2Creator creator("");
+  creator.SetSourceFiles(std::vector<std::string>(1, datafile));
+  creator.SetBlockSize(4096);
+  creator.SetRecoveryBlockCount(4);
+
+  Result result = creator.Create("libpar2_test12");
+  if (result != eSuccess) {
+    std::cerr << "creating returned " << result << std::endl;
+    failed = 1;
+  } else {
+    std::vector<KnownBlock> firsthalf(20, kbUnknown);
+    for (int block = 0; block < 10; ++block)
+      firsthalf[block] = kbPresent;
+
+    Par2Verifier verifier("");
+    result = verifier.AddPar2File("libpar2_test12.par2");
+    if (result == eSuccess && verifier.SetKnownBlocks(datafile, firsthalf))
+      result = verifier.Verify();
+    if (result != eSuccess) {
+      std::cerr << "verifying an intact file vouched for in part returned " << result << std::endl;
+      failed = 1;
+    }
+
+    {
+      std::fstream data(datafile, std::ios::binary | std::ios::in | std::ios::out);
+      data.seekp(15 * 4096 + 100);
+      for (int i = 0; i < 4; ++i)
+        data.put((char)0x5a);
+    }
+
+    Par2Verifier damaged("");
+    result = damaged.AddPar2File("libpar2_test12.par2");
+    if (result == eSuccess && damaged.SetKnownBlocks(datafile, firsthalf))
+      result = damaged.Verify();
+    if (result != eRepairPossible) {
+      std::cerr << "verifying a damaged file vouched for in part returned " << result << std::endl;
+      failed = 1;
+    }
+  }
+
+  for (const char *leftover : leftovers)
+    remove(leftover);
+
+  return failed;
+}
+
+// A block said to be missing is not looked for, so it is rebuilt even though
+// the file holds it intact
+int test13() {
+  const char *const datafile = "libpar2_test13.data";
+  const char *const leftovers[] = {datafile, "libpar2_test13.data.1", "libpar2_test13.par2",
+                                   "libpar2_test13.vol0+1.par2", "libpar2_test13.vol1+2.par2",
+                                   "libpar2_test13.vol3+1.par2"};
+
+  for (const char *leftover : leftovers)
+    remove(leftover);
+
+  std::vector<char> original;
+  for (int i = 0; i < 20 * 4096; ++i)
+    original.push_back((char)(i * 31 + i / 256 + i / 4099));
+
+  {
+    std::ofstream data(datafile, std::ofstream::out | std::ofstream::binary);
+    data.write(original.data(), original.size());
+  }
+
+  int failed = 0;
+
+  Par2Creator creator("");
+  creator.SetSourceFiles(std::vector<std::string>(1, datafile));
+  creator.SetBlockSize(4096);
+  creator.SetRecoveryBlockCount(4);
+
+  Result result = creator.Create("libpar2_test13");
+  if (result != eSuccess) {
+    std::cerr << "creating returned " << result << std::endl;
+    failed = 1;
+  } else {
+    std::vector<KnownBlock> blocks(20, kbPresent);
+    blocks[15] = kbMissing;
+
+    Par2Verifier verifier("");
+    result = verifier.AddPar2File("libpar2_test13.par2");
+    if (result == eSuccess && verifier.SetKnownBlocks(datafile, blocks))
+      result = verifier.Verify();
+
+    Par2VerifyResult verified;
+    if (result != eRepairPossible || !verifier.GetVerifyResult(&verified) || verified.missingblockcount != 1) {
+      std::cerr << "verifying with a block said to be missing returned " << result << std::endl;
+      failed = 1;
+    } else {
+      result = verifier.Repair();
+      std::ifstream data(datafile, std::ifstream::in | std::ifstream::binary);
+      std::vector<char> repaired((std::istreambuf_iterator<char>(data)), std::istreambuf_iterator<char>());
+      if (result != eSuccess || repaired != original) {
+        std::cerr << "repairing the block said to be missing returned " << result << std::endl;
+        failed = 1;
+      }
+    }
+  }
+
+  for (const char *leftover : leftovers)
+    remove(leftover);
+
+  return failed;
+}
+
+// A file with every block unknown is searched as a whole, and with the whole
+// file hash asked for it is still found intact
+int test14() {
+  const char *const datafile = "libpar2_test14.data";
+  const char *const leftovers[] = {datafile, "libpar2_test14.par2",
+                                   "libpar2_test14.vol0+1.par2", "libpar2_test14.vol1+2.par2",
+                                   "libpar2_test14.vol3+1.par2"};
+
+  for (const char *leftover : leftovers)
+    remove(leftover);
+
+  {
+    std::ofstream data(datafile, std::ofstream::out | std::ofstream::binary);
+    for (int i = 0; i < 20 * 4096; ++i)
+      data.put((char)(i * 31 + i / 256 + i / 4099));
+  }
+
+  int failed = 0;
+
+  Par2Creator creator("");
+  creator.SetSourceFiles(std::vector<std::string>(1, datafile));
+  creator.SetBlockSize(4096);
+  creator.SetRecoveryBlockCount(4);
+
+  Result result = creator.Create("libpar2_test14");
+  if (result != eSuccess) {
+    std::cerr << "creating returned " << result << std::endl;
+    failed = 1;
+  } else {
+    Par2Verifier verifier("");
+    verifier.SetFullHash(true);
+    result = verifier.AddPar2File("libpar2_test14.par2");
+    if (result == eSuccess && verifier.SetKnownBlocks(datafile, std::vector<KnownBlock>(20, kbUnknown)))
+      result = verifier.Verify();
+    if (result != eSuccess) {
+      std::cerr << "verifying an intact file with every block unknown returned " << result << std::endl;
+      failed = 1;
+    }
+  }
+
+  for (const char *leftover : leftovers)
+    remove(leftover);
+
+  return failed;
+}
+
+// The search for a block not known stops at a block said to be missing, which
+// is rebuilt even though the file holds it intact, while the blocks not known
+// on either side of it are searched for as usual
+int test15() {
+  const char *const datafile = "libpar2_test15.data";
+  const char *const leftovers[] = {datafile, "libpar2_test15.data.1", "libpar2_test15.par2",
+                                   "libpar2_test15.vol0+1.par2", "libpar2_test15.vol1+2.par2",
+                                   "libpar2_test15.vol3+1.par2"};
+
+  for (const char *leftover : leftovers)
+    remove(leftover);
+
+  std::vector<char> original;
+  for (int i = 0; i < 20 * 4096; ++i)
+    original.push_back((char)(i * 31 + i / 256 + i / 4099));
+
+  {
+    std::ofstream data(datafile, std::ofstream::out | std::ofstream::binary);
+    data.write(original.data(), original.size());
+  }
+
+  int failed = 0;
+
+  Par2Creator creator("");
+  creator.SetSourceFiles(std::vector<std::string>(1, datafile));
+  creator.SetBlockSize(4096);
+  creator.SetRecoveryBlockCount(4);
+
+  Result result = creator.Create("libpar2_test15");
+  if (result != eSuccess) {
+    std::cerr << "creating returned " << result << std::endl;
+    failed = 1;
+  } else {
+    {
+      std::fstream data(datafile, std::ios::binary | std::ios::in | std::ios::out);
+      data.seekp(10 * 4096 + 100);
+      for (int i = 0; i < 4; ++i)
+        data.put((char)0x5a);
+    }
+
+    std::vector<KnownBlock> blocks(20, kbPresent);
+    blocks[10] = kbUnknown;
+    blocks[11] = kbMissing;
+    blocks[12] = kbUnknown;
+
+    Par2Verifier verifier("");
+    result = verifier.AddPar2File("libpar2_test15.par2");
+    if (result == eSuccess && verifier.SetKnownBlocks(datafile, blocks))
+      result = verifier.Verify();
+
+    Par2VerifyResult verified;
+    if (result != eRepairPossible || !verifier.GetVerifyResult(&verified) || verified.missingblockcount != 2) {
+      std::cerr << "verifying with a block said to be missing between blocks not known returned " << result
+                << std::endl;
+      failed = 1;
+    } else {
+      result = verifier.Repair();
+      std::ifstream data(datafile, std::ifstream::in | std::ifstream::binary);
+      std::vector<char> repaired((std::istreambuf_iterator<char>(data)), std::istreambuf_iterator<char>());
+      if (result != eSuccess || repaired != original) {
+        std::cerr << "repairing around the block said to be missing returned " << result << std::endl;
+        failed = 1;
+      }
+    }
+  }
+
+  for (const char *leftover : leftovers)
+    remove(leftover);
+
+  return failed;
+}
+
 int main() {
   if (test1()) {
     std::cerr << "FAILED: test1" << std::endl;
@@ -1090,6 +1334,22 @@ int main() {
   }
   if (test11()) {
     std::cerr << "FAILED: test11" << std::endl;
+    return 1;
+  }
+  if (test12()) {
+    std::cerr << "FAILED: test12" << std::endl;
+    return 1;
+  }
+  if (test13()) {
+    std::cerr << "FAILED: test13" << std::endl;
+    return 1;
+  }
+  if (test14()) {
+    std::cerr << "FAILED: test14" << std::endl;
+    return 1;
+  }
+  if (test15()) {
+    std::cerr << "FAILED: test15" << std::endl;
     return 1;
   }
 

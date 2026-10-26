@@ -92,21 +92,20 @@ public:
   bool GetBackupFiles(std::vector<std::string> *files) const;
   bool GetRenamedFiles(std::vector<std::pair<std::string, std::string> > *files) const;
 
-  // Accept the caller's word that these blocks of the named file are intact,
-  // so that they are not read and hashed again. The name is the one reported
-  // by GetFileInfo and blocks must have one entry per block of that file, set
-  // where the block is present at its expected offset.
+  // Accept the caller's word on the blocks of the named file, so that what it
+  // already knows is not read and hashed again. The name is the one reported
+  // by GetFileInfo and blocks must have one entry per block of that file: a
+  // block kbPresent is taken without being read, one kbMissing is neither read
+  // nor looked for, and one kbUnknown is looked for as usual.
   //
-  // An entry set for every block means the file is intact and it is never
-  // read. None set means it holds nothing usable, and it is not read either.
   // An empty vector forgets what was said about the file.
   //
-  // The blocks are trusted without being verified. Supplying a block which is
-  // not intact will silently produce incorrect output.
+  // The blocks are trusted without being verified. Supplying a block as
+  // present which is not intact will silently produce incorrect output.
   //
   // False when the set is known and does not describe a file of that name, or
   // describes it with a different number of blocks.
-  bool SetKnownBlocks(const std::string &filename, const std::vector<bool> &blocks);
+  bool SetKnownBlocks(const std::string &filename, const std::vector<KnownBlock> &blocks);
 
 protected:
   // Steps in verifying and repairing files:
@@ -115,6 +114,7 @@ protected:
   bool TakeKnownBlocks(DiskFile               *diskfile,
                        Par2RepairerSourceFile *sourcefile,
                        std::vector<char>      &matched,
+                       std::vector<char>      &searchable,
                        u32                    &matchcount);
 
   // Load packets from a PAR2 file, the files named after it, and the extra files.
@@ -294,7 +294,7 @@ protected:
   u32                       packetsloaded;           // Useable packets read so far
 
   // Blocks the caller has vouched for, keyed by the name the set records
-  std::map<std::string, std::vector<bool> > knownblocks;
+  std::map<std::string, std::vector<KnownBlock> > knownblocks;
 
   // The source files by the name each has on this system
   std::map<std::string, Par2RepairerSourceFile*> sourcefilesbyname;
@@ -316,7 +316,7 @@ protected:
   bool                      skipdata;                // Should we skip data whilst scanning
   u64                       skipleaway;              // The leaway +/- we should allow whilst scanning
   bool                      fullhash;                // Should the whole of each file be hashed too
-  bool                      anyvouched;              // Whether any blocks were vouched for through SetKnownBlocks
+  bool                      anyvouched;              // Whether any blocks were vouched present through SetKnownBlocks
   bool                      inplacewritten;          // Whether a repair has started writing into files repaired in place
 
   bool                      firstpacket;             // Whether or not a valid packet has been found.

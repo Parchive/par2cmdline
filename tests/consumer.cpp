@@ -655,7 +655,7 @@ int main()
     // and known blocks are keyed by those same names
     for (const auto &file : reported)
       verifier.SetKnownBlocks(file.filename,
-                              std::vector<bool>(file.blockcount, true));
+                              std::vector<par2::KnownBlock>(file.blockcount, par2::kbPresent));
 
     Check(par2::eSuccess == verifier.Verify(),
           "known blocks are keyed by the reported name");
@@ -753,7 +753,10 @@ int main()
     {
       par2::Par2Verifier told("");
       Check(par2::eSuccess == told.AddPar2File(PARFILE), "AddPar2File for the vouched set");
-      Check(told.SetKnownBlocks(damagedfiles[which].filename, damaged),
+      std::vector<par2::KnownBlock> vouched;
+      for (bool b : damaged)
+        vouched.push_back(b ? par2::kbPresent : par2::kbUnknown);
+      Check(told.SetKnownBlocks(damagedfiles[which].filename, vouched),
             "SetKnownBlocks takes what GetFoundBlocks reported");
       Check(par2::eRepairPossible == told.Verify(),
             "the vouched blocks describe the same damage");
@@ -970,7 +973,7 @@ int main()
     trusting.GetFileInfo(&files);
     for (const auto &file : files)
       trusting.SetKnownBlocks(file.filename,
-                              std::vector<bool>(file.blockcount, true));
+                              std::vector<par2::KnownBlock>(file.blockcount, par2::kbPresent));
 
     Counting trusted;
     trusting.SetObserver(&trusted);
@@ -985,7 +988,7 @@ int main()
 
     std::vector<par2::Par2FileInfo> all;
     writtenoff.GetFileInfo(&all);
-    writtenoff.SetKnownBlocks(all[0].filename, std::vector<bool>(all[0].blockcount, false));
+    writtenoff.SetKnownBlocks(all[0].filename, std::vector<par2::KnownBlock>(all[0].blockcount, par2::kbMissing));
     Check(writtenoff.GetKnownBlocks().count(all[0].filename) == 1,
           "GetKnownBlocks reports what was vouched for");
 
