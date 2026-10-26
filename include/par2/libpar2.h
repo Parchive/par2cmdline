@@ -195,6 +195,16 @@ typedef enum Phase
 } Phase;
 
 
+// What the caller knows of one block of a file, for SetKnownBlocks
+typedef enum KnownBlock
+{
+  kbUnknown = 0,         // Nothing: it is looked for in the file as usual
+  kbPresent = 1,         // Intact at its own offset: taken without being read
+  kbMissing = 2,         // Not in the file: neither read nor looked for
+
+} KnownBlock;
+
+
 // How much detail of the work the observer is given through OnDetail, each
 // level taking in those below it
 typedef enum Verbosity
@@ -504,7 +514,9 @@ public:
   // own offsets, one entry per block starting at block 0. The name is the
   // filename field of Par2FileInfo, and the entries line up one for one with the
   // checksums GetBlockChecksums returns and with what SetKnownBlocks takes, so
-  // what this reports may be handed straight back to another verifier.
+  // what this reports may be handed to another verifier, a block found as
+  // kbPresent and one not found as kbUnknown. Not kbMissing, since a block
+  // not found here may yet be found elsewhere in the file.
   //
   // This is what the file itself holds, not what a repair has available. A
   // block which is not here may still have been found somewhere else - in
@@ -528,30 +540,33 @@ public:
   bool GetFoundBlocks(const std::string &filename,
                       std::vector<bool> *blocks) const;
 
-  // Accept the caller's word that these blocks of the named file are intact,
-  // so that they are not read and hashed again. The name is the one the set
+  // Accept the caller's word on the blocks of the named file, so that what it
+  // already knows is not read and hashed again. The name is the one the set
   // records, which is the filename field of Par2FileInfo and is the same on
-  // every system, and blocks must have one entry per block of that file, set
-  // where the block is present at its expected offset.
+  // every system, and blocks must have one entry per block of that file.
   //
-  // An entry set for every block means the file is intact and it is never
-  // read. None set means it holds nothing usable, and it is not read either.
-  // An empty vector forgets what was said about the file.
+  // A block kbPresent is intact at its expected offset and is taken without
+  // being read. A block kbMissing is neither read nor looked for, so a repair
+  // rebuilds it. A block kbUnknown is looked for in the file as usual. Every
+  // block kbPresent means the file is intact and it is never read, and every
+  // block kbMissing that it holds nothing usable and it is not read either. An
+  // empty vector forgets what was said about the file.
   //
   // False when the set is already known and does not describe a file of that
   // name, or describes it with a different number of blocks, in which case
   // nothing is remembered. Before a PAR2 file has been added there is nothing
   // to check the name against and it is taken as given.
   //
-  // The blocks are trusted without being verified. Supplying a block which is
-  // not intact will silently produce incorrect output. The blocks not vouched
-  // for are looked for in the file as usual. A repair forgets everything said
-  // here, since the files it describes may be rewritten.
-  bool SetKnownBlocks(const std::string &filename, const std::vector<bool> &blocks);
+  // The blocks are trusted without being verified. A block said to be present
+  // which is not intact will silently produce incorrect output, and one said
+  // to be missing which is intact costs a recovery block to rebuild. A repair
+  // forgets everything said here, since the files it describes may be
+  // rewritten.
+  bool SetKnownBlocks(const std::string &filename, const std::vector<KnownBlock> &blocks);
 
   // What SetKnownBlocks has been told and not since forgotten, by the name it
   // was given.
-  std::map<std::string, std::vector<bool> > GetKnownBlocks(void) const;
+  std::map<std::string, std::vector<KnownBlock> > GetKnownBlocks(void) const;
 
   // Memory in bytes that the work may use for its buffers, the -m option, which
   // the command line takes in megabytes. Zero selects the default, an eighth of

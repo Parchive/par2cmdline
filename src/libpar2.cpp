@@ -411,7 +411,7 @@ struct Par2Verifier::State
   Verbosity verbosity;
   std::vector<std::pair<std::string, bool> > par2files;
   std::set<std::string> scannedfiles;
-  std::map<std::string, std::vector<bool> > knownblocks;
+  std::map<std::string, std::vector<KnownBlock> > knownblocks;
   bool verified;
   bool scanned;
   bool repaired;
@@ -444,7 +444,7 @@ void Par2Verifier::Restart(void)
   impl->SetFullHash(state->fullhash);
   impl->SetVerbosity(state->verbosity);
 
-  for (std::map<std::string, std::vector<bool> >::const_iterator kb = state->knownblocks.begin();
+  for (std::map<std::string, std::vector<KnownBlock> >::const_iterator kb = state->knownblocks.begin();
        kb != state->knownblocks.end();
        ++kb)
   {
@@ -761,7 +761,7 @@ bool Par2Verifier::GetVerifyResult(Par2VerifyResult *result) const
 }
 
 bool Par2Verifier::SetKnownBlocks(const std::string &filename,
-                                 const std::vector<bool> &blocks)
+                                 const std::vector<KnownBlock> &blocks)
 {
   std::lock_guard<std::mutex> lock(state->workmutex);
 
@@ -776,7 +776,7 @@ bool Par2Verifier::SetKnownBlocks(const std::string &filename,
   return true;
 }
 
-std::map<std::string, std::vector<bool> > Par2Verifier::GetKnownBlocks(void) const
+std::map<std::string, std::vector<KnownBlock> > Par2Verifier::GetKnownBlocks(void) const
 {
   std::lock_guard<std::mutex> lock(state->workmutex);
 
@@ -894,7 +894,7 @@ try
 
   // A repair forgets every block vouched for
   for (const auto &kb : state->knownblocks)
-    impl->SetKnownBlocks(kb.first, std::vector<bool>());
+    impl->SetKnownBlocks(kb.first, std::vector<KnownBlock>());
   state->knownblocks.clear();
 
   state->repaired = true;

@@ -368,8 +368,8 @@ A verifier can also:
 
  * read the PAR2 files one at a time as they arrive, and scan the data files
    one at a time with `VerifyFile`
- * be told which blocks of a file are already known to be intact, so that
-   they are not read again (`SetKnownBlocks`)
+ * be told which blocks of a file are already known to be intact or missing,
+   so that they are neither read nor searched for again (`SetKnownBlocks`)
  * look among the extra files only for the set's files under another name,
    passing over the rest (`SetRenameOnly`)
  * report the block checksums the set records, which blocks a scan found, the
