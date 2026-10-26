@@ -544,9 +544,9 @@ public:
   // to check the name against and it is taken as given.
   //
   // The blocks are trusted without being verified. Supplying a block which is
-  // not intact will silently produce incorrect output. Vouching for only some
-  // of a file's blocks leaves it reported as needing repair. A repair forgets
-  // everything said here, since the files it describes may be rewritten.
+  // not intact will silently produce incorrect output. The blocks not vouched
+  // for are looked for in the file as usual. A repair forgets everything said
+  // here, since the files it describes may be rewritten.
   bool SetKnownBlocks(const std::string &filename, const std::vector<bool> &blocks);
 
   // What SetKnownBlocks has been told and not since forgotten, by the name it

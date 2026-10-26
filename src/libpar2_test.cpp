@@ -1047,6 +1047,71 @@ int test11() {
   return failed;
 }
 
+// A file only partly vouched for is whole when the rest of its blocks are found
+// where they belong, and still damaged when one of them is not
+int test12() {
+  const char *const datafile = "libpar2_test12.data";
+  const char *const leftovers[] = {datafile, "libpar2_test12.data.1", "libpar2_test12.par2",
+                                   "libpar2_test12.vol0+1.par2", "libpar2_test12.vol1+2.par2",
+                                   "libpar2_test12.vol3+1.par2"};
+
+  for (const char *leftover : leftovers)
+    remove(leftover);
+
+  {
+    std::ofstream data(datafile, std::ofstream::out | std::ofstream::binary);
+    for (int i = 0; i < 20 * 4096; ++i)
+      data.put((char)(i * 31 + i / 256 + i / 4099));
+  }
+
+  int failed = 0;
+
+  Par2Creator creator("");
+  creator.SetSourceFiles(std::vector<std::string>(1, datafile));
+  creator.SetBlockSize(4096);
+  creator.SetRecoveryBlockCount(4);
+
+  Result result = creator.Create("libpar2_test12");
+  if (result != eSuccess) {
+    std::cerr << "creating returned " << result << std::endl;
+    failed = 1;
+  } else {
+    std::vector<bool> firsthalf(20, false);
+    for (int block = 0; block < 10; ++block)
+      firsthalf[block] = true;
+
+    Par2Verifier verifier("");
+    result = verifier.AddPar2File("libpar2_test12.par2");
+    if (result == eSuccess && verifier.SetKnownBlocks(datafile, firsthalf))
+      result = verifier.Verify();
+    if (result != eSuccess) {
+      std::cerr << "verifying an intact file vouched for in part returned " << result << std::endl;
+      failed = 1;
+    }
+
+    {
+      std::fstream data(datafile, std::ios::binary | std::ios::in | std::ios::out);
+      data.seekp(15 * 4096 + 100);
+      for (int i = 0; i < 4; ++i)
+        data.put((char)0x5a);
+    }
+
+    Par2Verifier damaged("");
+    result = damaged.AddPar2File("libpar2_test12.par2");
+    if (result == eSuccess && damaged.SetKnownBlocks(datafile, firsthalf))
+      result = damaged.Verify();
+    if (result != eRepairPossible) {
+      std::cerr << "verifying a damaged file vouched for in part returned " << result << std::endl;
+      failed = 1;
+    }
+  }
+
+  for (const char *leftover : leftovers)
+    remove(leftover);
+
+  return failed;
+}
+
 int main() {
   if (test1()) {
     std::cerr << "FAILED: test1" << std::endl;
@@ -1090,6 +1155,10 @@ int main() {
   }
   if (test11()) {
     std::cerr << "FAILED: test11" << std::endl;
+    return 1;
+  }
+  if (test12()) {
+    std::cerr << "FAILED: test12" << std::endl;
     return 1;
   }
 
