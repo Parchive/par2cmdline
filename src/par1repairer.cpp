@@ -199,11 +199,12 @@ Result Par1Repairer::Process(const size_t memorylimit,
 
         // Work out which data blocks are available, which need to be recreated,
         // and compute the appropriate Reed Solomon matrix.
-        if (!ComputeRSmatrix())
+        const Result computed = ComputeRSmatrix();
+        if (computed != eSuccess)
         {
           // Delete all of the partly reconstructed files
           DeleteIncompleteTargetFiles();
-          return eFileIOError;
+          return computed;
         }
 
         // Allocate memory buffers for reading and writing data to disk.
@@ -1142,7 +1143,7 @@ bool Par1Repairer::CreateTargetFiles(void)
 
 // Work out which data blocks are available, which need to be recreated,
 // and compute the appropriate Reed Solomon matrix.
-bool Par1Repairer::ComputeRSmatrix(void)
+Result Par1Repairer::ComputeRSmatrix(void)
 {
   inputblocks.resize(sourcefiles.size()); // The DataBlocks that will read from disk
   outputblocks.resize(verifylist.size()); // Those DataBlocks that will re recalculated
@@ -1170,7 +1171,7 @@ bool Par1Repairer::ComputeRSmatrix(void)
       // Open the file the block was found in.
       if (!sourceblock->Open())
       {
-        return false;
+        return eFileIOError;
       }
 
       // Record that the block was found
@@ -1198,7 +1199,7 @@ bool Par1Repairer::ComputeRSmatrix(void)
   // Set the number of source blocks and which of them are present
   if (!rs.SetInput(present))
   {
-    return false;
+    return eFileIOError;
   }
 
   // Start iterating through the available recovery packets
@@ -1214,7 +1215,7 @@ bool Par1Repairer::ComputeRSmatrix(void)
     // Make sure the file is open
     if (!recoveryblock->Open())
     {
-      return false;
+      return eFileIOError;
     }
     // Add the recovery block to the list of blocks that will be read
     *inputblock = recoveryblock;
@@ -1223,7 +1224,7 @@ bool Par1Repairer::ComputeRSmatrix(void)
     // to use in the RS matrix
     if (!rs.SetOutput(true, (u16)exponent))
     {
-      return false;
+      return eFileIOError;
     }
 
     ++inputblock;
@@ -1233,11 +1234,16 @@ bool Par1Repairer::ComputeRSmatrix(void)
   // If we need to, compute and solve the RS matrix
   if (verifylist.empty())
   {
-    return true;
+    return eSuccess;
   }
 
-  bool success = rs.Compute(observer, noiselevel >= nlDebug ? vbDebug : vbNone);
-  return success;
+  if (!rs.Compute(observer, noiselevel >= nlDebug ? vbDebug : vbNone))
+  {
+    serr << "The recovery blocks used cannot rebuild this combination of missing blocks." << std::endl;
+    return eRepairNotPossible;
+  }
+
+  return eSuccess;
 }
 
 // Allocate memory buffers for reading and writing data to disk.

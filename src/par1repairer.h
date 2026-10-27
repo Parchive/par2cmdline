@@ -80,7 +80,7 @@ protected:
 
   // Work out which data blocks are available, which need to be recreated,
   // and compute the appropriate Reed Solomon matrix.
-  bool ComputeRSmatrix(void);
+  Result ComputeRSmatrix(void);
 
   // Allocate memory buffers for reading and writing data to disk.
   bool AllocateBuffers(size_t memorylimit);
