@@ -424,10 +424,7 @@ inline bool ReedSolomon<g>::GaussElim(Par2Observer *observer, const Verbosity ve
   if (observer && verbosity >= vbDebug)
     observer->OnDetail(vbDebug, Matrices(rows, leftcols, leftmatrix, rightmatrix));
 
-  // Because the matrices being operated on are Vandermonde matrices
-  // they are guaranteed not to be singular.
-
-  // Additionally, because Galois arithmetic is being used, all calculations
+  // Because Galois arithmetic is being used, all calculations
   // involve exact values with no loss of precision. It is therefore
   // not necessary to carry out any row or column swapping.
 
@@ -443,7 +440,6 @@ inline bool ReedSolomon<g>::GaussElim(Par2Observer *observer, const Verbosity ve
 
     // Get the pivot value.
     G pivotvalue = rightmatrix[row * rows + row];
-    assert(pivotvalue != 0);
     if (pivotvalue == 0)
     {
       return false;
