@@ -87,7 +87,8 @@ typedef enum Result
 // eCancelled never do. The Results which report damage - eRepairPossible,
 // eRepairNotPossible and eRepairFailed - are described by GetVerifyResult, and
 // carry one only when something went wrong with a particular file on the way
-// there, such as a data file which could not be read.
+// there, such as a data file which could not be read, or when a repair has
+// enough recovery blocks but they cannot rebuild what is missing.
 typedef enum ErrorCode
 {
   ecNone = 0,                   // Nothing failed
@@ -119,6 +120,9 @@ typedef enum ErrorCode
   ecProcessorFailed = 14,       // The compute implementation could not do the work
 
   ecInternalError = 15,         // An invariant the library relies on did not hold
+
+  ecRecoveryUnsolvable = 16,    // The recovery blocks a repair used are enough in
+                                // number but cannot rebuild the missing blocks
 
 } ErrorCode;
 
@@ -676,7 +680,8 @@ public:
   //
   // Returns eLogicError with ecNotVerified if nothing has been verified yet or
   // since the last Repair, and eRepairNotPossible if the recovery blocks added
-  // so far are too few to rebuild what is missing.
+  // so far are too few to rebuild what is missing, or with ecRecoveryUnsolvable
+  // if the ones it used cannot rebuild it.
   //
   // A file which already exists but which VerifyFile never scanned is not
   // written over: the repair fails with eFileIOError and ecNotVerified, naming

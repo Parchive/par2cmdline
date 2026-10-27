@@ -1291,6 +1291,75 @@ int test15() {
   return failed;
 }
 
+// Recovery blocks 0 and 21845 cannot rebuild source blocks 0 and 2 together,
+// whose bases 2^1 and 2^4 have the same power 21845
+int test16() {
+  const char *const datafile = "libpar2_test16.data";
+  const char *const leftovers[] = {datafile, "libpar2_test16.data.1", "libpar2_test16.par2",
+                                   "libpar2_test16.vol0+1.par2", "libpar2_test16.vol21845+1.par2"};
+
+  for (const char *leftover : leftovers)
+    remove(leftover);
+
+  std::vector<char> original;
+  for (int i = 0; i < 3 * 4096; ++i)
+    original.push_back((char)(i * 31 + i / 256 + i / 4099));
+
+  {
+    std::ofstream data(datafile, std::ofstream::out | std::ofstream::binary);
+    data.write(original.data(), original.size());
+  }
+
+  int failed = 0;
+
+  Result result = eSuccess;
+  for (u32 firstblock : {0u, 21845u}) {
+    Par2Creator creator("");
+    creator.SetSourceFiles(std::vector<std::string>(1, datafile));
+    creator.SetBlockSize(4096);
+    creator.SetRecoveryBlockCount(1);
+    creator.SetFirstRecoveryBlock(firstblock);
+
+    remove("libpar2_test16.par2");
+    if (result == eSuccess)
+      result = creator.Create("libpar2_test16");
+  }
+
+  if (result != eSuccess) {
+    std::cerr << "creating returned " << result << std::endl;
+    failed = 1;
+  } else {
+    std::vector<KnownBlock> blocks(3, kbPresent);
+    blocks[0] = kbMissing;
+    blocks[2] = kbMissing;
+
+    Par2Verifier verifier("");
+    result = verifier.AddPar2File("libpar2_test16.par2");
+    if (result == eSuccess && verifier.SetKnownBlocks(datafile, blocks))
+      result = verifier.Verify();
+
+    Par2VerifyResult verified;
+    if (result != eRepairPossible || !verifier.GetVerifyResult(&verified) ||
+        verified.missingblockcount != 2 || verified.recoveryblockcount != 2) {
+      std::cerr << "verifying with two blocks said to be missing returned " << result << std::endl;
+      failed = 1;
+    } else {
+      result = verifier.Repair();
+      Par2Error error;
+      if (result != eRepairNotPossible || !verifier.GetLastError(&error) || error.code != ecRecoveryUnsolvable) {
+        std::cerr << "repairing with recovery blocks that cannot rebuild the missing ones returned " << result
+                  << std::endl;
+        failed = 1;
+      }
+    }
+  }
+
+  for (const char *leftover : leftovers)
+    remove(leftover);
+
+  return failed;
+}
+
 int main() {
   if (test1()) {
     std::cerr << "FAILED: test1" << std::endl;
@@ -1350,6 +1419,10 @@ int main() {
   }
   if (test15()) {
     std::cerr << "FAILED: test15" << std::endl;
+    return 1;
+  }
+  if (test16()) {
+    std::cerr << "FAILED: test16" << std::endl;
     return 1;
   }
 

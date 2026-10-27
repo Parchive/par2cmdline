@@ -413,12 +413,13 @@ Result Par2Repairer::RepairFiles(const size_t memorylimit, const std::string &ba
     // Work out which data blocks are available, which need to be copied
     // directly to the output, and which need to be recreated, and compute
     // the appropriate Reed Solomon matrix.
-    if (!ComputeRSmatrix())
+    const Result computed = ComputeRSmatrix();
+    if (computed != eSuccess)
     {
       // Delete all of the partly reconstructed files
       DeleteIncompleteTargetFiles();
       errorlog.RecordIfNone(ecProcessorFailed, "Could not compute the Reed Solomon matrix");
-      return eFileIOError;
+      return computed;
     }
 
     // Set the total amount of data to be processed.
@@ -3483,7 +3484,7 @@ bool Par2Repairer::CreateTargetFiles(void)
 // Work out which data blocks are available, which need to be copied
 // directly to the output, and which need to be recreated, and compute
 // the appropriate Reed Solomon matrix.
-bool Par2Repairer::ComputeRSmatrix(void)
+Result Par2Repairer::ComputeRSmatrix(void)
 {
   inputblocks.resize(sourceblockcount);   // The DataBlocks that will read from disk
   copyblocks.resize(availableblockcount); // Those DataBlocks which need to be copied
@@ -3541,7 +3542,7 @@ bool Par2Repairer::ComputeRSmatrix(void)
   if (!rs.SetInput(present))
   {
     errorlog.Record(ecProcessorFailed, "Could not give the source blocks to the Reed Solomon matrix");
-    return false;
+    return eFileIOError;
   }
 
   // Start iterating through the available recovery packets
@@ -3572,7 +3573,7 @@ bool Par2Repairer::ComputeRSmatrix(void)
     if (!rs.SetOutput(true, (u16)exponent))
     {
       errorlog.Record(ecProcessorFailed, "Could not give a recovery block to the Reed Solomon matrix");
-      return false;
+      return eFileIOError;
     }
 
     exponents.push_back((u16)exponent);
@@ -3583,7 +3584,7 @@ bool Par2Repairer::ComputeRSmatrix(void)
 
   // If we need to, compute and solve the RS matrix
   if (missingblockcount == 0)
-    return true;
+    return eSuccess;
 
   // Offer the erasure pattern, so that an implementation able to solve it for
   // itself is not made to wait for the matrix to be inverted only to read
@@ -3591,11 +3592,15 @@ bool Par2Repairer::ComputeRSmatrix(void)
   ownfactors = processor->OfferErasures(present, exponents.data(), (u32)exponents.size());
 
   if (ownfactors)
-    return true;
+    return eSuccess;
 
-  bool success = rs.Compute(observer, verbosity);
+  if (!rs.Compute(observer, verbosity))
+  {
+    errorlog.Record(ecRecoveryUnsolvable, "The recovery blocks used cannot rebuild this combination of missing blocks");
+    return eRepairNotPossible;
+  }
 
-  return success;
+  return eSuccess;
 }
 
 // The files being read take the buffers they read into from these, which
