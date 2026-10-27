@@ -1199,7 +1199,7 @@ Result Par1Repairer::ComputeRSmatrix(void)
   // Set the number of source blocks and which of them are present
   if (!rs.SetInput(present))
   {
-    return eFileIOError;
+    return eLogicError;
   }
 
   // Start iterating through the available recovery packets
@@ -1224,7 +1224,7 @@ Result Par1Repairer::ComputeRSmatrix(void)
     // to use in the RS matrix
     if (!rs.SetOutput(true, (u16)exponent))
     {
-      return eFileIOError;
+      return eLogicError;
     }
 
     ++inputblock;

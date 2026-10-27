@@ -418,7 +418,6 @@ Result Par2Repairer::RepairFiles(const size_t memorylimit, const std::string &ba
     {
       // Delete all of the partly reconstructed files
       DeleteIncompleteTargetFiles();
-      errorlog.RecordIfNone(ecProcessorFailed, "Could not compute the Reed Solomon matrix");
       return computed;
     }
 
@@ -3541,8 +3540,8 @@ Result Par2Repairer::ComputeRSmatrix(void)
   // Set the number of source blocks and which of them are present
   if (!rs.SetInput(present))
   {
-    errorlog.Record(ecProcessorFailed, "Could not give the source blocks to the Reed Solomon matrix");
-    return eFileIOError;
+    errorlog.Record(ecInternalError, "Could not give the source blocks to the Reed Solomon matrix");
+    return eLogicError;
   }
 
   // Start iterating through the available recovery packets
@@ -3572,8 +3571,8 @@ Result Par2Repairer::ComputeRSmatrix(void)
     // to use in the RS matrix
     if (!rs.SetOutput(true, (u16)exponent))
     {
-      errorlog.Record(ecProcessorFailed, "Could not give a recovery block to the Reed Solomon matrix");
-      return eFileIOError;
+      errorlog.Record(ecInternalError, "Could not give a recovery block to the Reed Solomon matrix");
+      return eLogicError;
     }
 
     exponents.push_back((u16)exponent);
