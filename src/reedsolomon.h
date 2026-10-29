@@ -424,10 +424,6 @@ inline bool ReedSolomon<g>::GaussElim(Par2Observer *observer, const Verbosity ve
   if (observer && verbosity >= vbDebug)
     observer->OnDetail(vbDebug, Matrices(rows, leftcols, leftmatrix, rightmatrix));
 
-  // Because Galois arithmetic is being used, all calculations
-  // involve exact values with no loss of precision. It is therefore
-  // not necessary to carry out any row or column swapping.
-
   // Solve one row at a time
 
   ProgressMeter<u32> progress(datamissing*rows, phSolving, observer);
@@ -435,15 +431,25 @@ inline bool ReedSolomon<g>::GaussElim(Par2Observer *observer, const Verbosity ve
   // For each row in the matrix
   for (unsigned int row=0; row<datamissing; row++)
   {
-    // NB Row and column swapping to find a non zero pivot value or to find the largest value
-    // is not necessary due to the nature of the arithmetic and construction of the RS matrix.
+    // Swap in a later row with a non zero pivot value if this one has none
+    if (rightmatrix[row * rows + row] == 0)
+    {
+      unsigned int pivotrow = row + 1;
+      while (pivotrow < datamissing && rightmatrix[pivotrow * rows + row] == 0)
+      {
+        pivotrow++;
+      }
+      if (pivotrow == datamissing)
+      {
+        return false;
+      }
+
+      std::swap_ranges(leftmatrix + row * leftcols, leftmatrix + (row + 1) * leftcols, leftmatrix + pivotrow * leftcols);
+      std::swap_ranges(rightmatrix + row * rows, rightmatrix + (row + 1) * rows, rightmatrix + pivotrow * rows);
+    }
 
     // Get the pivot value.
     G pivotvalue = rightmatrix[row * rows + row];
-    if (pivotvalue == 0)
-    {
-      return false;
-    }
 
     // If the pivot value is not 1, then the whole row has to be scaled
     if (pivotvalue != 1)

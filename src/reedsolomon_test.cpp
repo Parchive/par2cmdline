@@ -597,6 +597,15 @@ int test5() {
   return recover_with_exponents<3, 2>(exponents, missing) == 2 ? 0 : 1;
 }
 
+// With a third exponent the matrix for input blocks 0, 2 and 4 can be
+// inverted, though its first two rows give a zero pivot in the second column.
+int test6() {
+  const u16 exponents[3] = {0, 21845, 21846};
+  const bool missing[5] = {true, false, true, false, true};
+
+  return recover_with_exponents<5, 3>(exponents, missing);
+}
+
 int main() {
   if (test1<Galois8,u8>()) {
     std::cerr << "FAILED: test1(8)" << std::endl;
@@ -638,6 +647,11 @@ int main() {
 
   if (test5()) {
     std::cerr << "FAILED: test5" << std::endl;
+    return 1;
+  }
+
+  if (test6()) {
+    std::cerr << "FAILED: test6" << std::endl;
     return 1;
   }
 
