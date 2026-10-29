@@ -527,6 +527,76 @@ int test4(int *expected_bases) {
 
 
 
+// Recovery blocks with the given exponents, made from NUM_IN input blocks,
+// rebuilding the input blocks marked missing. Returns 0 when they are
+// rebuilt, 2 when Compute refuses, and 1 on any other failure.
+template<int NUM_IN, int NUM_REC>
+int recover_with_exponents(const u16 *exponents, const bool *missing) {
+  u8 data[NUM_IN + NUM_REC][BUF_SIZE];
+
+  srand(20261027);
+  for (int i = 0; i < NUM_IN; i++)
+    for (int k = 0; k < BUF_SIZE; k++)
+      data[i][k] = (u8)(rand() % 256);
+  memset(data[NUM_IN], 0, sizeof(data[0]) * NUM_REC);
+
+  ReedSolomon<Galois16> rs_creator;
+  if (!rs_creator.SetInput(NUM_IN))
+    return 1;
+  for (int j = 0; j < NUM_REC; j++)
+    if (!rs_creator.SetOutput(false, exponents[j]))
+      return 1;
+  if (!rs_creator.Compute(0))
+    return 1;
+  for (int i = 0; i < NUM_IN; i++)
+    for (int j = 0; j < NUM_REC; j++)
+      rs_creator.Process(BUF_SIZE, i, &(data[i][0]), j, &(data[NUM_IN + j][0]));
+
+  std::vector<bool> in_present;
+  for (int i = 0; i < NUM_IN; i++)
+    in_present.push_back(!missing[i]);
+
+  ReedSolomon<Galois16> rs_repair;
+  if (!rs_repair.SetInput(in_present))
+    return 1;
+  for (int j = 0; j < NUM_REC; j++)
+    if (!rs_repair.SetOutput(true, exponents[j]))
+      return 1;
+  if (!rs_repair.Compute(0))
+    return 2;
+
+  int missing_place = 0;
+  for (int m = 0; m < NUM_IN; m++) {
+    if (!missing[m])
+      continue;
+
+    u8 result[BUF_SIZE];
+    memset(result, 0, BUF_SIZE);
+
+    int index = 0;
+    for (int i = 0; i < NUM_IN; i++)
+      if (!missing[i])
+        rs_repair.Process(BUF_SIZE, index++, &(data[i][0]), missing_place, result);
+    for (int j = 0; j < NUM_REC; j++)
+      rs_repair.Process(BUF_SIZE, index++, &(data[NUM_IN + j][0]), missing_place, result);
+
+    if (compare_buffer(result, data[m], "recover_with_exponents"))
+      return 1;
+    missing_place++;
+  }
+
+  return 0;
+}
+
+// Exponents 0 and 21845 give input blocks 0 and 2 (bases 2^1 and 2^4) the
+// same pair of coefficients, so the matrix for those two is singular.
+int test5() {
+  const u16 exponents[2] = {0, 21845};
+  const bool missing[3] = {true, false, true};
+
+  return recover_with_exponents<3, 2>(exponents, missing) == 2 ? 0 : 1;
+}
+
 int main() {
   if (test1<Galois8,u8>()) {
     std::cerr << "FAILED: test1(8)" << std::endl;
@@ -563,6 +633,11 @@ int main() {
   int expected_bases16[10] = {2, 4, 16, 128, 256, 2048, 8192, 16384, 4107, 32856};
   if (test4<Galois16,u16,10>(expected_bases16)) {
     std::cerr << "FAILED: test4(16)" << std::endl;
+    return 1;
+  }
+
+  if (test5()) {
+    std::cerr << "FAILED: test5" << std::endl;
     return 1;
   }
 
