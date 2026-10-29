@@ -61,8 +61,14 @@ public:
   bool SetOutput(bool present, u16 exponent);
   bool SetOutput(bool present, u16 lowexponent, u16 highexponent);
 
-  // Compute the RS Matrix
+  // Compute the RS Matrix. When more output blocks are present than input
+  // blocks are missing, those beyond the number needed stand in for any of
+  // the first which cannot rebuild the missing input blocks.
   bool Compute(Par2Observer *observer, const Verbosity verbosity = vbNone);
+
+  // The exponents of the present output blocks the computed matrix uses, in
+  // the order their columns follow those of the present input blocks
+  std::vector<u16> UsedExponents(void) const;
 
   // Process a block of data
   bool Process(size_t size,             // The size of the block of data
@@ -90,7 +96,8 @@ protected:
                  unsigned int leftcols,
                  G *leftmatrix,
                  G *rightmatrix,
-                 unsigned int datamissing);
+                 unsigned int datamissing,
+                 unsigned int &failedrow);
 
   // The two matrices side by side, a line for each row
   std::string Matrices(unsigned int rows,
@@ -116,6 +123,7 @@ protected:
   u32 *parmissingindex;  // The index numbers of the output blocks that are missing
 
   std::vector<RSOutputRow> outputrows; // Details of the output blocks
+  std::vector<u32> usedrows;           // The present outputrows used for missing input blocks
 
   G *leftmatrix;    // The main matrix
 
@@ -190,6 +198,17 @@ inline bool ReedSolomon<g>::MultiplyAdd(typename g::ValueType factor, size_t siz
 	if (factor == 0)
 		return eSuccess;
 	return this->InternalProcess (g(factor), size, inputbuffer, outputbuffer);
+}
+
+template<class g>
+inline std::vector<u16> ReedSolomon<g>::UsedExponents(void) const
+{
+  std::vector<u16> exponents;
+  for (u32 row : usedrows)
+  {
+    exponents.push_back(outputrows[row].exponent);
+  }
+  return exponents;
 }
 
 template<class g>
@@ -272,116 +291,136 @@ inline bool ReedSolomon<g>::Compute(Par2Observer *observer, const Verbosity verb
                \                     |             / \                     |           /
   */
 
-  // Allocate the left hand matrix
-
-  leftmatrix = new G[outcount * incount];
-  std::fill(leftmatrix, leftmatrix + outcount * incount, G(0));
-
-  // Allocate the right hand matrix only if we are recovering
-
-  G *rightmatrix = 0;
-  if (datamissing > 0)
+  // The present recovery blocks, of which the first datamissing are used
+  std::vector<u32> candidates;
+  for (u32 index=0; index<outputrows.size(); index++)
   {
-    rightmatrix = new G[outcount * outcount];
-    std::fill(rightmatrix, rightmatrix + outcount * outcount, G(0));
+    if (outputrows[index].present)
+    {
+      candidates.push_back(index);
+    }
   }
+  usedrows.assign(candidates.begin(), candidates.begin() + datamissing);
+  size_t nextcandidate = datamissing;
 
-  // Fill in the two matrices:
-
-  std::vector<RSOutputRow>::const_iterator outputrow = outputrows.begin();
-
-  // One row for each present recovery block that will be used for a missing data block
-  for (unsigned int row=0; row<datamissing; row++)
+  for (;;)
   {
-    progress.Update(row);
+    // Allocate the left hand matrix
 
-    // Get the exponent of the next present recovery block
-    while (!outputrow->present)
-    {
-      outputrow++;
-    }
-    u16 exponent = outputrow->exponent;
+    delete [] leftmatrix;
+    leftmatrix = new G[outcount * incount];
+    std::fill(leftmatrix, leftmatrix + outcount * incount, G(0));
 
-    // One column for each present data block
-    for (unsigned int col=0; col<datapresent; col++)
-    {
-      leftmatrix[row * incount + col] = G(database[datapresentindex[col]]).pow(exponent);
-    }
-    // One column for each each present recovery block that will be used for a missing data block
-    for (unsigned int col=0; col<datamissing; col++)
-    {
-      leftmatrix[row * incount + col + datapresent] = (row == col) ? 1 : 0;
-    }
+    // Allocate the right hand matrix only if we are recovering
 
+    G *rightmatrix = 0;
     if (datamissing > 0)
     {
-      // One column for each missing data block
-      for (unsigned int col=0; col<datamissing; col++)
-      {
-        rightmatrix[row * outcount + col] = G(database[datamissingindex[col]]).pow(exponent);
-      }
-      // One column for each missing recovery block
-      for (unsigned int col=0; col<parmissing; col++)
-      {
-        rightmatrix[row * outcount + col + datamissing] = 0;
-      }
+      rightmatrix = new G[outcount * outcount];
+      std::fill(rightmatrix, rightmatrix + outcount * outcount, G(0));
     }
 
-    outputrow++;
-  }
-  // One row for each recovery block being computed
-  outputrow = outputrows.begin();
-  for (unsigned int row=0; row<parmissing; row++)
-  {
-    progress.Update(row+datamissing);
+    // Fill in the two matrices:
 
-    // Get the exponent of the next missing recovery block
-    while (outputrow->present)
+    // One row for each present recovery block that will be used for a missing data block
+    for (unsigned int row=0; row<datamissing; row++)
     {
+      progress.Update(row);
+
+      u16 exponent = outputrows[usedrows[row]].exponent;
+
+      // One column for each present data block
+      for (unsigned int col=0; col<datapresent; col++)
+      {
+        leftmatrix[row * incount + col] = G(database[datapresentindex[col]]).pow(exponent);
+      }
+      // One column for each each present recovery block that will be used for a missing data block
+      for (unsigned int col=0; col<datamissing; col++)
+      {
+        leftmatrix[row * incount + col + datapresent] = (row == col) ? 1 : 0;
+      }
+
+      if (datamissing > 0)
+      {
+        // One column for each missing data block
+        for (unsigned int col=0; col<datamissing; col++)
+        {
+          rightmatrix[row * outcount + col] = G(database[datamissingindex[col]]).pow(exponent);
+        }
+        // One column for each missing recovery block
+        for (unsigned int col=0; col<parmissing; col++)
+        {
+          rightmatrix[row * outcount + col + datamissing] = 0;
+        }
+      }
+    }
+    // One row for each recovery block being computed
+    std::vector<RSOutputRow>::const_iterator outputrow = outputrows.begin();
+    for (unsigned int row=0; row<parmissing; row++)
+    {
+      progress.Update(row+datamissing);
+
+      // Get the exponent of the next missing recovery block
+      while (outputrow->present)
+      {
+        outputrow++;
+      }
+      u16 exponent = outputrow->exponent;
+
+      // One column for each present data block
+      for (unsigned int col=0; col<datapresent; col++)
+      {
+        leftmatrix[(row+datamissing) * incount + col] = G(database[datapresentindex[col]]).pow(exponent);
+      }
+      // One column for each each present recovery block that will be used for a missing data block
+      for (unsigned int col=0; col<datamissing; col++)
+      {
+        leftmatrix[(row+datamissing) * incount + col + datapresent] = 0;
+      }
+
+      if (datamissing > 0)
+      {
+        // One column for each missing data block
+        for (unsigned int col=0; col<datamissing; col++)
+        {
+          rightmatrix[(row+datamissing) * outcount + col] = G(database[datamissingindex[col]]).pow(exponent);
+        }
+        // One column for each missing recovery block
+        for (unsigned int col=0; col<parmissing; col++)
+        {
+          rightmatrix[(row+datamissing) * outcount + col + datamissing] = (row == col) ? 1 : 0;
+        }
+      }
+
       outputrow++;
     }
-    u16 exponent = outputrow->exponent;
+    progress.Update(datamissing+parmissing);
 
-    // One column for each present data block
-    for (unsigned int col=0; col<datapresent; col++)
+    // Solve the matrices only if recovering data
+    if (datamissing == 0)
     {
-      leftmatrix[(row+datamissing) * incount + col] = G(database[datapresentindex[col]]).pow(exponent);
-    }
-    // One column for each each present recovery block that will be used for a missing data block
-    for (unsigned int col=0; col<datamissing; col++)
-    {
-      leftmatrix[(row+datamissing) * incount + col + datapresent] = 0;
+      return true;
     }
 
-    if (datamissing > 0)
-    {
-      // One column for each missing data block
-      for (unsigned int col=0; col<datamissing; col++)
-      {
-        rightmatrix[(row+datamissing) * outcount + col] = G(database[datamissingindex[col]]).pow(exponent);
-      }
-      // One column for each missing recovery block
-      for (unsigned int col=0; col<parmissing; col++)
-      {
-        rightmatrix[(row+datamissing) * outcount + col + datamissing] = (row == col) ? 1 : 0;
-      }
-    }
-
-    outputrow++;
-  }
-  progress.Update(datamissing+parmissing);
-
-  // Solve the matrices only if recovering data
-  if (datamissing > 0)
-  {
     // Perform Gaussian Elimination and then delete the right matrix (which
     // will no longer be required).
-    bool success = GaussElim(observer, verbosity, outcount, incount, leftmatrix, rightmatrix, datamissing);
+    unsigned int failedrow = 0;
+    bool success = GaussElim(observer, verbosity, outcount, incount, leftmatrix, rightmatrix, datamissing, failedrow);
     delete [] rightmatrix;
-    return success;
-  }
+    if (success)
+    {
+      return true;
+    }
 
-  return true;
+    if (nextcandidate == candidates.size())
+    {
+      return false;
+    }
+
+    // Replace the recovery block left without a pivot with the next one
+    usedrows.erase(usedrows.begin() + failedrow);
+    usedrows.push_back(candidates[nextcandidate++]);
+  }
 }
 
 // The two matrices side by side, a line for each row
@@ -419,7 +458,7 @@ inline std::string ReedSolomon<g>::Matrices(unsigned int rows, unsigned int left
 
 // Use Gaussian Elimination to solve the matrices
 template<class g>
-inline bool ReedSolomon<g>::GaussElim(Par2Observer *observer, const Verbosity verbosity, unsigned int rows, unsigned int leftcols, G *leftmatrix, G *rightmatrix, unsigned int datamissing)
+inline bool ReedSolomon<g>::GaussElim(Par2Observer *observer, const Verbosity verbosity, unsigned int rows, unsigned int leftcols, G *leftmatrix, G *rightmatrix, unsigned int datamissing, unsigned int &failedrow)
 {
   if (observer && verbosity >= vbDebug)
     observer->OnDetail(vbDebug, Matrices(rows, leftcols, leftmatrix, rightmatrix));
@@ -427,6 +466,13 @@ inline bool ReedSolomon<g>::GaussElim(Par2Observer *observer, const Verbosity ve
   // Solve one row at a time
 
   ProgressMeter<u32> progress(datamissing*rows, phSolving, observer);
+
+  // Which of the rows as given each row now is
+  std::vector<unsigned int> order(datamissing);
+  for (unsigned int row=0; row<datamissing; row++)
+  {
+    order[row] = row;
+  }
 
   // For each row in the matrix
   for (unsigned int row=0; row<datamissing; row++)
@@ -441,9 +487,11 @@ inline bool ReedSolomon<g>::GaussElim(Par2Observer *observer, const Verbosity ve
       }
       if (pivotrow == datamissing)
       {
+        failedrow = order[row];
         return false;
       }
 
+      std::swap(order[row], order[pivotrow]);
       std::swap_ranges(leftmatrix + row * leftcols, leftmatrix + (row + 1) * leftcols, leftmatrix + pivotrow * leftcols);
       std::swap_ranges(rightmatrix + row * rows, rightmatrix + (row + 1) * rows, rightmatrix + pivotrow * rows);
     }

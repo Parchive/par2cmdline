@@ -1202,14 +1202,39 @@ Result Par1Repairer::ComputeRSmatrix(void)
     return eLogicError;
   }
 
-  // Start iterating through the available recovery packets
-  std::map<u32, DataBlock*>::iterator recoveryiterator = recoveryblocks.begin();
-
-  // Continue to fill the remaining list of data blocks to be read
-  while (inputblock != inputblocks.end())
+  // If we need to, compute and solve the RS matrix
+  if (verifylist.empty())
   {
-    // Get the next available recovery block
-    u32        exponent      = recoveryiterator->first;
+    return eSuccess;
+  }
+
+  // Every recovery block loaded is offered, those beyond the number missing
+  // standing in for any which cannot rebuild what is missing
+  for (std::map<u32, DataBlock*>::const_iterator recoveryiterator = recoveryblocks.begin();
+       recoveryiterator != recoveryblocks.end();
+       ++recoveryiterator)
+  {
+    if (!rs.SetOutput(true, (u16)recoveryiterator->first))
+    {
+      return eLogicError;
+    }
+  }
+
+  if (!rs.Compute(observer, noiselevel >= nlDebug ? vbDebug : vbNone))
+  {
+    serr << "The recovery blocks loaded cannot rebuild this combination of missing blocks." << std::endl;
+    return eRepairNotPossible;
+  }
+
+  // Add the recovery blocks used to the list of blocks that will be read
+  for (u16 exponent : rs.UsedExponents())
+  {
+    std::map<u32, DataBlock*>::const_iterator recoveryiterator = recoveryblocks.find(exponent);
+    if (recoveryiterator == recoveryblocks.end() || inputblock == inputblocks.end())
+    {
+      return eLogicError;
+    }
+
     DataBlock *recoveryblock = recoveryiterator->second;
 
     // Make sure the file is open
@@ -1217,30 +1242,9 @@ Result Par1Repairer::ComputeRSmatrix(void)
     {
       return eFileIOError;
     }
-    // Add the recovery block to the list of blocks that will be read
+
     *inputblock = recoveryblock;
-
-    // Record that the corresponding exponent value is the next one
-    // to use in the RS matrix
-    if (!rs.SetOutput(true, (u16)exponent))
-    {
-      return eLogicError;
-    }
-
     ++inputblock;
-    ++recoveryiterator;
-  }
-
-  // If we need to, compute and solve the RS matrix
-  if (verifylist.empty())
-  {
-    return eSuccess;
-  }
-
-  if (!rs.Compute(observer, noiselevel >= nlDebug ? vbDebug : vbNone))
-  {
-    serr << "The recovery blocks used cannot rebuild this combination of missing blocks." << std::endl;
-    return eRepairNotPossible;
   }
 
   return eSuccess;

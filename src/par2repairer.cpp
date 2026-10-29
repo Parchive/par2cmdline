@@ -3544,59 +3544,58 @@ Result Par2Repairer::ComputeRSmatrix(void)
     return eLogicError;
   }
 
-  // Start iterating through the available recovery packets
-  std::map<u32,RecoveryPacket*>::iterator rp = recoverypacketmap.begin();
+  // If we need to, compute and solve the RS matrix
+  if (missingblockcount == 0)
+    return eSuccess;
 
-  // The exponents of those recovery blocks, kept for the processor
+  // Every recovery block loaded is offered, those beyond the number missing
+  // standing in for any which cannot rebuild what is missing
   std::vector<u16> exponents;
-
-  // Continue to fill the remaining list of data blocks to be read
-  while (inputblock != inputblocks.end())
+  for (const auto &rp : recoverypacketmap)
   {
-    // Get the next available recovery packet
-    u32 exponent = rp->first;
-    RecoveryPacket* recoverypacket = rp->second;
-
-    // Get the DataBlock from the recovery packet
-    DataBlock *recoveryblock = recoverypacket->GetDataBlock();
-
-    //// Make sure the file is open
-    //if (!recoveryblock->Open())
-    //  return false;
-
-    // Add the recovery block to the list of blocks that will be read
-    *inputblock = recoveryblock;
-
-    // Record that the corresponding exponent value is the next one
-    // to use in the RS matrix
-    if (!rs.SetOutput(true, (u16)exponent))
+    if (!rs.SetOutput(true, (u16)rp.first))
     {
       errorlog.Record(ecInternalError, "Could not give a recovery block to the Reed Solomon matrix");
       return eLogicError;
     }
 
-    exponents.push_back((u16)exponent);
-
-    ++inputblock;
-    ++rp;
+    exponents.push_back((u16)rp.first);
   }
-
-  // If we need to, compute and solve the RS matrix
-  if (missingblockcount == 0)
-    return eSuccess;
 
   // Offer the erasure pattern, so that an implementation able to solve it for
   // itself is not made to wait for the matrix to be inverted only to read
   // columns out of it
-  ownfactors = processor->OfferErasures(present, exponents.data(), (u32)exponents.size());
+  ownfactors = processor->OfferErasures(present, exponents);
 
-  if (ownfactors)
-    return eSuccess;
-
-  if (!rs.Compute(observer, verbosity))
+  if (!ownfactors)
   {
-    errorlog.Record(ecRecoveryUnsolvable, "The recovery blocks used cannot rebuild this combination of missing blocks");
-    return eRepairNotPossible;
+    if (!rs.Compute(observer, verbosity))
+    {
+      errorlog.Record(ecRecoveryUnsolvable, "The recovery blocks loaded cannot rebuild this combination of missing blocks");
+      return eRepairNotPossible;
+    }
+
+    exponents = rs.UsedExponents();
+  }
+
+  if (exponents.size() != missingblockcount)
+  {
+    errorlog.Record(ecInternalError, "The Reed Solomon matrix did not use one recovery block for each missing block");
+    return eLogicError;
+  }
+
+  // Add the recovery blocks used to the list of blocks that will be read
+  for (u16 exponent : exponents)
+  {
+    auto rp = recoverypacketmap.find(exponent);
+    if (rp == recoverypacketmap.end())
+    {
+      errorlog.Record(ecInternalError, "The Reed Solomon matrix used a recovery block which was not loaded");
+      return eLogicError;
+    }
+
+    *inputblock = rp->second->GetDataBlock();
+    ++inputblock;
   }
 
   return eSuccess;

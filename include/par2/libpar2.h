@@ -121,7 +121,7 @@ typedef enum ErrorCode
 
   ecInternalError = 15,         // An invariant the library relies on did not hold
 
-  ecRecoveryUnsolvable = 16,    // The recovery blocks a repair used are enough in
+  ecRecoveryUnsolvable = 16,    // The recovery blocks a repair has are enough in
                                 // number but cannot rebuild the missing blocks
 
 } ErrorCode;
@@ -681,7 +681,12 @@ public:
   // Returns eLogicError with ecNotVerified if nothing has been verified yet or
   // since the last Repair, and eRepairNotPossible if the recovery blocks added
   // so far are too few to rebuild what is missing, or with ecRecoveryUnsolvable
-  // if the ones it used cannot rebuild it.
+  // if they cannot rebuild it.
+  //
+  // Any recovery blocks beyond the number missing stand in for those which
+  // cannot rebuild a particular combination of missing blocks, so adding more
+  // PAR2 files and verifying again may allow a repair which failed with
+  // ecRecoveryUnsolvable.
   //
   // A file which already exists but which VerifyFile never scanned is not
   // written over: the repair fails with eFileIOError and ecNotVerified, naming
