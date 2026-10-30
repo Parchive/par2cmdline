@@ -577,8 +577,10 @@ int recover_with_exponents(const u16 *exponents, const bool *missing) {
     for (int i = 0; i < NUM_IN; i++)
       if (!missing[i])
         rs_repair.Process(BUF_SIZE, index++, &(data[i][0]), missing_place, result);
-    for (int j = 0; j < NUM_REC; j++)
-      rs_repair.Process(BUF_SIZE, index++, &(data[NUM_IN + j][0]), missing_place, result);
+    for (u16 exponent : rs_repair.UsedExponents())
+      for (int j = 0; j < NUM_REC; j++)
+        if (exponents[j] == exponent)
+          rs_repair.Process(BUF_SIZE, index++, &(data[NUM_IN + j][0]), missing_place, result);
 
     if (compare_buffer(result, data[m], "recover_with_exponents"))
       return 1;
@@ -604,6 +606,15 @@ int test6() {
   const bool missing[5] = {true, false, true, false, true};
 
   return recover_with_exponents<5, 3>(exponents, missing);
+}
+
+// A third recovery block stands in for exponent 21845, which cannot rebuild
+// input blocks 0 and 2 together with exponent 0.
+int test7() {
+  const u16 exponents[3] = {0, 21845, 21846};
+  const bool missing[3] = {true, false, true};
+
+  return recover_with_exponents<3, 3>(exponents, missing);
 }
 
 int main() {
@@ -652,6 +663,11 @@ int main() {
 
   if (test6()) {
     std::cerr << "FAILED: test6" << std::endl;
+    return 1;
+  }
+
+  if (test7()) {
+    std::cerr << "FAILED: test7" << std::endl;
     return 1;
   }
 

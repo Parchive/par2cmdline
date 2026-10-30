@@ -90,17 +90,18 @@ public:
   }
 
   // Offer the erasure pattern rather than a solved matrix. present[index] says
-  // whether input block index was found, and exponents holds those of the
-  // exponentcount recovery blocks standing in for the ones that were not, in
-  // the order they are submitted after the blocks that were found. An
-  // implementation that solves the erasure for itself returns true, and is
-  // given no factors from then on; the caller does not invert the matrix at
-  // all. Only repair offers this, creation having no erasures to solve.
-  virtual bool OfferErasures(const std::vector<bool> &present, const u16 *exponents, u32 exponentcount)
+  // whether input block index was found, and exponents holds those of every
+  // recovery block available, lowest first, which may be more than the
+  // number of input blocks that were not found. An implementation that solves
+  // the erasure for itself returns true, leaving in exponents the ones it
+  // uses, one for each input block not found, in the order they are submitted
+  // after the blocks that were found. It is given no factors from then on; the
+  // caller does not invert the matrix at all. Only repair offers this,
+  // creation having no erasures to solve.
+  virtual bool OfferErasures(const std::vector<bool> &present, std::vector<u16> &exponents)
   {
     (void)present;
     (void)exponents;
-    (void)exponentcount;
     return false;
   }
 
@@ -116,7 +117,7 @@ public:
   //   creating, it is the source block, counting from zero
   //   repairing, it counts the submissions: first the source blocks which were
   //   found, in the order present marks them, then one for each exponent
-  //   OfferErasures was given, in that order
+  //   OfferErasures left, in that order
   //
   // Called from one thread, and always after WaitForAdd. The returned future
   // becomes ready once data and factors may both be overwritten, and one which
