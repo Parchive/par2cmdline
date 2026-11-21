@@ -549,15 +549,22 @@ u64 DiskFile::GetFileSize(std::string filename)
   if (!utf8::Utf8ToWide(filename, wfilename))
     return 0;
 
-  struct _stati64 st;
-  if ((0 == _wstati64(wfilename.c_str(), &st)) && (0 != (st.st_mode & S_IFREG)))
-  {
-    return st.st_size;
-  }
-  else
-  {
+  // A symbolic link gives its target's size
+  HANDLE h = ::CreateFileW(wfilename.c_str(), FILE_READ_ATTRIBUTES,
+                           FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+                           NULL, OPEN_EXISTING, 0, NULL);
+  if (h == INVALID_HANDLE_VALUE)
     return 0;
-  }
+
+  BY_HANDLE_FILE_INFORMATION info;
+  const bool ok = ::GetFileInformationByHandle(h, &info) &&
+                  0 == (info.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY);
+  ::CloseHandle(h);
+
+  if (!ok)
+    return 0;
+
+  return ((u64)info.nFileSizeHigh << 32) | info.nFileSizeLow;
 }
 
 bool DiskFile::FileExists(std::string filename)
