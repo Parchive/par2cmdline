@@ -20,7 +20,7 @@
 cmake_minimum_required(VERSION 3.16)
 
 project(par2cmdline
-  VERSION 1.4.0
+  VERSION 2.0.0
   DESCRIPTION "A PAR 2.0 compatible file verification and repair tool"
   HOMEPAGE_URL "https://github.com/Parchive/par2cmdline"
   LANGUAGES CXX
