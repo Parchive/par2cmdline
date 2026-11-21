@@ -1,3 +1,94 @@
+21 November 2026 Ike Devolder
+  * release: 2.0.0
+
+  Release:
+  * #326: Version 2.0.0 (via PR #400)
+
+  !Breaking:
+  * Replaced OpenMP with std::thread, atomics, mutexes and thread pools
+  * Removed autotools and legacy Visual Studio project files
+    CMake is the supported build system and C++14 is required
+  * Moved the library to public <par2/...> headers and namespace par2
+  * Command-line parsing now uses cxxopts
+
+  Security:
+    * GHSA-cw55-67pr-cr5w: Repair can follow links and write outside the repair base path
+
+  Issues:
+  * #309: Migrate from OpenMP to std::thread
+  * #387: Slop
+  * #389: par2 repair crashes when generator matrix is not invertible (Assertion `pivotvalue != 0' failed)
+  * #398: Recovery with -p option causes unexpected purge of specifically misnamed source data files
+
+  PRs:
+  * #322: Replace the OpenMP critical sections and atomics with the standard library
+  * #323: Scan a file's blocks on a thread pool fed by a reader thread
+  * #325: Replace the remaining OpenMP loops with std::thread and drop OpenMP
+  * #312: Stop libpar2.h leaking config.h and internal macros
+  * #328: Print an MD5 in the order its bytes are stored
+  * #330: Give fullhash a value before anything can read it
+  * #331: Keep a target file whose rename failed in the map that owns it
+  * #332: Settle which thread claims a source file by the insert rather than a look before it
+  * #333: Print the log of a failing test so CI says what went wrong
+  * #337: Size the scan batch from the threads and the memory limit
+  * #334: Put the Reed Solomon compute behind an interface an application can supply
+  * #335: Put the block and file hashing behind an interface an application can supply
+  * #338: Ignore the dist tarball that make distcheck leaves in the tree
+  * #339: Reuse the processor's threads instead of starting them for every input block
+  * #340: Guard two reads that assume a filename is not empty
+  * #341: Fall back to the ANSI code page when a path is not valid UTF-8
+  * #342: Keep the count of blocks found inside the scan that computes it
+  * #343: Give each transfer buffer its own matrix column
+  * #344: Use ARM and x86 hardware instructions for block CRC32
+  * #346: Multiply a submitted block on the processor's own thread
+  * #347: Move CRCUpdateBlockScalar to crc.h (follow up to #344)
+  * #348: Drain the processor before the submitted buffers go away on an error exit (follow up to #346)
+  * #349: Check that the command line output does not change
+  * #345: Bump cross-platform-actions/action from 1.5.0 to 1.6.0
+  * #350: Put the library in namespace par2
+  * #351: Move the public header to include/par2
+  * #352: Split packet loading out of Par2Repairer::Process
+  * #353: Report progress and per-file results to an optional Par2Observer
+  * #354: List the files in a set and accept blocks the caller vouches for
+  * #355: Allow a verify or repair to be cancelled
+  * #356: Add a Par2Verifier handle for verifying and repairing a set
+  * #357: Let files be scanned one at a time as they arrive
+  * #358: Report block checksums and found blocks, and accept supplied implementations
+  * #359: Say why a verify or repair failed
+  * #360: Add a Par2Creator handle for creating a set
+  * #361: Let a handle run without streams
+  * #371: Make a block's location safe to read while another scanning thread sets it
+  * #367: Stop letype_test overflowing int
+  * #369: List the options the README leaves out
+  * #373: Keep the no-throw buffer allocations clear of the MSVC debug heap's redefined new
+  * #364: Build with CMake instead of autotools
+  * #365: Let an application run the command line
+  * #366: Follow a handle's work through its observer alone
+  * #368: Print the command line from the observer, and take the streams out of the engine
+  * #372: Let a handle be called from several threads at once, its calls taking turns
+  * #374: Fix the release build on Windows and FreeBSD
+  * #375: Run the tests under ThreadSanitizer
+  * #377: Cancel the work cleanly on Ctrl+C or SIGTERM
+  * #376: Read a PAR2 file named among the extra files on its own, as 1.4.0 did
+  * #381: Run ThreadSanitizer only on a manual release build, as valgrind is
+  * #380: Free the whole-file hash buffer when a set has no verification packets
+  * #379: Say which file an extra file matches when verifying a PAR1 set
+  * #378: Match wildcards with more than one * or ? on POSIX
+  * #382: Name files by the unicode filename packet when a set has one
+  * #383: Name files a set records in a code page in UTF-8, and find files under another spelling of their name
+  * #385: Write a unicode filename packet for a name which is not plain ASCII
+  * #388: Copy a complete file into place instead of moving it when it’s outside the base path or can’t be renamed
+  * #390: cmake: properly define the c++14 requirements
+  * #386: Parse the command line with cxxopts, with long options and clearer errors
+  * #391: Repair damaged files in place
+  * #393: Let SetKnownBlocks say a block is missing or unknown
+  * #394: Report a repair whose recovery blocks cannot rebuild the missing blocks instead of asserting
+  * #395: Swap in a later row when Gaussian elimination meets a zero pivot
+  * #396: Fall back on spare recovery blocks when the repair matrix is singular
+  * #397: Bump cross-platform-actions/action from 1.6.0 to 1.7.0
+  * #399: Test that a purge keeps a complete file found under another file's name
+  * #401: Fix Windows, MinGW and Linux cross CI failures
+  
 09 September 2026 Ike Devolder
   * release: 1.4.0
 
