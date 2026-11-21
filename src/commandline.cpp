@@ -102,7 +102,7 @@ static void AddOptions(cxxopts::Options &parser)
     ("l,limit", "Recovery files grow in size as by default, but none holds more than the largest source file (don't use both -u and -l)")
     ("n,recovery-files", "Number of recovery files (max 31) (don't use both -n and -l)", cxxopts::value<std::string>(), "<n>")
     ("R,recurse", "Recurse into subdirectories for the files a wildcard matches")
-    ("L,follow-symlinks", "Follow symlinks to files when scanning for source files (use at your own risk: symlink targets may lie outside the basepath. Symlinks to directories are not followed. POSIX systems only)");
+    ("L,follow-symlinks", "Follow symlinks to files when scanning for source files (use at your own risk: symlink targets may lie outside the basepath. Symlinks to directories are not followed)");
 
   parser.add_options()
     ("files", "", cxxopts::value<std::vector<std::string> >());

@@ -147,7 +147,7 @@ bool DiskFile::Create(std::string _filename, u64 _filesize)
     return false;
   }
 
-  hFile = ::CreateFileW(wfilename.c_str(), GENERIC_READ | GENERIC_WRITE, 0, NULL, CREATE_NEW, 0, NULL);
+  hFile = ::CreateFileW(wfilename.c_str(), GENERIC_READ | GENERIC_WRITE, 0, NULL, CREATE_NEW, FILE_FLAG_OPEN_REPARSE_POINT, NULL);
   if (hFile == INVALID_HANDLE_VALUE)
   {
     DWORD error = ::GetLastError();
@@ -455,7 +455,33 @@ std::unique_ptr< std::list<std::string> > DiskFile::FindFiles(std::string path, 
   {
     do
     {
-      if (0 == (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
+      // a name surrogate stands in for another path, unlike the reparse points
+      // which cloud storage and deduplication leave on a file's own data
+      if (0 != (fd.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT) &&
+          IsReparseTagNameSurrogate(fd.dwReserved0))
+      {
+        // symlinks to directories are not followed
+        if (!followlinks ||
+            0 != (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
+          continue;
+
+        std::string name;
+        if (!utf8::WideToUtf8(fd.cFileName, name))
+          continue;
+
+        std::wstring wtarget;
+        if (!utf8::Utf8ToWide(path + name, wtarget))
+          continue;
+
+        // resolves the link, so a dangling one is left out
+        DWORD attributes = ::GetFileAttributesW(wtarget.c_str());
+        if (attributes == INVALID_FILE_ATTRIBUTES ||
+            0 != (attributes & FILE_ATTRIBUTE_DIRECTORY))
+          continue;
+
+        matches->push_back(path + name);
+      }
+      else if (0 == (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
       {
         std::string name;
         if (utf8::WideToUtf8(fd.cFileName, name))
@@ -542,6 +568,38 @@ bool DiskFile::FileExists(std::string filename)
 
   struct _stati64 st;
   return ((0 == _wstati64(wfilename.c_str(), &st)) && (0 != (st.st_mode & _S_IFREG)));
+}
+
+bool DiskFile::HasLinkedDirectory(const std::string &basepath, const std::string &filename)
+{
+  if (filename.compare(0, basepath.size(), basepath) != 0)
+    return true;
+
+  std::string::size_type offset = basepath.size();
+  for (;;)
+  {
+    std::string::size_type sep = filename.find(PATHSEP[0], offset);
+    if (sep == std::string::npos)
+      return false;
+
+    std::wstring wdirectory;
+    if (!utf8::Utf8ToWide(filename.substr(0, sep), wdirectory))
+      return true;
+
+    WIN32_FIND_DATAW fd;
+    HANDLE h = ::FindFirstFileW(wdirectory.c_str(), &fd);
+    if (h != INVALID_HANDLE_VALUE)
+    {
+      bool linked = 0 != (fd.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT)
+                    && IsReparseTagNameSurrogate(fd.dwReserved0);
+      ::FindClose(h);
+
+      if (linked)
+        return true;
+    }
+
+    offset = sep + 1;
+  }
 }
 
 bool DiskFile::DirectoryExists(std::string path)
@@ -1102,6 +1160,26 @@ bool DiskFile::FileExists(std::string filename)
 {
   struct stat st;
   return ((0 == stat(filename.c_str(), &st)) && (0 != (st.st_mode & S_IFREG)));
+}
+
+bool DiskFile::HasLinkedDirectory(const std::string &basepath, const std::string &filename)
+{
+  if (filename.compare(0, basepath.size(), basepath) != 0)
+    return true;
+
+  std::string::size_type offset = basepath.size();
+  for (;;)
+  {
+    std::string::size_type sep = filename.find(PATHSEP[0], offset);
+    if (sep == std::string::npos)
+      return false;
+
+    struct stat st;
+    if (lstat(filename.substr(0, sep).c_str(), &st) == 0 && S_ISLNK(st.st_mode))
+      return true;
+
+    offset = sep + 1;
+  }
 }
 
 bool DiskFile::DirectoryExists(std::string path)
