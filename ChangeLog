@@ -4,6 +4,13 @@
   Release:
   * #326: Version 2.0.0 (via PR #400)
 
+  !Breaking:
+  * Replaced OpenMP with std::thread, atomics, mutexes and thread pools
+  * Removed autotools and legacy Visual Studio project files
+    CMake is the supported build system and C++14 is required
+  * Moved the library to public <par2/...> headers and namespace par2
+  * Command-line parsing now uses cxxopts
+
   Issues:
   * #309: Migrate from OpenMP to std::thread
   * #387: Slop
