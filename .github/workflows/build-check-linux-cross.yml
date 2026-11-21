@@ -26,7 +26,7 @@ jobs:
     - name: Install the cross toolchain and qemu
       run: |
         sudo apt-get update
-        sudo apt-get install -y g++-${{ matrix.prefix }} ${{ matrix.libc }} qemu-user-static
+        sudo apt-get install -y g++-${{ matrix.prefix }} ${{ matrix.libc }} qemu-user-binfmt
 
     - name: Build
       run: |
