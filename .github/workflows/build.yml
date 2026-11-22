@@ -1,14 +1,25 @@
-name: par2cmdline release build
+name: par2cmdline build
 
 on:
+  pull_request:
   push:
-    branches:
-    - 'master'
+    branches: [master]
   workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Pushes to a PR supersede previous runs. Pushes to master all finish.
+concurrency:
+  group: build-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   build-check-linux:
     uses: ./.github/workflows/build-check-linux.yml
+
+  build-check-sanitizers:
+    uses: ./.github/workflows/build-check-sanitizers.yml
 
   build-check-mingw:
     uses: ./.github/workflows/build-check-mingw.yml
@@ -34,6 +45,7 @@ jobs:
     uses: ./.github/workflows/build-check-tsan.yml
 
   build-linux:
+    if: github.ref == 'refs/heads/master'
     needs:
     - build-check-linux
     - build-check-linux-cross
@@ -85,6 +97,7 @@ jobs:
         retention-days: 5
 
   build-windows:
+    if: github.ref == 'refs/heads/master'
     needs:
     - build-check-windows
 
@@ -117,6 +130,7 @@ jobs:
         retention-days: 5
 
   build-macos:
+    if: github.ref == 'refs/heads/master'
     needs:
     - build-check-macos
 
@@ -183,6 +197,7 @@ jobs:
         retention-days: 5
 
   build-freebsd:
+    if: github.ref == 'refs/heads/master'
     needs:
     - build-check-freebsd
 
